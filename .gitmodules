@@ -1,0 +1,3 @@
+[submodule "pifi-engine.wiki"]
+	path = pifi-engine.wiki
+	url = ../pifi-engine.wiki
