@@ -1,0 +1,182 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <General>
+      <Flags>
+        <MainUnitHasUsesSectionForAllUnits Value="False"/>
+        <MainUnitHasCreateFormStatements Value="False"/>
+        <MainUnitHasTitleStatement Value="False"/>
+      </Flags>
+      <SessionStorage Value="InProjectDir"/>
+      <MainUnit Value="0"/>
+      <Title Value="xProject"/>
+      <UseAppBundle Value="False"/>
+      <ResourceType Value="res"/>
+    </General>
+    <i18n>
+      <EnableI18N LFM="False"/>
+    </i18n>
+    <VersionInfo>
+      <StringTable ProductVersion=""/>
+    </VersionInfo>
+    <BuildModes Count="1">
+      <Item1 Name="Default" Default="True"/>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <IncludeFileFilter Value="*.(pas|pp|inc|lfm|lpr|lrs|lpi|lpk|sh|xml)"/>
+      <ExcludeFileFilter Value="*.(bak|ppu|o|so);*~;backup"/>
+    </PublishOptions>
+    <RunParams>
+      <local>
+        <FormatVersion Value="1"/>
+        <LaunchingApplication PathPlusParams="\usr\bin\xterm -T 'Lazarus Run Output' -e $(LazarusDir)\tools\runwait.sh $(TargetCmdLine)"/>
+      </local>
+    </RunParams>
+    <RequiredPackages Count="2">
+      <Item1>
+        <PackageName Value="LCLBase"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="LCL"/>
+      </Item2>
+    </RequiredPackages>
+    <Units Count="18">
+      <Unit0>
+        <Filename Value="xProject.dpr"/>
+        <IsPartOfProject Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="TestProject.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form2"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="TestProject"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="..\Source\uPrimitives.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uPrimitives"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\Source\uBaseClasses.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uBaseClasses"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\Source\uBaseGL.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uBaseGL"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="..\Source\uLists.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uLists"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="..\Source\uVMath.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uVMath"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="..\Source\uBaseTypes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uBaseTypes"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="..\Source\ImageLoader.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ImageLoader"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="..\Source\uRenderResource.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uRenderResource"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="..\Source\uGLRenders.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uGLRenders"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="..\Source\uMiscUtils.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="..\Source\GLViewer\dglOpenGL.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="..\Source\GLViewer\uGLViewer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uGLViewer"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="..\Source\uMath.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uMath"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="..\Source\uBaseRenders.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uBaseRenders"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="..\Source\uShaderGen.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uShaderGen"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="..\Source\uGenericsRBTree.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uGenericsRBTree"/>
+      </Unit17>
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <PathDelim Value="\"/>
+    <Target>
+      <Filename Value="xProject"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="..\Source;..\Source\GLViewer;$(ProjOutDir)"/>
+      <OtherUnitFiles Value="..\Source;..\Source\GLViewer"/>
+      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Parsing>
+      <SyntaxOptions>
+        <SyntaxMode Value="Delphi"/>
+      </SyntaxOptions>
+    </Parsing>
+    <Linking>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
+    </Linking>
+    <Other>
+      <CompilerMessages>
+        <MsgFileName Value=""/>
+      </CompilerMessages>
+      <CompilerPath Value="$(CompPath)"/>
+    </Other>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions Count="3">
+      <Item1>
+        <Name Value="EAbort"/>
+      </Item1>
+      <Item2>
+        <Name Value="ECodetoolError"/>
+      </Item2>
+      <Item3>
+        <Name Value="EFOpenError"/>
+      </Item3>
+    </Exceptions>
+  </Debugging>
+</CONFIG>
