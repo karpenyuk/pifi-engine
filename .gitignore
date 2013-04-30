@@ -1,0 +1,12 @@
+/_Bench/
+/.svn/
+/conf/
+/db/
+/hooks/
+/locks/
+*.~*
+__history
+*.exe
+*.dcu
+*.local
+*.identcache 
