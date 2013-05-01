@@ -2391,7 +2391,7 @@ end;
 procedure TExtents.Include(const aVector: TVector);
 begin
   if Empty then begin
-    eMin:=aVector; eMax:=aVector;
+    eMin:=aVector; eMax:=aVector; Empty := False;
   end else begin
     eMin:=TVector.MinVector(emin,aVector);
     eMax:=TVector.MaxVector(emax,aVector);
