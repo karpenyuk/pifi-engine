@@ -4,9 +4,12 @@
 /db/
 /hooks/
 /locks/
+/dcu/
 *.~*
 __history
 *.exe
 *.dcu
 *.local
-*.identcache 
+*.identcache
+*.tvsconfig
+*.rsm
