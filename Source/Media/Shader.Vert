@@ -9,7 +9,7 @@ in vec2 in_TexCoord;
 
 uniform mat4 MVP;
 uniform mat4 ModelView;
-uniform mat4 Projection;
+uniform mat4 ProjMatrix;
 
 struct Light
 {
@@ -44,11 +44,12 @@ out vec3 Normal;
 
 void main(void)
 { 
-	gl_Position = MVP*vec4(in_Position, 1.0);
+	vec4 pos = ModelView * vec4(in_Position, 1.0);
+	gl_Position = ProjMatrix * pos;
+
 	TexCoord = in_TexCoord;
 	Normal = in_Normal;
-	vec4 nm = MVP * vec4(Normal, 0.0);
-	vec4 pos = ModelView * vec4(in_Position, 1.0);
+	vec4 nm = ModelView * vec4(Normal, 0.0);
 	vec3 lightDir = vec3(lights.light.position.xyz - pos.xyz);
 	vec3 eyeVec = -pos.xyz;
 

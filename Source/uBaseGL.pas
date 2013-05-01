@@ -70,7 +70,7 @@ Type
       aUsage: cardinal = GL_STATIC_DRAW);
 
     procedure Upload(NewData: pointer; aSize, aOffset: integer);
-    procedure Download(DestPtr: pointer; aSize, aOffset: integer);
+    procedure Download(DestPtr: pointer; aSize, aOffset: integer; aMapBuffer: boolean = true);
     procedure Bind; overload;
     procedure Bind(AsTarget: TBufferType); overload;
     procedure BindBase(Index: cardinal); overload;
@@ -191,10 +191,14 @@ Type
     FubNames: array of ansistring;
     FubIndices: array of integer;
     FubOffsets: array of integer;
+
+    FMaxUBOSize: integer;
+
     function getIndex(Index: integer): integer;
     function getName(Index: integer): ansistring;
     function getOffset(Index: integer): integer;
     procedure QueryUniformInfo(aProgram: cardinal; aBlockIndex: integer);
+    function getMaxBC: integer;
   public
     property BlockName: ansistring read FBlockName;
     property BlockSize: integer read FBlockSize;
@@ -205,6 +209,9 @@ Type
     property Offsets[Index: integer]: integer read getOffset; default;
     property Names[Index: integer]: ansistring read getName;
     property Indices[Index: integer]: integer read getIndex;
+
+    property MaxBlocksCount: integer read getMaxBC;
+    property MaxUBOSize: integer read FMaxUBOSize;
 
     function OffsetByName(aName: ansistring): integer;
 
@@ -717,18 +724,23 @@ begin
   inherited;
 end;
 
-procedure TGLBufferObject.Download(DestPtr: pointer; aSize, aOffset: integer);
+procedure TGLBufferObject.Download(DestPtr: pointer; aSize, aOffset: integer; aMapBuffer: boolean);
 var
   p: pointer;
 begin
   assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
   assert(FSize > -1, 'You need set size first!');
   assert(aSize + aOffset <= FSize, 'Size out of bounds!');
+  assert(DestPtr <> nil, 'Destination buffer is not assigned!');
   glBindBuffer(CBufferTypes[FBuffType], FBuffId);
-  p := glMapBuffer(CBufferTypes[FBuffType], GL_READ_ONLY);
-  p := pointer(integer(p) + aOffset);
-  Move(p^, DestPtr^, aSize);
-  glUnmapBuffer(CBufferTypes[FBuffType]);
+  if aMapBuffer then begin
+    p := glMapBuffer(CBufferTypes[FBuffType], GL_READ_ONLY);
+    p := pointer(integer(p) + aOffset);
+    Move(p^, DestPtr^, aSize);
+    glUnmapBuffer(CBufferTypes[FBuffType]);
+  end else begin
+    glGetBufferSubData(CBufferTypes[FBuffType], aOffset, aSize, DestPtr);
+  end;
   glBindBuffer(CBufferTypes[FBuffType], 0);
 end;
 
@@ -2351,6 +2363,11 @@ begin
   result := FubIndices[Index];
 end;
 
+function TGLUniformBlock.getMaxBC: integer;
+begin
+  result:=FMaxUBOSize div FBlockSize;
+end;
+
 function TGLUniformBlock.getName(Index: integer): ansistring;
 begin
   result := FubNames[Index];
@@ -2415,6 +2432,7 @@ begin
     if FBlockName = CUBOSemantics[bt].Name then
       FBlockType := bt;
   FreeMem(cbuff, 256);
+  glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, @FMaxUBOSize);
 end;
 
 { TUBOList }
