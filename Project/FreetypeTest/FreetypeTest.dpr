@@ -11,7 +11,7 @@ uses
   {$ENDIF}
   Forms,Interfaces,
   {$ELSE}
-  Vcl.Forms,
+  Forms,
   {$ENDIF}
   uFTtest in 'uFTtest.pas' {Form5};
 

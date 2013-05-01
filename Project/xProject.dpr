@@ -7,12 +7,6 @@ program xProject;
 
 
 uses
-  {$IFDEF FPC}
-  {$IFDEF UNIX}
-  cthreads,
-  {$ENDIF}
-  Interfaces,
-  {$ENDIF}
   Forms,
   TestProject in 'TestProject.pas' {Form2},
   uPrimitives in '..\Source\uPrimitives.pas',
@@ -24,13 +18,14 @@ uses
   uRenderResource in '..\Source\uRenderResource.pas',
   uGLRenders in '..\Source\uGLRenders.pas',
   uMiscUtils in '..\Source\uMiscUtils.pas',
-  {$IFNDEF FPC}jpegdec in '..\Source\jpegdec.pas',{$ENDIF}
+  jpegdec in '..\Source\jpegdec.pas',
   dglOpenGL in '..\Source\GLViewer\dglOpenGL.pas',
   uGLViewer in '..\Source\GLViewer\uGLViewer.pas',
   uMath in '..\Source\uMath.pas',
   uBaseRenders in '..\Source\uBaseRenders.pas',
   uShaderGen in '..\Source\uShaderGen.pas',
-  uGenericsRBTree in '..\Source\uGenericsRBTree.pas';
+  uGenericsRBTree in '..\Source\uGenericsRBTree.pas',
+  uDataAccess in '..\Source\uDataAccess.pas';
 
 begin
   Application.Initialize;
