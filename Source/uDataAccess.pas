@@ -211,7 +211,7 @@ begin
   FComponent := aItemComponents;
   FItemSize := CValueSizes[aItemType]*Ord(aItemComponents);
   FStride := anStride;
-  Assert(FStride >= anStride);
+  Assert(FStride >= FItemSize);
   FCount := aCount;
   Assert(FCount > 0);
 
