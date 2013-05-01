@@ -1,4 +1,4 @@
-unit GSTestUnit;
+п»їunit GSTestUnit;
 
 {$IFDEF FPC}
   {$MODE Delphi}
@@ -100,7 +100,7 @@ begin
   VO := uPrimitives.CreateTeapod(4);
   Indices := VO.GetIndices;
   MeshUtils.ComputeTriangleAdjacency(
-    VO.Attribs[0].Buffer.DataHandler, // Хак, но как еще???
+    VO.Attribs[0].GetVectorDataAccess,
     Indices,
     AdjIndices);
   VO.SetAdjacencyIndices(AdjIndices);
