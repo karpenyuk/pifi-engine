@@ -189,6 +189,7 @@ begin
   MV := Model * View;
   MVP := MV * Proj;
   Shader1.Apply;
+  Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
   Shader1.SetUniform('ModelView', MV.Matrix4);
   Shader1.SetUniform('MVP', MVP.Matrix4);
   TextObject.RenderVO();
