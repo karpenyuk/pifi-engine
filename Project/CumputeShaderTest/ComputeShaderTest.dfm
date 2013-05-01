@@ -16,43 +16,36 @@ object Form3: TForm3
   TextHeight = 13
   object GLViewer1: TGLViewer
     Left = 0
-    Top = 25
+    Top = 41
     Width = 746
-    Height = 431
+    Height = 415
     OnRender = GLViewer1Render
-    OnContextReady = GLViewer1ContextReady
+    onContextReady = GLViewer1ContextReady
     Align = alClient
     OnMouseDown = GLViewer1MouseDown
     OnMouseMove = GLViewer1MouseMove
+    ExplicitTop = 25
+    ExplicitHeight = 431
   end
   object Panel1: TPanel
     Left = 0
     Top = 0
     Width = 746
-    Height = 25
+    Height = 41
     Align = alTop
     TabOrder = 1
     object Label1: TLabel
-      Left = 256
-      Top = 8
+      Left = 644
+      Top = 6
       Width = 46
       Height = 13
       Caption = 'MVPTime:'
       Color = clBtnFace
       ParentColor = False
     end
-    object Label2: TLabel
-      Left = 312
-      Top = 8
-      Width = 21
-      Height = 13
-      Caption = 'NAN'
-      Color = clBtnFace
-      ParentColor = False
-    end
     object Label3: TLabel
-      Left = 408
-      Top = 6
+      Left = 639
+      Top = 22
       Width = 21
       Height = 13
       Caption = 'NAN'
@@ -61,28 +54,35 @@ object Form3: TForm3
     end
     object RadioButton1: TRadioButton
       Left = 8
-      Top = 5
-      Width = 120
+      Top = 11
+      Width = 49
       Height = 24
-      Caption = 'Standart MVP'
+      Caption = 'CPU'
       Checked = True
       TabOrder = 0
       TabStop = True
     end
     object RadioButton2: TRadioButton
-      Left = 125
-      Top = 5
-      Width = 138
+      Left = 63
+      Top = 11
+      Width = 42
       Height = 24
-      Caption = 'Compute Shader'
+      Caption = 'GPU'
       TabOrder = 1
       OnClick = RadioButton2Click
     end
-    object CheckBox1: TCheckBox
-      Left = 568
-      Top = -2
-      Width = 24
-      Height = 24
+    object rgUsage: TRadioGroup
+      Left = 128
+      Top = 0
+      Width = 505
+      Height = 35
+      Caption = 'Transform usage:'
+      Columns = 3
+      ItemIndex = 0
+      Items.Strings = (
+        'SSBO'
+        'UBO'
+        'Readback')
       TabOrder = 2
     end
   end

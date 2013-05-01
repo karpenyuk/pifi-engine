@@ -1,9 +1,9 @@
-unit ComputeShaderTest;
+п»їunit ComputeShaderTest;
 
 interface
 
 uses
-  {$IFDEF MSWINDOWS}Windows,{$ENDIF}
+{$IFDEF MSWINDOWS}Windows, {$ENDIF}
   Messages,
   SysUtils,
   Variants,
@@ -34,7 +34,7 @@ type
     RadioButton2: TRadioButton;
     Label1: TLabel;
     Label3: TLabel;
-    CheckBox1: TCheckBox;
+    rgUsage: TRadioGroup;
     procedure FormCanResize(Sender: TObject; var NewWidth, NewHeight: Integer;
       var Resize: Boolean);
     procedure GLViewer1ContextReady(Sender: TObject);
@@ -64,8 +64,9 @@ var
   Form3: TForm3;
 
   Shader1: TGLSLShaderProgram;
-  Compute: TGLSLShaderProgram;
+  ComputeMV: TGLSLShaderProgram;
   UBOShader: TGLSLShaderProgram;
+  SSBOShader: TGLSLShaderProgram;
 
   cameraPos: TVector;
   Model, View, Proj: TMatrix;
@@ -75,9 +76,6 @@ var
 
   GL1xRender: Boolean = false;
 
-  Render: TBaseRender;
-  SceneGraph: TSceneGraph;
-
   Scale: TVector;
 
   Instances: array of mat4;
@@ -85,11 +83,8 @@ var
 
   ssbo: TGLBufferObject;
   mvbo: TGLBufferObject;
-  mvpbo: TGLBufferObject;
 
-  mvpBlock, mvBlock: TGLUniformBlock;
-
-  A, B, C: array of mat4;
+  mvBlock: TGLUniformBlock;
 
   TestTime: double;
 
@@ -98,6 +93,7 @@ var
 implementation
 
 {$R *.dfm}
+
 
 procedure DebugCallback(source: GLenum; type_: GLenum; id: GLuint;
   severity: GLenum; length: GLsizei; const message_: PGLchar;
@@ -108,7 +104,7 @@ begin
   msg := ParseDebugMessage(source, type_, id, severity, message_);
   log.Add(string(msg));
   if severity = GL_DEBUG_SEVERITY_HIGH_ARB then
-    log.SaveToFile('DebugLog.txt');
+      log.SaveToFile('DebugLog.txt');
   assert(not(severity = GL_DEBUG_SEVERITY_HIGH_ARB), string(msg));
 end;
 
@@ -118,7 +114,7 @@ var
 begin
   stopTimerAvailable := 0;
   while (stopTimerAvailable = 0) do
-    glGetQueryObjectiv(queryID[1], GL_QUERY_RESULT_AVAILABLE,
+      glGetQueryObjectiv(queryID[1], GL_QUERY_RESULT_AVAILABLE,
       @stopTimerAvailable);
   glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, @startTime);
   glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, @stopTime);
@@ -139,14 +135,14 @@ end;
 procedure TForm3.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   Shader1.Free;
-  Compute.Free;
+  ComputeMV.Free;
   UBOShader.Free;
+  SSBOShader.Free;
   glFinish;
   GLViewer1.OnRender := nil;
   GLViewer1.Context.Deactivate;
   ssbo.Free;
   mvbo.Free;
-  mvpbo.Free;
   log.Free;
 end;
 
@@ -155,92 +151,83 @@ var
   ver: TApiVersion;
   i, j, k: Integer;
   M: TMatrix;
-  path:string;
+  path: string;
 begin
   log := TStringList.Create;
-//  glDebugMessageCallback(DebugCallback, nil);
-//  glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nil, true);
-//  glEnable(GL_DEBUG_OUTPUT);
-//  glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+  // glDebugMessageCallback(DebugCallback, nil);
+  // glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nil, true);
+  // glEnable(GL_DEBUG_OUTPUT);
+  // glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
   // Checking OpenGL Version
   with GLViewer1.Context do
-    if (MaxMajorVersion < 4) or (MaxMinorVersion < 3) then
-    begin
+    if (MaxMajorVersion < 4) or (MaxMinorVersion < 3) then begin
       GL1xRender := true;
       ver.GAPI := avGL;
       ver.Version := 130;
-    end
-    else
-    begin
+    end else begin
       ver.GAPI := avGL;
       ver.Version := 430;
       GL1xRender := false;
     end;
-  // Среди зарегистрированных рендеров выбираем подходящий
-  Render := vRegisteredRenders.GetCompatibleRender(ver);
 
-  {$IFDEF MSWindows}
+{$IFDEF MSWindows}
   path := '..\..\Source\Media\'; { :-\ }
-  {$ENDIF}
-  {$IFDEF Linux}
+{$ENDIF}
+{$IFDEF Linux}
   path := '../../Source/Media/'; { :-/ }
-  {$ENDIF}
-
+{$ENDIF}
   // Create default Shader with gradient FragColor output
-  if not GL1xRender then
-  begin
+  if not GL1xRender then begin
     Shader1 := TGLSLShaderProgram.Create;
 
-    Shader1.AttachShaderFromFile(stVertex,
-      path+'Shader.Vert');
-    Shader1.AttachShaderFromFile(stFragment,
-      path+'Shader.Frag');
+    Shader1.AttachShaderFromFile(stVertex, path + 'Shader.Vert');
+    Shader1.AttachShaderFromFile(stFragment, path + 'Shader.Frag');
     Shader1.LinkShader;
-    if Shader1.Error then
-    begin
+    if Shader1.Error then begin
       showmessage(Shader1.log);
       Halt(0);
     end;
   end
-  else
-    Shader1 := nil;
+  else Shader1 := nil;
 
   if not GL1xRender then
   begin
-    Compute := TGLSLShaderProgram.Create;
+    ComputeMV := TGLSLShaderProgram.Create;
+    ComputeMV.AttachShaderFromFile(stCompute, path + 'MVTransform.Comp');
 
-    Compute.AttachShaderFromFile(stCompute,
-      path+'MVPTransform.Comp');
-
-    Compute.LinkShader;
-    if Compute.Error then
-    begin
-      showmessage(Compute.log);
+    ComputeMV.LinkShader;
+    if ComputeMV.Error then begin
+      showmessage(ComputeMV.log);
       Halt(0);
     end;
     CheckOpenGLError;
   end
-  else
-    Compute := nil;
+  else ComputeMV := nil;
 
-  if not GL1xRender then
-  begin
+  if not GL1xRender then begin
     UBOShader := TGLSLShaderProgram.Create;
-    UBOShader.AttachShaderFromFile(stVertex,
-      path+'MVPTransform.Vert');
-    UBOShader.AttachShaderFromFile(stFragment,
-      path+'Shader.Frag');
+    UBOShader.AttachShaderFromFile(stVertex, path + 'UBOTransform.Vert');
+    UBOShader.AttachShaderFromFile(stFragment, path + 'Shader.Frag');
     UBOShader.LinkShader;
-    if UBOShader.Error then
-    begin
+    if UBOShader.Error then begin
       showmessage(UBOShader.log);
       Halt(0);
     end;
-    // mvpBlock:=UBOShader.UniformBlocks.GetUBOByName('MVPMatrix');
-    // mvBlock:=UBOShader.UniformBlocks.GetUBOByName('MVMatrix');
+    mvBlock := UBOShader.UniformBlocks.GetUBOByName('MVMatrix');
   end
-  else
-    UBOShader := nil;
+  else UBOShader := nil;
+
+  if not GL1xRender then begin
+    SSBOShader := TGLSLShaderProgram.Create;
+    SSBOShader.AttachShaderFromFile(stVertex, path + 'SSBOTransform.Vert');
+    SSBOShader.AttachShaderFromFile(stFragment, path + 'Shader.Frag');
+    SSBOShader.LinkShader;
+    if SSBOShader.Error then begin
+      showmessage(SSBOShader.log);
+      Halt(0);
+    end;
+  end
+  else SSBOShader := nil;
 
   // Making MVP Matrix
   Proj := TMatrix.PerspectiveMatrix(60, GLViewer1.Width / GLViewer1.Height,
@@ -251,32 +238,24 @@ begin
   Scale := vector(2, 2, 2, 1);
   Model := TMatrix.ScaleMatrix(Scale);
 
-  Box := TGLVertexObject.CreateFrom(uPrimitives.CreateBox(0.1, 0.1, 0.1));
+  // Box := TGLVertexObject.CreateFrom(uPrimitives.CreateBox(0.1, 0.1, 0.1));
+  Box := TGLVertexObject.CreateFrom(uPrimitives.CreateSphere(0.1, 16, 32));
   Box.Shader := Shader1;
-
-  SceneGraph := TSceneGraph.Create;
 
   // Fill buffer with instance model matrix
   setlength(Instances, ObjCount);
   setlength(InstMVP, ObjCount);
   for i := 0 to 9 do
     for j := 0 to 9 do
-      for k := 0 to 9 do
-      begin
+      for k := 0 to 9 do begin
         M := TMatrix.TranslationMatrix(Scale * vector(i * 0.12 - 0.6,
           j * 0.12 - 0.6, k * 0.12 - 0.6));
         Instances[ObjectIndex(i, j, k, 10, 10, 10)] := M.Matrix4;
       end;
 
-  setlength(A, ObjCount);
-  setlength(B, ObjCount);
-  setlength(C, ObjCount);
-
   ssbo := TGLBufferObject.Create(btShaderStorage);
-  ssbo.Allocate(sizeof(mat4) * length(Instances), @Instances[0], GL_STREAM_DRAW);
-
-  mvpbo := TGLBufferObject.Create(btShaderStorage);
-  mvpbo.Allocate(sizeof(mat4) * length(Instances), nil, GL_STREAM_COPY);
+  ssbo.Allocate(sizeof(mat4) * length(Instances), @Instances[0],
+    GL_STREAM_DRAW);
 
   mvbo := TGLBufferObject.Create(btShaderStorage);
   mvbo.Allocate(sizeof(mat4) * length(Instances), nil, GL_STREAM_COPY);
@@ -294,8 +273,7 @@ end;
 procedure TForm3.GLViewer1MouseMove(Sender: TObject; Shift: TShiftState;
   X, Y: Integer);
 begin
-  if Shift = [ssLeft] then
-  begin
+  if Shift = [ssLeft] then begin
     CX := X;
     CY := Y;
   end;
@@ -312,13 +290,11 @@ end;
 
 procedure TForm3.GLViewer1Render(Sender: TObject);
 var
-  i, j, n: Integer;
+  i, j, n, M, k, count: Integer;
   t: double;
   wgs, wgc: vec3i;
-  dcs: Integer;
-  loc: Integer;
 begin
-//  glDisable(GL_DEBUG_OUTPUT); // Много жрет
+  // glDisable(GL_DEBUG_OUTPUT); // РњРЅРѕРіРѕ Р¶СЂРµС‚
 
   wgc := GetWorkgroupCount;
   wgs := GetWorkgroupSize;
@@ -331,72 +307,104 @@ begin
     GLViewer1.DeltaTime * 1);
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
-  if RadioButton1.Checked then
-  begin
-    Box.Shader:=Shader1;
+  if RadioButton1.Checked then begin
+    Box.Shader := Shader1;
     t := _GetTime;
     for i := 0 to high(Instances) do
-      InstMVP[i] :=  Model * Instances[i] * View * Proj;
+        InstMVP[i] := Model * Instances[i] * View;
 
     t := _GetTime - t;
     Label3.Caption := floattostr(t * 1000);
 
     Shader1.Apply;
-
-    for i := 0 to high(Instances) do
-    begin
-      Shader1.SetUniform('MVP', InstMVP[i].Matrix4);
+    Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
+    for i := 0 to high(Instances) do begin
+      Shader1.SetUniform('ModelView', InstMVP[i].Matrix4);
       Box.RenderVO;
     end;
     Shader1.UnApply;
 
-  end
-  else
-  begin
+  end else begin
     t := _GetTime;
     ssbo.Upload(@Instances[0], sizeof(mat4) * length(Instances), 0);
 
-
-    if CheckBox1.Checked then begin
-      //маппинг - падение фпс
-      //mvbo.MapRange(GL_MAP_WRITE_BIT + GL_MAP_INVALIDATE_BUFFER_BIT, 0, 0);
-      //mvbo.UnMap;
-      mvbo.Upload(nil,mvbo.Size,0);
-    end;
     ssbo.BindAllRange(3);
-
     mvbo.BindAllRange(1);
 
-    Compute.Apply;
+    ComputeMV.Apply;
 
-    Compute.SetUniform('ViewMatrix', View.Matrix4);
-    Compute.SetUniform('ProjMatrix', Proj.Matrix4);
-    Compute.SetUniform('localMatrix', Model.Matrix4);
+    ComputeMV.SetUniform('ViewMatrix', View.Matrix4);
+    ComputeMV.SetUniform('ProjMatrix', Proj.Matrix4);
+    ComputeMV.SetUniform('localMatrix', Model.Matrix4);
 
     glDispatchCompute(ObjCount div WorkGroupSize, 1, 1);
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    Compute.UnApply;
+    ComputeMV.UnApply;
 
-    t := _GetTime - t;
-    Label3.Caption := floattostr(t * 1000);
-    Box.Shader:=UBOShader;
-    UBOShader.Apply;
-    UBOShader.SetUniform('ProjMatrix', Proj.Matrix4);
+    if rgUsage.ItemIndex = 0 then begin
+      t := _GetTime - t;
+      Label3.Caption := floattostr(t * 1000);
 
-    for i := 0 to ObjCount - 1 do begin
-      UBOShader.SetUniform('ObjectIndex', i);
-      Box.RenderVO;
+      Box.Shader := SSBOShader;
+      SSBOShader.Apply;
+      SSBOShader.SetUniform('ProjMatrix', Proj.Matrix4);
+
+      for i := 0 to ObjCount - 1 do begin
+        SSBOShader.SetUniform('ObjectIndex', i);
+        Box.RenderVO;
+      end;
+      SSBOShader.UnApply;
     end;
-    UBOShader.UnApply;
 
+    if rgUsage.ItemIndex = 1 then begin
+      Box.Shader := UBOShader;
+      UBOShader.Apply;
+      UBOShader.SetUniform('ProjMatrix', Proj.Matrix4);
+
+      count := mvBlock.BlockSize div sizeof(mat4);
+
+      n := ObjCount div count;
+      M := ObjCount mod count;
+      if M <> 0 then inc(n);
+      k := count;
+
+      mvbo.UnBindBuffer;
+      t := _GetTime - t;
+      Label3.Caption := floattostr(t * 1000);
+
+      for i := 0 to n - 1 do begin
+        if (i = n - 1) and (M <> 0) then k := M;
+        for j := 0 to k - 1 do begin
+          mvbo.BindRange(btUniform, 1, i * mvBlock.BlockSize,
+            mvBlock.BlockSize);
+          UBOShader.SetUniform('ObjectIndex', j);
+          Box.RenderVO;
+        end;
+      end;
+      UBOShader.UnApply;
+    end;
+
+    if rgUsage.ItemIndex = 2 then begin
+      mvbo.Download(@InstMVP[0],sizeof(mat4) * length(Instances),0, false);
+      t := _GetTime - t;
+      Label3.Caption := floattostr(t * 1000);
+      Box.Shader := Shader1;
+      Shader1.Apply;
+      Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
+      for i := 0 to high(Instances) do begin
+        Shader1.SetUniform('ModelView', InstMVP[i].Matrix4);
+        Box.RenderVO;
+      end;
+      Shader1.UnApply;
+    end;
   end;
 end;
 
 procedure TForm3.RadioButton2Click(Sender: TObject);
 begin
-  Log.Add('Compute Shader Activated!');
+  log.Add('Compute Shader Activated!');
 end;
 
 procedure TForm3.Timer1Timer(Sender: TObject);
