@@ -485,7 +485,7 @@ const
     GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR);
 
   CValueTypes: array [TValueType] of cardinal = (GL_UNSIGNED_BYTE,
-    GL_UNSIGNED_SHORT, GL_INT, GL_UNSIGNED_INT, GL_FLOAT);
+    GL_UNSIGNED_SHORT, GL_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_DOUBLE);
   { TBufferObject }
 
 procedure CheckOpenGLError;

@@ -1,6 +1,4 @@
-﻿{ TODO: Заменить исключение на логировани, убрать использование SysUtils }
-
-unit uVectorFont;
+﻿unit uVectorFont;
 
 interface
 
@@ -8,7 +6,7 @@ interface
 {$MODE Delphi}
 {$ENDIF}
 
-{.$DEFINE INLINE_ON}
+{$DEFINE INLINE_ON}
 {.$DEFINE GLU_DLL}
 
 uses
@@ -21,6 +19,7 @@ uses
   uGenericsRBTree,
   gluTokens,
   gluTessellator,
+  uBaseTypes,
 {$IFDEF GLU_DLL}
   dglOpenGL,
 {$ENDIF}
@@ -48,7 +47,7 @@ type
     procedure SetValue(AGlyph: FT_GlyphSlot); overload;
 
     procedure Move(const AVec: TGLUAffineVector);
-    procedure SetDebth(depth: Single);
+    procedure SetDebth(aThickness: Single);
   end;
 
   // TVF_Size
@@ -138,6 +137,7 @@ type
   //
   VectorFontLibrary = class
   private
+    class var FJunk: TObjectList;
     class var FLibrary: FT_Library;
     class var FErr: FT_Error;
     class var FFontCache: TFontCache;
@@ -181,6 +181,14 @@ type
     property PointCount: Cardinal read GetPointCount;
   end;
 
+  TVF_GlyphMesh = record
+    FaceType: TFaceType;
+    Positions: TVec3List;
+    Normals: TVec3List;
+    TexCoords: TVec2List;
+    Indices: TIntegerArray;
+  end;
+
   // TVF_Vectoriser
   //
   TVF_Vectoriser = class(TObject)
@@ -195,31 +203,31 @@ type
   public
     constructor Create(AGlyph: FT_GlyphSlot);
     destructor Destroy; override;
-    procedure AddGlyphToMesh(const AVO: TVertexObject;
+    procedure CookPolygon(var aMesh: TVF_GlyphMesh; aWelding: Boolean;
       zNormal: Double = VF_FRONT_FACING);
-    procedure AddContourToMesh(const AVO: TVertexObject;
+    procedure CookContour(var aMesh: TVF_GlyphMesh;
       zNormal: Double = VF_FRONT_FACING);
-    function PointCount: Cardinal;
+    function PointCount: Integer;
     property ContourCount: Word read FftContourCount;
     property Contour[Index: Integer]: TVF_Contour read GetContour;
     property ContourSize[Index: Integer]: Cardinal read GetContourSize;
     property ContourFlag: Integer read FContourFlag;
   end;
 
+
   // TVF_Glyph
   //
   TVF_Glyph = class(TObject)
   protected
     FVectoriser: TVF_Vectoriser;
-    FMesh: TVertexObject;
+    FMesh: TVF_GlyphMesh;
     FAdvance: Single;
     FBBox: TVF_BBox;
     FErr: FT_Error;
   public
-    constructor Create(AGlyph: FT_GlyphSlot); virtual;
+    constructor Create(AGlyph: FT_GlyphSlot; aThickness: Single = 0); virtual;
     destructor Destroy; override;
-    function AddToMesh(const AVO: TVertexObject; const APen: TVector): Single;
-      virtual; abstract;
+    function Join(var aMesh: TVF_GlyphMesh; const APen: TVector): Single;
     property Advance: Single read FAdvance;
     property BBox: TVF_BBox read FBBox;
     property Error: FT_Error read FErr;
@@ -228,22 +236,15 @@ type
   // TVF_PolyGlyph
   //
   TVF_PolyGlyph = class(TVF_Glyph)
-  protected
-
   public
-    constructor Create(AGlyph: FT_GlyphSlot); override;
-    destructor Destroy; override;
-
-    function AddToMesh(const AVO: TVertexObject; const APen: TVector)
-      : Single; override;
+    constructor Create(AGlyph: FT_GlyphSlot; aThickness: Single = 0); override;
   end;
 
   // TVF_ExtrGlyph
   //
-  TVF_ExtrGlyph = class(TVF_PolyGlyph)
+  TVF_ExtrGlyph = class(TVF_Glyph)
   public
-    constructor Create(AGlyph: FT_GlyphSlot; ADepth: Single); reintroduce;
-    destructor Destroy; override;
+    constructor Create(AGlyph: FT_GlyphSlot; aThickness: Single = 0); override;
   end;
 
   TVF_GlyphList = TDataList<TVF_Glyph>;
@@ -265,7 +266,7 @@ type
     procedure Add(AGlyph: TVF_Glyph; ACharacterCode: Cardinal);
     function Advance(ACharacterCode, ANextCharacterCode: Cardinal): Single;
     function AddToMesh(ACharacterCode, ANextCharacterCode: Cardinal;
-      APen: TVector; AVO: TVertexObject): TGLUAffineVector;
+      aPen: TVector; var aMesh: TVF_GlyphMesh): TVector;
 
     property Glyph[ACharCode: Cardinal]: TVF_Glyph read GetGlyph;
     property BBox[ACharCode: Cardinal]: TVF_BBox read GetBBox;
@@ -286,7 +287,6 @@ type
     FCharSize: TVF_Size;
     FErr: FT_Error;
     FGlyphList: TVF_GlyphContainer;
-    FPen: TVector;
     function MakeGlyph(G: Cardinal): TVF_Glyph; virtual; abstract;
   public
     constructor Create(const AFontName: string); overload;
@@ -298,7 +298,7 @@ type
     function BBox(const AStr: string): TExtents;
     function Advance(const AStr: string): Single;
     function FaceSize(asize, ares: Cardinal): Boolean;
-    procedure AddToMesh(const AStr: string; AVO: TVertexObject);
+    function CreateVertexObject(const AStr: string): TVertexObject;
 
     property Error: FT_Error read FErr;
     property Ascender: Single read GetAscender;
@@ -316,7 +316,7 @@ type
   //
   TVF_ExtrudedFont = class(TVF_Font)
   private
-    FDepth: Single;
+    FThickness: Single;
   protected
     function MakeGlyph(G: Cardinal): TVF_Glyph; override;
   public
@@ -324,16 +324,16 @@ type
     constructor Create(pBufferBytes: FT_Byte_ptr;
       bufferSizeInBytes: Cardinal); overload;
 
-    property depth: Single read FDepth write FDepth;
+    property Thickness: Single read FThickness write FThickness;
   end;
 
 implementation
 
 uses
   SysUtils,
-  uBaseTypes,
   uMath,
-  uPersistentClasses;
+  uMeshUtils,
+  uDataAccess;
 
 type
   VectorFontException = class(Exception);
@@ -514,9 +514,9 @@ begin
   FupperZ := FupperZ + AVec.v[2];
 end;
 
-procedure TVF_BBox.SetDebth(depth: Single);
+procedure TVF_BBox.SetDebth(aThickness: Single);
 begin
-  FupperZ := FlowerZ + depth;
+  FupperZ := FlowerZ + aThickness;
 end;
 
 {$ENDREGION 'TVF_Size'}
@@ -736,22 +736,44 @@ end;
 // ------------------ TVF_Glyph ------------------
 // ------------------
 
-constructor TVF_Glyph.Create(AGlyph: FT_GlyphSlot);
+constructor TVF_Glyph.Create(AGlyph: FT_GlyphSlot; aThickness: Single = 0);
 begin
   if Assigned(AGlyph) then
   begin
     FAdvance := AGlyph.Advance.x / 64.0;
     FBBox.SetValue(AGlyph);
   end;
-  FMesh := TVertexObject.Create;
-  FMesh.FreeingBehavior := fbManual;
+  with FMesh do
+  begin
+    Positions := TVec3List.Create;
+    Normals := TVec3List.Create;
+    TexCoords := TVec2List.Create;
+  end;
 end;
 
 destructor TVF_Glyph.Destroy;
 begin
-  FMesh.Destroy;
+  with FMesh do
+  begin
+    Positions.Free;
+    Normals.Free;
+    TexCoords.Free;
+  end;
   FVectoriser.Free;
   inherited;
+end;
+
+function TVF_Glyph.Join(var aMesh: TVF_GlyphMesh;
+  const APen: TVector): Single;
+var
+  offset: Integer;
+begin
+  offset := aMesh.Positions.Count;
+  aMesh.Positions.Join(FMesh.Positions, TMatrix.TranslationMatrix(APen));
+  aMesh.Normals.Join(FMesh.Normals, TMatrix.IdentityMatrix);
+  aMesh.TexCoords.Join(FMesh.TexCoords, TMatrix.IdentityMatrix);
+  MeshUtils.Join(aMesh.Indices, FMesh.Indices, offset);
+  Result := FAdvance;
 end;
 
 {$ENDREGION 'TVF_Glyph'}
@@ -1005,45 +1027,16 @@ begin
   FContourList := nil;
 end;
 
-var
-  vMainMesh, vTempMesh: TVertexObject;
-  Vertices: TVec3List;
-  TexCoords: TVec2List;
-  Normals: TVec3List;
+threadvar
+  vFaceType: TFaceType;
+  vTessVertices: TVec3List;
   vNormal: vec3;
-  tempPointList: TVF_PointList;
+  vTempPointList: TVF_PointList;
 
-procedure AddAttribs(AVO: TVertexObject);
-var
-  attr: TAttribBuffer;
-begin
-  attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name, 3,
-    vtFloat, 0, btArray);
-  attr.Buffer.Allocate(Vertices.Size, Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
-  attr.SetAttribSemantic(atVertex);
-  AVO.AddAttrib(attr, True);
-
-  if Assigned(Normals) then
-  begin
-    attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atNormal].Name, 3,
-      vtFloat, 0, btArray);
-    attr.Buffer.Allocate(Normals.Size, Normals.Data);
-    attr.Buffer.SetDataHandler(Normals);
-    attr.SetAttribSemantic(atNormal);
-    AVO.AddAttrib(attr);
-  end;
-
-  if Assigned(TexCoords) then
-  begin
-    attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord0].Name, 2,
-      vtFloat, 0, btArray);
-    attr.Buffer.Allocate(TexCoords.Size, TexCoords.Data);
-    attr.Buffer.SetDataHandler(TexCoords);
-    attr.SetAttribSemantic(atTexCoord0);
-    AVO.AddAttrib(attr);
-  end;
-end;
+  vGlyphVertices: TVec3List;
+  vGlyphTexCoords: TVec2List;
+  vGlyphNormals: TVec3List;
+  vGlyphIndices: TIntegerArray;
 
 procedure tessError(errno: GLUEnum); {$IFDEF GLU_DLL} stdcall; {$ENDIF}
 begin
@@ -1056,17 +1049,11 @@ const
 var
   p: PGLUAffineVector absolute vertexData;
   v: vec3;
-  ts: vec2;
 begin
-  vTempMesh.AddPoint(Vertices.Count);
   v[0] := p.v[0] * k;
   v[1] := p.v[1] * k;
-  v[2] := p.v[2] * k;
-  Vertices.Add(v);
-  Normals.Add(vNormal);
-  ts[0] := v[0];
-  ts[1] := v[1];
-  TexCoords.Add(ts);
+  v[2] := 0;
+  vTessVertices.Add(v);
 end;
 
 procedure tessCombine(const coords: TGLUAffineVector; vertex_data: TGLUData;
@@ -1074,50 +1061,57 @@ procedure tessCombine(const coords: TGLUAffineVector; vertex_data: TGLUData;
 var
   I: Integer;
 begin
-  I := tempPointList.Count;
-  tempPointList.Add(coords);
-  outData := tempPointList.GetItemAddr(I);
+  I := vTempPointList.Count;
+  vTempPointList.Add(coords);
+  outData := vTempPointList.GetItemAddr(I);
 end;
 
 procedure tessBegin(AType: GLUEnum); {$IFDEF GLU_DLL} stdcall; {$ENDIF}
 begin
-  vTempMesh.Clear;
-  Vertices := TVec3List.Create;
-  Normals := TVec3List.Create;
-  TexCoords := TVec2List.Create;
   case AType of
     GL_TRIANGLE_FAN:
-      vTempMesh.FaceType := ftTriangleFan;
+      vFaceType := ftTriangleFan;
     GL_TRIANGLE_STRIP:
-      vTempMesh.FaceType := ftTriangleStrip;
+      vFaceType := ftTriangleStrip;
     GL_TRIANGLES:
-      vTempMesh.FaceType := ftTriangles;
+      vFaceType := ftTriangles;
     GL_LINE_LOOP:
-      vTempMesh.FaceType := ftLineLoop;
+      vFaceType := ftLineLoop;
   end;
+  if not Assigned(vTessVertices) then
+  begin
+    vTessVertices := TVec3List.Create;
+    // Сохраним для удаления, полезно при многопоточности
+    VectorFontLibrary.FJunk.Add(vTessVertices);
+  end
+  else
+    vTessVertices.Flush;
 end;
-
-var
-  gvC: Integer = 0;
 
 procedure tessEnd(); {$IFDEF GLU_DLL} stdcall; {$ENDIF}
+var
+  InAttribs, OutAttribs: TAbstractDataListArray;
+  Indices: TIntegerArray;
+  I: Integer;
 begin
-  AddAttribs(vTempMesh);
-
-  case vTempMesh.FaceType of
+  SetLength(Indices, vTessVertices.Count);
+  for I := 0 to High(Indices) do
+    Indices[I] := I;
+  case vFaceType of
     ftTriangleFan, ftTriangleStrip:
-      vTempMesh.Triangulate;
-    ftLineLoop:
-      vTempMesh.LineSegmentation;
+      MeshUtils.Triangulate(vFaceType, Indices);
+//    ftLineLoop:
+//      LineSegmentation;
   end;
+  SetLength(OutAttribs, 1);
+  OutAttribs[0] := vGlyphVertices;
+  SetLength(InAttribs, 1);
+  InAttribs[0] := vTessVertices;
 
-  vMainMesh.Join(vTempMesh, TMatrix.IdentityMatrix);
-  Vertices := nil; // Ñïèñêè ïåðåõîäÿò âî âëàäåíèå vTempMesh
-  Normals := nil;
-  TexCoords := nil;
+  MeshUtils.Join(OutAttribs, InAttribs, vGlyphIndices, Indices);
 end;
 
-procedure TVF_Vectoriser.AddGlyphToMesh(const AVO: TVertexObject;
+procedure TVF_Vectoriser.CookPolygon(var aMesh: TVF_GlyphMesh; aWelding: Boolean;
   zNormal: Double = VF_FRONT_FACING);
 var
   tess: PGLUTesselator;
@@ -1128,19 +1122,21 @@ var
   dd: ^TGLVectord3 absolute d;
 {$ENDIF}
   I: Integer;
+  ListArray: TAbstractDataListArray;
+  VDA1, VDA2, VDA3: IVectorDataAccess;
 begin
   tess := VectorFontLibrary.FTesselator;
-  vMainMesh := AVO;
+  vGlyphVertices := TVec3List.Create;
+  SetLength(vGlyphIndices, 0);
 
-  if not Assigned(vTempMesh) then
-    vTempMesh := TVertexObject.Create;
-  if not Assigned(tempPointList) then
+  if not Assigned(vTempPointList) then
   begin
-    tempPointList := TVF_PointList.Create;
-    tempPointList.Capacity := VF_TESS_LIST_CAPACITY;
+    vTempPointList := TVF_PointList.Create;
+    vTempPointList.Capacity := VF_TESS_LIST_CAPACITY;
+    VectorFontLibrary.FJunk.Add(vTempPointList);
   end
   else
-    tempPointList.Flush;
+    vTempPointList.Flush;
 
   try
     if FContourFlag and FT_OUTLINE_EVEN_ODD_FILL <> 0 then
@@ -1160,37 +1156,67 @@ begin
       for p := 0 to Contour.PointCount - 1 do
       begin
         d := Contour.FPointList.GetItemAddr(p);
-        I := tempPointList.Count;
-        tempPointList.AddRaw(d);
-{$IFDEF GLU_DLL}
-        gluTessVertex(tess, dd^, tempPointList.GetItemAddr(I));
-{$ELSE}
-        gluTessVertex(tess, d^, tempPointList.GetItemAddr(I));
-{$ENDIF}
+        I := vTempPointList.Count;
+        vTempPointList.AddRaw(d);
+  {$IFDEF GLU_DLL}
+        gluTessVertex(tess, dd^, vTempPointList.GetItemAddr(I));
+  {$ELSE}
+        gluTessVertex(tess, d^, vTempPointList.GetItemAddr(I));
+  {$ENDIF}
       end;
       gluTessEndContour(tess);
     end;
     gluTessEndPolygon(tess);
 
+    if vGlyphVertices.Count > 0 then
+    begin
+      MeshUtils.UnWeldVertices([vGlyphVertices], ListArray, vGlyphIndices);
+      vGlyphVertices.Destroy;
+      vGlyphVertices := ListArray[0] as TVec3List;
+      VDA1 := TVectorDataAccess.Create(vGlyphVertices.Data, vtFloat, 3, 3*SizeOf(Single), vGlyphVertices.Count);
+      vGlyphNormals := MeshUtils.ComputeTriangleNormals(True, VDA1, vGlyphIndices);
+      vGlyphTexCoords := MeshUtils.ComputeTriangleTexCoords(VDA1, vGlyphIndices);
+      if aWelding then
+      begin
+        VDA2 := TVectorDataAccess.Create(vGlyphNormals.Data, vtFloat, 3, 3*SizeOf(Single), vGlyphNormals.Count);
+        VDA3 := TVectorDataAccess.Create(vGlyphTexCoords.Data, vtFloat, 2, 2*SizeOf(Single), vGlyphTexCoords.Count);
+        MeshUtils.WeldVertices([VDA1, VDA2, VDA3], ListArray, vGlyphIndices);
+        vGlyphVertices.Destroy;
+        vGlyphNormals.Destroy;
+        vGlyphTexCoords.Destroy;
+        vGlyphVertices := ListArray[0] as TVec3List;
+        vGlyphNormals := ListArray[1] as TVec3List;
+        vGlyphTexCoords := ListArray[2] as TVec2List;
+      end;
+    end;
   except
-    FreeAndNil(Vertices);
-    FreeAndNil(TexCoords);
-    FreeAndNil(Normals);
+    FreeAndNil(vGlyphVertices);
+    FreeAndNil(vGlyphTexCoords);
+    FreeAndNil(vGlyphNormals);
+    raise;
+  end;
+
+  with aMesh do
+  begin
+    Positions := vGlyphVertices;
+    Normals := vGlyphNormals;
+    TexCoords := vGlyphTexCoords;
+    Indices := Copy(vGlyphIndices, 0, Length(vGlyphIndices));
+    FaceType := ftTriangles;
   end;
 end;
 
-procedure TVF_Vectoriser.AddContourToMesh(const AVO: TVertexObject;
+procedure TVF_Vectoriser.CookContour(var aMesh: TVF_GlyphMesh;
   zNormal: Double = VF_FRONT_FACING);
 const
   k = 1 / 64;
 var
-  c, p: Cardinal;
+  I, c, p: Cardinal;
   StartIndex, index: Integer;
   Contour: TVF_Contour;
   v: TGLUAffineVector;
-  v2: vec2;
   v3: vec3;
-  n: vec3;
+  VDA: IVectorDataAccess;
 
   procedure EmitVertex;
   begin
@@ -1198,49 +1224,69 @@ var
     v3[0] := v.v[0];
     v3[1] := v.v[1];
     v3[2] := v.v[2];
-    Vertices.Add(v3);
-    v2[0] := v.v[0];
-    v2[1] := v.v[1];
-    TexCoords.Add(v2);
-    Normals.Add(n);
+    vGlyphVertices.Add(v3);
   end;
 
 begin
-  Vertices := TVec3List.Create;
-  Normals := TVec3List.Create;
-  TexCoords := TVec2List.Create;
-  n[0] := 0;
-  n[1] := 0;
-  n[2] := zNormal;
-  Index := 0;
-
-  // Line loops but made with segment
-  for c := 0 to ContourCount - 1 do
-  begin
-    Contour := FContourList[c];
-    StartIndex := Index;
-    v := Contour.FPointList[0];
-    EmitVertex;
-    AVO.AddPoint(Index);
-    Inc(Index);
-    for p := 1 to Contour.PointCount - 2 do
+  vGlyphVertices := TVec3List.Create;
+  SetLength(vGlyphIndices, PointCount);
+  try
+    I := 0;
+    Index := 0;
+    // Line loops but made with segment
+    for c := 0 to ContourCount - 1 do
     begin
-      v := Contour.FPointList[p];
+      Contour := FContourList[c];
+      StartIndex := Index;
+      v := Contour.FPointList[0];
       EmitVertex;
-      AVO.AddLine(Index, Index);
+      Inc(Index);
+      for p := 1 to Contour.PointCount - 2 do
+      begin
+        v := Contour.FPointList[p];
+        EmitVertex;
+        vGlyphIndices[I] := Index;
+        Inc(I);
+        vGlyphIndices[I] := Index;
+        Inc(I);
+        Inc(Index);
+      end;
+      v := Contour.FPointList[Contour.PointCount - 1];
+      EmitVertex();
+      vGlyphIndices[I] := Index;
+      Inc(I);
+      vGlyphIndices[I] := Index;
+      Inc(I);
+      vGlyphIndices[I] := StartIndex;
+      Inc(I);
       Inc(Index);
     end;
-    v := Contour.FPointList[Contour.PointCount - 1];
-    EmitVertex();
-    AVO.AddTriangle(Index, Index, StartIndex);
-    Inc(Index);
+
+    if vGlyphVertices.Count > 0 then
+    begin
+      VDA := TVectorDataAccess.Create(vGlyphVertices.GetItemAddr(0), vtFloat, 3, 3*SizeOf(Single), vGlyphVertices.Count);
+      vGlyphNormals := MeshUtils.ComputeTriangleNormals(True, VDA, vGlyphIndices);
+      vGlyphTexCoords := MeshUtils.ComputeTriangleTexCoords(VDA, vGlyphIndices);
+    end;
+
+  except
+    FreeAndNil(vGlyphVertices);
+    FreeAndNil(vGlyphTexCoords);
+    FreeAndNil(vGlyphNormals);
+    raise;
   end;
 
-  AddAttribs(AVO);
-  AVO.FaceType := ftLines;
+  with aMesh do
+  begin
+    Positions := vGlyphVertices;
+    Normals := vGlyphNormals;
+    TexCoords := vGlyphTexCoords;
+    Indices := Copy(vGlyphIndices, 0, Length(vGlyphIndices));
+    FaceType := ftLines;
+  end;
 end;
 
-function TVF_Vectoriser.PointCount: Cardinal;
+function TVF_Vectoriser.PointCount: Integer;
 var
   I: Integer;
   S: Cardinal;
@@ -1288,7 +1334,7 @@ end;
 // ------------------ TVF_PolyGlyph ------------------
 // ------------------
 
-constructor TVF_PolyGlyph.Create(AGlyph: FT_GlyphSlot);
+constructor TVF_PolyGlyph.Create(AGlyph: FT_GlyphSlot; aThickness: Single = 0);
 begin
   inherited Create(AGlyph);
 
@@ -1300,19 +1346,7 @@ begin
 
   FVectoriser := TVF_Vectoriser.Create(AGlyph);
   if (FVectoriser.ContourCount > 0) and (FVectoriser.PointCount() >= 3) then
-    FVectoriser.AddGlyphToMesh(FMesh); // AddContourToMesh  (FMesh);
-end;
-
-destructor TVF_PolyGlyph.Destroy;
-begin
-  inherited Destroy;
-end;
-
-function TVF_PolyGlyph.AddToMesh(const AVO: TVertexObject;
-  const APen: TVector): Single;
-begin
-  AVO.Join(FMesh, TMatrix.TranslationMatrix(APen));
-  Result := FAdvance;
+    FVectoriser.CookPolygon(FMesh, True);
 end;
 
 {$ENDREGION}
@@ -1321,18 +1355,20 @@ end;
 // ------------------
 // ------------------ TVF_ExtrGlyph ------------------
 // ------------------
-constructor TVF_ExtrGlyph.Create(AGlyph: FT_GlyphSlot; ADepth: Single);
+constructor TVF_ExtrGlyph.Create(AGlyph: FT_GlyphSlot; aThickness: Single);
 const
   k = 1 / 64;
 var
-  LMesh: TVertexObject;
-  optimusPrime: TMatrix; // of lidership
+  tempPositions: TVec3List;
+  tempIndices: TIntegerArray;
+  VDA1, VDA2, VDA3: IVectorDataAccess;
+  ListArray: TAbstractDataListArray;
+  MirrorMatrix: TMatrix;
   gluPoint: TGLUAffineVector;
   zOffset, p1, p2, p3, p4: TVector;
-  c, I, nextIndex, index: Integer;
+  c, I, J, N, nextIndex, index: Integer;
   Contour: TVF_Contour;
   numberOfPoints: Cardinal;
-  t0, t1: Single;
 begin
   inherited Create(AGlyph);
 
@@ -1342,31 +1378,32 @@ begin
     Exit;
   end;
 
+  FVectoriser := TVF_Vectoriser.Create(AGlyph);
+  if (FVectoriser.ContourCount > 0) and (FVectoriser.PointCount() >= 3) then
+    FVectoriser.CookPolygon(FMesh, False);
+
   if (FVectoriser.ContourCount > 0) and (FVectoriser.PointCount() >= 3) then
   begin
-    LMesh := TVertexObject.Create;
-    LMesh.Assign(FMesh);
+    tempPositions := TVec3List.Create;
+    tempPositions.Join(FMesh.Positions, TMatrix.IdentityMatrix);
+    MeshUtils.Join(tempIndices, FMesh.Indices, 0);
     try
-      zOffset := TVector.Make(0, 0, -ADepth);
-      optimusPrime := TMatrix.TranslationMatrix(zOffset);
-      optimusPrime := optimusPrime * TMatrix.ReflectionMatrix
+      zOffset := TVector.Make(0, 0, -aThickness);
+      MirrorMatrix := TMatrix.TranslationMatrix(zOffset);
+      MirrorMatrix := MirrorMatrix * TMatrix.ReflectionMatrix
         (TVector.Null, zOffset.Normalize);
-      FMesh.Join(LMesh, optimusPrime);
+      FMesh.Positions.Join(tempPositions, MirrorMatrix);
+      MeshUtils.Join(FMesh.Indices, tempIndices, tempPositions.Count);
 
-      LMesh.Clear;
-      LMesh.FaceType := ftTriangles;
-      Vertices := TVec3List.Create;
-      Normals := nil;
-      TexCoords := TVec2List.Create;
-
-      Index := 0;
+      Index := FMesh.Positions.Count;
+      J := Length(FMesh.Indices);
+      SetLength(FMesh.Indices, J+6*(FVectoriser.PointCount));
       for c := 0 to FVectoriser.ContourCount - 1 do
       begin
         Contour := FVectoriser.Contour[c];
         numberOfPoints := Contour.PointCount;
         if numberOfPoints > 2 then
         begin
-          t0 := 0;
           for I := 0 to numberOfPoints - 1 do
           begin
             if I = Integer(numberOfPoints - 1) then
@@ -1385,47 +1422,52 @@ begin
             p2.SetScale(k);
             p3 := p1 - zOffset;
             p4 := p2 - zOffset;
-            // Actully need calculation of texcoords based on contour lenght not points number
-            t1 := (I + 1) / numberOfPoints;
-            Vertices.Add(p1.vec3);
-            TexCoords.Add(TVector.Make(t0, 0).vec2);
-            Vertices.Add(p2.vec3);
-            TexCoords.Add(TVector.Make(t1, 0).vec2);
-            Vertices.Add(p3.vec3);
-            TexCoords.Add(TVector.Make(t0, 1).vec2);
-            Vertices.Add(p4.vec3);
-            TexCoords.Add(TVector.Make(t1, 1).vec2);
-            LMesh.AddTriangle(Index, Index + 1, Index + 2);
-            LMesh.AddTriangle(Index + 2, Index + 1, Index + 3);
-            Inc(Index, 4);
+            // Увы нет смысла экономить на вершинах
+            // при расчете нормалей они должны быть распакованы
+            FMesh.Positions.Add(p1.vec3);
+            FMesh.Positions.Add(p2.vec3);
+            FMesh.Positions.Add(p3.vec3);
+            FMesh.Positions.Add(p3.vec3);
+            FMesh.Positions.Add(p2.vec3);
+            FMesh.Positions.Add(p4.vec3);
+            for N := J to J+5 do
+            begin
+              FMesh.Indices[N] := Index;
+              Inc(Index);
+            end;
+            Inc(J, 6);
           end;
         end;
       end;
-      if Vertices.Count > 2 then
+      if FMesh.Positions.Count > 2 then
       begin
-        AddAttribs(LMesh);
-        LMesh.ComputeNormals(True);
-        FMesh.Join(LMesh, TMatrix.IdentityMatrix);
-        FMesh.WeldVertices;
+        VDA1 := TVectorDataAccess.Create(FMesh.Positions.Data, vtFloat, 3, 3*SizeOf(Single), FMesh.Positions.Count);
+        FMesh.Normals := MeshUtils.ComputeTriangleNormals(True, VDA1, FMesh.Indices);
+        FMesh.TexCoords := MeshUtils.ComputeTriangleTexCoords(VDA1, FMesh.Indices);
+        VDA2 := TVectorDataAccess.Create(FMesh.Normals.Data, vtFloat, 3, 3*SizeOf(Single), FMesh.Normals.Count);
+        VDA3 := TVectorDataAccess.Create(FMesh.TexCoords.Data, vtFloat, 2, 2*SizeOf(Single), FMesh.TexCoords.Count);
+        MeshUtils.WeldVertices([VDA1, VDA2, VDA3], ListArray, FMesh.Indices);
+        FMesh.Positions.Destroy;
+        FMesh.Normals.Destroy;
+        FMesh.TexCoords.Destroy;
+        FMesh.Positions := ListArray[0] as TVec3List;
+        FMesh.Normals := ListArray[1] as TVec3List;
+        FMesh.TexCoords := ListArray[2] as TVec2List;
       end
       else
       begin
-        Vertices.Destroy;
-        TexCoords.Destroy;
+        // В случае непонятного бага с глифом
+        FMesh.Positions.Clear;
+        FMesh.Normals := TVec3List.Create;
+        FMesh.TexCoords := TVec2List.Create;
+        SetLength(FMesh.Indices, 0);
       end;
     finally
-      LMesh.Destroy;
-      Vertices := nil;
-      Normals := nil;
-      TexCoords := nil;
+      tempPositions.Destroy;
     end;
   end;
 end;
 
-destructor TVF_ExtrGlyph.Destroy;
-begin
-  inherited Destroy;
-end;
 {$ENDREGION}
 {$REGION 'TVF_GlyphContainer'}
 // ------------------
@@ -1488,7 +1530,7 @@ begin
 end;
 
 function TVF_GlyphContainer.AddToMesh(ACharacterCode, ANextCharacterCode
-  : Cardinal; APen: TVector; AVO: TVertexObject): TGLUAffineVector;
+  : Cardinal; APen: TVector; var aMesh: TVF_GlyphMesh): TVector;
 var
   KernAdvance: TGLUAffineVector;
   adv: Single;
@@ -1504,10 +1546,10 @@ begin
     KernAdvance := FFace.KernAdvance(left, right);
 
     if FFace.Error = 0 then
-      adv := FGlyphList[FCharMap.GlyphListIndex(ACharacterCode)].AddToMesh(AVO, APen);
+      adv := FGlyphList[FCharMap.GlyphListIndex(ACharacterCode)].Join(aMesh, APen);
 
-    KernAdvance.V[0] := KernAdvance.V[0] + adv;
-    Result := KernAdvance;
+    Result := TVector.Null;
+    Result[0] := KernAdvance.V[0] + adv;
   end;
 end;
 
@@ -1534,23 +1576,65 @@ end;
 // ------------------ TVF_Font ------------------
 // ------------------
 
-procedure TVF_Font.AddToMesh(const AStr: string; AVO: TVertexObject);
+function TVF_Font.CreateVertexObject(const AStr: string): TVertexObject;
 var
   I: Integer;
   G, ng: Cardinal;
-  KernAdvance: TGLUAffineVector;
+  VO: TVertexObject;
+  Mesh: TVF_GlyphMesh;
+  Pen: TVector;
+  Attr: TAttribBuffer;
 begin
-  FPen := TVector.Null;
-  for I := 1 to Length(AStr) do
-  begin
-    GetGlyphs(AStr, I, G, ng);
-    CheckGlyph(G);
-    CheckGlyph(ng);
-    KernAdvance := FGlyphList.AddToMesh(G, ng, FPen, AVO);
-    FPen[0] := FPen[0] + KernAdvance.V[0];
-    FPen[1] := FPen[1] + KernAdvance.V[1];
-    FPen[2] := FPen[2] + KernAdvance.V[2];
+  VO := TVertexObject.Create;
+  Mesh.FaceType := ftTriangles;
+  Mesh.Positions := TVec3List.Create;
+  Mesh.Normals := TVec3List.Create;
+  Mesh.TexCoords := TVec2List.Create;
+  SetLength(Mesh.Indices, 0);
+  Pen := TVector.Null;
+
+  try
+
+    for I := 1 to Length(AStr) do
+    begin
+      GetGlyphs(AStr, I, G, ng);
+      CheckGlyph(G);
+      CheckGlyph(ng);
+      Pen := Pen + FGlyphList.AddToMesh(G, ng, Pen, Mesh);
+    end;
+
+    Attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name, 3,
+      vtFloat, 0, btArray);
+    Attr.Buffer.Allocate(Mesh.Positions.Size, Mesh.Positions.Data);
+    Attr.Buffer.SetDataHandler(Mesh.Positions);
+    Attr.SetAttribSemantic(atVertex);
+    VO.AddAttrib(Attr, True);
+
+    Attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atNormal].Name, 3,
+      vtFloat, 0, btArray);
+    Attr.Buffer.Allocate(Mesh.Normals.Size, Mesh.Normals.Data);
+    Attr.Buffer.SetDataHandler(Mesh.Normals);
+    Attr.SetAttribSemantic(atNormal);
+    VO.AddAttrib(Attr);
+
+    Attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord0].Name, 2,
+      vtFloat, 0, btArray);
+    Attr.Buffer.Allocate(Mesh.TexCoords.Size, Mesh.TexCoords.Data);
+    Attr.Buffer.SetDataHandler(Mesh.TexCoords);
+    Attr.SetAttribSemantic(atTexCoord0);
+    VO.AddAttrib(Attr);
+
+    VO.SetIndices(Mesh.Indices);
+    VO.FaceType := Mesh.FaceType;
+
+  except
+    VO.Destroy;
+    Mesh.Positions.Destroy;
+    Mesh.Normals.Destroy;
+    Mesh.TexCoords.Destroy;
+    raise;
   end;
+  Result := VO;
 end;
 
 function TVF_Font.Advance(const AStr: string): Single;
@@ -1717,14 +1801,14 @@ end;
 constructor TVF_ExtrudedFont.Create(const AFontName: string);
 begin
   inherited Create(AFontName);
-  FDepth := 0;
+  FThickness := 0;
 end;
 
 constructor TVF_ExtrudedFont.Create(pBufferBytes: FT_Byte_ptr;
   bufferSizeInBytes: Cardinal);
 begin
   inherited Create(pBufferBytes, bufferSizeInBytes);
-  FDepth := 0;
+  FThickness := 0;
 end;
 
 function TVF_ExtrudedFont.MakeGlyph(G: Cardinal): TVF_Glyph;
@@ -1736,7 +1820,7 @@ begin
 
   if Assigned(ftGlyph) then
   begin
-    tempGlyph := TVF_ExtrGlyph.Create(ftGlyph, FDepth);
+    tempGlyph := TVF_ExtrGlyph.Create(ftGlyph, FThickness);
     Result := tempGlyph;
     Exit;
   end;
@@ -1755,6 +1839,7 @@ class procedure VectorFontLibrary.Initialize;
 var
   major, minor, patch: Integer;
 begin
+  FJunk := TObjectList.Create;
   FFontCache := TFontCache.Create(CompareStr, nil);
 
   if InitFreetype then
@@ -1790,18 +1875,29 @@ begin
 end;
 
 class procedure VectorFontLibrary.Finalize;
+var
+  I: Integer;
 begin
   if Assigned(FTesselator) then
+  begin
     gluDeleteTess(FTesselator);
+    FTesselator := nil;
+  end;
   if Assigned(FFontCache) then
   begin
     FFontCache.ForEach(DestroyFonts);
-    FFontCache.Destroy;
+    FreeAndNil(FFontCache);
   end;
   if Assigned(FLibrary) then
   begin
     FT_Done_FreeType(FLibrary);
     FLibrary := nil;
+  end;
+  if Assigned(FJunk) then
+  begin
+    for I := 0 to FJunk.Count - 1 do
+      FJunk[I].Destroy;
+    FreeAndNil(FJunk);
   end;
   CloseFreetype;
 end;
@@ -1815,20 +1911,11 @@ class function VectorFontLibrary.CreateText(const AFontLabel: string;
   const AText: UnicodeString): TVertexObject;
 var
   font: TVF_Font;
-  VO: TVertexObject;
 begin
-  Result := nil;
   if VectorFontLibrary.FFontCache.Find(AFontLabel, font) then
-  begin
-    VO := TVertexObject.Create;
-    try
-      font.AddToMesh(AText, VO);
-    except
-      VO.Free;
-      raise;
-    end;
-    Result := VO;
-  end;
+    Result := font.CreateVertexObject(AText)
+  else
+    Result := nil;
 end;
 
 class procedure VectorFontLibrary.BuildSystemFont(const AFontLabel,
@@ -1863,7 +1950,7 @@ begin
   if AnExtrusion > 0 then
   begin
     font := TVF_ExtrudedFont.Create(AFontFile);
-    TVF_ExtrudedFont(font).depth := AnExtrusion;
+    TVF_ExtrudedFont(font).Thickness := AnExtrusion;
   end
   else
     font := TVF_PolygonFont.Create(AFontFile);

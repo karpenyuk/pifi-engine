@@ -6,7 +6,7 @@
 
 interface
 
-uses uVMath, uLists;
+uses uVMath;
 
 Type
 {$IFNDEF FPC}
@@ -26,7 +26,8 @@ Type
 //  TPtrList = TDataList<pointer>;
 //  TObjectList = TDataList<TObject>;
 
-  TValueType = (vtByte, vtWord, vtInt, vtUint, vtFloat);
+  TValueType = (vtByte, vtWord, vtInt, vtUint, vtFloat, vtDouble);
+  TValueComponent = 1..4;
 
   TShaderType = (stVertex, stTessControl, stTessEval,stGeometry, stFragment, stCompute);
 
@@ -194,8 +195,33 @@ Type
   //Приоритет использования шейдера, если назначены оба или один не доступен
   TShaderUsagePriority = (spUseOwnShaderFirst, spUseActiveShaderFirst);
 
+  TAbstractDataList = class
+  protected
+    function getCount: Integer; virtual; abstract;
+    procedure setCount(const Value: Integer); virtual; abstract;
+  public
+    constructor Create; virtual;
+    function AddRaw(Item: Pointer): Integer; virtual; abstract;
+    procedure Join(AList: TAbstractDataList; const AMatrix: TMatrix);
+      virtual; abstract;
+    procedure Flush; virtual; abstract;
+    procedure Clear; virtual; abstract;
+    function GetItemAddr(AnIndex: Integer): Pointer; virtual; abstract;
+    function IsItemsEqual(Index1, Index2: Integer): Boolean; virtual; abstract;
+    function ItemSize(): Integer; virtual; abstract;
+    procedure Transform(const AMatrix: TMatrix); virtual;
+    function GetItemAsVector(AnIndex: Integer): TVector; virtual;
+    procedure SetItemAsVector(AnIndex: Integer;
+      const aVector: TVector); virtual;
+    property Count: Integer read getCount write setCount;
+  end;
+
+  TAbstractDataListClass = class of TAbstractDataList;
+
+  TAbstractDataListArray = array of TAbstractDataList;
+
 const
-  CValueSizes: array[TValueType] of byte = (1, 2, 4, 4, 4);
+  CValueSizes: array[TValueType] of byte = (1, 2, 4, 4, 4, 8);
 
   CAttribSematics: array[TAttribType] of TAttribSemantic =
   (
@@ -237,5 +263,27 @@ const
   NM_ObjectDestroyed = 10201;
 
 implementation
+
+{ TAbstractDataList }
+
+constructor TAbstractDataList.Create;
+begin
+end;
+
+function TAbstractDataList.GetItemAsVector(AnIndex: Integer): TVector;
+begin
+  result.vec4 := VecNull;
+end;
+
+procedure TAbstractDataList.SetItemAsVector(AnIndex: Integer;
+  const aVector: TVector);
+begin
+  Assert(false);
+end;
+
+procedure TAbstractDataList.Transform(const AMatrix: TMatrix);
+begin
+  Assert(false);
+end;
 
 end.

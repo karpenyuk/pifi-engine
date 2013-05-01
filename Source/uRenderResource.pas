@@ -19,7 +19,7 @@ interface
 
 uses
   SysUtils, Classes, uLists, uVMath, uMiscUtils, uBaseTypes, uBaseClasses,
-  uGenericsRBTree, uPersistentClasses;
+  uGenericsRBTree, uPersistentClasses, uDataAccess;
 
 const
   cDiffuseColor: vec4 = (0.8, 0.8, 0.8, 1);
@@ -470,17 +470,20 @@ Type
 
   TAttribObject = class(TBaseRenderResource)
   private
+    FValue: TVector;
     FBuffer: TBufferObject;
     FIteratorPtr: Pointer;
 
     procedure SetName(const Value: ansistring);
-    procedure setSize(const Value: integer);
+    procedure setSize(const Value: TValueComponent);
     procedure setStride(const Value: integer);
     procedure setType(const Value: TValueType);
+    function GetValue: TVector;
+    procedure SetValue(const Value: TVector);
   protected
     FSettedParam: set of (apAttrName, apAttrSize, apAttrType, apAttrStride);
     FAttribName: ansistring;
-    FSize: integer;
+    FSize: TValueComponent;
     FType: TValueType;
     FStride: integer;
     FNormalized: boolean;
@@ -489,7 +492,7 @@ Type
     FTagObject: TObject;
   public
     constructor Create; override;
-    constructor CreateAndSetup(AttrName: ansistring; aSize: integer;
+    constructor CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
       AType: TValueType = vtFloat; AStride: integer = 0;
       BuffType: TBufferType = btArray); virtual;
     constructor CreateClone(ASample: TAttribObject);
@@ -500,12 +503,14 @@ Type
     procedure AssignBuffer(aBuffer: TBufferObject);
     procedure SetAttribSemantic(aSemantic: TAttribType);
     function IsEqual(AnObject: TAttribObject): Boolean;
+    function GetVectorDataAccess: TVectorDataAccess;
 
+    property Value: TVector read GetValue write SetValue;
     property Normalized: boolean read FNormalized write FNormalized;
     property Buffer: TBufferObject read FBuffer;
     property ElementSize: integer read FElementSize;
 
-    property AttrSize: integer read FSize write setSize;
+    property AttrSize: TValueComponent read FSize write setSize;
     property AttrType: TValueType read FType write setType;
     property AttrName: ansistring read FAttribName write SetName;
     property AttrStride: integer read FStride write setStride;
@@ -517,7 +522,7 @@ Type
 
   TAttribBuffer = class(TAttribObject)
   public
-    constructor CreateAndSetup(AttrName: ansistring; aSize: integer;
+    constructor CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
       AType: TValueType = vtFloat; AStride: integer = 0;
       BuffType: TBufferType = btArray); override;
     destructor Destroy; override;
@@ -582,7 +587,6 @@ Type
     FRestartIndex: integer;
 
     function getAttrib(Index: integer): TAttribObject;
-    function MakeTrianglesIndices(): TIntegerArray;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -600,6 +604,7 @@ Type
     procedure AddQuad(i1, i2, i3, i4: integer);
     procedure ReservIndices(Capacity: integer);
     function GetIndices: TIntegerArray;
+    procedure SetIndices(const anIndices: TIntegerArray);
     procedure SetAdjacencyIndices(const AnIndices: TIntegerArray);
 
     function AddSubMeshArrays(APrimType: TFaceType; AVertexCount: integer;
@@ -609,28 +614,7 @@ Type
       AMaterialName: string; AStartingIndex: integer = 0; aName: string = '')
       : PSubMesh;
 
-    // Удаление атрибутов и индексов
     procedure Clear;
-    // Присоединение геометрии другого TVertexObject трансформирую её матрицей
-    procedure Join(AnObject: TVertexObject; const AMatrix: TMatrix);
-    // Сварка вершин
-    procedure WeldVertices;
-    // Каждая вершина становится уникальной, значения индексов не повторяется
-    procedure UnWeldVertices;
-    // Конвертирует полосы и вееры треугольников в отдельные треугольники
-    procedure Triangulate;
-    // Конвертирует полилинии в сегменты
-    procedure LineSegmentation;
-    // Создает нормали
-    procedure ComputeNormals(ASmooth: boolean);
-    // Создает касательные
-    procedure ComputeTangents(ATexCoord: TAttribType = atTexCoord0);
-    // Создает текстурные координаты
-    procedure ComputeTexCoords(ATexCoord: TAttribType = atTexCoord0);
-    // Создает индексы смежных треугольников
-    procedure ComputeTriangleAdjacency;
-    // Трансформирует вершины, нормали и касательные
-    procedure Transform(const AMatrix: TMatrix);
 
     property Attribs[index: integer]: TAttribObject read getAttrib; default;
     property SubMeshes[index: integer]: PSubMesh read getSubMesh;
@@ -1298,7 +1282,6 @@ destructor TBufferObject.Destroy;
 begin
   if Assigned(FDataHandler) then
   begin
-    FDataHandler.UnSubscribe(Self);
     if FHandlerOwned then
       FreeAndNil(FDataHandler);
   end;
@@ -1338,18 +1321,11 @@ end;
 procedure TBufferObject.SetDataHandler(aDataHandler: TAbstractDataList;
   aOwned: boolean);
 begin
-  if Assigned(FDataHandler) then
-  begin
-    FDataHandler.UnSubscribe(Self);
-    if FHandlerOwned then
+  if Assigned(FDataHandler) and FHandlerOwned then
       FreeAndNil(FDataHandler);
-  end;
 
   FDataHandler := aDataHandler;
   FHandlerOwned := aOwned;
-
-  if Assigned(FDataHandler) then
-    FDataHandler.Subscribe(Self);
 end;
 
 procedure TBufferObject.Update;
@@ -1379,7 +1355,7 @@ begin
   FIteratorPtr := nil;
 end;
 
-constructor TAttribObject.CreateAndSetup(AttrName: ansistring; aSize: integer;
+constructor TAttribObject.CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
       AType: TValueType = vtFloat; AStride: integer = 0;
       BuffType: TBufferType = btArray);
 begin
@@ -1389,7 +1365,7 @@ begin
   FType := AType;
   FStride := AStride;
   if AStride = 0 then
-    FElementSize := aSize * CValueSizes[AType]
+    FElementSize := Ord(aSize) * CValueSizes[AType]
   else
     FElementSize := AStride;
   include(FSettedParam, apAttrName);
@@ -1411,6 +1387,24 @@ begin
     FBuffer.DataHandler.Join(ASample.FBuffer.DataHandler, TMatrix.IdentityMatrix);
     FBuffer.Subscribe(Self);
   end;
+end;
+
+function TAttribObject.GetValue: TVector;
+begin
+  Result := FValue;
+end;
+
+function TAttribObject.GetVectorDataAccess: TVectorDataAccess;
+var
+  aCount: Integer;
+begin
+  if Assigned(FBuffer) then
+  begin
+    aCount := FBuffer.Size div Ord(FSize) * CValueSizes[FType];
+    Result := TVectorDataAccess.Create(FBuffer.Data, FType, FSize, FElementSize, aCount);
+  end
+  else
+    Result := TVectorDataAccess.Create(FValue.GetAddr, FType, FSize, FElementSize, 1);
 end;
 
 function TAttribObject.IsEqual(AnObject: TAttribObject): Boolean;
@@ -1452,7 +1446,7 @@ begin
   include(FSettedParam, apAttrName);
 end;
 
-procedure TAttribObject.setSize(const Value: integer);
+procedure TAttribObject.setSize(const Value: TValueComponent);
 begin
   FSize := Value;
   include(FSettedParam, apAttrSize);
@@ -1470,9 +1464,18 @@ begin
   include(FSettedParam, apAttrType);
 end;
 
+procedure TAttribObject.SetValue(const Value: TVector);
+begin
+  if FValue <> Value then
+  begin
+    FValue := Value;
+    DispatchMessage(NM_ResourceChanged);
+  end;
+end;
+
 { TAttribBuffer }
 
-constructor TAttribBuffer.CreateAndSetup(AttrName: ansistring; aSize: integer;
+constructor TAttribBuffer.CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
       AType: TValueType = vtFloat; AStride: integer = 0;
       BuffType: TBufferType = btArray);
 begin
@@ -1515,6 +1518,14 @@ begin
     FVertexAttribIndex := Result;
 
   DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TVertexObject.SetIndices(const anIndices: TIntegerArray);
+begin
+  FIndices := Copy(anIndices, 0, Length(anIndices));
+  FIndiceCount := Length(anIndices);
+  if FIndiceCount = 0 then
+    ReservIndices(4);
 end;
 
 procedure TVertexObject.AddLine(i1, i2: integer);
@@ -1663,721 +1674,10 @@ begin
   DispatchMessage(NM_ResourceChanged);
 end;
 
-procedure TVertexObject.ComputeNormals(ASmooth: boolean);
-var
-  i, J, E, E_, T, EJ: integer;
-  Vertices: TAbstractDataList;
-  PBIndices: TIntegerArray;
-  p0, p1, p2, dp0, dp1, fNormal, nNormal, cNormal: TVector;
-  NewNormals, Normals: TVec3List;
-  NewNormalIndices: TIntegerList;
-  collisionMap: TIntIntRBTree;
-  Agrees: boolean;
-  NormalBuffer: TAttribBuffer;
-
-begin
-  if not(FFaceType in [ftTriangleStrip, ftTriangleFan, ftTriangles]) then
-    exit;
-
-  if FVertexAttribIndex = -1 then
-    exit;
-
-  BeginUpdate;
-
-  try
-
-    Vertices := Attribs[FVertexAttribIndex].FBuffer.DataHandler;
-
-    FAttribs.ExtractAttrib(atNormal);
-
-    Triangulate;
-
-    if ASmooth then
-    begin
-      // Делаем сваривание вершим по равенству их позиций
-      setlength(PBIndices, FIndiceCount);
-      for i := 1 to FIndiceCount - 1 do
-      begin
-        E := FIndices[i];
-        PBIndices[i] := E;
-        for J := 0 to i - 1 do
-        begin
-          E_ := PBIndices[J];
-          if E = E_ then
-            continue;
-          if Vertices.IsItemsEqual(E, E_) then
-          begin
-            PBIndices[i] := E_;
-            break;
-          end;
-        end;
-      end;
-    end
-    else
-    begin
-      UnWeldVertices;
-      PBIndices := Copy(FIndices, 0, FIndiceCount);
-    end;
-
-    NewNormals := TVec3List.Create;
-    NewNormals.Count := FIndiceCount;
-    NewNormalIndices := TIntegerList.Create;
-
-    // The collision map records any alternate locations for the normals
-    if ASmooth then
-    begin
-      collisionMap := TIntIntRBTree.Create(CompareInteger, CompareInteger_);
-      collisionMap.DuplicateKeys := true;
-    end
-    else
-      collisionMap := nil;
-
-    // Iterate over the faces, computing the face normal and summing it them
-    for T := 0 to Length(PBIndices) div 3 - 1 do
-    begin
-      E := 3 * T;
-      p0 := Vertices.GetItemAsVector(PBIndices[E]);
-      p1 := Vertices.GetItemAsVector(PBIndices[E + 1]);
-      p2 := Vertices.GetItemAsVector(PBIndices[E + 2]);
-
-      // Compute the edge vectors
-      dp0 := p1 - p0;
-      dp1 := p2 - p0;
-
-      // Compute the face normal
-      fNormal := dp0.Cross(dp1);
-
-      if not ASmooth then
-      begin
-        NewNormals[E] := fNormal.vec3;
-        NewNormalIndices.Add(E);
-        inc(E);
-        NewNormals[E] := fNormal.vec3;
-        NewNormalIndices.Add(E);
-        inc(E);
-        NewNormals[E] := fNormal.vec3;
-        NewNormalIndices.Add(E);
-        continue;
-      end;
-
-      // Compute a normalized normal
-      nNormal := fNormal.Normalize;
-
-      // Iterate over the vertices, adding the face normal influence to each
-      for J := 0 to 2 do
-      begin
-        // Get the current normal from the default location (index shared with position)
-        EJ := PBIndices[E + J];
-        cNormal := NewNormals[EJ];
-
-        // Check to see if this normal has not yet been touched
-        if cNormal.IsNull then
-        begin
-          // First instance of this index, just store it as is
-          NewNormals[EJ] := fNormal.vec3;
-          NewNormalIndices.Add(EJ);
-        end
-        else
-        begin
-          // Check for agreement
-
-          if cNormal.Normalize.Dot(nNormal) >= cos(3.1415926 * 0.333333) then
-          begin
-            // Normal agrees, so add it
-            cNormal := cNormal + fNormal;
-            NewNormals[EJ] := cNormal.vec3;
-            NewNormalIndices.Add(EJ);
-          end
-          else
-          begin
-            // Normals disagree, this vertex must be along a facet edge
-            Agrees := false;
-            if collisionMap.Find(EJ, E_) then
-            begin
-              // Loop through all hits on this index, until one agrees
-              repeat
-                cNormal := NewNormals[E_];
-                if cNormal.Normalize.Dot(nNormal) >= cos(3.1415926 * 0.333333)
-                then
-                begin
-                  Agrees := true;
-                  break;
-                end;
-              until not collisionMap.NextDublicate(E_);
-            end;
-
-            // Check for agreement with an earlier collision
-            if Agrees then
-            begin
-              // Found agreement with an earlier collision, use that one
-              cNormal := cNormal + fNormal;
-              NewNormals[E_] := cNormal.vec3;
-              NewNormalIndices.Add(E_);
-            end
-            else
-            begin
-              // We have a new collision, create a new normal
-              NewNormalIndices.Add(NewNormals.Count);
-              collisionMap.Add(EJ, NewNormals.Count);
-              NewNormals.Add(fNormal.vec3);
-            end;
-          end; // else ( if normal agrees)
-        end; // else (if normal is uninitialized)
-      end; // for each vertex in triangle
-    end; // for each face
-
-    if ASmooth then
-      UnWeldVertices;
-
-    Normals := TVec3List.Create;
-    Normals.Count := NewNormalIndices.Count;
-    for I := 0 to NewNormalIndices.Count - 1 do
-    begin
-      E := NewNormalIndices[I];
-      cNormal.Vec3 := NewNormals[E];
-      cNormal.SetNormalize;
-      E_ := FIndices[I];
-      Normals[E_] := cNormal.Vec3;
-    end;
-
-    NormalBuffer := TAttribBuffer.CreateAndSetup(
-      CAttribSematics[atNormal].Name, 3, vtFloat, 0, btArray);
-    with NormalBuffer do
-    begin
-      Buffer.SetDataHandler(Normals);
-      SetAttribSemantic(atNormal);
-    end;
-    AddAttrib(NormalBuffer, false);
-
-    NewNormals.Destroy;
-    NewNormalIndices.Destroy;
-    collisionMap.Free;
-    WeldVertices;
-
-  finally
-    EndUpdate;
-  end;
-end;
-
-procedure TVertexObject.ComputeTangents(ATexCoord: TAttribType);
-var
-  a, T, i, J, E, EJ, E_: integer;
-  p0, p1, p2, dp0, dp1, st0, st1, st2, dst0, dst1, fTangent, nTangent,
-    cTangent: TVector;
-  factor: single;
-  Vertices, TexCoords, Normals, Binormals, Tangents: TAttribBuffer;
-  newTangents, newBinormals, tempList: TVec3List;
-  newTangentIndices: TIntegerList;
-  collisionMap: TIntIntRBTree;
-  Agrees: boolean;
-
-begin
-  if FVertexAttribIndex = -1 then
-    exit;
-  if not(Attribs[FVertexAttribIndex] is TAttribBuffer) then
-    exit;
-
-  Vertices := TAttribBuffer(Attribs[FVertexAttribIndex]);
-  if Attribs[FVertexAttribIndex].FType <> vtFloat then
-    exit;
-
-  TexCoords := FAttribs.GetAttribBuffer(ATexCoord);
-  if not assigned(TexCoords) then
-    exit;
-  if TexCoords.FType <> vtFloat then
-    exit;
-
-  BeginUpdate;
-
-  try
-
-    Triangulate;
-
-    newTangents := TVec3List.Create;
-    newTangentIndices := TIntegerList.Create;
-
-    // The collision map records any alternate locations for the tangent
-    collisionMap := TIntIntRBTree.Create(CompareInteger, CompareInteger_);
-    collisionMap.DuplicateKeys := true;
-    fTangent.vec4 := VecNull;
-
-    // Iterate over the faces, computing the face normal and summing it them
-    for T := 0 to FIndiceCount div 3 - 1 do
-    begin
-      E := 3 * T;
-      p0 := Vertices.Buffer.DataHandler.GetItemAsVector(FIndices[E]);
-      p1 := Vertices.Buffer.DataHandler.GetItemAsVector(FIndices[E + 1]);
-      p2 := Vertices.Buffer.DataHandler.GetItemAsVector(FIndices[E + 2]);
-      st0 := Vertices.Buffer.DataHandler.GetItemAsVector(FIndices[E]);
-      st1 := Vertices.Buffer.DataHandler.GetItemAsVector(FIndices[E + 1]);
-      st2 := Vertices.Buffer.DataHandler.GetItemAsVector(FIndices[E + 2]);
-
-      // Compute the edge and tc differentials
-      dp0 := p1 - p0;
-      dp1 := p2 - p0;
-      dst0 := st1 - st0;
-      dst1 := st2 - st0;
-
-      factor := 1.0 / (dst0[0] * dst1[1] - dst1[0] * dst0[1]);
-
-      // compute fTangent
-      fTangent[0] := dp0[0] * dst1[1] - dp1[0] * dst0[1];
-      fTangent[1] := dp0[1] * dst1[1] - dp1[1] * dst0[1];
-      fTangent[2] := dp0[2] * dst1[1] - dp1[2] * dst0[1];
-      fTangent := fTangent.Scale(factor);
-
-      // should this really renormalize?
-      nTangent := fTangent.Normalize;
-
-      // Iterate over the vertices, adding the face normal influence to each
-      for J := 0 to 2 do
-      begin
-        // Get the current normal from the default location (index shared with position)
-        EJ := FIndices[E + J];
-        cTangent.vec3 := newTangents[EJ];
-
-        // Check to see if this normal has not yet been touched
-        if cTangent.IsNull then
-        begin
-          // First instance of this index, just store it as is
-          newTangents[EJ] := fTangent.vec3;
-          newTangentIndices.Add(EJ);
-        end
-        else
-        begin
-          // Check for agreement
-          if cTangent.Normalize.Dot(nTangent) >= cos(3.1415926 * 0.333333) then
-          begin
-            // Normal agrees, so add it
-            cTangent := cTangent + fTangent;
-            newTangents[EJ] := cTangent.vec3;
-            newTangentIndices.Add(EJ);
-          end
-          else
-          begin
-            // Normals disagree, this vertex must be along a facet edge
-            Agrees := false;
-            if collisionMap.Find(EJ, E_) then
-            begin
-              // Loop through all hits on this index, until one agrees
-              repeat
-                cTangent := newTangents[E_];
-                if cTangent.Normalize.Dot(nTangent) >= cos(3.1415926 * 0.333333)
-                then
-                begin
-                  Agrees := true;
-                  break;
-                end;
-              until not collisionMap.NextDublicate(E_);
-            end;
-
-            // Check for agreement with an earlier collision
-            if Agrees then
-            begin
-              // Found agreement with an earlier collision, use that one
-              cTangent := cTangent + fTangent;
-              newTangents[E_] := cTangent.vec3;
-              newTangentIndices.Add(E_);
-            end
-            else
-            begin
-              // We have a new collision, create a new normal
-              newTangentIndices.Add(newTangents.Count);
-              collisionMap.Add(EJ, newTangents.Count);
-              newTangents.Add(fTangent.vec3);
-            end;
-          end; // else ( if tangent agrees)
-        end; // else (if tangent is uninitialized)
-      end; // for each vertex in triangle
-    end; // for each face
-
-    // now normalize all the normals
-    newTangents.SetNormalize;
-
-    // Place new tangent
-    UnWeldVertices;
-
-    FAttribs.ExtractAttrib(atTangent);
-    FAttribs.ExtractAttrib(atBinormal);
-
-    tempList := TVec3List.Create;
-    tempList.Count := newTangentIndices.Count;
-    for i := 0 to newTangentIndices.Count - 1 do
-    begin
-      E := newTangentIndices[i];
-      E_ := FIndices[i];
-      tempList[E_] := newTangents[E];
-    end;
-    newTangents.Destroy;
-    newTangents := tempList;
-
-    Normals := FAttribs.GetAttribBuffer(atNormal);
-    if assigned(Normals) then
-    begin
-      if Normals.Buffer.DataHandler is TVec3List then
-      begin
-        tempList := TVec3List(Normals.Buffer.DataHandler);
-        newBinormals := tempList.Cross(newTangents);
-        Binormals := TAttribBuffer.CreateAndSetup(
-          CAttribSematics[atBinormal].Name, 3, vtFloat, 0, btArray);
-        with Binormals do
-        begin
-          Buffer.SetDataHandler(newBinormals);
-          SetAttribSemantic(atBinormal);
-        end;
-        AddAttrib(Binormals, false);
-      end;
-    end;
-
-    Tangents := TAttribBuffer.CreateAndSetup(CAttribSematics[atTangent].Name, 3,
-      vtFloat, 0, btArray);
-    with Tangents do
-    begin
-      Buffer.SetDataHandler(newTangents);
-      SetAttribSemantic(atTangent);
-    end;
-    AddAttrib(Tangents, false);
-
-    newTangentIndices.Destroy;
-    collisionMap.Destroy;
-
-  finally
-    EndUpdate;
-  end;
-end;
-
-procedure TVertexObject.ComputeTexCoords(ATexCoord: TAttribType);
-var
-  Vertices: TAbstractDataList;
-  NewTexCoords: TVec2List;
-  T, E, EJ: integer;
-  p0, p1, p2, dp0, dp1, fNormal, fTangent, fBinormal: TVector;
-  TBN: TMatrix;
-  TexCoords: TAttribBuffer;
-begin
-  if FVertexAttribIndex = -1 then
-    exit;
-  Vertices := Attribs[FVertexAttribIndex].Buffer.DataHandler;
-
-  BeginUpdate;
-
-  try
-    FAttribs.ExtractAttrib(ATexCoord);
-
-    Triangulate;
-
-    NewTexCoords := TVec2List.Create;
-    NewTexCoords.Count := FIndiceCount;
-
-    EJ := 0;
-    for T := 0 to FIndiceCount div 3 - 1 do
-    begin
-      E := 3 * T;
-      p0 := Vertices.GetItemAsVector(E);
-      p1 := Vertices.GetItemAsVector(E + 1);
-      p2 := Vertices.GetItemAsVector(E + 2);
-
-      // Compute the edge vectors
-      dp0 := p1 - p0;
-      dp1 := p2 - p0;
-
-      // Compute the face TBN
-      fNormal := dp0.Cross(dp1);
-      fNormal := fNormal.Normalize;
-      fTangent := dp0;
-      fTangent := fTangent.Normalize;
-      fBinormal := fNormal.Cross(fTangent);
-      TBN.Row[0] := fTangent.vec4;
-      TBN.Row[1] := fBinormal.vec4;
-      TBN.Row[2] := fNormal.vec4;
-      TBN := TBN.Invert;
-
-      p0 := TBN.Transform(p0);
-      NewTexCoords[EJ] := p0.Vec2;
-      inc(EJ);
-
-      p1 := TBN.Transform(p1);
-      NewTexCoords[EJ] := p1.Vec2;
-      inc(EJ);
-
-      p2 := TBN.Transform(p2);
-      NewTexCoords[EJ] := p2.Vec2;
-      inc(EJ);
-    end;
-
-    // Place new texture coordinates
-    UnWeldVertices;
-
-    TexCoords := TAttribBuffer.CreateAndSetup(
-      CAttribSematics[ATexCoord].Name, 2, vtFloat, 0, btArray);
-    with TexCoords do
-    begin
-      Buffer.SetDataHandler(NewTexCoords);
-      SetAttribSemantic(ATexCoord);
-    end;
-    AddAttrib(TexCoords, false);
-  finally
-    EndUpdate;
-  end;
-end;
-
-procedure TVertexObject.ComputeTriangleAdjacency;
-type
-  Vec4ui = array [0 .. 3] of LongInt;
-  PVec4ui = ^Vec4ui;
-var
-  edgeInfo: TTriangleEdgeInfoArray;
-  triangleNum: integer;
-  NewIndices: TIntegerList;
-
-  procedure joinTriangles(tri1: integer; edge1: cardinal; tri2: integer;
-    edge2: cardinal);
-  begin
-    assert((edge1 < 3) and (edge2 < 3),
-      'joinTriangles: Multiple edge detected.');
-
-    edgeInfo[tri1].adjacentTriangle[edge1] := tri2;
-    edgeInfo[tri1].adjacentTriangleEdges := edgeInfo[tri1]
-      .adjacentTriangleEdges and not(3 shl (2 * edge1));
-    edgeInfo[tri1].adjacentTriangleEdges := edgeInfo[tri1]
-      .adjacentTriangleEdges or (edge2 shl (2 * edge1));
-
-    edgeInfo[tri2].adjacentTriangle[edge2] := tri1;
-    edgeInfo[tri2].adjacentTriangleEdges := edgeInfo[tri2]
-      .adjacentTriangleEdges and not(3 shl (2 * edge2));
-    edgeInfo[tri2].adjacentTriangleEdges := edgeInfo[tri2]
-      .adjacentTriangleEdges or (edge1 shl (2 * edge2));
-  end;
-
-  procedure matchWithTriangleSharingEdge(triangle, edge, v0, v1,
-    otherv: Integer);
-
-  var
-    i: integer;
-    doubleTri: integer;
-    otherEdge: integer;
-    vertexIndex: PVec4ui;
-  begin
-    doubleTri := -1;
-    otherEdge := 0;
-    // Match shared edges based on vertex numbers (relatively fast).
-    for i := triangle + 1 to triangleNum - 1 do
-    begin
-      vertexIndex := NewIndices.GetItemAddr(i * 3);
-
-      if vertexIndex[0] = v0 then
-        if vertexIndex[2] = v1 then
-          if edgeInfo[i].adjacentTriangle[2] = $FFFFFFFF then
-            if vertexIndex[1] = otherv then
-            begin
-              if (doubleTri < 0) then
-              begin
-                doubleTri := i;
-                otherEdge := 2;
-              end;
-            end
-            else
-            begin
-              joinTriangles(i, 2, triangle, edge);
-              exit;
-            end;
-
-      if vertexIndex[1] = v0 then
-        if vertexIndex[0] = v1 then
-          if edgeInfo[i].adjacentTriangle[0] = $FFFFFFFF then
-            if vertexIndex[2] = otherv then
-            begin
-              if doubleTri < 0 then
-              begin
-                doubleTri := i;
-                otherEdge := 0;
-              end;
-            end
-            else
-            begin
-              joinTriangles(i, 0, triangle, edge);
-              exit;
-            end;
-
-      if vertexIndex[2] = v0 then
-        if vertexIndex[1] = v1 then
-          if edgeInfo[i].adjacentTriangle[1] = $FFFFFFFF then
-            if vertexIndex[0] = otherv then
-            begin
-              if doubleTri < 0 then
-              begin
-                doubleTri := i;
-                otherEdge := 1;
-              end;
-            end
-            else
-            begin
-              joinTriangles(i, 1, triangle, edge);
-              exit;
-            end;
-    end;
-
-    // Only connect a triangle to a triangle with the exact
-    // same three vertices as a last resort.
-    if doubleTri >= 0 then
-      joinTriangles(doubleTri, otherEdge, triangle, edge);
-  end;
-
-  procedure CheckForBogusAdjacency;
-
-    function AdjacentEdge(x, n: integer): integer;
-    begin
-      result := (x shr (2 * n)) and 3;
-    end;
-
-  var
-    i, J: integer;
-    adjacentTriangle, adjacentTriangleSharedEdge: Integer;
-  begin
-    for i := 0 to triangleNum - 1 do
-      for J := 0 to 2 do
-      begin
-        adjacentTriangleSharedEdge :=
-          AdjacentEdge(edgeInfo[i].adjacentTriangleEdges, J);
-        adjacentTriangle := edgeInfo[i].adjacentTriangle[J];
-        if adjacentTriangle <> -1 then
-        begin
-          assert(adjacentTriangleSharedEdge < 3);
-          assert(edgeInfo[adjacentTriangle].adjacentTriangle
-            [adjacentTriangleSharedEdge] = LongWord(i));
-          assert(AdjacentEdge(edgeInfo[adjacentTriangle].adjacentTriangleEdges,
-            adjacentTriangleSharedEdge) = J);
-        end
-        else
-          assert(adjacentTriangleSharedEdge = 3);
-      end;
-  end;
-
-  function AdjacentEdge(x, n: integer): integer;
-  begin
-    result := (x shr (2 * n)) and 3;
-  end;
-
-var
-  Vertices: TAbstractDataList;
-  i, J, K: integer;
-  vertexIndex, tri, adjtri: PVec4ui;
-  n, ii, jj: Integer;
-begin
-  assert(FFaceType in [ftTriangleStrip, ftTriangleFan, ftTriangles]);
-
-  if FVertexAttribIndex = -1 then
-    exit;
-  Vertices := Attribs[FVertexAttribIndex].Buffer.DataHandler;
-
-  BeginUpdate;
-
-  NewIndices := TIntegerList.Create;
-
-  try
-
-    Triangulate;
-    for i := 1 to FIndiceCount - 1 do
-    begin
-      ii := FIndices[i];
-      for J := 0 to i - 1 do
-      begin
-        jj := FIndices[J];
-        if ii = jj then
-          continue;
-        if Vertices.IsItemsEqual(ii, jj) then
-        begin
-          FIndices[i] := jj;
-          break;
-        end;
-      end;
-    end;
-
-    // Remove degenerate triangles
-    triangleNum := 0;
-    for i := 0 to FIndiceCount div 3 - 1 do
-    begin
-      vertexIndex := @FIndices[i * 3];
-      if (vertexIndex[0] = vertexIndex[1]) or (vertexIndex[0] = vertexIndex[2])
-        or (vertexIndex[1] = vertexIndex[2]) then
-        continue;
-      NewIndices.Add(vertexIndex[0]);
-      NewIndices.Add(vertexIndex[1]);
-      NewIndices.Add(vertexIndex[2]);
-      inc(triangleNum);
-    end;
-
-    // Initialize edge information as if all triangles are fully disconnected.
-    setlength(edgeInfo, triangleNum);
-    for i := 0 to triangleNum - 1 do
-    begin
-      edgeInfo[i].adjacentTriangle[0] := $FFFFFFFF; // Vertex 0,1 edge
-      edgeInfo[i].adjacentTriangle[1] := $FFFFFFFF; // Vertex 1,2 edge
-      edgeInfo[i].adjacentTriangle[2] := $FFFFFFFF; // Vertex 2,0 edge
-      edgeInfo[i].adjacentTriangleEdges := (3 shl 0) or (3 shl 2) or (3 shl 4);
-      edgeInfo[i].openEdgeMask := 0;
-    end;
-
-    try
-      for i := 0 to triangleNum - 1 do
-      begin
-        vertexIndex := NewIndices.GetItemAddr(i * 3);
-        if edgeInfo[i].adjacentTriangle[0] = $FFFFFFFF then
-          matchWithTriangleSharingEdge(i, 0, vertexIndex[0], vertexIndex[1],
-            vertexIndex[2]);
-        if edgeInfo[i].adjacentTriangle[1] = $FFFFFFFF then
-          matchWithTriangleSharingEdge(i, 1, vertexIndex[1], vertexIndex[2],
-            vertexIndex[0]);
-        if edgeInfo[i].adjacentTriangle[2] = $FFFFFFFF then
-          matchWithTriangleSharingEdge(i, 2, vertexIndex[2], vertexIndex[0],
-            vertexIndex[1]);
-      end;
-
-      CheckForBogusAdjacency;
-
-      setlength(FAdjacencyIndices, 2 * NewIndices.Count);
-      K := 0;
-
-      for i := 0 to triangleNum - 1 do
-      begin
-        n := 3 * i;
-        tri := NewIndices.GetItemAddr(n);
-        for J := 0 to 2 do
-        begin
-          FAdjacencyIndices[K] := tri^[J];
-          inc(K);
-          n := edgeInfo[i].adjacentTriangle[J];
-          if n = -1 then
-          begin
-            jj := (J + 2) mod 3;
-            FAdjacencyIndices[K] := tri^[jj];
-            inc(K);
-          end
-          else
-          begin
-            n := 3 * n;
-            adjtri := NewIndices.GetItemAddr(n);
-            ii := (AdjacentEdge(edgeInfo[i].adjacentTriangleEdges, J) +
-              2) mod 3;
-            FAdjacencyIndices[K] := adjtri^[ii];
-            inc(K);
-          end;
-        end;
-      end;
-    except
-      FAdjacencyIndices := nil;
-    end;
-    NewIndices.Destroy;
-  finally
-    EndUpdate;
-  end;
-end;
-
 constructor TVertexObject.Create;
 begin
   inherited;
   FAttribs := TAttribList.Create;
-  FAttribs.FreeingBehavior := fbManual;
   FStructureChanged := true;
   FIndiceChanged := false;
   FIndiceCount := 0;
@@ -2463,221 +1763,6 @@ begin
   result := FSubMeshes[index];
 end;
 
-procedure TVertexObject.Join(AnObject: TVertexObject; const AMatrix: TMatrix);
-var
-  I, J, IndexOffset, len: Integer;
-  attr: TAttribBuffer;
-  NMat: TMatrix;
-  IsIdent: Boolean;
-begin
-  Assert(AnObject.FaceType = FaceType);
-  if AnObject.FAttribs.Count = 0 then
-    exit;
-
-  IsIdent := AMatrix.IsIdentity;
-  if not IsIdent then
-    NMat := AMatrix.Normalize;
-
-  BeginUpdate;
-  try
-
-    if FAttribs.Count = 0 then
-    begin
-      FVertexAttribIndex := AnObject.FVertexAttribIndex;
-      for I := 0 to AnObject.FAttribs.Count - 1 do
-      begin
-        attr := TAttribBuffer.CreateClone(AnObject.Attribs[I]);
-        FAttribs.Add(attr);
-        attr.Subscribe(Self);
-        if not IsIdent then
-          case attr.FSemantic of
-            atVertex: attr.Buffer.DataHandler.Transform(AMatrix);
-            atNormal,
-            atTangent,
-            atBinormal: attr.Buffer.DataHandler.Transform(NMat);
-          end;
-      end;
-      FIndiceCount := AnObject.IndiceCount;
-      if FIndiceCount > 0 then
-        FIndices := Copy(AnObject.FIndices, 0, FIndiceCount);
-      FRestartIndex := AnObject.FRestartIndex;
-      FAdjacencyIndices := nil;
-      exit;
-    end
-    else
-    begin
-      for I := 0 to FAttribs.Count - 1 do
-      begin
-        attr := AnObject.FAttribs.GetAttribBuffer(Attribs[I].Semantic);
-        if Assigned(attr) and Attribs[I].IsEqual(attr) then
-           Attribs[I].TagObject := attr
-        else
-        begin
-          // Удаляем несовпадающие атрибуты
-          Attribs[I].UnSubscribe(Self);
-          FAttribs[I] := nil;
-        end;
-      end;
-      FAttribs.Pack;
-    end;
-
-    if FAttribs.Count > 0 then
-    begin
-      IndexOffset := FAttribs.First.FBuffer.DataHandler.Count;
-
-      for I := 0 to FAttribs.Count - 1 do
-      begin
-        attr := TAttribBuffer(Attribs[I].TagObject);
-        if not IsIdent then
-        begin
-          case attr.FSemantic of
-            atVertex: Attribs[I].FBuffer.DataHandler.Join(attr.FBuffer.DataHandler, AMatrix);
-            atNormal,
-            atTangent,
-            atBinormal: Attribs[I].FBuffer.DataHandler.Join(attr.Buffer.DataHandler, NMat);
-          else
-            Attribs[I].FBuffer.DataHandler.Join(attr.FBuffer.DataHandler, TMatrix.IdentityMatrix);
-          end;
-        end
-        else
-          Attribs[I].FBuffer.DataHandler.Join(attr.FBuffer.DataHandler, TMatrix.IdentityMatrix);
-      end;
-
-      len := Length(AnObject.FIndices);
-      if Length(FIndices) <= FIndiceCount + len then
-        setlength(FIndices, FIndiceCount + len + 10);
-      if len > 0 then
-        Move(AnObject.FIndices[0], FIndices[FIndiceCount], SizeOf(Integer)*len);
-      for J := 0 to High(AnObject.FIndices) do
-        if AnObject.FIndices[J] = AnObject.FRestartIndex then
-          FIndices[J+FIndiceCount] := FRestartIndex
-        else
-          Inc(FIndices[J+FIndiceCount], IndexOffset);
-      FIndiceCount := FIndiceCount + AnObject.FIndiceCount;
-    end;
-
-    FAdjacencyIndices := nil;
-  finally
-    EndUpdate;
-  end;
-end;
-
-procedure TVertexObject.LineSegmentation;
-begin
-  Assert(False);
-end;
-
-function TVertexObject.MakeTrianglesIndices: TIntegerArray;
-var
-  NewElements: TIntegerList;
-  J, E: integer;
-  stripCount, prevIndex1, prevIndex2: integer;
-  prevIndex, centerIndex, fansCount: integer;
-  degenerate: boolean;
-begin
-  case FFaceType of
-    ftTriangleStrip:
-      begin
-        NewElements := TIntegerList.Create;
-        stripCount := 0;
-        prevIndex1 := 0;
-        prevIndex2 := 0;
-        for J := 0 to FIndiceCount - 1 do
-        begin
-          E := FIndices[J];
-          if stripCount > 2 then
-          begin
-            // Check for restart index
-            if J = FRestartIndex then
-            begin
-              stripCount := 0;
-              continue;
-            end
-            // Check for degenerate triangles
-            else if E = prevIndex1 then
-            begin
-              continue;
-            end
-            else if prevIndex1 = prevIndex2 then
-            begin
-              stripCount := 0;
-              continue;
-            end;
-            if (stripCount and 1) = 0 then
-            begin
-              NewElements.Add(prevIndex2);
-              NewElements.Add(prevIndex1);
-            end
-            else
-            begin
-              NewElements.Add(prevIndex1);
-              NewElements.Add(prevIndex2);
-            end;
-          end
-          else if stripCount = 2 then
-          begin
-            NewElements.Add(E);
-            NewElements[NewElements.Count - 2] := prevIndex1;
-            prevIndex2 := prevIndex1;
-            prevIndex1 := E;
-            inc(stripCount);
-            continue;
-          end;
-          NewElements.Add(E);
-          prevIndex2 := prevIndex1;
-          prevIndex1 := E;
-          inc(stripCount);
-        end;
-        NewElements.ToArray(result);
-        NewElements.Destroy;
-      end;
-    ftTriangleFan:
-      begin
-        NewElements := TIntegerList.Create;
-        fansCount := 0;
-        prevIndex := 0;
-        degenerate := false;
-        centerIndex := FIndices[0];
-        for J := 0 to FIndiceCount - 1 do
-        begin
-          E := FIndices[J];
-          if fansCount > 2 then
-          begin
-            // Check for restart index
-            if E = FRestartIndex then
-            begin
-              fansCount := 0;
-              continue;
-            end
-            // Check for degenerate triangles
-            else if E = prevIndex then
-            begin
-              degenerate := true;
-              continue;
-            end
-            else if degenerate then
-            begin
-              degenerate := false;
-              fansCount := 0;
-              continue;
-            end;
-            NewElements.Add(centerIndex);
-            NewElements.Add(prevIndex);
-          end
-          else if fansCount = 0 then
-            centerIndex := E;
-          NewElements.Add(E);
-          prevIndex := E;
-          inc(fansCount);
-        end;
-        NewElements.ToArray(result);
-        NewElements.Destroy;
-      end;
-    ftTriangles:
-      result := FIndices;
-  end;
-end;
-
 procedure TVertexObject.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 var
   I: Integer;
@@ -2702,7 +1787,6 @@ end;
 
 procedure TVertexObject.RemoveAttrib(Index: integer);
 begin
-  FAttribs.UnSubscribe(Self);
   FAttribs.Delete(Index);
   FStructureChanged := true;
   DispatchMessage(NM_ResourceChanged);
@@ -2729,236 +1813,6 @@ begin
   FIndiceCount := Value;
   if FIndiceCount > Length(FIndices) then
     setlength(FIndices, FIndiceCount);
-end;
-
-procedure TVertexObject.Transform(const AMatrix: TMatrix);
-var
-  attr: TAttribBuffer;
-  NMat: TMatrix;
-begin
-  BeginUpdate;
-  try
-    NMat := AMatrix.Normalize;
-    attr := FAttribs.GetAttribBuffer(atVertex);
-    if Assigned(attr) then
-      attr.Buffer.DataHandler.Transform(AMatrix);
-
-    attr := FAttribs.GetAttribBuffer(atNormal);
-    if Assigned(attr) then
-      attr.Buffer.DataHandler.Transform(NMat);
-
-    attr := FAttribs.GetAttribBuffer(atTangent);
-    if Assigned(attr) then
-      attr.Buffer.DataHandler.Transform(NMat);
-
-    attr := FAttribs.GetAttribBuffer(atBinormal);
-    if Assigned(attr) then
-      attr.Buffer.DataHandler.Transform(NMat);
-  finally
-    EndUpdate;
-  end;
-end;
-
-procedure TVertexObject.Triangulate;
-begin
-  if FFaceType in [ftTriangleStrip, ftTriangleFan] then
-  begin
-    FIndices := MakeTrianglesIndices();
-    FIndiceCount := Length(FIndices);
-    FFaceType := ftTriangles;
-    FIndiceChanged := True;
-    DispatchMessage(NM_ResourceChanged);
-  end;
-end;
-
-procedure TVertexObject.UnWeldVertices;
-var
-  NewBuffers: array of TAbstractDataList;
-  i, a, E: integer;
-begin
-  setlength(NewBuffers, FAttribs.Count);
-  for a := 0 to FAttribs.Count - 1 do
-    NewBuffers[a] := TAbstractDataListClass(Attribs[a].Buffer.DataHandler.ClassType).Create;
-
-  for i := 0 to FIndiceCount - 1 do
-  begin
-    E := FIndices[i];
-    for a := 0 to FAttribs.Count - 1 do
-      NewBuffers[a].AddRaw(Attribs[a].Buffer.DataHandler.GetItemAddr(E));
-    FIndices[i] := i;
-  end;
-
-  for a := 0 to AttribsCount - 1 do
-    Attribs[a].Buffer.SetDataHandler(NewBuffers[a]);
-
-  FStructureChanged := True;
-  FIndiceChanged := True;
-  DispatchMessage(NM_ResourceChanged);
-end;
-
-function CompareVertexKey(const Item1, Item2: Double): integer;
-begin
-  if Item1 < Item2 then
-    exit(-1)
-  else if Item1 = Item2 then
-    exit(0)
-  else
-    result := 1;
-end;
-
-var
-  vVertexObject: TVertexObject;
-
-function CompareVertex(const Item1, Item2: integer): boolean;
-var
-  a: integer;
-  Idx1, Idx2: integer;
-begin
-  if Item1 <> Item2 then
-  begin
-    Idx1 := vVertexObject.FIndices[Item1];
-    Idx2 := vVertexObject.FIndices[Item2];
-    for a := 0 to vVertexObject.AttribsCount - 1 do
-      if not vVertexObject.Attribs[a].FBuffer.DataHandler.IsItemsEqual(Idx1,
-        Idx2) then
-        exit(false);
-  end;
-  result := true;
-end;
-
-procedure TVertexObject.WeldVertices;
-var
-  i, J, len: integer;
-  E, E_, Index: integer;
-  vertexKey: Double;
-  VertexHashMap: TVertexHashMap;
-  VertexHashKey: TDoubleList;
-  bFind: boolean;
-  StoreBuffers: array of TAbstractDataList;
-  StoreIndices: TIntegerArray;
-
-  procedure CalcHashKay;
-  var
-    pKey, pVertex: PByteArray;
-    K, P, W: Integer;
-  begin
-    vertexKey := 0;
-    pKey := @vertexKey;
-    P := 0;
-    pVertex := StoreBuffers[FVertexAttribIndex].GetItemAddr(E);
-    for K := len - 1 downto 0 do
-    begin
-      W := pKey[P] + pVertex[K];
-      pKey[P] := W and 255;
-      inc(P);
-      P := P and 7;
-    end;
-    VertexHashKey[i] := vertexKey;
-  end;
-
-  function IsVertexEqual(const Index1, Index2: integer): boolean;
-  var
-    a: integer;
-  begin
-    if Index1 <> Index2 then
-    begin
-      for a := 0 to High(StoreBuffers) do
-        if not StoreBuffers[a].IsItemsEqual(Index1, Index2) then
-          exit(false);
-    end;
-    result := true;
-  end;
-
-  procedure CopyVertex(n: integer);
-  var
-    a: integer;
-  begin
-    for a := 0 to AttribsCount - 1 do
-      Attribs[a].Buffer.DataHandler.AddRaw(StoreBuffers[a].GetItemAddr(n));
-    inc(Index);
-  end;
-
-var
-  HasHash: boolean;
-  a: integer;
-
-begin
-  // Calculate hash keys
-  VertexHashMap := TVertexHashMap.Create(CompareVertexKey, CompareVertex);
-  VertexHashKey := TDoubleList.Create;
-  VertexHashKey.Count := FIndiceCount;
-  vVertexObject := Self;
-  E_ := 0; // Drop compilator warning
-  len := Attribs[FVertexAttribIndex].FSize * CValueSizes[Attribs[FVertexAttribIndex].FType];
-  SetLength(StoreBuffers, AttribsCount);
-  for a := 0 to AttribsCount - 1 do
-    StoreBuffers[a] := Attribs[a].Buffer.DataHandler;
-  StoreIndices := Copy(FIndices, 0, FIndiceCount);
-
-  for i := 0 to FIndiceCount - 1 do
-  begin
-    E := FIndices[i];
-    if E = FRestartIndex then
-      continue;
-    CalcHashKay;
-    if VertexHashMap.Find(vertexKey, J) then
-    begin
-      E_ := FIndices[J];
-      HasHash := (E_ >= E) or not IsVertexEqual(E, E_);
-    end
-    else
-      HasHash := true;
-    if HasHash then
-      VertexHashMap.Add(vertexKey, i);
-  end;
-
-  for a := 0 to AttribsCount - 1 do
-    Attribs[a].Buffer.SetDataHandler(TAbstractDataListClass
-      (Attribs[a].Buffer.DataHandler.ClassType).Create);
-
-  // Remap element buffer, fill new attributes list
-  Index := 0;
-  for i := 0 to FIndiceCount - 1 do
-  begin
-    E := FIndices[i];
-    if E = FRestartIndex then
-      continue;
-
-    bFind := false;
-    vertexKey := VertexHashKey[i];
-    if VertexHashMap.Find(vertexKey, J) then
-    begin
-      repeat
-        E_ := StoreIndices[J];
-        bFind := IsVertexEqual(E, E_);
-        if bFind then
-          break;
-      until not VertexHashMap.NextDublicate(J);
-    end;
-    if not bFind then
-      E_ := E;
-
-    if E_ >= E then
-    begin
-      FIndices[i] := Index;
-      CopyVertex(E);
-    end
-    else
-    begin
-      FIndices[i] := FIndices[J];
-    end;
-  end;
-
-  // Free unpacked arrays
-  for a := 0 to High(StoreBuffers) do
-    StoreBuffers[a].UnSubscribe(Self);
-  FIndiceCount := Length(FIndices);
-
-  VertexHashMap.Destroy;
-  VertexHashKey.Destroy;
-  FStructureChanged := True;
-  FIndiceChanged := True;
-  DispatchMessage(NM_ResourceChanged);
 end;
 
 { TMeshObject }

@@ -3,7 +3,7 @@ unit uMeshUtils;
 interface
 
 uses
-  uBaseTypes, uLists, uVMath;
+  uBaseTypes, uLists, uDataAccess, uVMath;
 
 type
 
@@ -11,36 +11,45 @@ type
   public
     class var RestartIndex: Integer;
     // Сварка вершин
-    class procedure WeldVertices(var anAttribs: array of TAbstractDataList;
+    class procedure WeldVertices(const anInAttribs: array of IVectorDataAccess;
+      out anOutAttribs: TAbstractDataListArray;
       var anIndices: TIntegerArray);
     // Каждая вершина становится уникальной, значения индексов не повторяется
-    class procedure UnWeldVertices(var anAttribs: array of TAbstractDataList;
-      var anIndices: TIntegerArray; aVertexAttribIndex: Integer);
+    class procedure UnWeldVertices(const anInAttribs: array of TAbstractDataList;
+      out anOutAttribs: TAbstractDataListArray;
+      var anIndices: TIntegerArray);
     // Конвертирует полосы и вееры треугольников в отдельные треугольники
     class procedure Triangulate(aFaceType: TFaceType;
       var anIndices: TIntegerArray);
     // Создает нормали
     class function ComputeTriangleNormals(ASmooth: Boolean;
-      aVertices: TAbstractDataList; anIndices: TIntegerArray): TVec3List;
+      aVertices: IVectorDataAccess; anIndices: TIntegerArray): TVec3List;
     // Создает касательные
     class procedure ComputeTriangleTangents(aVertices, aTexCoors,
-      aNormals: TAbstractDataList; anIndices: TIntegerArray;
+      aNormals: IVectorDataAccess; anIndices: TIntegerArray;
       var aTangens, aBinormal: TAbstractDataList);
     // Создает текстурные координаты
-    class function ComputeTriangleTexCoords(aVertices: TAbstractDataList)
+    class function ComputeTriangleTexCoords(aVertices: IVectorDataAccess)
       : TVec2List; overload;
-    class function ComputeTriangleTexCoords(aVertices: TAbstractDataList;
+    class function ComputeTriangleTexCoords(aVertices: IVectorDataAccess;
       anIndices: TIntegerArray): TVec2List; overload;
     // Создает индексы смежных треугольников
-    class procedure ComputeTriangleAdjacency(Vertices: TAbstractDataList;
+    class procedure ComputeTriangleAdjacency(Vertices: IVectorDataAccess;
       anIndices: TIntegerArray;
       var anAdjacencyIndices: TIntegerArray);
+    // Присоеденяет геометрию
+    class procedure Join(var aStorageAttribs: TAbstractDataListArray;
+      const anIncomeAttribs: TAbstractDataListArray;
+      var StorageIndices: TIntegerArray;
+      const anIncomeIndices: TIntegerArray); overload;
+    class procedure Join(var StorageIndices: TIntegerArray;
+      const anIncomeIndices: TIntegerArray; anIndexOffset: Integer); overload;
   end;
 
 implementation
 
 uses
-  uGenericsRBTree;
+  uMath, uGenericsRBTree;
 
 type
   TIntIntRBTree = GRedBlackTree<Integer, Integer>;
@@ -59,9 +68,8 @@ begin
 end;
 
 threadvar
-vAttribs: array of TAbstractDataList;
-vIndices:
-TIntegerArray;
+vAttribs: array of IVectorDataAccess;
+vIndices: ^TIntegerArray;
 
 function CompareVertex(const Item1, Item2: Integer): Boolean;
 var
@@ -70,8 +78,8 @@ var
 begin
   if Item1 <> Item2 then
   begin
-    Idx1 := vIndices[Item1];
-    Idx2 := vIndices[Item2];
+    Idx1 := vIndices^[Item1];
+    Idx2 := vIndices^[Item2];
     for a := 0 to High(vAttribs) do
       if not vAttribs[a].IsItemsEqual(Idx1, Idx2) then
         exit(false);
@@ -84,8 +92,9 @@ begin
   result := Item1 = Item2;
 end;
 
-class procedure MeshUtils.ComputeTriangleAdjacency(Vertices: TAbstractDataList;
-  anIndices: TIntegerArray; var anAdjacencyIndices: TIntegerArray);
+class procedure MeshUtils.ComputeTriangleAdjacency(Vertices: IVectorDataAccess;
+      anIndices: TIntegerArray;
+      var anAdjacencyIndices: TIntegerArray);
 type
   Vec4ui = array [0 .. 3] of LongInt;
   PVec4ui = ^Vec4ui;
@@ -330,7 +339,7 @@ begin
 end;
 
 class function MeshUtils.ComputeTriangleNormals(ASmooth: Boolean;
-  aVertices: TAbstractDataList; anIndices: TIntegerArray): TVec3List;
+      aVertices: IVectorDataAccess; anIndices: TIntegerArray): TVec3List;
 var
   I, J, E, E_, T, EJ: Integer;
   PBIndices: TIntegerArray;
@@ -400,9 +409,9 @@ begin
     for T := 0 to Length(PBIndices) div 3 - 1 do
     begin
       E := 3 * T;
-      p0 := aVertices.GetItemAsVector(PBIndices[E]);
-      p1 := aVertices.GetItemAsVector(PBIndices[E + 1]);
-      p2 := aVertices.GetItemAsVector(PBIndices[E + 2]);
+      p0 := aVertices.Items[PBIndices[E]];
+      p1 := aVertices.Items[PBIndices[E + 1]];
+      p2 := aVertices.Items[PBIndices[E + 2]];
 
       // Compute the edge vectors
       dp0 := p1 - p0;
@@ -511,8 +520,8 @@ begin
 end;
 
 class procedure MeshUtils.ComputeTriangleTangents(aVertices, aTexCoors,
-  aNormals: TAbstractDataList; anIndices: TIntegerArray;
-  var aTangens, aBinormal: TAbstractDataList);
+      aNormals: IVectorDataAccess; anIndices: TIntegerArray;
+      var aTangens, aBinormal: TAbstractDataList);
 var
   a, T, I, J, E, EJ, E_: Integer;
   p0, p1, p2, dp0, dp1, st0, st1, st2, dst0, dst1, fTangent, nTangent,
@@ -544,12 +553,12 @@ begin
     for T := 0 to Length(anIndices) div 3 - 1 do
     begin
       E := 3 * T;
-      p0 := aVertices.GetItemAsVector(anIndices[E]);
-      p1 := aVertices.GetItemAsVector(anIndices[E + 1]);
-      p2 := aVertices.GetItemAsVector(anIndices[E + 2]);
-      st0 := aVertices.GetItemAsVector(anIndices[E]);
-      st1 := aVertices.GetItemAsVector(anIndices[E + 1]);
-      st2 := aVertices.GetItemAsVector(anIndices[E + 2]);
+      p0 := aVertices.Items[anIndices[E]];
+      p1 := aVertices.Items[anIndices[E + 1]];
+      p2 := aVertices.Items[anIndices[E + 2]];
+      st0 := aVertices.Items[anIndices[E]];
+      st1 := aVertices.Items[anIndices[E + 1]];
+      st2 := aVertices.Items[anIndices[E + 2]];
 
       // Compute the edge and tc differentials
       dp0 := p1 - p0;
@@ -653,7 +662,7 @@ begin
       for I := 0 to aNormals.Count - 1 do
       begin
         cTangent := aTangens.GetItemAsVector(I);
-        nTangent := aNormals.GetItemAsVector(I);
+        nTangent := aNormals.Items[I];
         fTangent := nTangent.Cross(cTangent);
         aBinormal.SetItemAsVector(I, fTangent);
       end;
@@ -666,33 +675,72 @@ begin
   end;
 end;
 
+const
+  cubeNormals: array[0..5] of vec3 =(
+  ( 1,0,0 ),
+  ( 0,1,0 ),
+  ( 0,0,1 ),
+  ( -1,0,0 ),
+  ( 0,-1,0 ),
+  ( 0,0,-1 ));
+  cubeTangents: array[0..5] of vec3 =(
+  ( 0,-1,0 ),
+  ( 1,0,0 ),
+  ( 1,0,0 ),
+  ( 0,1,0 ),
+  ( -1,0,0 ),
+  ( -1,0,0 ));
+
 class function MeshUtils.ComputeTriangleTexCoords(
-  aVertices: TAbstractDataList): TVec2List;
+  aVertices: IVectorDataAccess): TVec2List;
 var
+  extent: TExtents;
+  k, W, maxW: Single;
   NewTexCoords: TVec2List;
-  T, E3T: integer;
+  T, E3T, N, M: integer;
   p0, p1, p2, dp0, dp1, fNormal, fTangent, fBinormal: TVector;
   TBN: TMatrix;
 begin
   NewTexCoords := TVec2List.Create;
   NewTexCoords.Count := aVertices.Count;
+  extent.Reset;
+  for T := 0 to aVertices.Count - 1 do
+     extent.Include(aVertices.Items[T]);
+  p0 := extent.eMax - extent.eMin;
+  k := TMath.Max(p0[0], p0[1]);
+  k := TMath.Max(k, p0[2]);
+  k := 1 / k;
 
   for T := 0 to aVertices.Count div 3 - 1 do
   begin
     E3T := 3 * T;
-    p0 := aVertices.GetItemAsVector(E3T);
-    p1 := aVertices.GetItemAsVector(E3T+1);
-    p2 := aVertices.GetItemAsVector(E3T+2);
+    p0 := aVertices.Items[E3T] - extent.eMin;
+    p1 := aVertices.Items[E3T+1] - extent.eMin;
+    p2 := aVertices.Items[E3T+2] - extent.eMin;
+    p0.SetScale(k);
+    p1.SetScale(k);
+    p2.SetScale(k);
 
     // Compute the edge vectors
     dp0 := p1 - p0;
     dp1 := p2 - p0;
 
-    // Compute the face TBN
     fNormal := dp0.Cross(dp1);
     fNormal := fNormal.Normalize;
-    fTangent := dp0;
-    fTangent := fTangent.Normalize;
+    maxW := 0;
+    M := 0;
+    for N := 0 to 5 do
+    begin
+      W := fNormal.Dot(cubeNormals[N]);
+      if W > maxW then
+      begin
+        maxW := W;
+        M := N;
+      end;
+    end;
+
+    fNormal := cubeNormals[M];
+    fTangent := cubeTangents[M];
     fBinormal := fNormal.Cross(fTangent);
     TBN.Row[0] := fTangent.vec4;
     TBN.Row[1] := fBinormal.vec4;
@@ -712,21 +760,29 @@ begin
 end;
 
 class function MeshUtils.ComputeTriangleTexCoords(
-  aVertices: TAbstractDataList; anIndices: TIntegerArray): TVec2List;
+  aVertices: IVectorDataAccess; anIndices: TIntegerArray): TVec2List;
 var
+  extent: TExtents;
+  k, W, maxW: Single;
   NewTexCoords: TVec2List;
-  T, E1, E2, E3, E3T: integer;
+  T, E1, E2, E3, E3T, N, M: integer;
   p0, p1, p2, dp0, dp1, fNormal, fTangent, fBinormal: TVector;
   TBN: TMatrix;
 begin
   if Length(anIndices) = 0 then
     exit(ComputeTriangleTexCoords(aVertices));
   Assert(Length(anIndices) = aVertices.Count);
-  NewTexCoords := nil;
+  NewTexCoords := TVec2List.Create;
+  NewTexCoords.Count := Length(anIndices);
 
   try
-    NewTexCoords := TVec2List.Create;
-    NewTexCoords.Count := Length(anIndices);
+    extent.Reset;
+    for T := 0 to aVertices.Count - 1 do
+       extent.Include(aVertices.Items[T]);
+    p0 := extent.eMax - extent.eMin;
+    k := TMath.Max(p0[0], p0[1]);
+    k := TMath.Max(k, p0[2]);
+    k := 1 / k;
 
     for T := 0 to Length(anIndices) div 3 - 1 do
     begin
@@ -734,19 +790,33 @@ begin
       E1 := anIndices[E3T];
       E2 := anIndices[E3T+1];
       E3 := anIndices[E3T+2];
-      p0 := aVertices.GetItemAsVector(E1);
-      p1 := aVertices.GetItemAsVector(E2);
-      p2 := aVertices.GetItemAsVector(E3);
+      p0 := aVertices.Items[E1] - extent.eMin;
+      p1 := aVertices.Items[E2] - extent.eMin;
+      p2 := aVertices.Items[E3] - extent.eMin;
+      p0.SetScale(k);
+      p1.SetScale(k);
+      p2.SetScale(k);
 
       // Compute the edge vectors
       dp0 := p1 - p0;
       dp1 := p2 - p0;
 
-      // Compute the face TBN
       fNormal := dp0.Cross(dp1);
       fNormal := fNormal.Normalize;
-      fTangent := dp0;
-      fTangent := fTangent.Normalize;
+      maxW := 0;
+      M := 0;
+      for N := 0 to 5 do
+      begin
+        W := fNormal.Dot(cubeNormals[N]);
+        if W > maxW then
+        begin
+          maxW := W;
+          M := N;
+        end;
+      end;
+
+      fNormal := cubeNormals[M];
+      fTangent := cubeTangents[M];
       fBinormal := fNormal.Cross(fTangent);
       TBN.Row[0] := fTangent.vec4;
       TBN.Row[1] := fBinormal.vec4;
@@ -768,6 +838,69 @@ begin
   end;
 
   Result := NewTexCoords;
+end;
+
+class procedure MeshUtils.Join(var StorageIndices: TIntegerArray;
+  const anIncomeIndices: TIntegerArray; anIndexOffset: Integer);
+var
+  I, iLen, iStart: Integer;
+begin
+  iLen := Length(anIncomeIndices);
+  if iLen > 0 then
+  begin
+    iStart := Length(StorageIndices);
+    SetLength(StorageIndices, iStart + iLen);
+    Move(anIncomeIndices[0], StorageIndices[iStart], SizeOf(Integer)*iLen);
+    if anIndexOffset > 0 then
+      for I := iStart to High(StorageIndices) do
+        if StorageIndices[I] <> RestartIndex then
+          Inc(StorageIndices[I], anIndexOffset);
+  end;
+end;
+
+class procedure MeshUtils.Join(var aStorageAttribs: TAbstractDataListArray;
+  const anIncomeAttribs: TAbstractDataListArray;
+  var StorageIndices: TIntegerArray; const anIncomeIndices: TIntegerArray);
+var
+  I, IndexOffset, iLen, iStart: Integer;
+begin
+  iLen := Length(anIncomeIndices);
+  if Length(aStorageAttribs) = 0 then
+  begin
+    SetLength(aStorageAttribs, Length(aStorageAttribs));
+    for I := 0 to High(anIncomeAttribs) do
+    begin
+      aStorageAttribs[I] :=
+        TAbstractDataListClass(anIncomeAttribs[I].ClassType).Create;
+      aStorageAttribs[I].Join(anIncomeAttribs[I], TMatrix.IdentityMatrix);
+    end;
+
+    if iLen > 0 then
+      StorageIndices := Copy(anIncomeIndices, 0, iLen)
+    else
+      SetLength(StorageIndices, 0);
+    exit;
+  end
+  else
+  begin
+    Assert(Length(aStorageAttribs) = Length(anIncomeAttribs));
+    IndexOffset := aStorageAttribs[0].Count;
+    for I := 0 to High(anIncomeAttribs) do
+    begin
+      Assert(IndexOffset = aStorageAttribs[I].Count);
+      aStorageAttribs[I].Join(anIncomeAttribs[I], TMatrix.IdentityMatrix);
+    end;
+    if iLen > 0 then
+    begin
+      iStart := Length(StorageIndices);
+      SetLength(StorageIndices, iStart + iLen);
+      Move(anIncomeIndices[0], StorageIndices[iStart], SizeOf(Integer)*iLen);
+      if IndexOffset > 0 then
+        for I := iStart to High(StorageIndices) do
+          if StorageIndices[I] <> RestartIndex then
+            Inc(StorageIndices[I], IndexOffset);
+    end;
+  end;
 end;
 
 class procedure MeshUtils.Triangulate(aFaceType: TFaceType;
@@ -893,28 +1026,30 @@ begin
   end;
 end;
 
-class procedure MeshUtils.UnWeldVertices(var anAttribs
-  : array of TAbstractDataList; var anIndices: TIntegerArray;
-  aVertexAttribIndex: Integer);
+class procedure MeshUtils.UnWeldVertices(
+  const anInAttribs: array of TAbstractDataList;
+  out anOutAttribs: TAbstractDataListArray;
+  var anIndices: TIntegerArray);
 var
-  NewAttribs: array of TAbstractDataList;
   I, a, E: Integer;
 begin
-  SetLength(NewAttribs, Length(anAttribs));
-  for a := 0 to High(anAttribs) do
-    NewAttribs[a] := TAbstractDataListClass(anAttribs[a].ClassType).Create;
+  SetLength(anOutAttribs, Length(anInAttribs));
+  for a := 0 to High(anInAttribs) do
+    anOutAttribs[a] := TAbstractDataListClass(anInAttribs[a].ClassType).Create;
 
   for I := 0 to High(anIndices) do
   begin
     E := anIndices[I];
-    for a := 0 to High(anAttribs) do
-      NewAttribs[a].AddRaw(anAttribs[a].GetItemAddr(E));
+    for a := 0 to High(anInAttribs) do
+      anOutAttribs[a].AddRaw(anInAttribs[a].GetItemAddr(E));
     anIndices[I] := I;
   end;
 end;
 
-class procedure MeshUtils.WeldVertices(var anAttribs
-  : array of TAbstractDataList; var anIndices: TIntegerArray);
+class procedure MeshUtils.WeldVertices(
+  const anInAttribs: array of IVectorDataAccess;
+  out anOutAttribs: TAbstractDataListArray;
+  var anIndices: TIntegerArray);
 var
   I, J, ItemSize: Integer;
   E, E_, Index: Integer;
@@ -922,7 +1057,7 @@ var
   VertexHashMap: TVertexHashMap;
   VertexHashKey: TDoubleList;
   bFind: Boolean;
-  StoreBuffers: array of TAbstractDataList;
+  WorkBuffers: array of IVectorDataAccess;
   StoreIndices: TIntegerArray;
 
   procedure CalcHashKay;
@@ -933,7 +1068,7 @@ var
     vertexKey := 0;
     pKey := @vertexKey;
     P := 0;
-    pVertex := StoreBuffers[0].GetItemAddr(E);
+    pVertex := WorkBuffers[0].GetItemAddress(E);
     for K := ItemSize - 1 downto 0 do
     begin
       W := pKey[P] + pVertex[K];
@@ -950,8 +1085,8 @@ var
   begin
     if Index1 <> Index2 then
     begin
-      for a := 0 to High(StoreBuffers) do
-        if not StoreBuffers[a].IsItemsEqual(Index1, Index2) then
+      for a := 0 to High(WorkBuffers) do
+        if not WorkBuffers[a].IsItemsEqual(Index1, Index2) then
           exit(false);
     end;
     result := true;
@@ -961,8 +1096,8 @@ var
   var
     a: Integer;
   begin
-    for a := 0 to High(anAttribs) do
-      anAttribs[a].AddRaw(StoreBuffers[a].GetItemAddr(n));
+    for a := 0 to High(anOutAttribs) do
+      anOutAttribs[a].AddRaw(WorkBuffers[a].GetItemAddress(n));
     inc(Index);
   end;
 
@@ -976,15 +1111,16 @@ begin
 
   try
     VertexHashKey.Count := Length(anIndices);
-    SetLength(vAttribs, Length(anAttribs));
-    for a := 0 to High(anAttribs) do
-      vAttribs[A] := anAttribs[A];
+    SetLength(vAttribs, Length(anInAttribs));
+    SetLength(WorkBuffers, Length(anInAttribs));
+    for a := 0 to High(anInAttribs) do
+    begin
+      vAttribs[A] := anInAttribs[A];
+      WorkBuffers[a] := anInAttribs[a];
+    end;
     E_ := 0; // Drop compilator warning
-    ItemSize := anAttribs[0].ItemSize;
-    SetLength(StoreBuffers, Length(anAttribs));
-    for a := 0 to High(anAttribs) do
-      StoreBuffers[a] := anAttribs[a];
-    StoreIndices := Copy(anIndices, 0, Length(anIndices));
+    ItemSize := anInAttribs[0].ItemSize;
+    vIndices := @anIndices;
 
     for I := 0 to High(anIndices) do
     begin
@@ -1003,12 +1139,28 @@ begin
         VertexHashMap.Add(vertexKey, I);
     end;
 
-    for a := 0 to High(anAttribs) do
-      anAttribs[a] := TAbstractDataListClass(anAttribs[a].ClassType).Create;
+    StoreIndices := Copy(anIndices, 0, Length(anIndices));
+    SetLength(anOutAttribs, Length(anInAttribs));
+    for a := 0 to High(anOutAttribs) do
+    begin
+      Assert(anInAttribs[a].ItemType = vtFloat);
+      case anInAttribs[a].ItemComponent of
+        1: anOutAttribs[a] := TSingleList.Create;
+        2: anOutAttribs[a] := TVec2List.Create;
+        3: anOutAttribs[a] := TVec3List.Create;
+        4: anOutAttribs[a] := TVec4List.Create;
+      end;
+      vAttribs[a] := TVectorDataAccess.Create(
+        anOutAttribs[a].GetItemAddr(0),
+        anInAttribs[a].ItemType,
+        anInAttribs[a].ItemComponent,
+        anInAttribs[a].ItemSize,
+        anInAttribs[a].Count);
+    end;
 
     // Remap element buffer, fill new attributes list
     Index := 0;
-    for I := 0 to High(anAttribs) do
+    for I := 0 to High(anIndices) do
     begin
       E := anIndices[I];
       if E = RestartIndex then

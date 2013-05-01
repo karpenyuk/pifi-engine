@@ -10,32 +10,9 @@
 
 interface
 
-uses Classes, uPersistentClasses, uMiscUtils, uVMath;
+uses Classes, uBaseTypes, uPersistentClasses, uMiscUtils, uVMath;
 
 Type
-
-  TAbstractDataList = class(TPersistentResource)
-  protected
-    function getCount: Integer; virtual; abstract;
-    procedure setCount(const Value: Integer); virtual; abstract;
-  public
-    destructor Destroy; override;
-    function AddRaw(Item: Pointer): Integer; virtual; abstract;
-    procedure Join(AList: TAbstractDataList; const AMatrix: TMatrix);
-      virtual; abstract;
-    procedure Flush; virtual; abstract;
-    procedure Clear; virtual; abstract;
-    function GetItemAddr(AnIndex: Integer): Pointer; virtual; abstract;
-    function IsItemsEqual(Index1, Index2: Integer): Boolean; virtual; abstract;
-    function ItemSize(): Integer; virtual; abstract;
-    procedure Transform(const AMatrix: TMatrix); virtual;
-    function GetItemAsVector(AnIndex: Integer): TVector; virtual;
-    procedure SetItemAsVector(AnIndex: Integer;
-      const aVector: TVector); virtual;
-    property Count: Integer read getCount write setCount;
-  end;
-
-  TAbstractDataListClass = class of TAbstractDataList;
 
   TDataList<T> = class(TAbstractDataList)
   private type
@@ -83,6 +60,14 @@ Type
   TObjectList = TDataList<TObject>;
 
   TIntegerList = class(TDataList<Integer>)
+  public
+    function GetItemAsVector(AnIndex: Integer): TVector; override;
+    procedure SetItemAsVector(AnIndex: Integer;
+      const aVector: TVector); override;
+    procedure Transform(const AMatrix: TMatrix); override;
+  end;
+
+  TSingleList = class(TDataList<Double>)
   public
     function GetItemAsVector(AnIndex: Integer): TVector; override;
     procedure SetItemAsVector(AnIndex: Integer;
@@ -166,18 +151,6 @@ Type
     function GetValue(const Key: TObject): TObject; virtual;
   end;
 
-  TPtrIterator = class
-  private
-    FPointer: Pointer;
-    FCurrent: Pointer;
-  public
-    constructor Create(aPointer: Pointer);
-    function First: Pointer;
-    function Next(aStride: Integer): Pointer;
-    function Prev(aStride: Integer): Pointer;
-    property Current: Pointer read FCurrent;
-  end;
-
   TRBNodeColor = (ncRed, ncBlack);
   PRBNode = ^TRBNode;
 
@@ -220,9 +193,6 @@ function IntPtrComparer(i1, i2: Pointer): Integer;
 
 implementation
 
-uses
-  uBaseTypes;
-
 function IntPtrComparer(i1, i2: Pointer): Integer;
 begin
   result := Integer(i1) - Integer(i2);
@@ -241,7 +211,7 @@ begin
   end;
   result := FCount;
   Inc(FCount);
-  DispatchMessage(NM_ResourceChanged);
+
 end;
 
 function TDataList<T>.AddRaw(Item: Pointer): Integer;
@@ -250,7 +220,7 @@ var
 begin
   AnItem := Item;
   result := Add(AnItem^);
-  DispatchMessage(NM_ResourceChanged);
+
 end;
 
 procedure TDataList<T>.Assign(aSource: TDataList<T>);
@@ -258,13 +228,13 @@ begin
   Assert(Pointer(aSource) <> nil, 'Source list is not assigned!');
   Count := aSource.Count;
   Move(aSource.Data^, Data^, aSource.Size);
-  DispatchMessage(NM_ResourceChanged);
+
 end;
 
 procedure TDataList<T>.Clear;
 begin
   FCount := 0;
-  DispatchMessage(NM_ResourceChanged);
+
 end;
 
 constructor TDataList<T>.Create;
@@ -284,7 +254,7 @@ begin
     for i := Index + 1 to FCount - 1 do
       FItems[i - i] := FItems[i];
   Dec(FCount);
-  DispatchMessage(NM_ResourceChanged);
+
 end;
 
 procedure TDataList<T>.Exchange(Index1, Index2: Integer);
@@ -306,7 +276,7 @@ begin
   if i > -1 then
   begin
     FItems[i] := AnItemIn;
-    DispatchMessage(NM_ResourceChanged);
+
     exit(True);
   end;
   result := false;
@@ -331,7 +301,7 @@ end;
 procedure TDataList<T>.Flush;
 begin
   FCount := 0;
-  DispatchMessage(NM_ResourceChanged);
+
 end;
 
 function TDataList<T>.getCapacity: Integer;
@@ -388,7 +358,7 @@ begin
       Setlength(FItems, Length(FItems) + len);
     Move(PByte(AList.GetItemAddr(0))^, FItems[FCount], len * SizeOf(T));
     FCount := FCount + len;
-    DispatchMessage(NM_ResourceChanged);
+
   end;
 end;
 
@@ -408,7 +378,7 @@ begin
   if Value >= Length(FItems) then
     Setlength(FItems, Value);
   FCount := Value;
-  DispatchMessage(NM_ResourceChanged);
+
 end;
 
 procedure TDataList<T>.setItem(Index: Integer; const Value: T);
@@ -449,7 +419,7 @@ begin
   iKey := StringHashKey(Key);
   for i := 0 to FCount - 1 do
     if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then
-      exit;
+      exit(i);
   if FCount >= Length(FItems) then
     Setlength(FItems, FCount * 2);
   FItems[FCount].Key := iKey;
@@ -466,7 +436,7 @@ begin
   iKey := GetHashFromBuff(Key, 16);
   for i := 0 to FCount - 1 do
     if (FItems[i].Key = iKey) and TGUIDEx.IsEqual(FItems[i].KeyGUID, Key) then
-      exit;
+      exit(i);
   if FCount >= Length(FItems) then
     Setlength(FItems, FCount * 2);
   FItems[FCount].Key := iKey;
@@ -997,52 +967,6 @@ begin
   end
 end;
 
-{ TIterator }
-
-constructor TPtrIterator.Create(aPointer: Pointer);
-begin
-  FPointer := aPointer;
-  FCurrent := FPointer;
-end;
-
-function TPtrIterator.First: Pointer;
-begin
-  result := FPointer;
-end;
-
-function TPtrIterator.Next(aStride: Integer): Pointer;
-begin
-  result := Pointer(Integer(FCurrent) + aStride);
-end;
-
-function TPtrIterator.Prev(aStride: Integer): Pointer;
-begin
-  result := Pointer(Integer(FCurrent) - aStride);
-end;
-
-{ TAbstractDataList }
-
-destructor TAbstractDataList.Destroy;
-begin
-  inherited;
-end;
-
-function TAbstractDataList.GetItemAsVector(AnIndex: Integer): TVector;
-begin
-  result.vec4 := VecNull;
-end;
-
-procedure TAbstractDataList.SetItemAsVector(AnIndex: Integer;
-  const aVector: TVector);
-begin
-  Assert(false);
-end;
-
-procedure TAbstractDataList.Transform(const AMatrix: TMatrix);
-begin
-  Assert(false);
-end;
-
 { TVec3List }
 
 function TVec3List.Cross(AList: TVec3List): TVec3List;
@@ -1085,7 +1009,6 @@ begin
       Items[i] := AMatrix.Transform(V).vec3;
     end;
   end;
-  DispatchMessage(NM_ResourceChanged);
 end;
 
 procedure TVec3List.SetItemAsVector(AnIndex: Integer; const aVector: TVector);
@@ -1104,7 +1027,6 @@ begin
     V.vec3 := FItems[i];
     Items[i] := V.Normalize.vec3;
   end;
-  DispatchMessage(NM_ResourceChanged);
 end;
 
 procedure TVec3List.Transform(const AMatrix: TMatrix);
@@ -1117,7 +1039,7 @@ begin
     V.vec3 := FItems[i];
     Items[i] := AMatrix.Transform(V).vec3;
   end;
-  DispatchMessage(NM_ResourceChanged);
+
 end;
 
 { TVec2List }
@@ -1160,7 +1082,6 @@ begin
     V.vec2 := FItems[i];
     Items[i] := AMatrix.Transform(V).vec2;
   end;
-  DispatchMessage(NM_ResourceChanged);
 end;
 
 { TDoubleList }
@@ -1204,7 +1125,6 @@ begin
       Items[i] := AMatrix.Transform(V).vec4;
     end;
   end;
-  DispatchMessage(NM_ResourceChanged);
 end;
 
 procedure TVec4List.SetItemAsVector(AnIndex: Integer; const aVector: TVector);
@@ -1223,7 +1143,6 @@ begin
     V.vec4 := FItems[i];
     Items[i] := AMatrix.Transform(V).vec4;
   end;
-  DispatchMessage(NM_ResourceChanged);
 end;
 
 { TIntegerList }
@@ -1242,6 +1161,25 @@ begin
 end;
 
 procedure TIntegerList.Transform(const AMatrix: TMatrix);
+begin
+  Assert(false);
+end;
+
+{ TSingleList }
+
+function TSingleList.GetItemAsVector(AnIndex: Integer): TVector;
+begin
+  result.vec4 := VecNull;
+  result[0] := Items[AnIndex];
+end;
+
+procedure TSingleList.SetItemAsVector(AnIndex: Integer; const aVector: TVector);
+begin
+  Assert(AnIndex < FCount);
+  Items[AnIndex] := aVector[0];
+end;
+
+procedure TSingleList.Transform(const AMatrix: TMatrix);
 begin
   Assert(false);
 end;
