@@ -224,12 +224,47 @@ Type
     property UseMaterial: boolean read FUseMaterial write FUseMaterial;
   end;
 
+  TTextureSampler = class(TBaseRenderResource)
+  private
+    FUpdates: TTextureUpdates;
+    FTextureDescriptor: PTextureDesc;
+
+    function getTexGenR: TTexGens;
+    function getTexGenS: TTexGens;
+    function getTexGenT: TTexGens;
+    function getWrapR: TTextureWraps;
+    function getWrapS: TTextureWraps;
+    function getWrapT: TTextureWraps;
+    procedure setMagFilter(const Value: TMagFilter);
+    procedure setMinFilter(const Value: TMinFilter);
+    procedure setTexGenR(const Value: TTexGens);
+    procedure setTexGenS(const Value: TTexGens);
+    procedure setTexGenT(const Value: TTexGens);
+    procedure setWrapR(const Value: TTextureWraps);
+    procedure setWrapS(const Value: TTextureWraps);
+    procedure setWrapT(const Value: TTextureWraps);
+    function getMagFilter: TMagFilter;
+    function getMinFilter: TMinFilter;
+
+    function getTexDescr: PTextureDesc;
+  public
+    // Texture Descriptors
+    property WrapS: TTextureWraps read getWrapS write setWrapS;
+    property WrapT: TTextureWraps read getWrapT write setWrapT;
+    property WrapR: TTextureWraps read getWrapR write setWrapR;
+    property minFilter: TMinFilter read getMinFilter write setMinFilter;
+    property magFilter: TMagFilter read getMagFilter write setMagFilter;
+    property TextureGenS: TTexGens read getTexGenS write setTexGenS;
+    property TextureGenT: TTexGens read getTexGenT write setTexGenT;
+    property TextureGenR: TTexGens read getTexGenR write setTexGenR;
+    property TextureDescriptor: PTextureDesc read getTexDescr;
+  end;
+
   TTexture = class(TBaseRenderResource)
   private
     FOwner: TObject;
 
-    FTextureDescriptor: TTextureDesc;
-    FImageDescriptor: TImageDesc;
+    FImageDescriptor: PImageDesc;
     FReady: boolean;
     FName: string;
     FUpdates: TTextureUpdates;
@@ -239,6 +274,9 @@ Type
     FTexMatrix: TMatrix;
     FTexMatrixChanged: boolean;
     FTwoSides: boolean;
+    FAnisotropyLevel: single;
+    FTarget: TTexTarget;
+    FGenerateMipMaps: boolean;
 
     function getCFormat: cardinal;
     function getCompressed: boolean;
@@ -256,41 +294,25 @@ Type
     function getDepth: integer;
     function getWidth: integer;
 
-    function getMagFilter: TMagFilter;
-    function getMinFilter: TMinFilter;
     function getResMem: integer;
     function getTarget: TTexTarget;
     function getTexArray: boolean;
-    function getTexGenR: TTexGens;
-    function getTexGenS: TTexGens;
-    function getTexGenT: TTexGens;
-    function getWrapR: TTextureWraps;
-    function getWrapS: TTextureWraps;
-    function getWrapT: TTextureWraps;
+    procedure SetName(const Value: string);
+    function getImgDescr: PImageDesc;
+    procedure setTexMatrix(const Value: TMatrix);
+    procedure setData(const Value: Pointer);
+
     function getAnisotropyLevel: single;
     procedure SetAnisotropyLevel(const Value: single);
     procedure setGenMipMaps(const Value: boolean);
-    procedure setMagFilter(const Value: TMagFilter);
-    procedure setMinFilter(const Value: TMinFilter);
-    procedure setTexGenR(const Value: TTexGens);
-    procedure setTexGenS(const Value: TTexGens);
-    procedure setTexGenT(const Value: TTexGens);
-    procedure setWrapR(const Value: TTextureWraps);
-    procedure setWrapS(const Value: TTextureWraps);
-    procedure setWrapT(const Value: TTextureWraps);
-    procedure SetName(const Value: string);
-    function getImgDescr: TImageDesc;
-    function getTexDescr: TTextureDesc;
-    procedure setTexMatrix(const Value: TMatrix);
-    procedure setData(const Value: Pointer);
+
   public
 
     constructor CreateOwned(aOwner: TObject = nil);
 
     property Owner: TObject read FOwner;
 
-    property ImageDescriptor: TImageDesc read getImgDescr;
-    property TextureDescriptor: TTextureDesc read getTexDescr;
+    property ImageDescriptor: PImageDesc read getImgDescr;
     property Updates: TTextureUpdates read FUpdates write FUpdates;
 
     property Disabled: boolean read FDisabled write FDisabled;
@@ -300,19 +322,6 @@ Type
     property Matrix: TMatrix read FTexMatrix write setTexMatrix;
     property MatrixChanged: boolean read FTexMatrixChanged;
     property TwoSides: boolean read FTwoSides write FTwoSides;
-
-    // Texture Descriptors
-    property WrapS: TTextureWraps read getWrapS write setWrapS;
-    property WrapT: TTextureWraps read getWrapT write setWrapT;
-    property WrapR: TTextureWraps read getWrapR write setWrapR;
-    property minFilter: TMinFilter read getMinFilter write setMinFilter;
-    property magFilter: TMagFilter read getMagFilter write setMagFilter;
-    property TextureGenS: TTexGens read getTexGenS write setTexGenS;
-    property TextureGenT: TTexGens read getTexGenT write setTexGenT;
-    property TextureGenR: TTexGens read getTexGenR write setTexGenR;
-    property GenerateMipMaps: boolean read getGenMipMaps write setGenMipMaps;
-    property AnisotropyLevel: single read getAnisotropyLevel
-      write SetAnisotropyLevel;
 
     // Image Descriptors
     property Target: TTexTarget read getTarget;
@@ -334,6 +343,11 @@ Type
     property CubeMap: boolean read getCubeMap;
     property TextureArray: boolean read getTexArray;
     property LODS[Index: integer]: TImageLevelDesc read getImgLod;
+
+    property GenerateMipMaps: boolean read getGenMipMaps write setGenMipMaps;
+    property AnisotropyLevel: single read getAnisotropyLevel
+      write SetAnisotropyLevel;
+
   end;
 
   TCustomBlending = class(TBaseRenderResource)
@@ -1095,9 +1109,9 @@ begin
   result := FImageDescriptor.InternalFormat;
 end;
 
-function TTexture.getImgDescr: TImageDesc;
+function TTexture.getImgDescr: PImageDesc;
 begin
-  result := FImageDescriptor;
+  result := @FImageDescriptor;
 end;
 
 function TTexture.getImgLod(Index: integer): TImageLevelDesc;
@@ -1122,72 +1136,9 @@ begin
   result := FImageDescriptor.TextureArray;
 end;
 
-function TTexture.getTexDescr: TTextureDesc;
-begin
-  result := FTextureDescriptor;
-end;
-
 function TTexture.getTarget: TTexTarget;
 begin
-  result := FTextureDescriptor.Target;
-end;
-
-// TextureDescriptors
-
-function TTexture.getAnisotropyLevel: single;
-begin
-  result := FTextureDescriptor.AnisotropyLevel;
-end;
-
-function TTexture.getGenMipMaps: boolean;
-begin
-  result := FTextureDescriptor.GenerateMipMaps;
-end;
-
-function TTexture.getMagFilter: TMagFilter;
-begin
-  result := FTextureDescriptor.magFilter;
-end;
-
-function TTexture.getMinFilter: TMinFilter;
-begin
-  result := FTextureDescriptor.minFilter;
-end;
-
-function TTexture.getTexGenR: TTexGens;
-begin
-  result := FTextureDescriptor.TextureGenR;
-end;
-
-function TTexture.getTexGenS: TTexGens;
-begin
-  result := FTextureDescriptor.TextureGenS;
-end;
-
-function TTexture.getTexGenT: TTexGens;
-begin
-  result := FTextureDescriptor.TextureGenT;
-end;
-
-function TTexture.getWrapR: TTextureWraps;
-begin
-  result := FTextureDescriptor.WrapR;
-end;
-
-function TTexture.getWrapS: TTextureWraps;
-begin
-  result := FTextureDescriptor.WrapS;
-end;
-
-function TTexture.getWrapT: TTextureWraps;
-begin
-  result := FTextureDescriptor.WrapT;
-end;
-
-procedure TTexture.SetAnisotropyLevel(const Value: single);
-begin
-  include(FUpdates, tuAnisotropyLevel);
-  FTextureDescriptor.AnisotropyLevel := Value;
+  result := FTarget;
 end;
 
 procedure TTexture.setData(const Value: Pointer);
@@ -1198,37 +1149,7 @@ end;
 procedure TTexture.setGenMipMaps(const Value: boolean);
 begin
   include(FUpdates, tuGenMipMaps);
-  FTextureDescriptor.GenerateMipMaps := Value;
-end;
-
-procedure TTexture.setMagFilter(const Value: TMagFilter);
-begin
-  include(FUpdates, tuMagFilter);
-  FTextureDescriptor.magFilter := Value;
-end;
-
-procedure TTexture.setMinFilter(const Value: TMinFilter);
-begin
-  include(FUpdates, tuMinFilter);
-  FTextureDescriptor.minFilter := Value;
-end;
-
-procedure TTexture.setTexGenR(const Value: TTexGens);
-begin
-  include(FUpdates, tuTextureGenR);
-  FTextureDescriptor.TextureGenR := Value;
-end;
-
-procedure TTexture.setTexGenS(const Value: TTexGens);
-begin
-  include(FUpdates, tuTextureGenS);
-  FTextureDescriptor.TextureGenS := Value;
-end;
-
-procedure TTexture.setTexGenT(const Value: TTexGens);
-begin
-  include(FUpdates, tuTextureGenT);
-  FTextureDescriptor.TextureGenT := Value;
+  FGenerateMipMaps := Value;
 end;
 
 procedure TTexture.setTexMatrix(const Value: TMatrix);
@@ -1237,23 +1158,17 @@ begin
   FTexMatrixChanged := true;
 end;
 
-procedure TTexture.setWrapR(const Value: TTextureWraps);
+procedure TTexture.SetAnisotropyLevel(const Value: single);
 begin
-  include(FUpdates, tuWrapR);
-  FTextureDescriptor.WrapR := Value;
+  include(FUpdates, tuAnisotropyLevel);
+  FAnisotropyLevel := Value;
 end;
 
-procedure TTexture.setWrapS(const Value: TTextureWraps);
+function TTexture.getAnisotropyLevel: single;
 begin
-  include(FUpdates, tuWrapS);
-  FTextureDescriptor.WrapS := Value;
+  result := FAnisotropyLevel;
 end;
 
-procedure TTexture.setWrapT(const Value: TTextureWraps);
-begin
-  include(FUpdates, tuWrapT);
-  FTextureDescriptor.WrapT := Value;
-end;
 
 constructor TTexture.CreateOwned(aOwner: TObject);
 begin
@@ -1261,6 +1176,108 @@ begin
   FTexMatrixChanged := false;
   FOwner := aOwner;
 end;
+
+function TTexture.getGenMipMaps: boolean;
+begin
+  result := FGenerateMipMaps;
+end;
+
+
+// TextureDescriptors
+
+function TTextureSampler.getTexDescr: PTextureDesc;
+begin
+  result := @FTextureDescriptor;
+end;
+
+function TTextureSampler.getMagFilter: TMagFilter;
+begin
+  result := FTextureDescriptor.magFilter;
+end;
+
+function TTextureSampler.getMinFilter: TMinFilter;
+begin
+  result := FTextureDescriptor.minFilter;
+end;
+
+function TTextureSampler.getTexGenR: TTexGens;
+begin
+  result := FTextureDescriptor.TextureGenR;
+end;
+
+function TTextureSampler.getTexGenS: TTexGens;
+begin
+  result := FTextureDescriptor.TextureGenS;
+end;
+
+function TTextureSampler.getTexGenT: TTexGens;
+begin
+  result := FTextureDescriptor.TextureGenT;
+end;
+
+function TTextureSampler.getWrapR: TTextureWraps;
+begin
+  result := FTextureDescriptor.WrapR;
+end;
+
+function TTextureSampler.getWrapS: TTextureWraps;
+begin
+  result := FTextureDescriptor.WrapS;
+end;
+
+function TTextureSampler.getWrapT: TTextureWraps;
+begin
+  result := FTextureDescriptor.WrapT;
+end;
+
+procedure TTextureSampler.setMagFilter(const Value: TMagFilter);
+begin
+  include(FUpdates, tuMagFilter);
+  FTextureDescriptor.magFilter := Value;
+end;
+
+procedure TTextureSampler.setMinFilter(const Value: TMinFilter);
+begin
+  include(FUpdates, tuMinFilter);
+  FTextureDescriptor.minFilter := Value;
+end;
+
+procedure TTextureSampler.setTexGenR(const Value: TTexGens);
+begin
+  include(FUpdates, tuTextureGenR);
+  FTextureDescriptor.TextureGenR := Value;
+end;
+
+procedure TTextureSampler.setTexGenS(const Value: TTexGens);
+begin
+  include(FUpdates, tuTextureGenS);
+  FTextureDescriptor.TextureGenS := Value;
+end;
+
+procedure TTextureSampler.setTexGenT(const Value: TTexGens);
+begin
+  include(FUpdates, tuTextureGenT);
+  FTextureDescriptor.TextureGenT := Value;
+end;
+
+procedure TTextureSampler.setWrapR(const Value: TTextureWraps);
+begin
+  include(FUpdates, tuWrapR);
+  FTextureDescriptor.WrapR := Value;
+end;
+
+procedure TTextureSampler.setWrapS(const Value: TTextureWraps);
+begin
+  include(FUpdates, tuWrapS);
+  FTextureDescriptor.WrapS := Value;
+end;
+
+procedure TTextureSampler.setWrapT(const Value: TTextureWraps);
+begin
+  include(FUpdates, tuWrapT);
+  FTextureDescriptor.WrapT := Value;
+end;
+
 
 { TBufferObject }
 

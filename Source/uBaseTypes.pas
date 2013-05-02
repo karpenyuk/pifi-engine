@@ -76,7 +76,6 @@ Type
   TTextureUpdates = set of TTextureUpdate;
 
   TTextureDesc = record
-     Target: TTexTarget;
      WrapS, WrapT, WrapR: TTextureWraps;
      minFilter: TMinFilter;
      magFilter: TMagFilter;
@@ -85,6 +84,7 @@ Type
      TextureGenR: TTexGens;
      GenerateMipMaps: boolean;
      AnisotropyLevel: single;
+     MinLod, MaxLod, LodBias: single;
   end;
   PTextureDesc = ^TTextureDesc;
 
