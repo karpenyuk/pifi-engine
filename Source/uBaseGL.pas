@@ -377,6 +377,7 @@ Type
     FTarget: TTexTarget;
     FTextureObject: TTexture;
     FTextureSampler: TTextureSampler;
+    FGenerateMipMaps: boolean;
   public
     constructor Create; override;
     constructor CreateFrom(const aTarget: TTexTarget; const aImageDesc: PImageDesc;
@@ -391,6 +392,7 @@ Type
 
     property Id: cardinal read FTexId;
     property Target: TTexTarget read FTarget;
+    property GenerateMipMaps: boolean read FGenerateMipMaps write FGenerateMipMaps;
   end;
 
   TGLFrameBufferObject = class(TGLBaseResource)
@@ -1707,6 +1709,7 @@ begin
   FTextureObject := nil;
   FImageDesc:=nil;
   FTexDesc:=nil;
+  FGenerateMipMaps := false;
 end;
 
 constructor TGLTextureObject.CreateFrom(const aTarget: TTexTarget;
@@ -2288,7 +2291,7 @@ begin
     for i := 0 to Textures.Count - 1 do
     begin
       tex := Textures[i];
-      if assigned(tex) and tex.FTexDesc.GenerateMipMaps then
+      if assigned(tex) and tex.GenerateMipMaps then
       begin
         glBindTexture(CTexTargets[tex.Target], tex.Id);
         glGenerateMipmap(CTexTargets[tex.Target]);
@@ -2298,7 +2301,7 @@ begin
     if DepthBuffer.Mode = bmTexture then
     begin
       tex := DepthBuffer.Texture;
-      if assigned(tex) and tex.FTexDesc.GenerateMipMaps then
+      if assigned(tex) and tex.GenerateMipMaps then
       begin
         glBindTexture(CTexTargets[tex.Target], tex.Id);
         glGenerateMipmap(CTexTargets[tex.Target]);
@@ -2308,7 +2311,7 @@ begin
     if StencilBuffer.Mode = bmTexture then
     begin
       tex := StencilBuffer.Texture;
-      if assigned(tex) and tex.FTexDesc.GenerateMipMaps then
+      if assigned(tex) and tex.GenerateMipMaps then
       begin
         glBindTexture(CTexTargets[tex.Target], tex.Id);
         glGenerateMipmap(CTexTargets[tex.Target]);

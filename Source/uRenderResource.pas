@@ -227,7 +227,7 @@ Type
   TTextureSampler = class(TBaseRenderResource)
   private
     FUpdates: TTextureUpdates;
-    FTextureDescriptor: PTextureDesc;
+    FTextureDescriptor: TTextureDesc;
 
     function getTexGenR: TTexGens;
     function getTexGenS: TTexGens;
@@ -245,9 +245,20 @@ Type
     procedure setWrapT(const Value: TTextureWraps);
     function getMagFilter: TMagFilter;
     function getMinFilter: TMinFilter;
+    function getMinLod: single;
+    procedure setMinLod(const Value: single);
+    function getMaxLod: single;
+    procedure setMaxLod(const Value: single);
+    function getLodBias: single;
+    procedure setLodBias(const Value: single);
+    function getCFunc: TTextureCompareFunc;
+    function getCMode: TTextureCompareMode;
+    procedure setCFunc(const Value: TTextureCompareFunc);
+    procedure setCMode(const Value: TTextureCompareMode);
 
     function getTexDescr: PTextureDesc;
   public
+    constructor Create; override;
     // Texture Descriptors
     property WrapS: TTextureWraps read getWrapS write setWrapS;
     property WrapT: TTextureWraps read getWrapT write setWrapT;
@@ -257,6 +268,12 @@ Type
     property TextureGenS: TTexGens read getTexGenS write setTexGenS;
     property TextureGenT: TTexGens read getTexGenT write setTexGenT;
     property TextureGenR: TTexGens read getTexGenR write setTexGenR;
+    property MinLod: single read getMinLod write setMinLod;
+    property MaxLod: single read getMaxLod write setMaxLod;
+    property LodBias: single read getLodBias write setLodBias;
+    property CompareMode: TTextureCompareMode read getCMode write setCMode;
+    property CompareFunc: TTextureCompareFunc read getCFunc write setCFunc;
+
     property TextureDescriptor: PTextureDesc read getTexDescr;
   end;
 
@@ -1190,14 +1207,60 @@ begin
   result := @FTextureDescriptor;
 end;
 
+constructor TTextureSampler.Create;
+begin
+  inherited;
+  FUpdates := [tuWrapS, tuWrapT, tuWrapR, tuminFilter, tumagFilter, tuTextureGenS,
+                tuTextureGenT, tuTextureGenR, tuMinLod, tuMaxLod, tuLodBias,
+                tuCompareMode, tuCompareFunc];
+  FTextureDescriptor.WrapS := twRepeat;
+  FTextureDescriptor.WrapT := twRepeat;
+  FTextureDescriptor.WrapR := twRepeat;
+  FTextureDescriptor.minFilter := mnLinear;
+  FTextureDescriptor.magFilter := mgLinear;
+  FTextureDescriptor.TextureGenS := tgDisable;
+  FTextureDescriptor.TextureGenT := tgDisable;
+  FTextureDescriptor.TextureGenR := tgDisable;
+  FTextureDescriptor.MinLod := 0;
+  FTextureDescriptor.MaxLod := 0;
+  FTextureDescriptor.LodBias := 0;
+  FTextureDescriptor.CompareMode := cmNone;
+  FTextureDescriptor.CompareFunc := cfLess;
+end;
+
+function TTextureSampler.getCFunc: TTextureCompareFunc;
+begin
+  result:=FTextureDescriptor.CompareFunc;
+end;
+
+function TTextureSampler.getCMode: TTextureCompareMode;
+begin
+  result:=FTextureDescriptor.CompareMode;
+end;
+
+function TTextureSampler.getLodBias: single;
+begin
+  result := FTextureDescriptor.LodBias;
+end;
+
 function TTextureSampler.getMagFilter: TMagFilter;
 begin
   result := FTextureDescriptor.magFilter;
 end;
 
+function TTextureSampler.getMaxLod: single;
+begin
+  result := FTextureDescriptor.MaxLod;
+end;
+
 function TTextureSampler.getMinFilter: TMinFilter;
 begin
   result := FTextureDescriptor.minFilter;
+end;
+
+function TTextureSampler.getMinLod: single;
+begin
+  result := FTextureDescriptor.MinLod;
 end;
 
 function TTextureSampler.getTexGenR: TTexGens;
@@ -1230,16 +1293,46 @@ begin
   result := FTextureDescriptor.WrapT;
 end;
 
+procedure TTextureSampler.setCFunc(const Value: TTextureCompareFunc);
+begin
+  FTextureDescriptor.CompareFunc := Value;
+  include(FUpdates, tuCompareFunc);
+end;
+
+procedure TTextureSampler.setCMode(const Value: TTextureCompareMode);
+begin
+  FTextureDescriptor.CompareMode:= Value;
+  include(FUpdates, tuCompareMode);
+end;
+
+procedure TTextureSampler.setLodBias(const Value: single);
+begin
+  include(FUpdates, tuLodBias);
+  FTextureDescriptor.LodBias := Value;;
+end;
+
 procedure TTextureSampler.setMagFilter(const Value: TMagFilter);
 begin
   include(FUpdates, tuMagFilter);
   FTextureDescriptor.magFilter := Value;
 end;
 
+procedure TTextureSampler.setMaxLod(const Value: single);
+begin
+  include(FUpdates, tuMaxLod);
+  FTextureDescriptor.MaxLod := Value;
+end;
+
 procedure TTextureSampler.setMinFilter(const Value: TMinFilter);
 begin
   include(FUpdates, tuMinFilter);
   FTextureDescriptor.minFilter := Value;
+end;
+
+procedure TTextureSampler.setMinLod(const Value: single);
+begin
+  FTextureDescriptor.MinLod := Value;
+  include(FUpdates, tuMinLod);
 end;
 
 procedure TTextureSampler.setTexGenR(const Value: TTexGens);

@@ -71,9 +71,14 @@ Type
 
   TTextureMode = (tmDecal, tmModulate, tmBlend, tmReplace, tmAdd);
 
-  TTextureUpdate = (tuWrapS,tuWrapT,tuWrapR,tuminFilter,tumagFilter,tuTextureGenS,
-                     tuTextureGenT,tuTextureGenR,tuGenMipMaps,tuAnisotropyLevel);
+  TTextureUpdate = (tuWrapS, tuWrapT, tuWrapR, tuminFilter, tumagFilter, tuTextureGenS,
+                     tuTextureGenT, tuTextureGenR, tuGenMipMaps, tuAnisotropyLevel,
+                     tuMinLod, tuMaxLod, tuLodBias, tuCompareMode, tuCompareFunc);
   TTextureUpdates = set of TTextureUpdate;
+
+  TTextureCompareMode = (cmNone, cmCompareRefToTexture);
+  TTextureCompareFunc = (cfLEqual, cfGEqual, cfLess, cfGreater, cfEqual, cfNotEqual,
+                          cfAlways, cfNever);
 
   TTextureDesc = record
      WrapS, WrapT, WrapR: TTextureWraps;
@@ -82,9 +87,9 @@ Type
      TextureGenS: TTexGens;
      TextureGenT: TTexGens;
      TextureGenR: TTexGens;
-     GenerateMipMaps: boolean;
-     AnisotropyLevel: single;
      MinLod, MaxLod, LodBias: single;
+     CompareMode: TTextureCompareMode;
+     CompareFunc: TTextureCompareFunc;
   end;
   PTextureDesc = ^TTextureDesc;
 
