@@ -46,6 +46,7 @@ type
     procedure Timer1Timer(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure RadioButton2Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
     MX, MY, CX, CY: Integer;
@@ -146,6 +147,11 @@ begin
   log.Free;
 end;
 
+procedure TForm3.FormCreate(Sender: TObject);
+begin
+  GLViewer1.Context.DebugContext := True;
+end;
+
 procedure TForm3.GLViewer1ContextReady(Sender: TObject);
 var
   ver: TApiVersion;
@@ -154,19 +160,18 @@ var
   path: string;
 begin
   log := TStringList.Create;
-  // glDebugMessageCallback(DebugCallback, nil);
-  // glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nil, true);
-  // glEnable(GL_DEBUG_OUTPUT);
-  // glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+//   glDebugMessageCallbackARB(DebugCallback, nil);
+//   glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nil, true);
+//   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
   // Checking OpenGL Version
   with GLViewer1.Context do
-    if (MaxMajorVersion < 4) or (MaxMinorVersion < 3) then begin
+    if (MaxMajorVersion < 4) or (MaxMinorVersion < 2) then begin
       GL1xRender := true;
       ver.GAPI := avGL;
       ver.Version := 130;
     end else begin
       ver.GAPI := avGL;
-      ver.Version := 430;
+      ver.Version := 420;
       GL1xRender := false;
     end;
 
@@ -294,8 +299,6 @@ var
   t: double;
   wgs, wgc: vec3i;
 begin
-  // glDisable(GL_DEBUG_OUTPUT); // Много жрет
-
   wgc := GetWorkgroupCount;
   wgs := GetWorkgroupSize;
 

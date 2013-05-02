@@ -1191,10 +1191,8 @@ begin
   AddIAttrib(WGL_CONTEXT_MAJOR_VERSION_ARB, FMajorVersion);
   AddIAttrib(WGL_CONTEXT_MINOR_VERSION_ARB, FMinorVersion);
   if FDebugContext then
-    AddIAttrib(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB +
-      GL_CONTEXT_FLAG_DEBUG_BIT)
-  else
-    AddIAttrib(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB);
+    AddIAttrib(WGL_CONTEXT_FLAGS_ARB, GL_CONTEXT_FLAG_DEBUG_BIT);
+  AddIAttrib(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB);
   RC := wglCreateContextAttribsARB(DeviceContext, 0, @FiAttribs[0]);
   if (RC <> 0) then begin
     FGLRCx := RC;
@@ -1224,9 +1222,8 @@ begin
 
   if Result and FDebugContext then
   begin
-    glDebugMessageCallback(GLDebugCallback, Self);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nil, true);
-    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallbackARB(GLDebugCallback, Self);
+    glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nil, true);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
   end;
 end;

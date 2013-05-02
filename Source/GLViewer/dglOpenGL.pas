@@ -4480,7 +4480,7 @@ const
   GL_DEBUG_SEVERITY_MEDIUM          = $9147;
   GL_DEBUG_SEVERITY_LOW             = $9148;
   GL_DEBUG_OUTPUT                   = $92E0;
-  GL_CONTEXT_FLAG_DEBUG_BIT         = $00000002;
+  GL_CONTEXT_FLAG_DEBUG_BIT         = $0001;
   { reuse GL_STACK_UNDERFLOW }
   { reuse GL_STACK_OVERFLOW }
 

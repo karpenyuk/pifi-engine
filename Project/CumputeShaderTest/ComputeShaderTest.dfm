@@ -12,6 +12,7 @@ object Form3: TForm3
   Font.Style = []
   OldCreateOrder = True
   OnClose = FormClose
+  OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
   object GLViewer1: TGLViewer
@@ -20,12 +21,10 @@ object Form3: TForm3
     Width = 746
     Height = 415
     OnRender = GLViewer1Render
-    onContextReady = GLViewer1ContextReady
+    OnContextReady = GLViewer1ContextReady
     Align = alClient
     OnMouseDown = GLViewer1MouseDown
     OnMouseMove = GLViewer1MouseMove
-    ExplicitTop = 25
-    ExplicitHeight = 431
   end
   object Panel1: TPanel
     Left = 0
