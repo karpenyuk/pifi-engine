@@ -372,16 +372,27 @@ Type
   private
     FTexId: cardinal;
     FpboId: cardinal;
-    FImageDesc: TImageDesc;
-    FTexDesc: TTextureDesc;
+    FImageDesc: PImageDesc;
+    FTexDesc: PTextureDesc;
+    FTarget: TTexTarget;
+    FTextureObject: TTexture;
+    FTextureSampler: TTextureSampler;
+    FGenerateMipMaps: boolean;
   public
-    constructor CreateFrom(const aImageDesc: TImageDesc;
-      const aTexDesc: TTextureDesc);
+    constructor Create; override;
+    constructor CreateFrom(const aTarget: TTexTarget; const aImageDesc: PImageDesc;
+      const aTexDesc: PTextureDesc = nil); overload;
+    constructor CreateFrom(const aTexture: TTexture); overload;
+
     destructor Destroy; override;
 
     procedure UploadTexture(Data: pointer; Size: cardinal);
 
+    property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
+
     property Id: cardinal read FTexId;
+    property Target: TTexTarget read FTarget;
+    property GenerateMipMaps: boolean read FGenerateMipMaps write FGenerateMipMaps;
   end;
 
   TGLFrameBufferObject = class(TGLBaseResource)
@@ -1686,21 +1697,44 @@ begin
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 end;
 
-{ TTextureObject }
+{ TGLTextureObject }
 
-constructor TGLTextureObject.CreateFrom(const aImageDesc: TImageDesc;
-  const aTexDesc: TTextureDesc);
+constructor TGLTextureObject.Create;
+begin
+  inherited Create;
+  glGenTextures(1, @FTexId);
+  glGenBuffers(1, @FpboId);
+  FTarget := ttTexture2D;
+  FTextureSampler := nil;
+  FTextureObject := nil;
+  FImageDesc:=nil;
+  FTexDesc:=nil;
+  FGenerateMipMaps := false;
+end;
+
+constructor TGLTextureObject.CreateFrom(const aTarget: TTexTarget;
+  const aImageDesc: PImageDesc; const aTexDesc: PTextureDesc);
 begin
   Create;
   glGenTextures(1, @FTexId);
   glGenBuffers(1, @FpboId);
   FTexDesc := aTexDesc;
   FImageDesc := aImageDesc;
+  FTarget := aTarget;
+end;
+
+constructor TGLTextureObject.CreateFrom(const aTexture: TTexture);
+begin
+  Create;
+  glGenTextures(1, @FTexId);
+  glGenBuffers(1, @FpboId);
+  FImageDesc := aTexture.ImageDescriptor;
+  FTarget := aTexture.Target;
 end;
 
 destructor TGLTextureObject.Destroy;
 begin
-  glBindTexture(CTexTargets[FTexDesc.Target], 0);
+  glBindTexture(CTexTargets[FTarget], 0);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
   glDeleteTextures(1, @FTexId);
@@ -1710,25 +1744,26 @@ end;
 
 procedure TGLTextureObject.UploadTexture(Data: pointer; Size: cardinal);
 begin
-  with FImageDesc, FTexDesc do
+  assert(assigned(FImageDesc),'Image descriptor is not assigned!');
+  with FImageDesc^ do
   begin
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, FpboId);
-    glBindTexture(CTexTargets[Target], FTexId);
-    case Target of
+    glBindTexture(CTexTargets[FTarget], FTexId);
+    case FTarget of
       ttTexture1D:
-        glTexImage1D(CTexTargets[Target], 0, InternalFormat, Width, 0,
+        glTexImage1D(CTexTargets[FTarget], 0, InternalFormat, Width, 0,
           ColorFormat, DataType, nil);
       ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
-        glTexImage2D(CTexTargets[Target], 0, InternalFormat, Width, Height, 0,
+        glTexImage2D(CTexTargets[FTarget], 0, InternalFormat, Width, Height, 0,
           ColorFormat, DataType, nil);
       ttTexture3D:
-        glTexImage3D(CTexTargets[Target], 0, InternalFormat, Width, Height,
+        glTexImage3D(CTexTargets[FTarget], 0, InternalFormat, Width, Height,
           Depth, 0, ColorFormat, DataType, nil);
     end;
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    if GenerateMipMaps then
-      glGenerateMipmap(CTexTargets[Target]);
-    glBindTexture(CTexTargets[Target], 0);
+    if assigned(FTextureObject) and FTextureObject.GenerateMipMaps then
+      glGenerateMipmap(CTexTargets[FTarget]);
+    glBindTexture(CTexTargets[FTarget], 0);
   end;
 end;
 
@@ -1799,7 +1834,7 @@ begin
     tex := FAttachments.Textures[index];
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index,
-      CTexTargets[tex.FTexDesc.Target], 0, 0);
+      CTexTargets[tex.Target], 0, 0);
     FAttachments.Textures.Delete(index);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   end;
@@ -2061,7 +2096,7 @@ begin
   begin
     tex := FAttachments.Textures[i];
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
-      CTexTargets[tex.FTexDesc.Target], 0, 0);
+      CTexTargets[tex.Target], 0, 0);
   end;
   FAttachments.Textures.Clear;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2155,7 +2190,7 @@ begin
     exit;
   end;
 
-  case tex.FTexDesc.Target of
+  case tex.Target of
     ttTexture1D:
       glFramebufferTexture1D(FBTarget, attachement, GL_TEXTURE_1D, th, 0);
     ttTexture2D:
@@ -2256,31 +2291,31 @@ begin
     for i := 0 to Textures.Count - 1 do
     begin
       tex := Textures[i];
-      if assigned(tex) and tex.FTexDesc.GenerateMipMaps then
+      if assigned(tex) and tex.GenerateMipMaps then
       begin
-        glBindTexture(CTexTargets[tex.FTexDesc.Target], tex.Id);
-        glGenerateMipmap(CTexTargets[tex.FTexDesc.Target]);
-        glBindTexture(CTexTargets[tex.FTexDesc.Target], 0);
+        glBindTexture(CTexTargets[tex.Target], tex.Id);
+        glGenerateMipmap(CTexTargets[tex.Target]);
+        glBindTexture(CTexTargets[tex.Target], 0);
       end;
     end;
     if DepthBuffer.Mode = bmTexture then
     begin
       tex := DepthBuffer.Texture;
-      if assigned(tex) and tex.FTexDesc.GenerateMipMaps then
+      if assigned(tex) and tex.GenerateMipMaps then
       begin
-        glBindTexture(CTexTargets[tex.FTexDesc.Target], tex.Id);
-        glGenerateMipmap(CTexTargets[tex.FTexDesc.Target]);
-        glBindTexture(CTexTargets[tex.FTexDesc.Target], 0);
+        glBindTexture(CTexTargets[tex.Target], tex.Id);
+        glGenerateMipmap(CTexTargets[tex.Target]);
+        glBindTexture(CTexTargets[tex.Target], 0);
       end;
     end;
     if StencilBuffer.Mode = bmTexture then
     begin
       tex := StencilBuffer.Texture;
-      if assigned(tex) and tex.FTexDesc.GenerateMipMaps then
+      if assigned(tex) and tex.GenerateMipMaps then
       begin
-        glBindTexture(CTexTargets[tex.FTexDesc.Target], tex.Id);
-        glGenerateMipmap(CTexTargets[tex.FTexDesc.Target]);
-        glBindTexture(CTexTargets[tex.FTexDesc.Target], 0);
+        glBindTexture(CTexTargets[tex.Target], tex.Id);
+        glGenerateMipmap(CTexTargets[tex.Target]);
+        glBindTexture(CTexTargets[tex.Target], 0);
       end;
     end;
   end;
