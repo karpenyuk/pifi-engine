@@ -255,6 +255,8 @@ Type
     function getCMode: TTextureCompareMode;
     procedure setCFunc(const Value: TTextureCompareFunc);
     procedure setCMode(const Value: TTextureCompareMode);
+    function getAnisotropyLevel: single;
+    procedure SetAnisotropyLevel(const Value: single);
 
     function getTexDescr: PTextureDesc;
   public
@@ -273,6 +275,8 @@ Type
     property LodBias: single read getLodBias write setLodBias;
     property CompareMode: TTextureCompareMode read getCMode write setCMode;
     property CompareFunc: TTextureCompareFunc read getCFunc write setCFunc;
+    property AnisotropyLevel: single read getAnisotropyLevel
+      write SetAnisotropyLevel;
 
     property TextureDescriptor: PTextureDesc read getTexDescr;
   end;
@@ -291,7 +295,6 @@ Type
     FTexMatrix: TMatrix;
     FTexMatrixChanged: boolean;
     FTwoSides: boolean;
-    FAnisotropyLevel: single;
     FTarget: TTexTarget;
     FGenerateMipMaps: boolean;
 
@@ -319,8 +322,6 @@ Type
     procedure setTexMatrix(const Value: TMatrix);
     procedure setData(const Value: Pointer);
 
-    function getAnisotropyLevel: single;
-    procedure SetAnisotropyLevel(const Value: single);
     procedure setGenMipMaps(const Value: boolean);
 
   public
@@ -362,9 +363,6 @@ Type
     property LODS[Index: integer]: TImageLevelDesc read getImgLod;
 
     property GenerateMipMaps: boolean read getGenMipMaps write setGenMipMaps;
-    property AnisotropyLevel: single read getAnisotropyLevel
-      write SetAnisotropyLevel;
-
   end;
 
   TCustomBlending = class(TBaseRenderResource)
@@ -1175,18 +1173,6 @@ begin
   FTexMatrixChanged := true;
 end;
 
-procedure TTexture.SetAnisotropyLevel(const Value: single);
-begin
-  include(FUpdates, tuAnisotropyLevel);
-  FAnisotropyLevel := Value;
-end;
-
-function TTexture.getAnisotropyLevel: single;
-begin
-  result := FAnisotropyLevel;
-end;
-
-
 constructor TTexture.CreateOwned(aOwner: TObject);
 begin
   Create;
@@ -1200,7 +1186,7 @@ begin
 end;
 
 
-// TextureDescriptors
+{ TTextureSampler }
 
 function TTextureSampler.getTexDescr: PTextureDesc;
 begin
@@ -1221,11 +1207,23 @@ begin
   FTextureDescriptor.TextureGenS := tgDisable;
   FTextureDescriptor.TextureGenT := tgDisable;
   FTextureDescriptor.TextureGenR := tgDisable;
-  FTextureDescriptor.MinLod := 0;
-  FTextureDescriptor.MaxLod := 0;
+  FTextureDescriptor.MinLod := -1000;
+  FTextureDescriptor.MaxLod := 1000;
   FTextureDescriptor.LodBias := 0;
   FTextureDescriptor.CompareMode := cmNone;
-  FTextureDescriptor.CompareFunc := cfLess;
+  FTextureDescriptor.CompareFunc := cfLEqual;
+  FTextureDescriptor.AnisotropyLevel := 1;
+end;
+
+procedure TTextureSampler.SetAnisotropyLevel(const Value: single);
+begin
+  include(FUpdates, tuAnisotropyLevel);
+  FTextureDescriptor.AnisotropyLevel := Value;
+end;
+
+function TTextureSampler.getAnisotropyLevel: single;
+begin
+  result := FTextureDescriptor.AnisotropyLevel;
 end;
 
 function TTextureSampler.getCFunc: TTextureCompareFunc;
