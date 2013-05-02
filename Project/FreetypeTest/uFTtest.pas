@@ -97,7 +97,8 @@ end;
 
 procedure TForm5.GLViewer1ContextReady(Sender: TObject);
 const
-  strGOST = 'GOST';
+  strGOST2d = 'GOST2D';
+  strGOST3D = 'GOST3D';
   strText: UnicodeString = 'QERTY …÷” ≈Õ';
 var
   ver: TApiVersion;
@@ -154,12 +155,14 @@ begin
   StopGlyph:= 'ﬂ';
   AddToCharSet;
 
-  VectorFontLibrary.BuildFontFromFile(strGOST, path + 'GOST type A.ttf', cChars, 1, 0.2);
-  Mesh := VectorFontLibrary.CreateText(strGOST, strText);
-  bb := VectorFontLibrary.GetExtents(strGOST, strText);
+  VectorFontLibrary.BuildFontFromFile(strGOST3D, path + 'GOST type A.ttf', cChars, 1, 0.2);
+  Mesh := VectorFontLibrary.CreateText(strGOST3D, strText);
+  bb := VectorFontLibrary.GetExtents(strGOST3D, strText);
   Model := TMatrix.TranslationMatrix(bb.eMid.Negate);
   TextObject := TGLVertexObject.CreateFrom(Mesh);
   TextObject.Shader := Shader1;
+
+  VectorFontLibrary.BuildFontFromFile(strGOST2D, path + 'GOST type A.ttf', cChars, 1, 0);
 end;
 
 procedure TForm5.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;

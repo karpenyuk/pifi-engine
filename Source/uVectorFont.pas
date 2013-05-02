@@ -153,6 +153,8 @@ type
       const AText: UnicodeString): TVertexObject;
     class function GetExtents(const AFontLabel: string;
       const AText: UnicodeString): TExtents;
+    class function CreateFont(const AFontLabel: string;
+        aNormals, aTexCoords: Boolean): TVertexObject;
 
     class function GetLybrary: FT_Library;
     class property Error: FT_Error read FErr;
@@ -298,7 +300,8 @@ type
     function BBox(const AStr: string): TExtents;
     function Advance(const AStr: string): Single;
     function FaceSize(asize, ares: Cardinal): Boolean;
-    function CreateVertexObject(const AStr: string): TVertexObject;
+    function CreateVertexObject(aNormals, aTexCoords: Boolean): TVertexObject; overload;
+    function CreateVertexObject(const AStr: string): TVertexObject; overload;
 
     property Error: FT_Error read FErr;
     property Ascender: Single read GetAscender;
@@ -1576,6 +1579,68 @@ end;
 // ------------------ TVF_Font ------------------
 // ------------------
 
+function TVF_Font.CreateVertexObject(aNormals, aTexCoords: Boolean): TVertexObject;
+var
+  I: Integer;
+  VO: TVertexObject;
+  Mesh: TVF_GlyphMesh;
+  Pen: TVector;
+  Attr: TAttribBuffer;
+begin
+  VO := TVertexObject.Create;
+  Mesh.FaceType := ftTriangles;
+  Mesh.Positions := TVec3List.Create;
+  Mesh.Normals := TVec3List.Create;
+  Mesh.TexCoords := TVec2List.Create;
+  SetLength(Mesh.Indices, 0);
+  Pen := TVector.Null;
+
+  try
+
+    for I := 0 to FGlyphList.FGlyphList.Count - 1 do
+      FGlyphList.FGlyphList[I].Join(Mesh, TVector.Null);
+
+    Attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name, 3,
+      vtFloat, 0, btArray);
+    Attr.Buffer.Allocate(Mesh.Positions.Size, Mesh.Positions.Data);
+    Attr.Buffer.SetDataHandler(Mesh.Positions);
+    Attr.SetAttribSemantic(atVertex);
+    VO.AddAttrib(Attr, True);
+
+    if aNormals then
+    begin
+      Attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atNormal].Name, 3,
+        vtFloat, 0, btArray);
+      Attr.Buffer.Allocate(Mesh.Normals.Size, Mesh.Normals.Data);
+      Attr.Buffer.SetDataHandler(Mesh.Normals);
+      Attr.SetAttribSemantic(atNormal);
+      VO.AddAttrib(Attr);
+    end
+    else Mesh.Normals.Destroy;
+
+    if aTexCoords then
+    begin
+      Attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord0].Name, 2,
+        vtFloat, 0, btArray);
+      Attr.Buffer.Allocate(Mesh.TexCoords.Size, Mesh.TexCoords.Data);
+      Attr.Buffer.SetDataHandler(Mesh.TexCoords);
+      Attr.SetAttribSemantic(atTexCoord0);
+      VO.AddAttrib(Attr);
+    end
+    else Mesh.TexCoords.Destroy;
+
+    VO.SetIndices(Mesh.Indices);
+    VO.FaceType := Mesh.FaceType;
+
+  except
+    VO.Destroy;
+    Mesh.Positions.Destroy;
+    Mesh.Normals.Destroy;
+    Mesh.TexCoords.Destroy;
+    raise;
+  end;
+end;
+
 function TVF_Font.CreateVertexObject(const AStr: string): TVertexObject;
 var
   I: Integer;
@@ -1905,6 +1970,17 @@ end;
 class function VectorFontLibrary.GetLybrary: FT_Library;
 begin
   Result := FLibrary;
+end;
+
+class function VectorFontLibrary.CreateFont(
+  const AFontLabel: string; aNormals, aTexCoords: Boolean): TVertexObject;
+var
+  font: TVF_Font;
+begin
+  if VectorFontLibrary.FFontCache.Find(AFontLabel, font) then
+    Result := font.CreateVertexObject(aNormals, aTexCoords)
+  else
+    Result := nil;
 end;
 
 class function VectorFontLibrary.CreateText(const AFontLabel: string;
