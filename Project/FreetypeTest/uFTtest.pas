@@ -140,9 +140,9 @@ var
 procedure TForm5.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   glFinish;
-  Shader1.Destroy;
-  TextObject.Destroy;
-  Mesh.Destroy;
+  Shader1.Free;
+  TextObject.Free;
+  Mesh.Free;
   GLViewer1.OnRender := nil;
   GLViewer1.Context.Deactivate;
 end;
@@ -301,6 +301,7 @@ begin
 
   Changed := True;
   Text := 'Let begin';
+
 end;
 
 procedure TForm5.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
@@ -349,6 +350,8 @@ begin
     glVertexAttribDivisor(4, 1);
 //    IndiGLBuffer.Bind;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, FontGLMesh.IndiceId);
+    glVertexAttrib3f(3, 1, 1, 1);
+//    glDrawElements(GL_TRIANGLES, Commands[0].count, GL_UNSIGNED_INT, Pointer(Commands[0].firstIndex*SizeOf(Integer)));
     glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, @Commands[0], Length(Commands), 0);
 //    IndiGLBuffer.UnBindBuffer;
     glBindVertexArray(0);
