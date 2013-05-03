@@ -154,7 +154,17 @@ type
     class function GetExtents(const AFontLabel: string;
       const AText: UnicodeString): TExtents;
     class function CreateFont(const AFontLabel: string;
-        aNormals, aTexCoords: Boolean): TVertexObject;
+      aNormals, aTexCoords: Boolean): TVertexObject;
+    // Создает буффер шрифта где каждому символу соответвует
+    // два целых числа - певый индекс и количество индексов
+    // символа в меше шрифта
+    class function CreateFontMap(const AFontLabel: string;
+      aPacked: Boolean): TBufferObject;
+    // Создает список с позициями символов строки
+    // если ширина строки больше aMaxWidth
+    // то символы переносятся в другую строку
+    class function CreatePositionList(const AFontLabel, AText: string;
+      aMaxWidth, aHeightSpace: Single): TVec2List;
 
     class function GetLybrary: FT_Library;
     class property Error: FT_Error read FErr;
@@ -302,6 +312,8 @@ type
     function FaceSize(asize, ares: Cardinal): Boolean;
     function CreateVertexObject(aNormals, aTexCoords: Boolean): TVertexObject; overload;
     function CreateVertexObject(const AStr: string): TVertexObject; overload;
+    function CreateMapBuffer(aPacked: Boolean): TBufferObject;
+    function CreatePositionList(const AText: string; aMaxWidth, aHeightSpace: Single): TVec2List;
 
     property Error: FT_Error read FErr;
     property Ascender: Single read GetAscender;
@@ -1405,7 +1417,7 @@ begin
       begin
         Contour := FVectoriser.Contour[c];
         numberOfPoints := Contour.PointCount;
-        if numberOfPoints > 2 then
+        if numberOfPoints > 1 then
         begin
           for I := 0 to numberOfPoints - 1 do
           begin
@@ -1444,6 +1456,8 @@ begin
       end;
       if FMesh.Positions.Count > 2 then
       begin
+        if FMesh.Positions.Count <> Length(FMesh.Indices) then
+          SetLength(FMesh.Indices, FMesh.Positions.Count);
         VDA1 := TVectorDataAccess.Create(FMesh.Positions.Data, vtFloat, 3, 3*SizeOf(Single), FMesh.Positions.Count);
         FMesh.Normals := MeshUtils.ComputeTriangleNormals(True, VDA1, FMesh.Indices);
         FMesh.TexCoords := MeshUtils.ComputeTriangleTexCoords(VDA1, FMesh.Indices);
@@ -1581,7 +1595,8 @@ end;
 
 function TVF_Font.CreateVertexObject(aNormals, aTexCoords: Boolean): TVertexObject;
 var
-  I: Integer;
+  G: Integer;
+  Glyph: TVF_Glyph;
   VO: TVertexObject;
   Mesh: TVF_GlyphMesh;
   Pen: TVector;
@@ -1597,8 +1612,12 @@ begin
 
   try
 
-    for I := 0 to FGlyphList.FGlyphList.Count - 1 do
-      FGlyphList.FGlyphList[I].Join(Mesh, TVector.Null);
+    for G := 0 to 65535 do
+    begin
+      Glyph := FGlyphList.Glyph[G];
+      if Assigned(Glyph) then
+        Glyph.Join(Mesh, TVector.Null);
+    end;
 
     Attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name, 3,
       vtFloat, 0, btArray);
@@ -1639,6 +1658,7 @@ begin
     Mesh.TexCoords.Destroy;
     raise;
   end;
+  Result := VO;
 end;
 
 function TVF_Font.CreateVertexObject(const AStr: string): TVertexObject;
@@ -1786,6 +1806,83 @@ constructor TVF_Font.Create(pBufferBytes: FT_Byte_ptr;
 begin
   FFace := TVF_Face.Create(pBufferBytes, bufferSizeInBytes);
   FErr := FFace.Error;
+end;
+
+function TVF_Font.CreateMapBuffer(aPacked: Boolean): TBufferObject;
+var
+  G, I, C: Integer;
+  Glyph: TVF_Glyph;
+  Map: TIntegerList;
+begin
+
+  Map := TIntegerList.Create;
+
+  try
+
+    I := 0;
+    for G := 0 to 65535 do
+    begin
+      Glyph := FGlyphList.Glyph[G];
+      if Assigned(Glyph) then
+      begin
+        Map.Add(I);
+        C :=  Length(Glyph.FMesh.Indices);
+        Map.Add(C);
+        I := I + C;
+      end
+      else if not aPacked then
+      begin
+        Map.Add(0);
+        Map.Add(0);
+      end;
+
+    end;
+
+  except
+    Map.Destroy;
+    raise;
+  end;
+
+  Result := TBufferObject.Create(btTexture);
+  Result.Allocate(Map.Size, Map.Data);
+  Result.SetDataHandler(Map);
+end;
+
+function TVF_Font.CreatePositionList(const AText: string;
+  aMaxWidth, aHeightSpace: Single): TVec2List;
+var
+  List: TVec2List;
+  I, J: Integer;
+  G, ng: Cardinal;
+  w, h: Single;
+  bb: TExtents;
+begin
+  List := TVec2List.Create;
+
+  try
+    w := 0;
+    h := 0;
+    J := 1;
+    for I := 1 to Length(AText) do
+    begin
+      List.Add(TVector.Make(w, h).Vec2);
+      GetGlyphs(AText, I, G, ng);
+      CheckGlyph(G);
+      CheckGlyph(ng);
+      w := w + FGlyphList.Advance(G, ng);
+      if (aMaxWidth > 0) and (w > aMaxWidth) then
+      begin
+        bb := BBox(Copy(AText, J, I - J + 1));
+        h := h - bb.eMax.Y + bb.eMin.Y - aHeightSpace;
+        J := I;
+        w := 0;
+      end;
+    end;
+  except
+    List.Destroy;
+    raise;
+  end;
+  Result := List;
 end;
 
 destructor TVF_Font.Destroy;
@@ -1979,6 +2076,28 @@ var
 begin
   if VectorFontLibrary.FFontCache.Find(AFontLabel, font) then
     Result := font.CreateVertexObject(aNormals, aTexCoords)
+  else
+    Result := nil;
+end;
+
+class function VectorFontLibrary.CreateFontMap(
+  const AFontLabel: string; aPacked: Boolean): TBufferObject;
+var
+  font: TVF_Font;
+begin
+  if VectorFontLibrary.FFontCache.Find(AFontLabel, font) then
+    Result := font.CreateMapBuffer(aPacked)
+  else
+    Result := nil;
+end;
+
+class function VectorFontLibrary.CreatePositionList(const AFontLabel,
+  AText: string; aMaxWidth, aHeightSpace: Single): TVec2List;
+var
+  font: TVF_Font;
+begin
+  if VectorFontLibrary.FFontCache.Find(AFontLabel, font) then
+    Result := font.CreatePositionList(AText, aMaxWidth, aHeightSpace)
   else
     Result := nil;
 end;

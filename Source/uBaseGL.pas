@@ -366,6 +366,8 @@ Type
     property FaceType: TFaceType read FFaceType;
     property StructureChanged: boolean read FStructureChanged;
     property ElementsCount: integer read getECount;
+    property VAOid: cardinal read FVAO;
+    property IndiceId: cardinal read FIndiceId;
   end;
 
   TGLTextureObject = class(TGLBaseResource)
