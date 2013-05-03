@@ -90,6 +90,7 @@ Type
      MinLod, MaxLod, LodBias: single;
      CompareMode: TTextureCompareMode;
      CompareFunc: TTextureCompareFunc;
+     AnisotropyLevel: single;
   end;
   PTextureDesc = ^TTextureDesc;
 

@@ -168,11 +168,11 @@ Type
 
   TUniformList = class
   private
-     FItems: array of record
-       Key: integer;
-       KeyName: ansistring;
-       Value: integer;
-     end;
+    FItems: array of record
+     Key: integer;
+     KeyName: ansistring;
+     Value: integer;
+    end;
 
     FCount: integer;
   public
@@ -370,6 +370,15 @@ Type
     property IndiceId: cardinal read FIndiceId;
   end;
 
+  TGLTextureSampler = class(TGLBaseResource)
+  private
+    FTextureSampler: TTextureSampler;
+    FSamplerId: cardinal;
+  public
+    constructor Create; override;
+    constructor CreateFrom(aSampler: TTextureSampler);
+  end;
+
   TGLTextureObject = class(TGLBaseResource)
   private
     FTexId: cardinal;
@@ -504,9 +513,18 @@ const
     GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR,
     GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR);
 
+  CMagFilters: array [TMagFilter] of GLEnum = (GL_NEAREST, GL_LINEAR);
+
   CValueTypes: array [TValueType] of cardinal = (GL_UNSIGNED_BYTE,
     GL_UNSIGNED_SHORT, GL_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_DOUBLE);
-  { TBufferObject }
+
+  CTextureGen: array [TTexGens] of cardinal = (0, GL_OBJECT_LINEAR, GL_EYE_LINEAR,
+    GL_SPHERE_MAP, GL_NORMAL_MAP, GL_REFLECTION_MAP);
+
+  CCompareMode: array[TTextureCompareMode] of cardinal = (GL_NONE, GL_COMPARE_REF_TO_TEXTURE);
+
+  CCompareFunc: array[TTextureCompareFunc] of cardinal = (GL_LEQUAL, GL_GEQUAL,
+    GL_LESS, GL_GREATER, GL_EQUAL, GL_NOTEQUAL, GL_ALWAYS, GL_NEVER);
 
 procedure CheckOpenGLError;
 var err: cardinal;
@@ -579,6 +597,8 @@ begin
   glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, @Result[1]);
   glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, @Result[2]);
 end;
+
+{ TGLBufferObject }
 
 procedure TGLBufferObject.Bind;
 begin
@@ -2620,6 +2640,66 @@ begin
     OffsetByIndex(Index), FUBOSize);
   Move(Data^, p^, FUBOSize);
   FBuffer.UnMap;
+end;
+
+{ TGLTextureSampler }
+
+constructor TGLTextureSampler.Create;
+begin
+  inherited;
+  FSamplerId := 0;
+  CreateFrom(TTextureSampler.Create);
+end;
+
+constructor TGLTextureSampler.CreateFrom(aSampler: TTextureSampler);
+begin
+  FTextureSampler := aSampler;
+  FSamplerId := 0;
+  if GL_ARB_sampler_objects then begin
+    glGenSamplers(1, @FSamplerId);
+    with FTextureSampler do begin
+      glSamplerParameteri(FSamplerId, GL_TEXTURE_WRAP_S, CWpars[WrapS]);
+      glSamplerParameteri(FSamplerId, GL_TEXTURE_WRAP_T, CWpars[WrapT]);
+      glSamplerParameteri(FSamplerId, GL_TEXTURE_WRAP_R, CWpars[WrapR]);
+
+      glSamplerParameteri(FSamplerId, GL_TEXTURE_MAG_FILTER, CMagFilters[magFilter]);
+      glSamplerParameteri(FSamplerId, GL_TEXTURE_MIN_FILTER, CMinFilters[minFilter]);
+
+      glSamplerParameterf(FSamplerId, GL_TEXTURE_MIN_LOD, MinLod);
+      glSamplerParameterf(FSamplerId, GL_TEXTURE_MAX_LOD, MaxLod);
+      glSamplerParameterf(FSamplerId, GL_TEXTURE_LOD_BIAS, LodBias);
+
+      glSamplerParameterf(FSamplerId, GL_TEXTURE_COMPARE_MODE, CCompareMode[CompareMode]);
+      glSamplerParameterf(FSamplerId, GL_TEXTURE_COMPARE_FUNC, CCompareFunc[CompareFunc]);
+
+      if GL_EXT_texture_filter_anisotropic then begin
+        glSamplerParameterf(FSamplerId, GL_TEXTURE_MAX_ANISOTROPY_EXT, AnisotropyLevel);
+      end;
+    end;
+  end else begin
+    //Set default OpenGL texture param
+    //glTexParameteri();
+  end;
+
+  if GL_ARB_multitexture then with FTextureSampler do begin
+    if TextureGenS = tgDisable then glDisable(GL_TEXTURE_GEN_S)
+    else begin
+      glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, CTextureGen[TextureGenS]);
+      glEnable(GL_TEXTURE_GEN_S);
+    end;
+    if TextureGenT = tgDisable then glDisable(GL_TEXTURE_GEN_T)
+    else begin
+      glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, CTextureGen[TextureGenT]);
+      glDisable(GL_TEXTURE_GEN_T);
+    end;
+    if TextureGenR = tgDisable then glDisable(GL_TEXTURE_GEN_R)
+    else begin
+      glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, CTextureGen[TextureGenR]);
+      glDisable(GL_TEXTURE_GEN_R);
+    end;
+    glDisable(GL_TEXTURE_GEN_Q)
+  end;
+
 end;
 
 initialization
