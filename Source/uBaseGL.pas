@@ -372,9 +372,17 @@ Type
   private
     FTextureSampler: TTextureSampler;
     FSamplerId: cardinal;
+    function getSamplerHash: integer;
   public
     constructor Create; override;
     constructor CreateFrom(aSampler: TTextureSampler);
+    destructor Destroy; override;
+
+    procedure Bind(aUnit: cardinal); overload;
+    procedure UnBind(aUnit: cardinal);
+    procedure SetSamplerParams(aTarget: TTexTarget); overload;
+
+    property Hash: integer read getSamplerHash;
   end;
 
   TGLTextureObject = class(TGLBaseResource)
@@ -2642,11 +2650,57 @@ end;
 
 { TGLTextureSampler }
 
+procedure TGLTextureSampler.Bind(aUnit: cardinal);
+begin
+  if GL_ARB_sampler_objects then begin
+    glBindSampler(aUnit, FSamplerId);
+  end;
+end;
+
+procedure TGLTextureSampler.SetSamplerParams(aTarget: TTexTarget);
+begin
+  with FTextureSampler do begin
+    glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_WRAP_S, CWpars[WrapS]);
+    glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_WRAP_T, CWpars[WrapT]);
+    glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_WRAP_R, CWpars[WrapR]);
+
+    glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_MAG_FILTER, CMagFilters[magFilter]);
+    glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_MIN_FILTER, CMinFilters[minFilter]);
+
+    glTexParameterf(CTexTargets[aTarget], GL_TEXTURE_MIN_LOD, MinLod);
+    glTexParameterf(CTexTargets[aTarget], GL_TEXTURE_MAX_LOD, MaxLod);
+    glTexParameterf(CTexTargets[aTarget], GL_TEXTURE_LOD_BIAS, LodBias);
+
+    glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_COMPARE_MODE, CCompareMode[CompareMode]);
+    glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_COMPARE_FUNC, CCompareFunc[CompareFunc]);
+
+    if FTextureSampler.UseTexGen and GL_ARB_multitexture then begin
+      if TextureGenS = tgDisable then glDisable(GL_TEXTURE_GEN_S)
+      else begin
+        glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, CTextureGen[TextureGenS]);
+        glEnable(GL_TEXTURE_GEN_S);
+      end;
+      if TextureGenT = tgDisable then glDisable(GL_TEXTURE_GEN_T)
+      else begin
+        glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, CTextureGen[TextureGenT]);
+        glDisable(GL_TEXTURE_GEN_T);
+      end;
+      if TextureGenR = tgDisable then glDisable(GL_TEXTURE_GEN_R)
+      else begin
+        glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, CTextureGen[TextureGenR]);
+        glDisable(GL_TEXTURE_GEN_R);
+      end;
+      glDisable(GL_TEXTURE_GEN_Q)
+    end;
+  end;
+end;
+
 constructor TGLTextureSampler.Create;
 begin
   inherited;
   FSamplerId := 0;
   CreateFrom(TTextureSampler.Create);
+  FTextureSampler.Owner:=self;
 end;
 
 constructor TGLTextureSampler.CreateFrom(aSampler: TTextureSampler);
@@ -2674,30 +2728,24 @@ begin
         glSamplerParameterf(FSamplerId, GL_TEXTURE_MAX_ANISOTROPY_EXT, AnisotropyLevel);
       end;
     end;
-  end else begin
-    //Set default OpenGL texture param
-    //glTexParameteri();
   end;
+end;
 
-  if GL_ARB_multitexture then with FTextureSampler do begin
-    if TextureGenS = tgDisable then glDisable(GL_TEXTURE_GEN_S)
-    else begin
-      glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, CTextureGen[TextureGenS]);
-      glEnable(GL_TEXTURE_GEN_S);
-    end;
-    if TextureGenT = tgDisable then glDisable(GL_TEXTURE_GEN_T)
-    else begin
-      glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, CTextureGen[TextureGenT]);
-      glDisable(GL_TEXTURE_GEN_T);
-    end;
-    if TextureGenR = tgDisable then glDisable(GL_TEXTURE_GEN_R)
-    else begin
-      glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, CTextureGen[TextureGenR]);
-      glDisable(GL_TEXTURE_GEN_R);
-    end;
-    glDisable(GL_TEXTURE_GEN_Q)
-  end;
+destructor TGLTextureSampler.Destroy;
+begin
+  if FTextureSampler.Owner = self then FTextureSampler.Free;
+  if FSamplerId > 0 then glDeleteSamplers(1, @FSamplerId);
+  inherited;
+end;
 
+function TGLTextureSampler.getSamplerHash: integer;
+begin
+  result:=FTextureSampler.SamplerHash;
+end;
+
+procedure TGLTextureSampler.UnBind(aUnit: cardinal);
+begin
+  if GL_ARB_sampler_objects then glBindSampler(aUnit,FSamplerId);
 end;
 
 initialization

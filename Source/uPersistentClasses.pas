@@ -41,6 +41,7 @@ type
   end;
 
   { TODO : Äîðàáîòàòü êëàññ TPersistentResource, ðåàëèçîâàâ ðåãèñòðàöèþ çàãðóæåííûõ ðåñóðñîâ â êîëëåêöèè îáúåêòîâ.
+         : Serialize Owner property, Implement FixUp by object GUID
   }
 
   TPersistentResource = class(TNotifiableObject)
@@ -57,6 +58,7 @@ type
     procedure WriteFloat(const Value: single; const stream: TStream);
     function ReadFloat(const stream: TStream): single;
   public
+    Owner: TObject;
     GUID: TGUID;
     Version: integer;
     Storage: TObject;
@@ -80,6 +82,7 @@ constructor TPersistentResource.Create;
 begin
   CreateGuid(GUID);
   Version := 1;
+  Owner := nil;
   inherited;
 end;
 

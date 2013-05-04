@@ -228,6 +228,7 @@ Type
   private
     FUpdates: TTextureUpdates;
     FTextureDescriptor: TTextureDesc;
+    FUseTexGen: boolean;
 
     function getTexGenR: TTexGens;
     function getTexGenS: TTexGens;
@@ -259,6 +260,7 @@ Type
     procedure SetAnisotropyLevel(const Value: single);
 
     function getTexDescr: PTextureDesc;
+    function getSamplerHash: integer;
   public
     constructor Create; override;
     // Texture Descriptors
@@ -278,7 +280,9 @@ Type
     property AnisotropyLevel: single read getAnisotropyLevel
       write SetAnisotropyLevel;
 
+    property UseTexGen: boolean read FUseTexGen write FUseTexGen;
     property TextureDescriptor: PTextureDesc read getTexDescr;
+    property SamplerHash: integer read getSamplerHash;
   end;
 
   TTexture = class(TBaseRenderResource)
@@ -1213,6 +1217,7 @@ begin
   FTextureDescriptor.CompareMode := cmNone;
   FTextureDescriptor.CompareFunc := cfLEqual;
   FTextureDescriptor.AnisotropyLevel := 1;
+  FUseTexGen := false;
 end;
 
 procedure TTextureSampler.SetAnisotropyLevel(const Value: single);
@@ -1259,6 +1264,27 @@ end;
 function TTextureSampler.getMinLod: single;
 begin
   result := FTextureDescriptor.MinLod;
+end;
+
+function TTextureSampler.getSamplerHash: integer;
+var buff: array[0..14] of cardinal;
+begin
+  buff[0]:=cardinal(FTextureDescriptor.WrapS);
+  buff[1]:=cardinal(FTextureDescriptor.WrapT);
+  buff[2]:=cardinal(FTextureDescriptor.WrapR);
+  buff[3]:=cardinal(FTextureDescriptor.minFilter);
+  buff[4]:=cardinal(FTextureDescriptor.magFilter);
+  buff[5]:=cardinal(FTextureDescriptor.TextureGenS);
+  buff[6]:=cardinal(FTextureDescriptor.TextureGenT);
+  buff[7]:=cardinal(FTextureDescriptor.TextureGenR);
+  buff[8]:=Pcardinal(@FTextureDescriptor.MinLod)^;
+  buff[9]:=Pcardinal(@FTextureDescriptor.MaxLod)^;
+  buff[10]:=Pcardinal(@FTextureDescriptor.LodBias)^;
+  buff[11]:=cardinal(FTextureDescriptor.CompareMode);
+  buff[12]:=cardinal(FTextureDescriptor.CompareFunc);
+  buff[13]:=Pcardinal(@FTextureDescriptor.AnisotropyLevel)^;
+  buff[14]:=Cardinal(FUseTexGen);
+  result:=GetLongHash(@buff[0], sizeof(buff));
 end;
 
 function TTextureSampler.getTexGenR: TTexGens;

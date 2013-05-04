@@ -1,4 +1,4 @@
-unit uMiscUtils;
+﻿unit uMiscUtils;
 
 {$IFDEF FPC}
   {$H+} // Enable long strings.
@@ -87,7 +87,8 @@ function StringHashKey(const name: string): Integer;
 function BufferHash(const Buffer; Count: integer): word;
 function HashKey(const v : vec4; hashSize : Integer) : Integer;
 function GetHashFromBuff(const Buffer; Count: Integer): Word; assembler;
-function GetLongHash(const aValue: string): LongInt; inline;
+function GetLongHash(const aValue: string): LongInt; overload; inline;
+function GetLongHash(aValue: Pbyte; aLength: integer): LongInt; overload; inline;
 
 function CutString(const s: string; l: integer): string;
 
@@ -326,7 +327,7 @@ asm
         JNE     @@1
 end;
 
-function GetLongHash(const aValue: string): LongInt; inline;
+function GetLongHash(const aValue: string): LongInt; overload; inline;
 var
   G: longint;
   i: integer;
@@ -341,6 +342,20 @@ begin
   result := cHash;
 end;
 
+function GetLongHash(aValue: Pbyte; aLength: integer): LongInt; overload; inline;
+var
+  G: longint;
+  i: integer;
+  cHash: longint;
+begin
+  cHash := 0;
+  for I := 1 to aLength do begin
+    cHash := (cHash shl 4) + aValue^; inc(aValue);
+    G := cHash and longint($F000000);
+    if G <> 0 then cHash := (cHash xor (G shr 24)) xor G;
+  end;
+  result := cHash;
+end;
 
 
 function Vector4ToStr(x: TVector): string;
