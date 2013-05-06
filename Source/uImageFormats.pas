@@ -90,6 +90,19 @@ const
     (PixelFormat: pfUByte; RevPF: pfUByte; BaseFormat: bfRed; RevBF: bfRed; Bpp: 8),
   //ifAlpha
     (PixelFormat: pfUByte; RevPF: pfUByte; BaseFormat: bfRed; RevBF: bfRed; Bpp: 8),
+  //ifR8
+    (PixelFormat: pfUByte; RevPF: pfUByte; BaseFormat: bfRed; RevBF: bfRed; Bpp: 8),
+  //ifR8_SNORM
+    (PixelFormat: pfUByte; RevPF: pfUByte; BaseFormat: bfRed; RevBF: bfRed; Bpp: 8),
+  //ifR16F
+    (PixelFormat: pfFloat; RevPF: pfFloat; BaseFormat: bfRed; RevBF: bfRed; Bpp: 32),
+  //ifR32F
+  //ifR8UI
+  //ifR8I
+  //ifR16UI
+  //ifR16I
+  //ifR32UI
+  //ifR32I
   );
 }
 implementation
