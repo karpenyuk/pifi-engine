@@ -1,4 +1,4 @@
-unit uMiscUtils;
+﻿unit uMiscUtils;
 
 {$IFDEF FPC}
   {$H+} // Enable long strings.
@@ -7,7 +7,7 @@ unit uMiscUtils;
 
 interface
 
-uses {$IFDEF MSWINDOWS} Windows,{$ENDIF} Classes, {SysUtils,} uVMath;
+uses {$IFDEF MSWINDOWS} Windows,{$ENDIF} Classes, Types, uVMath;
 const
    BufSize = 10240; { Load input data in chunks of BufSize Bytes. }
    LineLen = 100;   { Allocate memory for the current line in chunks
@@ -31,7 +31,7 @@ Type
     FBufPos : Integer;           { Position in the buffer }
     FStreamOwner: boolean;       { Stream owner? }
     function StreamEOF(S: TStream): Boolean;
-    function Rest(const s:string; Count: integer):string;
+    function Rest(const Str: string; Count: integer):string;
     procedure FillBuffer;
     procedure LoadFromStream(aStream: TStream);
     procedure LoadFromFile(FileName: string);
@@ -100,14 +100,23 @@ procedure FreeList(var List: TList);
 procedure FreeObjectList(var List: TList);overload;
 procedure FreeAndNil(var Obj);
 
-function StrToInt(s:string):integer;
-function StrToFloat(s:string):Single;
+function StrToInt(const Str: string):integer;
+function StrToInt64(const Str: string):Int64;
+function StrToFloat(const Str: string):Single;
+function StrToDouble(const Str: string):Double;
+function StrToBool(const Str: string): Boolean;
 function FloatToStr(x: double; width: byte=10; decimals: byte=6): string;
 function IntToStr(x:integer):string;
+function Int64ToStr(x:Int64):string;
 function IntToHex( aVal: Integer; aDigits: Integer ): String;
 function Vector4ToStr(x: TVector): string;
 function Vector3ToStr(x: TVector): string;
+function BoolToStr(aValue: Boolean): string;
+function FloatStringsToSingleDynArray(const AStr: string): TSingleDynArray;
+function IntStringsToIntegerDynArray(const AStr: string): TIntegerDynArray;
+function StringsToStringDynArray(const AStr: string): TStringDynArray; overload;
 
+function Trim(const aStr: string): string;
 function TrimLeft( const aStr: String ): String;
 function StrScan( const aStr: PWideChar; aChar: WideChar ): PWideChar;
 
@@ -197,26 +206,191 @@ begin
   if assigned(Temp) then Temp.Free;
 end;
 
-function StrToInt(s:string):integer;
+function LowerCase(const Str: string): string;
+var
+  i : LongInt;
+begin
+  Result := Str;
+  for i := 1 to Length(Str) do
+    if AnsiChar(Result[i]) in ['A'..'Z', 'А'..'Я'] then
+      Result[i] := Chr(Ord(Result[i]) + 32);
+end;
+
+function StrToInt(const Str: string):integer;
 var code:integer;
 begin
-  val(s,result,code);
+  val(Str, result,code);
 end;
-function StrToFloat(s:string):Single;
+
+function StrToInt64(const Str: string):Int64;
 var code:integer;
 begin
-  val(s,result,code);
+  val(Str,result,code);
 end;
+
+function StrToFloat(const Str: string):Single;
+var code:integer;
+begin
+  val(Str,result,code);
+end;
+
+function StrToDouble(const Str: string):Double;
+var code:integer;
+begin
+  val(Str,result,code);
+end;
+
 function FloatToStr(x: double; width: byte=10; decimals: byte=6): string;
+var
+  S: ShortString;
 begin
-  str(x:width:decimals,result);
+  str(x:width:decimals,S);
+  Result := string(S);
 end;
+
 function IntToStr(x:integer):string;
 var s: ansistring;
 begin
    str(x,s); result:=string(s);
 end;
 
+function Int64ToStr(x:Int64):string;
+var s: ansistring;
+begin
+   str(x,s); result:=string(s);
+end;
+
+function BoolToStr(aValue: Boolean): string;
+begin
+  if aValue then
+    Result := 'true'
+  else
+    Result := 'false';
+end;
+
+function StrToBool(const Str: string): Boolean;
+var
+  LStr : string;
+begin
+  LStr := LowerCase(Str);
+  if LStr = 'true' then
+    Result := True
+  else
+    Result := False
+end;
+
+function FloatStringsToSingleDynArray(const AStr: string): TSingleDynArray;
+var
+  str: string;
+  c: PChar;
+
+  procedure TryAdd;
+  begin
+    if str = '' then
+      Exit;
+
+    SetLength(Result, Length(Result) + 1);
+    Result[High(Result)] := StrToFloat(str);
+    str := '';
+  end;
+
+begin
+  Result := nil;
+
+  if AStr = '' then
+    Exit;
+
+  c := @AStr[1];
+  while c^ <> #0 do
+  begin
+    case c^ of
+      #1..#32: TryAdd;
+    else
+//      case c^ of
+//        '.': DecimalSeparator := '.';
+//        ',': DecimalSeparator := ',';
+//      end;
+
+      str := str + c^;
+    end;
+
+    Inc(c);
+  end;
+
+  TryAdd;
+end;
+
+function IntStringsToIntegerDynArray(const AStr: string): TIntegerDynArray;
+var
+  str: string;
+  c: PChar;
+
+  procedure TryAdd;
+  begin
+    if str = '' then
+      Exit;
+
+    SetLength(Result, Length(Result) + 1);
+    Result[High(Result)] := StrToInt(str);
+    str := '';
+  end;
+
+begin
+  Result := nil;
+
+  if AStr = '' then
+    Exit;
+
+  c := @AStr[1];
+  while c^ <> #0 do
+  begin
+    case c^ of
+      #1..#32: TryAdd;
+    else
+      str := str + c^;
+    end;
+
+    Inc(c);
+  end;
+
+  TryAdd;
+end;
+
+function StringsToStringDynArray(const AStr: string): TStringDynArray; overload;
+var
+  str: string;
+  c: PChar;
+
+  procedure TryAdd;
+  begin
+    if str = '' then
+      Exit;
+
+    SetLength(Result, Length(Result) + 1);
+    Result[High(Result)] := str;
+    str := '';
+  end;
+
+begin
+  Result := nil;
+
+  if AStr = '' then
+    Exit;
+
+  c := @AStr[1];
+  while c^ <> #0 do
+  begin
+    case c^ of
+      #1..#32: TryAdd;
+    else
+      str := str + c^;
+    end;
+
+    Inc(c);
+  end;
+
+  TryAdd;
+end;
 
 //
 // CvtInt
@@ -361,15 +535,30 @@ end;
 //
 function TrimLeft( const aStr: String ): String;
 var
-    i: integer;
+  i: integer;
 begin
-
   i := 1;
   while ( i < length(aStr)) and ( aStr[i] < '!' ) do
-    inc(i);
+    Inc(i);
+  Result := copy( aStr, i, length(aStr));
+end;
 
-  result := copy( aStr, i, length(aStr));
 
+function Trim(const aStr: string): string;
+var
+  i, j: LongInt;
+begin
+  j := Length(aStr);
+  i := 1;
+  while (i <= j) and (aStr[i] <= ' ') do
+    Inc(i);
+  if i <= j then
+  begin
+    while aStr[j] <= ' ' do
+      Dec(j);
+    Result := Copy(aStr, i, j - i + 1);
+  end else
+    Result := '';
 end;
 
 
@@ -453,10 +642,10 @@ begin
   SetLength(FLine,j-1); result:=FLine;
 end;
 
-function TTextFileParser.Rest(const s:string; Count:integer):string;
+function TTextFileParser.Rest(const Str: string; Count:integer):string;
 { Return the right part of s including s[Count]. }
 begin
-  Result:=copy(s,Count,Length(s)-Count+1);
+  Result:=copy(Str,Count,Length(Str)-Count+1);
 end;
 
 // NextToken
