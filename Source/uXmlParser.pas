@@ -368,7 +368,7 @@ end;
 
 constructor TXML.Create(const Text: WideString; BeginPos: LongInt);
 var
-  i, j: LongInt;
+  i, j, k: LongInt;
   Flag: (F_BEGIN, F_COMMENT, F_TAG, F_PARAMS, F_CONTENT, F_END);
   BeginIndex: LongInt;
   TextFlag: Boolean;
@@ -460,8 +460,13 @@ begin
                   line := Trim(Copy(Text, i + 1, j - i - 1));
                   if line <> '/' + FTag then
                   begin
-                    WriteLn(FTag, line);
-                    XMLClass := FindClass(AnsiString(FTag));
+                    for k := 1 to Length(line) do
+                      if (line[k] = ' ') or  (line[k] = '/') then
+                      begin
+                        line := Copy(line, 1, k-1);
+                      end;
+                    WriteLn(FTag, ' - ', line);
+                    XMLClass := FindClass(AnsiString(line));
                     FNodes.Add(XMLClass.Create(Text, i));
                     if FNodes.Last.DataLen = 0 then
                         break;
