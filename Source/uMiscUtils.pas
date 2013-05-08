@@ -125,6 +125,7 @@ function CheckPath(Path: string): string;
 procedure CLog( const aMsg: String );
 
 function CompareMem(const p1,p2: pointer; aSize: integer): boolean;
+function CompareMemory(const p1,p2: pointer; aSize: integer): Integer;
 
 {: Returns the current value of the highest-resolution counter.<p>
    If the platform has none, should return a value derived from the highest
@@ -994,6 +995,16 @@ begin
   result:=true; pb1:=PByte(p1); pb2:=PByte(p2); i:=0;
   while (i<aSize) and (pb1^=pb2^) do begin inc(i); inc(pb1); inc(pb2); end;
   if i<>aSize then result:=false;
+end;
+
+function CompareMemory(const p1,p2: pointer; aSize: integer): Integer;
+var i: integer;
+    pb1, pb2: PByte;
+begin
+  result:=0; pb1:=PByte(p1); pb2:=PByte(p2); i:=0;
+  while (i<aSize) and (pb1^=pb2^) do begin inc(i); inc(pb1); inc(pb2); end;
+  if i<>aSize then
+    if pb1^<pb2^ then Result:=-1 else Result := 1;
 end;
 
 // QueryPerformanceCounter

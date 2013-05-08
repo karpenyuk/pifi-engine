@@ -5,7 +5,7 @@ unit uXmlParser;
 interface
 
 uses
-  Classes;
+  Classes, uGenericsRBTree;
 
 type
 
@@ -74,6 +74,7 @@ type
 
   IXML = interface
     ['{B5D59B72-CC8D-4126-AEB3-A7897DDF492C}']
+    procedure DoBeforeCreate;
     function GetCount: LongInt;
     procedure SetTag(const aValue: WideString);
     function GetTag: WideString;
@@ -94,8 +95,14 @@ type
   end;
 
   TXML = class;
-  TXMLCollection = class;
   TXMLClass = class of TXML;
+
+  TXMLClassesTree = class(GRedBlackTree<AnsiString, TXMLClass>)
+  public
+    constructor CreateClassesTree;
+  end;
+
+  TXMLCollection = class;
   TXMLCollectionClass = class of TXMLCollection;
 
   IXMLList = interface
@@ -120,6 +127,9 @@ type
   end;
 
   TXML = class(TInterfacedObject, IXML)
+  protected
+    class var ClassesTree: TXMLClassesTree;
+    class function FindClass(const aClassName: AnsiString): TXMLClass;
   private
     FNodes: IXMLList;
     FTag: WideString;
@@ -137,6 +147,7 @@ type
     procedure SetContent(const aValue: TXMLVariant);
     procedure SetNodes(const aList: IXMLList);
   public
+    procedure DoBeforeCreate; virtual;
     constructor Create(const Text: WideString; BeginPos: LongInt);
     destructor Destroy; override;
     class function Load(const FileName: string): IXML;
@@ -362,8 +373,11 @@ var
   BeginIndex: LongInt;
   TextFlag: Boolean;
   Len: LongInt;
+  line: WideString;
+  XMLClass: TXMLClass;
 begin
   FNodes := TXMLList.Create;
+  DoBeforeCreate;
   TextFlag := False;
   Flag := F_BEGIN;
   BeginIndex := BeginPos;
@@ -443,9 +457,12 @@ begin
               for j := i + 1 to Length(Text) do
                 if Text[j] = '>' then
                 begin
-                  if Trim(Copy(Text, i + 1, j - i - 1)) <> '/' + FTag then
+                  line := Trim(Copy(Text, i + 1, j - i - 1));
+                  if line <> '/' + FTag then
                   begin
-                    FNodes.Add(TXML.Create(Text, i));
+                    WriteLn(FTag, line);
+                    XMLClass := FindClass(AnsiString(FTag));
+                    FNodes.Add(XMLClass.Create(Text, i));
                     if FNodes.Last.DataLen = 0 then
                         break;
                     i := i + FNodes.Last.DataLen - 1;
@@ -478,7 +495,7 @@ begin
   Result := CollectionClass.Create('', 1);
   Result.ItemInterface := anItemIterface;
   Result.Tag := ItemTag;
-  if FNodes.Count > 0 then
+  if Assigned(FNodes) then
     Result.SetNodes(FNodes);
 end;
 
@@ -486,6 +503,18 @@ destructor TXML.Destroy;
 begin
   FNodes.Clear;
   Params.Free;
+end;
+
+procedure TXML.DoBeforeCreate;
+begin
+end;
+
+class function TXML.FindClass(const aClassName: AnsiString): TXMLClass;
+begin
+  if Assigned(ClassesTree) then
+    if ClassesTree.Find(aClassName, Result) then
+      exit;
+  Result := TXML;
 end;
 
 function TXML.GetContent: TXMLVariant;
@@ -873,5 +902,31 @@ begin
 end;
 
 {$ENDREGION 'TXMLVariant'}
+
+{ TXMLClassesTree }
+
+function CompareAnsiStrings(const Item1, Item2: AnsiString): Integer;
+var
+  l1, l2: Integer;
+begin
+  l1 := Length(Item1);
+  l2 := Length(Item2);
+  if l1 < l2 then
+    exit(-1)
+  else if l1 > l2 then
+    exit(1);
+  Result := CompareMemory(@Item1, @Item2, l1);
+end;
+
+constructor TXMLClassesTree.CreateClassesTree;
+begin
+  Create(CompareAnsiStrings, nil);
+end;
+
+initialization
+
+finalization
+
+  TXML.ClassesTree.Free;
 
 end.
