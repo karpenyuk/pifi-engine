@@ -216,7 +216,6 @@ type
     property Nodes[Index: Integer]: IXML read GetNode; default;
     property ItemInterface: TGuid read FItemInterface write FItemInterface;
     property Tag: WideString read FTag write FTag;
-  protected
     function AddItem(Index: Integer): IXML; virtual;
     property List: IXMLList read GetList;
   end;
@@ -465,8 +464,8 @@ begin
                       begin
                         line := Copy(line, 1, k-1);
                       end;
-                    WriteLn(FTag, ' - ', line);
                     XMLClass := FindClass(AnsiString(line));
+                    WriteLn(FTag, ' - ', line, ': ', XMLClass.ClassName);
                     FNodes.Add(XMLClass.Create(Text, i));
                     if FNodes.Last.DataLen = 0 then
                         break;
@@ -695,8 +694,14 @@ begin
 end;
 
 function TXMLCollection.GetCount: Integer;
+var
+  I: Integer;
+  Obj: Pointer;
 begin
-  Result := List.Count;
+  Result := 0;
+  for I := 0 to List.Count - 1 do
+    if List.NodesI[I].QueryInterface(FItemInterface, Obj) = S_OK then
+      Inc(Result);
 end;
 
 function TXMLCollection.GetList: IXMLList;
@@ -705,8 +710,20 @@ begin
 end;
 
 function TXMLCollection.GetNode(Index: Integer): IXML;
+var
+  I, J: Integer;
+  X: IXML;
 begin
-  Result := List.Get(Index) as IXML;
+  Result := nil;
+  J := 0;
+  for I := 0 to List.Count - 1 do
+  begin
+    if List.NodesI[I].QueryInterface(FItemInterface, X) = S_OK then
+      if J = Index then
+        Exit(X)
+      else
+        Inc(J);
+  end;
 end;
 
 function TXMLCollection.Remove(const Node: IXML): Integer;
@@ -920,7 +937,7 @@ begin
     exit(-1)
   else if l1 > l2 then
     exit(1);
-  Result := CompareMemory(@Item1, @Item2, l1);
+  Result := CompareMemory(@Item1[1], @Item2[1], l1);
 end;
 
 constructor TXMLClassesTree.CreateClassesTree;

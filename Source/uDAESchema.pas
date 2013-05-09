@@ -1267,7 +1267,7 @@ type
     { Methods & Properties }
     function Add: IXMLParam_type;
     function Insert(const Index: Integer): IXMLParam_type;
-    property Count: Int64 read Get_Count write Set_Count;
+    property AccessorCount: Int64 read Get_Count write Set_Count;
     property Offset: Int64 read Get_Offset write Set_Offset;
     property Source: UnicodeString read Get_Source write Set_Source;
     property Stride: Int64 read Get_Stride write Set_Stride;
@@ -30765,7 +30765,7 @@ type
     procedure Set_Title(Value: UnicodeString);
     procedure Set_Up_axis(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAsset_type_contributor }
@@ -30807,7 +30807,7 @@ type
     { IXMLAsset_type_coverage }
     function Get_Geographic_location: IXMLAsset_type_coverage_geographic_location;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAsset_type_coverage_geographic_location }
@@ -30821,7 +30821,7 @@ type
     procedure Set_Longitude(Value: Single);
     procedure Set_Latitude(Value: Single);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAsset_type_coverage_geographic_location_altitude }
@@ -30860,7 +30860,7 @@ type
     procedure Set_Name(Value: UnicodeString);
     procedure Set_Type_(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLExtra_typeList }
@@ -30910,7 +30910,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_animations_typeList }
@@ -30946,7 +30946,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAnimation_typeList }
@@ -30982,7 +30982,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSource_typeList }
@@ -31102,7 +31102,7 @@ type
     { IXMLSource_type_technique_common }
     function Get_Accessor: IXMLAccessor_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAccessor_type }
@@ -31122,7 +31122,7 @@ type
     function Add: IXMLParam_type;
     function Insert(const Index: Integer): IXMLParam_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLParam_type }
@@ -31166,7 +31166,7 @@ type
     function Add: IXMLInput_local_type;
     function Insert(const Index: Integer): IXMLInput_local_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSampler_typeList }
@@ -31240,7 +31240,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_animation_clips_typeList }
@@ -31276,7 +31276,7 @@ type
     procedure Set_Start(Value: Double);
     procedure Set_End_(Value: Double);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAnimation_clip_typeList }
@@ -31305,7 +31305,7 @@ type
     function Add: IXMLExtra_type;
     function Insert(const Index: Integer): IXMLExtra_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_with_extra_typeList }
@@ -31334,7 +31334,7 @@ type
     function Add: IXMLFormula_setparam_type;
     function Insert(const Index: Integer): IXMLFormula_setparam_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_formula_typeList }
@@ -31365,7 +31365,7 @@ type
     procedure Set_SIDREF(Value: UnicodeString);
     procedure Set_Bool(Value: Boolean);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_connect_param_type }
@@ -31393,7 +31393,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_cameras_typeList }
@@ -31423,7 +31423,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCamera_typeList }
@@ -31449,7 +31449,7 @@ type
     function Get_Technique: IXMLTechnique_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCamera_type_optics_technique_common }
@@ -31460,7 +31460,7 @@ type
     function Get_Orthographic: IXMLCamera_type_optics_technique_common_orthographic;
     function Get_Perspective: IXMLCamera_type_optics_technique_common_perspective;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCamera_type_optics_technique_common_orthographic }
@@ -31474,7 +31474,7 @@ type
     function Get_Znear: IXMLTargetable_float_type;
     function Get_Zfar: IXMLTargetable_float_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTargetable_float_type }
@@ -31497,7 +31497,7 @@ type
     function Get_Znear: IXMLTargetable_float_type;
     function Get_Zfar: IXMLTargetable_float_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCamera_type_imager }
@@ -31511,7 +31511,7 @@ type
     function Get_Technique: IXMLTechnique_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_controllers_type }
@@ -31530,7 +31530,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_controllers_typeList }
@@ -31560,7 +31560,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLController_typeList }
@@ -31591,7 +31591,7 @@ type
     procedure Set_Source(Value: UnicodeString);
     procedure Set_Bind_shape_matrix(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSkin_type_joints }
@@ -31605,7 +31605,7 @@ type
     function Get_Input: IXMLInput_local_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSkin_type_vertex_weights }
@@ -31625,7 +31625,7 @@ type
     procedure Set_Vcount(Value: UnicodeString);
     procedure Set_V(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInput_local_offset_type }
@@ -31670,7 +31670,7 @@ type
     procedure Set_Method(Value: UnicodeString);
     procedure Set_Source(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMorph_type_targets }
@@ -31684,7 +31684,7 @@ type
     function Get_Input: IXMLInput_local_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_geometries_type }
@@ -31703,7 +31703,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_geometries_typeList }
@@ -31735,7 +31735,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGeometry_typeList }
@@ -31777,7 +31777,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Convex_hull_of(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLVertices_type }
@@ -31795,7 +31795,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLines_type }
@@ -31816,7 +31816,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Material(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLines_typeList }
@@ -31867,7 +31867,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Material(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLinestrips_typeList }
@@ -31902,7 +31902,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Material(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPolygons_typeList }
@@ -31926,7 +31926,7 @@ type
     function Get_P: IXMLP_type;
     function Get_H: IXMLList_of_uints_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPolygons_type_phList }
@@ -31960,7 +31960,7 @@ type
     procedure Set_Material(Value: UnicodeString);
     procedure Set_Vcount(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPolylist_typeList }
@@ -31992,7 +31992,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Material(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTriangles_typeList }
@@ -32025,7 +32025,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Material(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTrifans_typeList }
@@ -32058,7 +32058,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Material(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTristrips_typeList }
@@ -32098,7 +32098,7 @@ type
     function Get_Tristrips: IXMLTristrips_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSpline_type }
@@ -32115,7 +32115,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Closed(Value: Boolean);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSpline_type_control_vertices }
@@ -32129,7 +32129,7 @@ type
     function Get_Input: IXMLInput_local_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLBrep_type }
@@ -32153,7 +32153,7 @@ type
     function Get_Solids: IXMLSolids_type;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCurves_type }
@@ -32167,7 +32167,7 @@ type
     function Get_Curve: IXMLCurve_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCurve_type }
@@ -32190,7 +32190,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCurve_typeList }
@@ -32217,7 +32217,7 @@ type
     procedure Set_Origin(Value: UnicodeString);
     procedure Set_Direction(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCircle_type }
@@ -32231,7 +32231,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Radius(Value: Double);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLEllipse_type }
@@ -32245,7 +32245,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Radius(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLParabola_type }
@@ -32259,7 +32259,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Focal(Value: Double);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLHyperbola_type }
@@ -32273,7 +32273,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Radius(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLNurbs_type }
@@ -32292,7 +32292,7 @@ type
     procedure Set_Degree(Value: Int64);
     procedure Set_Closed(Value: Boolean);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLNurbs_type_control_vertices }
@@ -32306,7 +32306,7 @@ type
     function Get_Input: IXMLInput_local_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLOrient_type }
@@ -32345,7 +32345,7 @@ type
     function Get_Curve: IXMLCurve_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSurfaces_type }
@@ -32359,7 +32359,7 @@ type
     function Get_Surface: IXMLSurface_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSurface_type }
@@ -32383,7 +32383,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSurface_typeList }
@@ -32408,7 +32408,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Equation(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSphere_type }
@@ -32422,7 +32422,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Radius(Value: Double);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTorus_type }
@@ -32436,7 +32436,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Radius(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSwept_surface_type }
@@ -32455,7 +32455,7 @@ type
     procedure Set_Origin(Value: UnicodeString);
     procedure Set_Axis(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLNurbs_surface_type }
@@ -32478,7 +32478,7 @@ type
     procedure Set_Degree_v(Value: Int64);
     procedure Set_Closed_v(Value: Boolean);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLNurbs_surface_type_control_vertices }
@@ -32492,7 +32492,7 @@ type
     function Get_Input: IXMLInput_local_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCone_type }
@@ -32508,7 +32508,7 @@ type
     procedure Set_Radius(Value: Double);
     procedure Set_Angle(Value: Single);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSurface_type_cylinder }
@@ -32522,7 +32522,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Radius(Value: Double);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLEdges_type }
@@ -32543,7 +32543,7 @@ type
     procedure Set_Name(Value: UnicodeString);
     procedure Set_Count(Value: Integer);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLWires_type }
@@ -32566,7 +32566,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Vcount(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFaces_type }
@@ -32589,7 +32589,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Vcount(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPcurves_type }
@@ -32612,7 +32612,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Vcount(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLShells_type }
@@ -32635,7 +32635,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Vcount(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSolids_type }
@@ -32658,7 +32658,7 @@ type
     procedure Set_Count(Value: Int64);
     procedure Set_Vcount(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_effects_type }
@@ -32677,7 +32677,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_effects_typeList }
@@ -32715,7 +32715,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLEffect_typeList }
@@ -32852,7 +32852,7 @@ type
     procedure Set_Float4x4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_newparam_typeList }
@@ -32898,7 +32898,7 @@ type
     procedure Set_Mip_bias(Value: Single);
     procedure Set_Max_anisotropy(Value: LongWord);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_image_type }
@@ -32965,7 +32965,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Id(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_common_newparam_type }
@@ -32987,7 +32987,7 @@ type
     procedure Set_Float3(Value: UnicodeString);
     procedure Set_Float4(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_common_newparam_typeList }
@@ -33019,7 +33019,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_common_type_technique_constant }
@@ -33034,7 +33034,7 @@ type
     function Get_Transparency: IXMLFx_common_float_or_param_type;
     function Get_Index_of_refraction: IXMLFx_common_float_or_param_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_common_color_or_texture_type }
@@ -33046,7 +33046,7 @@ type
     function Get_Param: IXMLFx_common_color_or_texture_type_param;
     function Get_Texture: IXMLFx_common_color_or_texture_type_texture;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_common_color_or_texture_type_color }
@@ -33080,7 +33080,7 @@ type
     function Add: IXMLExtra_type;
     function Insert(const Index: Integer): IXMLExtra_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_common_float_or_param_type }
@@ -33091,7 +33091,7 @@ type
     function Get_Float: IXMLFx_common_float_or_param_type_float;
     function Get_Param: IXMLFx_common_float_or_param_type_param;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_common_float_or_param_type_float }
@@ -33135,7 +33135,7 @@ type
     function Get_Transparency: IXMLFx_common_float_or_param_type;
     function Get_Index_of_refraction: IXMLFx_common_float_or_param_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_common_type_technique_phong }
@@ -33154,7 +33154,7 @@ type
     function Get_Transparency: IXMLFx_common_float_or_param_type;
     function Get_Index_of_refraction: IXMLFx_common_float_or_param_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_common_type_technique_blinn }
@@ -33173,7 +33173,7 @@ type
     function Get_Transparency: IXMLFx_common_float_or_param_type;
     function Get_Index_of_refraction: IXMLFx_common_float_or_param_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_bridge_type }
@@ -33192,7 +33192,7 @@ type
     procedure Set_Platform(Value: UnicodeString);
     procedure Set_Url(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_gles2_type }
@@ -33219,7 +33219,7 @@ type
     procedure Set_Language(Value: UnicodeString);
     procedure Set_Platforms(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_include_type }
@@ -33317,7 +33317,7 @@ type
     procedure Set_Ivec4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLUsertype }
@@ -33331,7 +33331,7 @@ type
     function Add: IXMLUsertype_setparam;
     function Insert(const Index: Integer): IXMLUsertype_setparam;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLUsertype_setparam }
@@ -33380,7 +33380,7 @@ type
     procedure Set_Ivec4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLArray_ }
@@ -33429,7 +33429,7 @@ type
     procedure Set_Ivec4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_gles2_type_newparam }
@@ -33468,7 +33468,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_gles2_type_techniqueList }
@@ -33498,7 +33498,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles2_pass_typeList }
@@ -33550,7 +33550,7 @@ type
     function Get_Scissor_test_enable: IXMLScissor_test_enable;
     function Get_Stencil_test_enable: IXMLStencil_test_enable;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLBlend_color }
@@ -33583,7 +33583,7 @@ type
     function Get_Rgb: IXMLBlend_equation_separate_rgb;
     function Get_Alpha: IXMLBlend_equation_separate_alpha;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLBlend_equation_separate_rgb }
@@ -33616,7 +33616,7 @@ type
     function Get_Src: IXMLBlend_func_src;
     function Get_Dest: IXMLBlend_func_dest;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLBlend_func_src }
@@ -33651,7 +33651,7 @@ type
     function Get_Src_alpha: IXMLBlend_func_separate_src_alpha;
     function Get_Dest_alpha: IXMLBlend_func_separate_dest_alpha;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLBlend_func_separate_src_rgb }
@@ -33805,7 +33805,7 @@ type
     function Get_Value: IXMLSample_coverage_value;
     function Get_Invert: IXMLSample_coverage_invert;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSample_coverage_value }
@@ -33850,7 +33850,7 @@ type
     function Get_Ref: IXMLStencil_func_ref;
     function Get_Mask: IXMLStencil_func_mask;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLStencil_func_func }
@@ -33896,7 +33896,7 @@ type
     function Get_Ref: IXMLStencil_func_separate_ref;
     function Get_Mask: IXMLStencil_func_separate_mask;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLStencil_func_separate_front }
@@ -33962,7 +33962,7 @@ type
     function Get_Face: IXMLStencil_mask_separate_face;
     function Get_Mask: IXMLStencil_mask_separate_mask;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLStencil_mask_separate_face }
@@ -33996,7 +33996,7 @@ type
     function Get_Zfail: IXMLStencil_op_zfail;
     function Get_Zpass: IXMLStencil_op_zpass;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLStencil_op_fail }
@@ -34042,7 +34042,7 @@ type
     function Get_Zfail: IXMLStencil_op_separate_zfail;
     function Get_Zpass: IXMLStencil_op_separate_zpass;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLStencil_op_separate_face }
@@ -34214,7 +34214,7 @@ type
     function Get_Bind_attribute: IXMLGles2_program_type_bind_attributeList;
     function Get_Bind_uniform: IXMLGles2_program_type_bind_uniformList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles2_shader_type }
@@ -34231,7 +34231,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Stage(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles2_shader_typeList }
@@ -34256,7 +34256,7 @@ type
     function Get_Inline_: IXMLString_List;
     function Get_Import: IXMLFx_sources_type_importList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_sources_type_import }
@@ -34301,7 +34301,7 @@ type
     procedure Set_Target(Value: UnicodeString);
     procedure Set_Options(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_target_typeList }
@@ -34324,7 +34324,7 @@ type
     function Get_Hex: IXMLFx_target_type_binary_hex;
     procedure Set_Ref(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_target_type_binary_hex }
@@ -34405,7 +34405,7 @@ type
     procedure Set_Ivec4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles2_program_type_bind_uniformList }
@@ -34449,7 +34449,7 @@ type
     function Get_Draw: UnicodeString;
     procedure Set_Draw(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_rendertarget_type }
@@ -34468,7 +34468,7 @@ type
     procedure Set_Face(Value: UnicodeString);
     procedure Set_Slice(Value: LongWord);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFx_rendertarget_type_param }
@@ -34616,7 +34616,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Platform(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGlsl_newparam_type }
@@ -34673,7 +34673,7 @@ type
     procedure Set_Int4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGlsl_newparam_typeList }
@@ -34734,7 +34734,7 @@ type
     procedure Set_Int4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_glsl_type_technique }
@@ -34755,7 +34755,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_glsl_type_techniqueList }
@@ -34785,7 +34785,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_glsl_type_technique_passList }
@@ -34909,7 +34909,7 @@ type
     function Get_Scissor_test_enable: IXMLScissor_test_enable;
     function Get_Stencil_test_enable: IXMLStencil_test_enable;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAlpha_func }
@@ -34920,7 +34920,7 @@ type
     function Get_Func: IXMLAlpha_func_func;
     function Get_Value: IXMLAlpha_func_value;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAlpha_func_func }
@@ -34953,7 +34953,7 @@ type
     function Get_Face: IXMLColor_material_face;
     function Get_Mode: IXMLColor_material_mode;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLColor_material_face }
@@ -35030,7 +35030,7 @@ type
     function Get_Face: IXMLPolygon_mode_face;
     function Get_Mode: IXMLPolygon_mode_mode;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPolygon_mode_face }
@@ -35220,7 +35220,7 @@ type
     procedure Set_Index(Value: LongWord);
     procedure Set_Param(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTexture2D }
@@ -35234,7 +35234,7 @@ type
     procedure Set_Index(Value: LongWord);
     procedure Set_Param(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTexture3D }
@@ -35248,7 +35248,7 @@ type
     procedure Set_Index(Value: LongWord);
     procedure Set_Param(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTextureCUBE }
@@ -35262,7 +35262,7 @@ type
     procedure Set_Index(Value: LongWord);
     procedure Set_Param(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTextureRECT }
@@ -35276,7 +35276,7 @@ type
     procedure Set_Index(Value: LongWord);
     procedure Set_Param(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTextureDEPTH }
@@ -35290,7 +35290,7 @@ type
     procedure Set_Index(Value: LongWord);
     procedure Set_Param(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTexture1D_enable }
@@ -35865,7 +35865,7 @@ type
     function Get_Bind_attribute: IXMLGlsl_program_type_bind_attributeList;
     function Get_Bind_uniform: IXMLGlsl_program_type_bind_uniformList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGlsl_shader_type }
@@ -35880,7 +35880,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Stage(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGlsl_shader_typeList }
@@ -35964,7 +35964,7 @@ type
     procedure Set_Int4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGlsl_program_type_bind_uniformList }
@@ -36008,7 +36008,7 @@ type
     function Get_Draw: UnicodeString;
     procedure Set_Draw(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_cg_type }
@@ -36033,7 +36033,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Platform(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCg_newparam_type }
@@ -36223,7 +36223,7 @@ type
     procedure Set_String_(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCg_newparam_typeList }
@@ -36419,7 +36419,7 @@ type
     procedure Set_String_(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCg_user_type }
@@ -36435,7 +36435,7 @@ type
     function Add: IXMLCg_setparam_type;
     function Insert(const Index: Integer): IXMLCg_setparam_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCg_setparam_type }
@@ -36618,7 +36618,7 @@ type
     procedure Set_String_(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_cg_type_technique }
@@ -36639,7 +36639,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_cg_type_techniqueList }
@@ -36669,7 +36669,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCg_pass_typeList }
@@ -36793,7 +36793,7 @@ type
     function Get_Scissor_test_enable: IXMLScissor_test_enable;
     function Get_Stencil_test_enable: IXMLStencil_test_enable;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCg_pass_type_program }
@@ -36805,7 +36805,7 @@ type
     function Add: IXMLCg_pass_type_program_shader;
     function Insert(const Index: Integer): IXMLCg_pass_type_program_shader;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCg_pass_type_program_shader }
@@ -36822,7 +36822,7 @@ type
     function Get_Bind_uniform: IXMLCg_pass_type_program_shader_bind_uniformList;
     procedure Set_Stage(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCg_pass_type_program_shader_sources }
@@ -37015,7 +37015,7 @@ type
     procedure Set_String_(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCg_pass_type_program_shader_bind_uniformList }
@@ -37059,7 +37059,7 @@ type
     function Get_Draw: UnicodeString;
     procedure Set_Draw(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_gles_type }
@@ -37080,7 +37080,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Platform(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles_newparam_type }
@@ -37157,7 +37157,7 @@ type
     procedure Set_Float4x4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles_newparam_typeList }
@@ -37196,7 +37196,7 @@ type
     procedure Set_Mip_max_level(Value: Byte);
     procedure Set_Mip_bias(Value: Single);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles_sampler_type_texcoord }
@@ -37226,7 +37226,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_gles_type_techniqueList }
@@ -37255,7 +37255,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLProfile_gles_type_technique_passList }
@@ -37344,7 +37344,7 @@ type
     function Get_Scissor_test_enable: IXMLScissor_test_enable;
     function Get_Stencil_test_enable: IXMLStencil_test_enable;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTexture_pipeline }
@@ -37354,7 +37354,7 @@ type
     { IXMLTexture_pipeline }
     function Get_Value: IXMLGles_texture_pipeline_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles_texture_pipeline_type }
@@ -37372,7 +37372,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles_texcombiner_command_type }
@@ -37384,7 +37384,7 @@ type
     function Get_RGB: IXMLGles_texcombiner_command_rgb_type;
     function Get_Alpha: IXMLGles_texcombiner_command_alpha_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles_texcombiner_command_typeList }
@@ -37422,7 +37422,7 @@ type
     function Add: IXMLGles_texcombiner_argument_rgb_type;
     function Insert(const Index: Integer): IXMLGles_texcombiner_argument_rgb_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles_texcombiner_argument_rgb_type }
@@ -37451,7 +37451,7 @@ type
     function Add: IXMLGles_texcombiner_argument_alpha_type;
     function Insert(const Index: Integer): IXMLGles_texcombiner_argument_alpha_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles_texcombiner_argument_alpha_type }
@@ -37478,7 +37478,7 @@ type
     procedure Set_Operator_(Value: UnicodeString);
     procedure Set_Sampler(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLGles_texenv_command_typeList }
@@ -37513,7 +37513,7 @@ type
     function Get_Draw: UnicodeString;
     procedure Set_Draw(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_force_fields_type }
@@ -37532,7 +37532,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_force_fields_typeList }
@@ -37562,7 +37562,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLForce_field_typeList }
@@ -37592,7 +37592,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_images_typeList }
@@ -37627,7 +37627,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLImage_typeList }
@@ -37659,7 +37659,7 @@ type
     function Get_Hex: IXMLImage_source_type_hex;
     procedure Set_Ref(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLImage_source_type_hex }
@@ -37696,7 +37696,7 @@ type
     function Get_Init_from: IXMLImage_type_create_2d_init_fromList;
     procedure Set_Unnormalized(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLImage_type_create_2d_size_exact }
@@ -37750,7 +37750,7 @@ type
     function Get_Exact: UnicodeString;
     procedure Set_Exact(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLImage_type_create_2d_format_hint }
@@ -37803,7 +37803,7 @@ type
     function Get_Format: IXMLImage_type_create_3d_format;
     function Get_Init_from: IXMLImage_type_create_3d_init_fromList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLImage_type_create_3d_size }
@@ -37837,7 +37837,7 @@ type
     function Get_Exact: UnicodeString;
     procedure Set_Exact(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLImage_type_create_3d_format_hint }
@@ -37892,7 +37892,7 @@ type
     function Get_Format: IXMLImage_type_create_cube_format;
     function Get_Init_from: IXMLImage_type_create_cube_init_fromList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLImage_type_create_cube_size }
@@ -37922,7 +37922,7 @@ type
     function Get_Exact: UnicodeString;
     procedure Set_Exact(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLImage_type_create_cube_format_hint }
@@ -37980,7 +37980,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_lights_typeList }
@@ -38011,7 +38011,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLight_typeList }
@@ -38035,7 +38035,7 @@ type
     function Get_Point: IXMLLight_type_technique_common_point;
     function Get_Spot: IXMLLight_type_technique_common_spot;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLight_type_technique_common_ambient }
@@ -38045,7 +38045,7 @@ type
     { IXMLLight_type_technique_common_ambient }
     function Get_Color: IXMLTargetable_float3_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTargetable_float3_type }
@@ -38064,7 +38064,7 @@ type
     { IXMLLight_type_technique_common_directional }
     function Get_Color: IXMLTargetable_float3_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLight_type_technique_common_point }
@@ -38077,7 +38077,7 @@ type
     function Get_Linear_attenuation: IXMLTargetable_float_type;
     function Get_Quadratic_attenuation: IXMLTargetable_float_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLight_type_technique_common_spot }
@@ -38092,7 +38092,7 @@ type
     function Get_Falloff_angle: IXMLTargetable_float_type;
     function Get_Falloff_exponent: IXMLTargetable_float_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_materials_type }
@@ -38111,7 +38111,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_materials_typeList }
@@ -38140,7 +38140,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMaterial_typeList }
@@ -38173,7 +38173,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_effect_type_technique_hint }
@@ -38260,7 +38260,7 @@ type
     procedure Set_Float4x4(Value: UnicodeString);
     procedure Set_Enum(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_effect_type_setparamList }
@@ -38305,7 +38305,7 @@ type
     procedure Set_Mip_bias(Value: Single);
     procedure Set_Max_anisotropy(Value: LongWord);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_nodes_type }
@@ -38324,7 +38324,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_nodes_typeList }
@@ -38382,7 +38382,7 @@ type
     procedure Set_Type_(Value: UnicodeString);
     procedure Set_Layer(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLNode_typeList }
@@ -38546,7 +38546,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_controller_typeList }
@@ -38574,7 +38574,7 @@ type
     function Get_Technique: IXMLTechnique_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLBind_material_type_technique_common }
@@ -38586,7 +38586,7 @@ type
     function Add: IXMLInstance_material_type;
     function Insert(const Index: Integer): IXMLInstance_material_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_material_type }
@@ -38610,7 +38610,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_material_type_bind }
@@ -38675,7 +38675,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_geometry_typeList }
@@ -38743,7 +38743,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_physics_materials_typeList }
@@ -38774,7 +38774,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPhysics_material_typeList }
@@ -38797,7 +38797,7 @@ type
     function Get_Restitution: IXMLTargetable_float_type;
     function Get_Static_friction: IXMLTargetable_float_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_physics_models_type }
@@ -38816,7 +38816,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_physics_models_typeList }
@@ -38850,7 +38850,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPhysics_model_typeList }
@@ -38882,7 +38882,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_body_typeList }
@@ -38911,7 +38911,7 @@ type
     function Get_Physics_material: IXMLPhysics_material_type;
     function Get_Shape: IXMLRigid_body_type_technique_common_shapeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_body_type_technique_common_dynamic }
@@ -38934,7 +38934,7 @@ type
     function Get_Translate: IXMLTranslate_typeList;
     function Get_Rotate: IXMLRotate_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_physics_material_type }
@@ -38968,7 +38968,7 @@ type
     function Get_Rotate: IXMLRotate_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_body_type_technique_common_shapeList }
@@ -39002,7 +39002,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Half_extents(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCylinder_type }
@@ -39018,7 +39018,7 @@ type
     procedure Set_Height(Value: Double);
     procedure Set_Radius(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCapsule_type }
@@ -39034,7 +39034,7 @@ type
     procedure Set_Height(Value: Double);
     procedure Set_Radius(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_type }
@@ -39055,7 +39055,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_typeList }
@@ -39084,7 +39084,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Rigid_body(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_type_attachment }
@@ -39102,7 +39102,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Rigid_body(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_type_technique_common }
@@ -39115,7 +39115,7 @@ type
     function Get_Limits: IXMLRigid_constraint_type_technique_common_limits;
     function Get_Spring: IXMLRigid_constraint_type_technique_common_spring;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_type_technique_common_enabled }
@@ -39144,7 +39144,7 @@ type
     function Get_Swing_cone_and_twist: IXMLRigid_constraint_type_technique_common_limits_swing_cone_and_twist;
     function Get_Linear: IXMLRigid_constraint_type_technique_common_limits_linear;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_type_technique_common_limits_swing_cone_and_twist }
@@ -39155,7 +39155,7 @@ type
     function Get_Min: IXMLTargetable_float3_type;
     function Get_Max: IXMLTargetable_float3_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_type_technique_common_limits_linear }
@@ -39166,7 +39166,7 @@ type
     function Get_Min: IXMLTargetable_float3_type;
     function Get_Max: IXMLTargetable_float3_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_type_technique_common_spring }
@@ -39177,7 +39177,7 @@ type
     function Get_Angular: IXMLRigid_constraint_type_technique_common_spring_angular;
     function Get_Linear: IXMLRigid_constraint_type_technique_common_spring_linear;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_type_technique_common_spring_angular }
@@ -39189,7 +39189,7 @@ type
     function Get_Damping: IXMLTargetable_float_type;
     function Get_Target_value: IXMLTargetable_float_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLRigid_constraint_type_technique_common_spring_linear }
@@ -39201,7 +39201,7 @@ type
     function Get_Damping: IXMLTargetable_float_type;
     function Get_Target_value: IXMLTargetable_float_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_physics_model_type }
@@ -39227,7 +39227,7 @@ type
     procedure Set_Name(Value: UnicodeString);
     procedure Set_Parent(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_physics_model_typeList }
@@ -39279,7 +39279,7 @@ type
     procedure Set_Name(Value: UnicodeString);
     procedure Set_Target(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_rigid_body_typeList }
@@ -39312,7 +39312,7 @@ type
     procedure Set_Angular_velocity(Value: UnicodeString);
     procedure Set_Velocity(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_rigid_body_type_technique_common_dynamic }
@@ -39335,7 +39335,7 @@ type
     function Get_Translate: IXMLTranslate_typeList;
     function Get_Rotate: IXMLRotate_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_rigid_body_type_technique_common_shape }
@@ -39362,7 +39362,7 @@ type
     function Get_Rotate: IXMLRotate_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_rigid_body_type_technique_common_shapeList }
@@ -39400,7 +39400,7 @@ type
     function Add: IXMLExtra_type;
     function Insert(const Index: Integer): IXMLExtra_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_rigid_constraint_typeList }
@@ -39430,7 +39430,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_physics_scenes_typeList }
@@ -39465,7 +39465,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPhysics_scene_typeList }
@@ -39487,7 +39487,7 @@ type
     function Get_Gravity: IXMLTargetable_float3_type;
     function Get_Time_step: IXMLTargetable_float_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_visual_scenes_type }
@@ -39506,7 +39506,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_visual_scenes_typeList }
@@ -39538,7 +39538,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLVisual_scene_typeList }
@@ -39572,7 +39572,7 @@ type
     procedure Set_Name(Value: UnicodeString);
     procedure Set_Enable(Value: Boolean);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLVisual_scene_type_evaluate_sceneList }
@@ -39604,7 +39604,7 @@ type
     procedure Set_Name(Value: UnicodeString);
     procedure Set_Camera_node(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLVisual_scene_type_evaluate_scene_renderList }
@@ -39632,7 +39632,7 @@ type
     function Get_Extra: IXMLExtra_typeList;
     procedure Set_Url(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLVisual_scene_type_evaluate_scene_render_instance_material_technique_override }
@@ -39684,7 +39684,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_joints_typeList }
@@ -39717,7 +39717,7 @@ type
     procedure Set_Name(Value: UnicodeString);
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLJoint_typeList }
@@ -39741,7 +39741,7 @@ type
     function Get_Limits: IXMLJoint_limits_type;
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAxis_constraint_typeList }
@@ -39774,7 +39774,7 @@ type
     function Get_Min: IXMLMinmax_type;
     function Get_Max: IXMLMinmax_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMinmax_type }
@@ -39804,7 +39804,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_kinematics_models_typeList }
@@ -39835,7 +39835,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_model_typeList }
@@ -39868,7 +39868,7 @@ type
     function Get_Formula: IXMLFormula_typeList;
     function Get_Instance_formula: IXMLInstance_formula_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_newparam_type }
@@ -39938,7 +39938,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLink_typeList }
@@ -39966,7 +39966,7 @@ type
     function Get_Link: IXMLLink_type;
     procedure Set_Joint(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLink_type_attachment_fullList }
@@ -39993,7 +39993,7 @@ type
     function Get_Translate: IXMLTranslate_typeList;
     procedure Set_Joint(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLink_type_attachment_startList }
@@ -40020,7 +40020,7 @@ type
     function Get_Translate: IXMLTranslate_typeList;
     procedure Set_Joint(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLink_type_attachment_endList }
@@ -40053,7 +40053,7 @@ type
     procedure Set_Name(Value: UnicodeString);
     procedure Set_Sid(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLFormula_typeList }
@@ -40104,7 +40104,7 @@ type
     function Get_Param: IXMLCommon_param_type;
     procedure Set_Float(Value: Double);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCommon_param_type }
@@ -40121,7 +40121,7 @@ type
     { IXMLFormula_technique_type }
     function Get_Math: IXMLMathtype;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMathtype }
@@ -40326,7 +40326,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMitype }
@@ -40355,7 +40355,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMalignmarktype }
@@ -40440,7 +40440,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMntype }
@@ -40469,7 +40469,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMtexttype }
@@ -40498,7 +40498,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMstype }
@@ -40531,7 +40531,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMrowtype }
@@ -40716,7 +40716,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMfractype }
@@ -40909,7 +40909,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMsqrttype }
@@ -41094,7 +41094,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMroottype }
@@ -41279,7 +41279,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMpaddedtype }
@@ -41472,7 +41472,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMphantomtype }
@@ -41657,7 +41657,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMfencedtype }
@@ -41848,7 +41848,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMenclosetype }
@@ -42035,7 +42035,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMsubtype }
@@ -42222,7 +42222,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMsuptype }
@@ -42409,7 +42409,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMsubsuptype }
@@ -42598,7 +42598,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMundertype }
@@ -42785,7 +42785,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMovertype }
@@ -42972,7 +42972,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMunderovertype }
@@ -43161,7 +43161,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMmultiscriptstype }
@@ -43348,7 +43348,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMtabletype }
@@ -43405,7 +43405,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMtrtype }
@@ -43431,7 +43431,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMtdtype }
@@ -43626,7 +43626,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMaligngrouptype }
@@ -43859,7 +43859,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMerrortype }
@@ -44044,7 +44044,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMstyletype }
@@ -44289,7 +44289,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCntype }
@@ -44483,7 +44483,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCitype }
@@ -44674,7 +44674,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCsymboltype }
@@ -44863,7 +44863,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLArithtype }
@@ -45094,7 +45094,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLElementaryfunctionstype }
@@ -45344,7 +45344,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLListtype }
@@ -45531,7 +45531,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLUniontype }
@@ -45968,7 +45968,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInttype }
@@ -46241,7 +46241,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLUplimittype }
@@ -46430,7 +46430,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLTendstotype }
@@ -46638,7 +46638,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMatrixtype }
@@ -46658,7 +46658,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMatrixrowtype }
@@ -46843,7 +46843,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLDeterminanttype }
@@ -47368,7 +47368,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLApplytype }
@@ -47553,7 +47553,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLIntervaltype }
@@ -47740,7 +47740,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInversetype }
@@ -47940,7 +47940,7 @@ type
     procedure Set_Encoding(Value: UnicodeString);
     procedure Set_DefinitionURL(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLDeclaretype }
@@ -48127,7 +48127,7 @@ type
     procedure Set_Encoding(Value: UnicodeString);
     procedure Set_DefinitionURL(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLambdatype }
@@ -48312,7 +48312,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPiecewisetype }
@@ -48335,7 +48335,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPiecetype }
@@ -48510,7 +48510,7 @@ type
     function Get_Merror: IXMLMerrortype;
     function Get_Mstyle: IXMLMstyletype;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLPiecetypeList }
@@ -48706,7 +48706,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLDegreetype }
@@ -48891,7 +48891,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSemanticstype }
@@ -49082,7 +49082,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLAnnotationtype }
@@ -49305,7 +49305,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLSeptype }
@@ -49338,7 +49338,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Href(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLNonetype }
@@ -49371,7 +49371,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_articulated_systems_typeList }
@@ -49401,7 +49401,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLArticulated_system_typeList }
@@ -49429,7 +49429,7 @@ type
     function Get_Technique: IXMLTechnique_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_kinematics_model_type }
@@ -49453,7 +49453,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_kinematics_model_typeList }
@@ -49484,7 +49484,7 @@ type
     procedure Set_Int(Value: Int64);
     procedure Set_SIDREF(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_bind_typeList }
@@ -49524,7 +49524,7 @@ type
     procedure Set_SIDREF(Value: UnicodeString);
     procedure Set_Bool(Value: Boolean);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_setparam_typeList }
@@ -49551,7 +49551,7 @@ type
     function Get_Frame_tcp: IXMLKinematics_frame_type;
     function Get_Frame_object: IXMLKinematics_frame_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_axis_info_type }
@@ -49578,7 +49578,7 @@ type
     procedure Set_Name(Value: UnicodeString);
     procedure Set_Axis(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_axis_info_typeList }
@@ -49601,7 +49601,7 @@ type
     function Get_Param: IXMLCommon_param_type;
     procedure Set_Bool(Value: Boolean);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCommon_int_or_param_type }
@@ -49613,7 +49613,7 @@ type
     function Get_Param: IXMLCommon_param_type;
     procedure Set_Int(Value: Int64);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_index_type }
@@ -49644,7 +49644,7 @@ type
     function Get_Min: IXMLCommon_float_or_param_type;
     function Get_Max: IXMLCommon_float_or_param_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_frame_type }
@@ -49660,7 +49660,7 @@ type
     function Get_Rotate: IXMLRotate_typeList;
     procedure Set_Link(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMotion_type }
@@ -49676,7 +49676,7 @@ type
     function Get_Technique: IXMLTechnique_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_articulated_system_type }
@@ -49700,7 +49700,7 @@ type
     procedure Set_Url(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_articulated_system_typeList }
@@ -49724,7 +49724,7 @@ type
     function Get_Axis_info: IXMLMotion_axis_info_typeList;
     function Get_Effector_info: IXMLMotion_effector_info_type;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMotion_axis_info_type }
@@ -49750,7 +49750,7 @@ type
     procedure Set_Axis(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLMotion_axis_info_typeList }
@@ -49785,7 +49785,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLCommon_float2_or_param_type }
@@ -49797,7 +49797,7 @@ type
     function Get_Param: IXMLCommon_param_type;
     procedure Set_Float2(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_kinematics_scenes_type }
@@ -49816,7 +49816,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_kinematics_scenes_typeList }
@@ -49848,7 +49848,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLKinematics_scene_typeList }
@@ -49878,7 +49878,7 @@ type
     procedure Set_Id(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLLibrary_formulas_typeList }
@@ -49906,7 +49906,7 @@ type
     function Get_Instance_kinematics_scene: IXMLInstance_kinematics_scene_typeList;
     function Get_Extra: IXMLExtra_typeList;
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_kinematics_scene_type }
@@ -49933,7 +49933,7 @@ type
     procedure Set_Sid(Value: UnicodeString);
     procedure Set_Name(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLInstance_kinematics_scene_typeList }
@@ -49956,7 +49956,7 @@ type
     function Get_Param: IXMLCommon_param_type;
     procedure Set_SIDREF(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLBind_kinematics_model_type }
@@ -49989,7 +49989,7 @@ type
     function Get_Value: IXMLCommon_float_or_param_type;
     procedure Set_Target(Value: UnicodeString);
   public
-    procedure AfterConstruction; override;
+    procedure DoBeforeCreate; override;
   end;
 
 { TXMLBind_joint_axis_typeList }
@@ -50279,7 +50279,7 @@ end;
 
 { TXMLAsset_type }
 
-procedure TXMLAsset_type.AfterConstruction;
+procedure TXMLAsset_type.DoBeforeCreate;
 begin
   ClassesTree.Add('contributor', TXMLAsset_type_contributor);
   ClassesTree.Add('coverage', TXMLAsset_type_coverage);
@@ -50466,12 +50466,12 @@ end;
 
 function TXMLAsset_type_contributorList.Get_Item(Index: Integer): IXMLAsset_type_contributor;
 begin
-  Result := List.NodesI[Index] as IXMLAsset_type_contributor;
+  Result := Nodes[Index] as IXMLAsset_type_contributor;
 end;
 
 { TXMLAsset_type_coverage }
 
-procedure TXMLAsset_type_coverage.AfterConstruction;
+procedure TXMLAsset_type_coverage.DoBeforeCreate;
 begin
   ClassesTree.Add('geographic_location', TXMLAsset_type_coverage_geographic_location);
   inherited;
@@ -50484,7 +50484,7 @@ end;
 
 { TXMLAsset_type_coverage_geographic_location }
 
-procedure TXMLAsset_type_coverage_geographic_location.AfterConstruction;
+procedure TXMLAsset_type_coverage_geographic_location.DoBeforeCreate;
 begin
   ClassesTree.Add('altitude', TXMLAsset_type_coverage_geographic_location_altitude);
   inherited;
@@ -50551,7 +50551,7 @@ end;
 
 { TXMLExtra_type }
 
-procedure TXMLExtra_type.AfterConstruction;
+procedure TXMLExtra_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('technique', TXMLTechnique_type);
@@ -50613,7 +50613,7 @@ end;
 
 function TXMLExtra_typeList.Get_Item(Index: Integer): IXMLExtra_type;
 begin
-  Result := List.NodesI[Index] as IXMLExtra_type;
+  Result := Nodes[Index] as IXMLExtra_type;
 end;
 
 { TXMLTechnique_type }
@@ -50642,12 +50642,12 @@ end;
 
 function TXMLTechnique_typeList.Get_Item(Index: Integer): IXMLTechnique_type;
 begin
-  Result := List.NodesI[Index] as IXMLTechnique_type;
+  Result := Nodes[Index] as IXMLTechnique_type;
 end;
 
 { TXMLLibrary_animations_type }
 
-procedure TXMLLibrary_animations_type.AfterConstruction;
+procedure TXMLLibrary_animations_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('animation', TXMLAnimation_type);
@@ -50706,12 +50706,12 @@ end;
 
 function TXMLLibrary_animations_typeList.Get_Item(Index: Integer): IXMLLibrary_animations_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_animations_type;
+  Result := Nodes[Index] as IXMLLibrary_animations_type;
 end;
 
 { TXMLAnimation_type }
 
-procedure TXMLAnimation_type.AfterConstruction;
+procedure TXMLAnimation_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('source', TXMLSource_type);
@@ -50791,12 +50791,12 @@ end;
 
 function TXMLAnimation_typeList.Get_Item(Index: Integer): IXMLAnimation_type;
 begin
-  Result := List.NodesI[Index] as IXMLAnimation_type;
+  Result := Nodes[Index] as IXMLAnimation_type;
 end;
 
 { TXMLSource_type }
 
-procedure TXMLSource_type.AfterConstruction;
+procedure TXMLSource_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('token_array', TXMLToken_array_type);
@@ -50896,7 +50896,7 @@ end;
 
 function TXMLSource_typeList.Get_Item(Index: Integer): IXMLSource_type;
 begin
-  Result := List.NodesI[Index] as IXMLSource_type;
+  Result := Nodes[Index] as IXMLSource_type;
 end;
 
 { TXMLToken_array_type }
@@ -51165,7 +51165,7 @@ end;
 
 { TXMLSource_type_technique_common }
 
-procedure TXMLSource_type_technique_common.AfterConstruction;
+procedure TXMLSource_type_technique_common.DoBeforeCreate;
 begin
   ClassesTree.Add('accessor', TXMLAccessor_type);
   inherited;
@@ -51178,7 +51178,7 @@ end;
 
 { TXMLAccessor_type }
 
-procedure TXMLAccessor_type.AfterConstruction;
+procedure TXMLAccessor_type.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLParam_type);
   Tag := 'param';
@@ -51228,7 +51228,7 @@ end;
 
 function TXMLAccessor_type.Get_Param(Index: Integer): IXMLParam_type;
 begin
-  Result := List.NodesI[Index] as IXMLParam_type;
+  Result := Nodes[Index] as IXMLParam_type;
 end;
 
 function TXMLAccessor_type.Add: IXMLParam_type;
@@ -51297,12 +51297,12 @@ end;
 
 function TXMLParam_typeList.Get_Item(Index: Integer): IXMLParam_type;
 begin
-  Result := List.NodesI[Index] as IXMLParam_type;
+  Result := Nodes[Index] as IXMLParam_type;
 end;
 
 { TXMLSampler_type }
 
-procedure TXMLSampler_type.AfterConstruction;
+procedure TXMLSampler_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_type);
   Tag := 'input';
@@ -51342,7 +51342,7 @@ end;
 
 function TXMLSampler_type.Get_Input(Index: Integer): IXMLInput_local_type;
 begin
-  Result := List.NodesI[Index] as IXMLInput_local_type;
+  Result := Nodes[Index] as IXMLInput_local_type;
 end;
 
 function TXMLSampler_type.Add: IXMLInput_local_type;
@@ -51369,7 +51369,7 @@ end;
 
 function TXMLSampler_typeList.Get_Item(Index: Integer): IXMLSampler_type;
 begin
-  Result := List.NodesI[Index] as IXMLSampler_type;
+  Result := Nodes[Index] as IXMLSampler_type;
 end;
 
 { TXMLInput_local_type }
@@ -51408,7 +51408,7 @@ end;
 
 function TXMLInput_local_typeList.Get_Item(Index: Integer): IXMLInput_local_type;
 begin
-  Result := List.NodesI[Index] as IXMLInput_local_type;
+  Result := Nodes[Index] as IXMLInput_local_type;
 end;
 
 { TXMLChannel_type }
@@ -51447,12 +51447,12 @@ end;
 
 function TXMLChannel_typeList.Get_Item(Index: Integer): IXMLChannel_type;
 begin
-  Result := List.NodesI[Index] as IXMLChannel_type;
+  Result := Nodes[Index] as IXMLChannel_type;
 end;
 
 { TXMLLibrary_animation_clips_type }
 
-procedure TXMLLibrary_animation_clips_type.AfterConstruction;
+procedure TXMLLibrary_animation_clips_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('animation_clip', TXMLAnimation_clip_type);
@@ -51511,12 +51511,12 @@ end;
 
 function TXMLLibrary_animation_clips_typeList.Get_Item(Index: Integer): IXMLLibrary_animation_clips_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_animation_clips_type;
+  Result := Nodes[Index] as IXMLLibrary_animation_clips_type;
 end;
 
 { TXMLAnimation_clip_type }
 
-procedure TXMLAnimation_clip_type.AfterConstruction;
+procedure TXMLAnimation_clip_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('instance_animation', TXMLInstance_with_extra_type);
@@ -51602,12 +51602,12 @@ end;
 
 function TXMLAnimation_clip_typeList.Get_Item(Index: Integer): IXMLAnimation_clip_type;
 begin
-  Result := List.NodesI[Index] as IXMLAnimation_clip_type;
+  Result := Nodes[Index] as IXMLAnimation_clip_type;
 end;
 
 { TXMLInstance_with_extra_type }
 
-procedure TXMLInstance_with_extra_type.AfterConstruction;
+procedure TXMLInstance_with_extra_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   Tag := 'extra';
@@ -51647,7 +51647,7 @@ end;
 
 function TXMLInstance_with_extra_type.Get_Extra(Index: Integer): IXMLExtra_type;
 begin
-  Result := List.NodesI[Index] as IXMLExtra_type;
+  Result := Nodes[Index] as IXMLExtra_type;
 end;
 
 function TXMLInstance_with_extra_type.Add: IXMLExtra_type;
@@ -51674,12 +51674,12 @@ end;
 
 function TXMLInstance_with_extra_typeList.Get_Item(Index: Integer): IXMLInstance_with_extra_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_with_extra_type;
+  Result := Nodes[Index] as IXMLInstance_with_extra_type;
 end;
 
 { TXMLInstance_formula_type }
 
-procedure TXMLInstance_formula_type.AfterConstruction;
+procedure TXMLInstance_formula_type.DoBeforeCreate;
 begin
   ClassesTree.Add('setparam', TXMLFormula_setparam_type);
   Tag := 'setparam';
@@ -51719,7 +51719,7 @@ end;
 
 function TXMLInstance_formula_type.Get_Setparam(Index: Integer): IXMLFormula_setparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLFormula_setparam_type;
+  Result := Nodes[Index] as IXMLFormula_setparam_type;
 end;
 
 function TXMLInstance_formula_type.Add: IXMLFormula_setparam_type;
@@ -51746,12 +51746,12 @@ end;
 
 function TXMLInstance_formula_typeList.Get_Item(Index: Integer): IXMLInstance_formula_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_formula_type;
+  Result := Nodes[Index] as IXMLInstance_formula_type;
 end;
 
 { TXMLFormula_setparam_type }
 
-procedure TXMLFormula_setparam_type.AfterConstruction;
+procedure TXMLFormula_setparam_type.DoBeforeCreate;
 begin
   ClassesTree.Add('connect_param', TXMLKinematics_connect_param_type);
   inherited;
@@ -51826,7 +51826,7 @@ end;
 
 { TXMLLibrary_cameras_type }
 
-procedure TXMLLibrary_cameras_type.AfterConstruction;
+procedure TXMLLibrary_cameras_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('camera', TXMLCamera_type);
@@ -51885,12 +51885,12 @@ end;
 
 function TXMLLibrary_cameras_typeList.Get_Item(Index: Integer): IXMLLibrary_cameras_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_cameras_type;
+  Result := Nodes[Index] as IXMLLibrary_cameras_type;
 end;
 
 { TXMLCamera_type }
 
-procedure TXMLCamera_type.AfterConstruction;
+procedure TXMLCamera_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('optics', TXMLCamera_type_optics);
@@ -51954,12 +51954,12 @@ end;
 
 function TXMLCamera_typeList.Get_Item(Index: Integer): IXMLCamera_type;
 begin
-  Result := List.NodesI[Index] as IXMLCamera_type;
+  Result := Nodes[Index] as IXMLCamera_type;
 end;
 
 { TXMLCamera_type_optics }
 
-procedure TXMLCamera_type_optics.AfterConstruction;
+procedure TXMLCamera_type_optics.DoBeforeCreate;
 begin
   ClassesTree.Add('technique_common', TXMLCamera_type_optics_technique_common);
   ClassesTree.Add('technique', TXMLTechnique_type);
@@ -51986,7 +51986,7 @@ end;
 
 { TXMLCamera_type_optics_technique_common }
 
-procedure TXMLCamera_type_optics_technique_common.AfterConstruction;
+procedure TXMLCamera_type_optics_technique_common.DoBeforeCreate;
 begin
   ClassesTree.Add('orthographic', TXMLCamera_type_optics_technique_common_orthographic);
   ClassesTree.Add('perspective', TXMLCamera_type_optics_technique_common_perspective);
@@ -52005,7 +52005,7 @@ end;
 
 { TXMLCamera_type_optics_technique_common_orthographic }
 
-procedure TXMLCamera_type_optics_technique_common_orthographic.AfterConstruction;
+procedure TXMLCamera_type_optics_technique_common_orthographic.DoBeforeCreate;
 begin
   ClassesTree.Add('xmag', TXMLTargetable_float_type);
   ClassesTree.Add('ymag', TXMLTargetable_float_type);
@@ -52054,7 +52054,7 @@ end;
 
 { TXMLCamera_type_optics_technique_common_perspective }
 
-procedure TXMLCamera_type_optics_technique_common_perspective.AfterConstruction;
+procedure TXMLCamera_type_optics_technique_common_perspective.DoBeforeCreate;
 begin
   ClassesTree.Add('xfov', TXMLTargetable_float_type);
   ClassesTree.Add('yfov', TXMLTargetable_float_type);
@@ -52091,7 +52091,7 @@ end;
 
 { TXMLCamera_type_imager }
 
-procedure TXMLCamera_type_imager.AfterConstruction;
+procedure TXMLCamera_type_imager.DoBeforeCreate;
 begin
   ClassesTree.Add('technique', TXMLTechnique_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -52112,7 +52112,7 @@ end;
 
 { TXMLLibrary_controllers_type }
 
-procedure TXMLLibrary_controllers_type.AfterConstruction;
+procedure TXMLLibrary_controllers_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('controller', TXMLController_type);
@@ -52171,12 +52171,12 @@ end;
 
 function TXMLLibrary_controllers_typeList.Get_Item(Index: Integer): IXMLLibrary_controllers_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_controllers_type;
+  Result := Nodes[Index] as IXMLLibrary_controllers_type;
 end;
 
 { TXMLController_type }
 
-procedure TXMLController_type.AfterConstruction;
+procedure TXMLController_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('skin', TXMLSkin_type);
@@ -52240,12 +52240,12 @@ end;
 
 function TXMLController_typeList.Get_Item(Index: Integer): IXMLController_type;
 begin
-  Result := List.NodesI[Index] as IXMLController_type;
+  Result := Nodes[Index] as IXMLController_type;
 end;
 
 { TXMLSkin_type }
 
-procedure TXMLSkin_type.AfterConstruction;
+procedure TXMLSkin_type.DoBeforeCreate;
 begin
   ClassesTree.Add('source', TXMLSource_type);
   ClassesTree.Add('joints', TXMLSkin_type_joints);
@@ -52298,7 +52298,7 @@ end;
 
 { TXMLSkin_type_joints }
 
-procedure TXMLSkin_type_joints.AfterConstruction;
+procedure TXMLSkin_type_joints.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -52319,7 +52319,7 @@ end;
 
 { TXMLSkin_type_vertex_weights }
 
-procedure TXMLSkin_type_vertex_weights.AfterConstruction;
+procedure TXMLSkin_type_vertex_weights.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -52424,12 +52424,12 @@ end;
 
 function TXMLInput_local_offset_typeList.Get_Item(Index: Integer): IXMLInput_local_offset_type;
 begin
-  Result := List.NodesI[Index] as IXMLInput_local_offset_type;
+  Result := Nodes[Index] as IXMLInput_local_offset_type;
 end;
 
 { TXMLMorph_type }
 
-procedure TXMLMorph_type.AfterConstruction;
+procedure TXMLMorph_type.DoBeforeCreate;
 begin
   ClassesTree.Add('source', TXMLSource_type);
   ClassesTree.Add('targets', TXMLMorph_type_targets);
@@ -52476,7 +52476,7 @@ end;
 
 { TXMLMorph_type_targets }
 
-procedure TXMLMorph_type_targets.AfterConstruction;
+procedure TXMLMorph_type_targets.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -52497,7 +52497,7 @@ end;
 
 { TXMLLibrary_geometries_type }
 
-procedure TXMLLibrary_geometries_type.AfterConstruction;
+procedure TXMLLibrary_geometries_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('geometry', TXMLGeometry_type);
@@ -52556,12 +52556,12 @@ end;
 
 function TXMLLibrary_geometries_typeList.Get_Item(Index: Integer): IXMLLibrary_geometries_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_geometries_type;
+  Result := Nodes[Index] as IXMLLibrary_geometries_type;
 end;
 
 { TXMLGeometry_type }
 
-procedure TXMLGeometry_type.AfterConstruction;
+procedure TXMLGeometry_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('convex_mesh', TXMLConvex_mesh_type);
@@ -52637,12 +52637,12 @@ end;
 
 function TXMLGeometry_typeList.Get_Item(Index: Integer): IXMLGeometry_type;
 begin
-  Result := List.NodesI[Index] as IXMLGeometry_type;
+  Result := Nodes[Index] as IXMLGeometry_type;
 end;
 
 { TXMLConvex_mesh_type }
 
-procedure TXMLConvex_mesh_type.AfterConstruction;
+procedure TXMLConvex_mesh_type.DoBeforeCreate;
 begin
   ClassesTree.Add('source', TXMLSource_type);
   ClassesTree.Add('vertices', TXMLVertices_type);
@@ -52728,7 +52728,7 @@ end;
 
 { TXMLVertices_type }
 
-procedure TXMLVertices_type.AfterConstruction;
+procedure TXMLVertices_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -52769,7 +52769,7 @@ end;
 
 { TXMLLines_type }
 
-procedure TXMLLines_type.AfterConstruction;
+procedure TXMLLines_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -52838,7 +52838,7 @@ end;
 
 function TXMLLines_typeList.Get_Item(Index: Integer): IXMLLines_type;
 begin
-  Result := List.NodesI[Index] as IXMLLines_type;
+  Result := Nodes[Index] as IXMLLines_type;
 end;
 
 { TXMLP_type }
@@ -52857,12 +52857,12 @@ end;
 
 function TXMLP_typeList.Get_Item(Index: Integer): IXMLP_type;
 begin
-  Result := List.NodesI[Index] as IXMLP_type;
+  Result := Nodes[Index] as IXMLP_type;
 end;
 
 { TXMLLinestrips_type }
 
-procedure TXMLLinestrips_type.AfterConstruction;
+procedure TXMLLinestrips_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -52932,12 +52932,12 @@ end;
 
 function TXMLLinestrips_typeList.Get_Item(Index: Integer): IXMLLinestrips_type;
 begin
-  Result := List.NodesI[Index] as IXMLLinestrips_type;
+  Result := Nodes[Index] as IXMLLinestrips_type;
 end;
 
 { TXMLPolygons_type }
 
-procedure TXMLPolygons_type.AfterConstruction;
+procedure TXMLPolygons_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -53014,12 +53014,12 @@ end;
 
 function TXMLPolygons_typeList.Get_Item(Index: Integer): IXMLPolygons_type;
 begin
-  Result := List.NodesI[Index] as IXMLPolygons_type;
+  Result := Nodes[Index] as IXMLPolygons_type;
 end;
 
 { TXMLPolygons_type_ph }
 
-procedure TXMLPolygons_type_ph.AfterConstruction;
+procedure TXMLPolygons_type_ph.DoBeforeCreate;
 begin
   ClassesTree.Add('p', TXMLP_type);
   FH := CreateCollection(TXMLList_of_uints_typeList, IXML, 'h') as IXMLList_of_uints_typeList;
@@ -53050,12 +53050,12 @@ end;
 
 function TXMLPolygons_type_phList.Get_Item(Index: Integer): IXMLPolygons_type_ph;
 begin
-  Result := List.NodesI[Index] as IXMLPolygons_type_ph;
+  Result := Nodes[Index] as IXMLPolygons_type_ph;
 end;
 
 { TXMLPolylist_type }
 
-procedure TXMLPolylist_type.AfterConstruction;
+procedure TXMLPolylist_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -53134,12 +53134,12 @@ end;
 
 function TXMLPolylist_typeList.Get_Item(Index: Integer): IXMLPolylist_type;
 begin
-  Result := List.NodesI[Index] as IXMLPolylist_type;
+  Result := Nodes[Index] as IXMLPolylist_type;
 end;
 
 { TXMLTriangles_type }
 
-procedure TXMLTriangles_type.AfterConstruction;
+procedure TXMLTriangles_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -53208,12 +53208,12 @@ end;
 
 function TXMLTriangles_typeList.Get_Item(Index: Integer): IXMLTriangles_type;
 begin
-  Result := List.NodesI[Index] as IXMLTriangles_type;
+  Result := Nodes[Index] as IXMLTriangles_type;
 end;
 
 { TXMLTrifans_type }
 
-procedure TXMLTrifans_type.AfterConstruction;
+procedure TXMLTrifans_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -53283,12 +53283,12 @@ end;
 
 function TXMLTrifans_typeList.Get_Item(Index: Integer): IXMLTrifans_type;
 begin
-  Result := List.NodesI[Index] as IXMLTrifans_type;
+  Result := Nodes[Index] as IXMLTrifans_type;
 end;
 
 { TXMLTristrips_type }
 
-procedure TXMLTristrips_type.AfterConstruction;
+procedure TXMLTristrips_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -53358,12 +53358,12 @@ end;
 
 function TXMLTristrips_typeList.Get_Item(Index: Integer): IXMLTristrips_type;
 begin
-  Result := List.NodesI[Index] as IXMLTristrips_type;
+  Result := Nodes[Index] as IXMLTristrips_type;
 end;
 
 { TXMLMesh_type }
 
-procedure TXMLMesh_type.AfterConstruction;
+procedure TXMLMesh_type.DoBeforeCreate;
 begin
   ClassesTree.Add('source', TXMLSource_type);
   ClassesTree.Add('vertices', TXMLVertices_type);
@@ -53439,7 +53439,7 @@ end;
 
 { TXMLSpline_type }
 
-procedure TXMLSpline_type.AfterConstruction;
+procedure TXMLSpline_type.DoBeforeCreate;
 begin
   ClassesTree.Add('source', TXMLSource_type);
   ClassesTree.Add('control_vertices', TXMLSpline_type_control_vertices);
@@ -53476,7 +53476,7 @@ end;
 
 { TXMLSpline_type_control_vertices }
 
-procedure TXMLSpline_type_control_vertices.AfterConstruction;
+procedure TXMLSpline_type_control_vertices.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -53497,7 +53497,7 @@ end;
 
 { TXMLBrep_type }
 
-procedure TXMLBrep_type.AfterConstruction;
+procedure TXMLBrep_type.DoBeforeCreate;
 begin
   ClassesTree.Add('curves', TXMLCurves_type);
   ClassesTree.Add('surface_curves', TXMLSurface_curves_type);
@@ -53578,7 +53578,7 @@ end;
 
 { TXMLCurves_type }
 
-procedure TXMLCurves_type.AfterConstruction;
+procedure TXMLCurves_type.DoBeforeCreate;
 begin
   ClassesTree.Add('curve', TXMLCurve_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -53599,7 +53599,7 @@ end;
 
 { TXMLCurve_type }
 
-procedure TXMLCurve_type.AfterConstruction;
+procedure TXMLCurve_type.DoBeforeCreate;
 begin
   ClassesTree.Add('line', TXMLLine_type);
   ClassesTree.Add('circle', TXMLCircle_type);
@@ -53687,12 +53687,12 @@ end;
 
 function TXMLCurve_typeList.Get_Item(Index: Integer): IXMLCurve_type;
 begin
-  Result := List.NodesI[Index] as IXMLCurve_type;
+  Result := Nodes[Index] as IXMLCurve_type;
 end;
 
 { TXMLLine_type }
 
-procedure TXMLLine_type.AfterConstruction;
+procedure TXMLLine_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -53726,7 +53726,7 @@ end;
 
 { TXMLCircle_type }
 
-procedure TXMLCircle_type.AfterConstruction;
+procedure TXMLCircle_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -53750,7 +53750,7 @@ end;
 
 { TXMLEllipse_type }
 
-procedure TXMLEllipse_type.AfterConstruction;
+procedure TXMLEllipse_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -53774,7 +53774,7 @@ end;
 
 { TXMLParabola_type }
 
-procedure TXMLParabola_type.AfterConstruction;
+procedure TXMLParabola_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -53798,7 +53798,7 @@ end;
 
 { TXMLHyperbola_type }
 
-procedure TXMLHyperbola_type.AfterConstruction;
+procedure TXMLHyperbola_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -53822,7 +53822,7 @@ end;
 
 { TXMLNurbs_type }
 
-procedure TXMLNurbs_type.AfterConstruction;
+procedure TXMLNurbs_type.DoBeforeCreate;
 begin
   ClassesTree.Add('source', TXMLSource_type);
   ClassesTree.Add('control_vertices', TXMLNurbs_type_control_vertices);
@@ -53869,7 +53869,7 @@ end;
 
 { TXMLNurbs_type_control_vertices }
 
-procedure TXMLNurbs_type_control_vertices.AfterConstruction;
+procedure TXMLNurbs_type_control_vertices.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -53904,14 +53904,14 @@ end;
 
 function TXMLOrient_typeList.Get_Item(Index: Integer): IXMLOrient_type;
 begin
-  Result := List.NodesI[Index] as IXMLOrient_type;
+  Result := Nodes[Index] as IXMLOrient_type;
 end;
 
 { TXMLOrigin_type }
 
 { TXMLSurface_curves_type }
 
-procedure TXMLSurface_curves_type.AfterConstruction;
+procedure TXMLSurface_curves_type.DoBeforeCreate;
 begin
   ClassesTree.Add('curve', TXMLCurve_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -53932,7 +53932,7 @@ end;
 
 { TXMLSurfaces_type }
 
-procedure TXMLSurfaces_type.AfterConstruction;
+procedure TXMLSurfaces_type.DoBeforeCreate;
 begin
   ClassesTree.Add('surface', TXMLSurface_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -53953,7 +53953,7 @@ end;
 
 { TXMLSurface_type }
 
-procedure TXMLSurface_type.AfterConstruction;
+procedure TXMLSurface_type.DoBeforeCreate;
 begin
   ClassesTree.Add('plane', TXMLPlane_type);
   ClassesTree.Add('sphere', TXMLSphere_type);
@@ -54047,12 +54047,12 @@ end;
 
 function TXMLSurface_typeList.Get_Item(Index: Integer): IXMLSurface_type;
 begin
-  Result := List.NodesI[Index] as IXMLSurface_type;
+  Result := Nodes[Index] as IXMLSurface_type;
 end;
 
 { TXMLPlane_type }
 
-procedure TXMLPlane_type.AfterConstruction;
+procedure TXMLPlane_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -54076,7 +54076,7 @@ end;
 
 { TXMLSphere_type }
 
-procedure TXMLSphere_type.AfterConstruction;
+procedure TXMLSphere_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -54100,7 +54100,7 @@ end;
 
 { TXMLTorus_type }
 
-procedure TXMLTorus_type.AfterConstruction;
+procedure TXMLTorus_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -54124,7 +54124,7 @@ end;
 
 { TXMLSwept_surface_type }
 
-procedure TXMLSwept_surface_type.AfterConstruction;
+procedure TXMLSwept_surface_type.DoBeforeCreate;
 begin
   ClassesTree.Add('curve', TXMLCurve_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -54174,7 +54174,7 @@ end;
 
 { TXMLNurbs_surface_type }
 
-procedure TXMLNurbs_surface_type.AfterConstruction;
+procedure TXMLNurbs_surface_type.DoBeforeCreate;
 begin
   ClassesTree.Add('source', TXMLSource_type);
   ClassesTree.Add('control_vertices', TXMLNurbs_surface_type_control_vertices);
@@ -54241,7 +54241,7 @@ end;
 
 { TXMLNurbs_surface_type_control_vertices }
 
-procedure TXMLNurbs_surface_type_control_vertices.AfterConstruction;
+procedure TXMLNurbs_surface_type_control_vertices.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -54262,7 +54262,7 @@ end;
 
 { TXMLCone_type }
 
-procedure TXMLCone_type.AfterConstruction;
+procedure TXMLCone_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -54296,7 +54296,7 @@ end;
 
 { TXMLSurface_type_cylinder }
 
-procedure TXMLSurface_type_cylinder.AfterConstruction;
+procedure TXMLSurface_type_cylinder.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -54320,7 +54320,7 @@ end;
 
 { TXMLEdges_type }
 
-procedure TXMLEdges_type.AfterConstruction;
+procedure TXMLEdges_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -54377,7 +54377,7 @@ end;
 
 { TXMLWires_type }
 
-procedure TXMLWires_type.AfterConstruction;
+procedure TXMLWires_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -54444,7 +54444,7 @@ end;
 
 { TXMLFaces_type }
 
-procedure TXMLFaces_type.AfterConstruction;
+procedure TXMLFaces_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -54511,7 +54511,7 @@ end;
 
 { TXMLPcurves_type }
 
-procedure TXMLPcurves_type.AfterConstruction;
+procedure TXMLPcurves_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -54578,7 +54578,7 @@ end;
 
 { TXMLShells_type }
 
-procedure TXMLShells_type.AfterConstruction;
+procedure TXMLShells_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -54645,7 +54645,7 @@ end;
 
 { TXMLSolids_type }
 
-procedure TXMLSolids_type.AfterConstruction;
+procedure TXMLSolids_type.DoBeforeCreate;
 begin
   ClassesTree.Add('input', TXMLInput_local_offset_type);
   ClassesTree.Add('p', TXMLP_type);
@@ -54712,7 +54712,7 @@ end;
 
 { TXMLLibrary_effects_type }
 
-procedure TXMLLibrary_effects_type.AfterConstruction;
+procedure TXMLLibrary_effects_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('effect', TXMLEffect_type);
@@ -54771,12 +54771,12 @@ end;
 
 function TXMLLibrary_effects_typeList.Get_Item(Index: Integer): IXMLLibrary_effects_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_effects_type;
+  Result := Nodes[Index] as IXMLLibrary_effects_type;
 end;
 
 { TXMLEffect_type }
 
-procedure TXMLEffect_type.AfterConstruction;
+procedure TXMLEffect_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
@@ -54878,7 +54878,7 @@ end;
 
 function TXMLEffect_typeList.Get_Item(Index: Integer): IXMLEffect_type;
 begin
-  Result := List.NodesI[Index] as IXMLEffect_type;
+  Result := Nodes[Index] as IXMLEffect_type;
 end;
 
 { TXMLFx_annotate_type }
@@ -55067,12 +55067,12 @@ end;
 
 function TXMLFx_annotate_typeList.Get_Item(Index: Integer): IXMLFx_annotate_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_annotate_type;
+  Result := Nodes[Index] as IXMLFx_annotate_type;
 end;
 
 { TXMLFx_newparam_type }
 
-procedure TXMLFx_newparam_type.AfterConstruction;
+procedure TXMLFx_newparam_type.DoBeforeCreate;
 begin
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
   ClassesTree.Add('sampler1D', TXMLFx_sampler1D_type);
@@ -55414,12 +55414,12 @@ end;
 
 function TXMLFx_newparam_typeList.Get_Item(Index: Integer): IXMLFx_newparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_newparam_type;
+  Result := Nodes[Index] as IXMLFx_newparam_type;
 end;
 
 { TXMLFx_sampler_type }
 
-procedure TXMLFx_sampler_type.AfterConstruction;
+procedure TXMLFx_sampler_type.DoBeforeCreate;
 begin
   ClassesTree.Add('instance_image', TXMLInstance_image_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -55563,7 +55563,7 @@ end;
 
 { TXMLProfile_common_type }
 
-procedure TXMLProfile_common_type.AfterConstruction;
+procedure TXMLProfile_common_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('newparam', TXMLFx_common_newparam_type);
@@ -55606,7 +55606,7 @@ end;
 
 { TXMLFx_common_newparam_type }
 
-procedure TXMLFx_common_newparam_type.AfterConstruction;
+procedure TXMLFx_common_newparam_type.DoBeforeCreate;
 begin
   ClassesTree.Add('sampler2D', TXMLFx_sampler2D_type);
   inherited;
@@ -55691,12 +55691,12 @@ end;
 
 function TXMLFx_common_newparam_typeList.Get_Item(Index: Integer): IXMLFx_common_newparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_common_newparam_type;
+  Result := Nodes[Index] as IXMLFx_common_newparam_type;
 end;
 
 { TXMLProfile_common_type_technique }
 
-procedure TXMLProfile_common_type_technique.AfterConstruction;
+procedure TXMLProfile_common_type_technique.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('constant', TXMLProfile_common_type_technique_constant);
@@ -55760,7 +55760,7 @@ end;
 
 { TXMLProfile_common_type_technique_constant }
 
-procedure TXMLProfile_common_type_technique_constant.AfterConstruction;
+procedure TXMLProfile_common_type_technique_constant.DoBeforeCreate;
 begin
   ClassesTree.Add('emission', TXMLFx_common_color_or_texture_type);
   ClassesTree.Add('reflective', TXMLFx_common_color_or_texture_type);
@@ -55803,7 +55803,7 @@ end;
 
 { TXMLFx_common_color_or_texture_type }
 
-procedure TXMLFx_common_color_or_texture_type.AfterConstruction;
+procedure TXMLFx_common_color_or_texture_type.DoBeforeCreate;
 begin
   ClassesTree.Add('color', TXMLFx_common_color_or_texture_type_color);
   ClassesTree.Add('param', TXMLFx_common_color_or_texture_type_param);
@@ -55852,7 +55852,7 @@ end;
 
 { TXMLFx_common_color_or_texture_type_texture }
 
-procedure TXMLFx_common_color_or_texture_type_texture.AfterConstruction;
+procedure TXMLFx_common_color_or_texture_type_texture.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   Tag := 'extra';
@@ -55882,7 +55882,7 @@ end;
 
 function TXMLFx_common_color_or_texture_type_texture.Get_Extra(Index: Integer): IXMLExtra_type;
 begin
-  Result := List.NodesI[Index] as IXMLExtra_type;
+  Result := Nodes[Index] as IXMLExtra_type;
 end;
 
 function TXMLFx_common_color_or_texture_type_texture.Add: IXMLExtra_type;
@@ -55897,7 +55897,7 @@ end;
 
 { TXMLFx_common_float_or_param_type }
 
-procedure TXMLFx_common_float_or_param_type.AfterConstruction;
+procedure TXMLFx_common_float_or_param_type.DoBeforeCreate;
 begin
   ClassesTree.Add('float', TXMLFx_common_float_or_param_type_float);
   ClassesTree.Add('param', TXMLFx_common_float_or_param_type_param);
@@ -55952,7 +55952,7 @@ end;
 
 { TXMLProfile_common_type_technique_lambert }
 
-procedure TXMLProfile_common_type_technique_lambert.AfterConstruction;
+procedure TXMLProfile_common_type_technique_lambert.DoBeforeCreate;
 begin
   ClassesTree.Add('emission', TXMLFx_common_color_or_texture_type);
   ClassesTree.Add('ambient', TXMLFx_common_color_or_texture_type);
@@ -56007,7 +56007,7 @@ end;
 
 { TXMLProfile_common_type_technique_phong }
 
-procedure TXMLProfile_common_type_technique_phong.AfterConstruction;
+procedure TXMLProfile_common_type_technique_phong.DoBeforeCreate;
 begin
   ClassesTree.Add('emission', TXMLFx_common_color_or_texture_type);
   ClassesTree.Add('ambient', TXMLFx_common_color_or_texture_type);
@@ -56074,7 +56074,7 @@ end;
 
 { TXMLProfile_common_type_technique_blinn }
 
-procedure TXMLProfile_common_type_technique_blinn.AfterConstruction;
+procedure TXMLProfile_common_type_technique_blinn.DoBeforeCreate;
 begin
   ClassesTree.Add('emission', TXMLFx_common_color_or_texture_type);
   ClassesTree.Add('ambient', TXMLFx_common_color_or_texture_type);
@@ -56141,7 +56141,7 @@ end;
 
 { TXMLProfile_bridge_type }
 
-procedure TXMLProfile_bridge_type.AfterConstruction;
+procedure TXMLProfile_bridge_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -56191,7 +56191,7 @@ end;
 
 { TXMLProfile_gles2_type }
 
-procedure TXMLProfile_gles2_type.AfterConstruction;
+procedure TXMLProfile_gles2_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('include', TXMLFx_include_type);
@@ -56303,7 +56303,7 @@ end;
 
 function TXMLFx_include_typeList.Get_Item(Index: Integer): IXMLFx_include_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_include_type;
+  Result := Nodes[Index] as IXMLFx_include_type;
 end;
 
 { TXMLFx_code_type }
@@ -56332,12 +56332,12 @@ end;
 
 function TXMLFx_code_typeList.Get_Item(Index: Integer): IXMLFx_code_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_code_type;
+  Result := Nodes[Index] as IXMLFx_code_type;
 end;
 
 { TXMLGles2_newparam_type }
 
-procedure TXMLGles2_newparam_type.AfterConstruction;
+procedure TXMLGles2_newparam_type.DoBeforeCreate;
 begin
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
   ClassesTree.Add('sampler2D', TXMLFx_sampler2D_type);
@@ -56577,7 +56577,7 @@ end;
 
 { TXMLUsertype }
 
-procedure TXMLUsertype.AfterConstruction;
+procedure TXMLUsertype.DoBeforeCreate;
 begin
   ClassesTree.Add('setparam', TXMLUsertype_setparam);
   Tag := 'setparam';
@@ -56597,7 +56597,7 @@ end;
 
 function TXMLUsertype.Get_Setparam(Index: Integer): IXMLUsertype_setparam;
 begin
-  Result := List.NodesI[Index] as IXMLUsertype_setparam;
+  Result := Nodes[Index] as IXMLUsertype_setparam;
 end;
 
 function TXMLUsertype.Add: IXMLUsertype_setparam;
@@ -56612,7 +56612,7 @@ end;
 
 { TXMLUsertype_setparam }
 
-procedure TXMLUsertype_setparam.AfterConstruction;
+procedure TXMLUsertype_setparam.DoBeforeCreate;
 begin
   ClassesTree.Add('sampler2D', TXMLFx_sampler2D_type);
   ClassesTree.Add('sampler3D', TXMLFx_sampler3D_type);
@@ -56825,7 +56825,7 @@ end;
 
 { TXMLArray_ }
 
-procedure TXMLArray_.AfterConstruction;
+procedure TXMLArray_.DoBeforeCreate;
 begin
   ClassesTree.Add('sampler2D', TXMLFx_sampler2D_type);
   ClassesTree.Add('sampler3D', TXMLFx_sampler3D_type);
@@ -57052,12 +57052,12 @@ end;
 
 function TXMLProfile_gles2_type_newparamList.Get_Item(Index: Integer): IXMLProfile_gles2_type_newparam;
 begin
-  Result := List.NodesI[Index] as IXMLProfile_gles2_type_newparam;
+  Result := Nodes[Index] as IXMLProfile_gles2_type_newparam;
 end;
 
 { TXMLProfile_gles2_type_technique }
 
-procedure TXMLProfile_gles2_type_technique.AfterConstruction;
+procedure TXMLProfile_gles2_type_technique.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
@@ -57123,12 +57123,12 @@ end;
 
 function TXMLProfile_gles2_type_techniqueList.Get_Item(Index: Integer): IXMLProfile_gles2_type_technique;
 begin
-  Result := List.NodesI[Index] as IXMLProfile_gles2_type_technique;
+  Result := Nodes[Index] as IXMLProfile_gles2_type_technique;
 end;
 
 { TXMLGles2_pass_type }
 
-procedure TXMLGles2_pass_type.AfterConstruction;
+procedure TXMLGles2_pass_type.DoBeforeCreate;
 begin
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
   ClassesTree.Add('states', TXMLGles2_pass_type_states);
@@ -57189,12 +57189,12 @@ end;
 
 function TXMLGles2_pass_typeList.Get_Item(Index: Integer): IXMLGles2_pass_type;
 begin
-  Result := List.NodesI[Index] as IXMLGles2_pass_type;
+  Result := Nodes[Index] as IXMLGles2_pass_type;
 end;
 
 { TXMLGles2_pass_type_states }
 
-procedure TXMLGles2_pass_type_states.AfterConstruction;
+procedure TXMLGles2_pass_type_states.DoBeforeCreate;
 begin
   ClassesTree.Add('blend_color', TXMLBlend_color);
   ClassesTree.Add('blend_equation', TXMLBlend_equation);
@@ -57437,7 +57437,7 @@ end;
 
 { TXMLBlend_equation_separate }
 
-procedure TXMLBlend_equation_separate.AfterConstruction;
+procedure TXMLBlend_equation_separate.DoBeforeCreate;
 begin
   ClassesTree.Add('rgb', TXMLBlend_equation_separate_rgb);
   ClassesTree.Add('alpha', TXMLBlend_equation_separate_alpha);
@@ -57500,7 +57500,7 @@ end;
 
 { TXMLBlend_func }
 
-procedure TXMLBlend_func.AfterConstruction;
+procedure TXMLBlend_func.DoBeforeCreate;
 begin
   ClassesTree.Add('src', TXMLBlend_func_src);
   ClassesTree.Add('dest', TXMLBlend_func_dest);
@@ -57563,7 +57563,7 @@ end;
 
 { TXMLBlend_func_separate }
 
-procedure TXMLBlend_func_separate.AfterConstruction;
+procedure TXMLBlend_func_separate.DoBeforeCreate;
 begin
   ClassesTree.Add('src_rgb', TXMLBlend_func_separate_src_rgb);
   ClassesTree.Add('dest_rgb', TXMLBlend_func_separate_dest_rgb);
@@ -57880,7 +57880,7 @@ end;
 
 { TXMLSample_coverage }
 
-procedure TXMLSample_coverage.AfterConstruction;
+procedure TXMLSample_coverage.DoBeforeCreate;
 begin
   ClassesTree.Add('value', TXMLSample_coverage_value);
   ClassesTree.Add('invert', TXMLSample_coverage_invert);
@@ -57965,7 +57965,7 @@ end;
 
 { TXMLStencil_func }
 
-procedure TXMLStencil_func.AfterConstruction;
+procedure TXMLStencil_func.DoBeforeCreate;
 begin
   ClassesTree.Add('func', TXMLStencil_func_func);
   ClassesTree.Add('ref', TXMLStencil_func_ref);
@@ -58056,7 +58056,7 @@ end;
 
 { TXMLStencil_func_separate }
 
-procedure TXMLStencil_func_separate.AfterConstruction;
+procedure TXMLStencil_func_separate.DoBeforeCreate;
 begin
   ClassesTree.Add('front', TXMLStencil_func_separate_front);
   ClassesTree.Add('back', TXMLStencil_func_separate_back);
@@ -58197,7 +58197,7 @@ end;
 
 { TXMLStencil_mask_separate }
 
-procedure TXMLStencil_mask_separate.AfterConstruction;
+procedure TXMLStencil_mask_separate.DoBeforeCreate;
 begin
   ClassesTree.Add('face', TXMLStencil_mask_separate_face);
   ClassesTree.Add('mask', TXMLStencil_mask_separate_mask);
@@ -58260,7 +58260,7 @@ end;
 
 { TXMLStencil_op }
 
-procedure TXMLStencil_op.AfterConstruction;
+procedure TXMLStencil_op.DoBeforeCreate;
 begin
   ClassesTree.Add('fail', TXMLStencil_op_fail);
   ClassesTree.Add('zfail', TXMLStencil_op_zfail);
@@ -58351,7 +58351,7 @@ end;
 
 { TXMLStencil_op_separate }
 
-procedure TXMLStencil_op_separate.AfterConstruction;
+procedure TXMLStencil_op_separate.DoBeforeCreate;
 begin
   ClassesTree.Add('face', TXMLStencil_op_separate_face);
   ClassesTree.Add('fail', TXMLStencil_op_separate_fail);
@@ -58690,7 +58690,7 @@ end;
 
 { TXMLGles2_program_type }
 
-procedure TXMLGles2_program_type.AfterConstruction;
+procedure TXMLGles2_program_type.DoBeforeCreate;
 begin
   ClassesTree.Add('shader', TXMLGles2_shader_type);
   ClassesTree.Add('linker', TXMLFx_target_type);
@@ -58725,7 +58725,7 @@ end;
 
 { TXMLGles2_shader_type }
 
-procedure TXMLGles2_shader_type.AfterConstruction;
+procedure TXMLGles2_shader_type.DoBeforeCreate;
 begin
   ClassesTree.Add('sources', TXMLGles2_shader_type_sources);
   ClassesTree.Add('compiler', TXMLFx_target_type);
@@ -58774,12 +58774,12 @@ end;
 
 function TXMLGles2_shader_typeList.Get_Item(Index: Integer): IXMLGles2_shader_type;
 begin
-  Result := List.NodesI[Index] as IXMLGles2_shader_type;
+  Result := Nodes[Index] as IXMLGles2_shader_type;
 end;
 
 { TXMLFx_sources_type }
 
-procedure TXMLFx_sources_type.AfterConstruction;
+procedure TXMLFx_sources_type.DoBeforeCreate;
 begin
   ClassesTree.Add('import', TXMLFx_sources_type_import);
   FInline_ := CreateCollection(TXMLString_List, IXML, 'inline') as IXMLString_List;
@@ -58823,7 +58823,7 @@ end;
 
 function TXMLFx_sources_type_importList.Get_Item(Index: Integer): IXMLFx_sources_type_import;
 begin
-  Result := List.NodesI[Index] as IXMLFx_sources_type_import;
+  Result := Nodes[Index] as IXMLFx_sources_type_import;
 end;
 
 { TXMLGles2_shader_type_sources }
@@ -58840,7 +58840,7 @@ end;
 
 { TXMLFx_target_type }
 
-procedure TXMLFx_target_type.AfterConstruction;
+procedure TXMLFx_target_type.DoBeforeCreate;
 begin
   ClassesTree.Add('binary', TXMLFx_target_type_binary);
   inherited;
@@ -58895,12 +58895,12 @@ end;
 
 function TXMLFx_target_typeList.Get_Item(Index: Integer): IXMLFx_target_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_target_type;
+  Result := Nodes[Index] as IXMLFx_target_type;
 end;
 
 { TXMLFx_target_type_binary }
 
-procedure TXMLFx_target_type_binary.AfterConstruction;
+procedure TXMLFx_target_type_binary.DoBeforeCreate;
 begin
   ClassesTree.Add('hex', TXMLFx_target_type_binary_hex);
   inherited;
@@ -58969,12 +58969,12 @@ end;
 
 function TXMLGles2_program_type_bind_attributeList.Get_Item(Index: Integer): IXMLGles2_program_type_bind_attribute;
 begin
-  Result := List.NodesI[Index] as IXMLGles2_program_type_bind_attribute;
+  Result := Nodes[Index] as IXMLGles2_program_type_bind_attribute;
 end;
 
 { TXMLGles2_program_type_bind_uniform }
 
-procedure TXMLGles2_program_type_bind_uniform.AfterConstruction;
+procedure TXMLGles2_program_type_bind_uniform.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLGles2_program_type_bind_uniform_param);
   ClassesTree.Add('sampler2D', TXMLFx_sampler2D_type);
@@ -59205,7 +59205,7 @@ end;
 
 function TXMLGles2_program_type_bind_uniformList.Get_Item(Index: Integer): IXMLGles2_program_type_bind_uniform;
 begin
-  Result := List.NodesI[Index] as IXMLGles2_program_type_bind_uniform;
+  Result := Nodes[Index] as IXMLGles2_program_type_bind_uniform;
 end;
 
 { TXMLGles2_program_type_bind_uniform_param }
@@ -59222,7 +59222,7 @@ end;
 
 { TXMLGles2_pass_type_evaluate }
 
-procedure TXMLGles2_pass_type_evaluate.AfterConstruction;
+procedure TXMLGles2_pass_type_evaluate.DoBeforeCreate;
 begin
   ClassesTree.Add('color_target', TXMLFx_colortarget_type);
   ClassesTree.Add('depth_target', TXMLFx_depthtarget_type);
@@ -59281,7 +59281,7 @@ end;
 
 { TXMLFx_rendertarget_type }
 
-procedure TXMLFx_rendertarget_type.AfterConstruction;
+procedure TXMLFx_rendertarget_type.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLFx_rendertarget_type_param);
   ClassesTree.Add('instance_image', TXMLInstance_image_type);
@@ -59366,7 +59366,7 @@ end;
 
 function TXMLFx_colortarget_typeList.Get_Item(Index: Integer): IXMLFx_colortarget_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_colortarget_type;
+  Result := Nodes[Index] as IXMLFx_colortarget_type;
 end;
 
 { TXMLFx_depthtarget_type }
@@ -59385,7 +59385,7 @@ end;
 
 function TXMLFx_depthtarget_typeList.Get_Item(Index: Integer): IXMLFx_depthtarget_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_depthtarget_type;
+  Result := Nodes[Index] as IXMLFx_depthtarget_type;
 end;
 
 { TXMLFx_stenciltarget_type }
@@ -59404,7 +59404,7 @@ end;
 
 function TXMLFx_stenciltarget_typeList.Get_Item(Index: Integer): IXMLFx_stenciltarget_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_stenciltarget_type;
+  Result := Nodes[Index] as IXMLFx_stenciltarget_type;
 end;
 
 { TXMLFx_clearcolor_type }
@@ -59433,7 +59433,7 @@ end;
 
 function TXMLFx_clearcolor_typeList.Get_Item(Index: Integer): IXMLFx_clearcolor_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_clearcolor_type;
+  Result := Nodes[Index] as IXMLFx_clearcolor_type;
 end;
 
 { TXMLFx_clearstencil_type }
@@ -59462,7 +59462,7 @@ end;
 
 function TXMLFx_clearstencil_typeList.Get_Item(Index: Integer): IXMLFx_clearstencil_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_clearstencil_type;
+  Result := Nodes[Index] as IXMLFx_clearstencil_type;
 end;
 
 { TXMLFx_cleardepth_type }
@@ -59491,12 +59491,12 @@ end;
 
 function TXMLFx_cleardepth_typeList.Get_Item(Index: Integer): IXMLFx_cleardepth_type;
 begin
-  Result := List.NodesI[Index] as IXMLFx_cleardepth_type;
+  Result := Nodes[Index] as IXMLFx_cleardepth_type;
 end;
 
 { TXMLProfile_glsl_type }
 
-procedure TXMLProfile_glsl_type.AfterConstruction;
+procedure TXMLProfile_glsl_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('code', TXMLFx_code_type);
@@ -59564,7 +59564,7 @@ end;
 
 { TXMLGlsl_newparam_type }
 
-procedure TXMLGlsl_newparam_type.AfterConstruction;
+procedure TXMLGlsl_newparam_type.DoBeforeCreate;
 begin
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
   ClassesTree.Add('sampler1D', TXMLFx_sampler1D_type);
@@ -59822,12 +59822,12 @@ end;
 
 function TXMLGlsl_newparam_typeList.Get_Item(Index: Integer): IXMLGlsl_newparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLGlsl_newparam_type;
+  Result := Nodes[Index] as IXMLGlsl_newparam_type;
 end;
 
 { TXMLGlsl_array_type }
 
-procedure TXMLGlsl_array_type.AfterConstruction;
+procedure TXMLGlsl_array_type.DoBeforeCreate;
 begin
   ClassesTree.Add('sampler1D', TXMLFx_sampler1D_type);
   ClassesTree.Add('sampler2D', TXMLFx_sampler2D_type);
@@ -60046,7 +60046,7 @@ end;
 
 { TXMLProfile_glsl_type_technique }
 
-procedure TXMLProfile_glsl_type_technique.AfterConstruction;
+procedure TXMLProfile_glsl_type_technique.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
@@ -60112,12 +60112,12 @@ end;
 
 function TXMLProfile_glsl_type_techniqueList.Get_Item(Index: Integer): IXMLProfile_glsl_type_technique;
 begin
-  Result := List.NodesI[Index] as IXMLProfile_glsl_type_technique;
+  Result := Nodes[Index] as IXMLProfile_glsl_type_technique;
 end;
 
 { TXMLProfile_glsl_type_technique_pass }
 
-procedure TXMLProfile_glsl_type_technique_pass.AfterConstruction;
+procedure TXMLProfile_glsl_type_technique_pass.DoBeforeCreate;
 begin
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
   ClassesTree.Add('states', TXMLProfile_glsl_type_technique_pass_states);
@@ -60178,12 +60178,12 @@ end;
 
 function TXMLProfile_glsl_type_technique_passList.Get_Item(Index: Integer): IXMLProfile_glsl_type_technique_pass;
 begin
-  Result := List.NodesI[Index] as IXMLProfile_glsl_type_technique_pass;
+  Result := Nodes[Index] as IXMLProfile_glsl_type_technique_pass;
 end;
 
 { TXMLProfile_glsl_type_technique_pass_states }
 
-procedure TXMLProfile_glsl_type_technique_pass_states.AfterConstruction;
+procedure TXMLProfile_glsl_type_technique_pass_states.DoBeforeCreate;
 begin
   ClassesTree.Add('alpha_func', TXMLAlpha_func);
   ClassesTree.Add('blend_func', TXMLBlend_func);
@@ -60814,7 +60814,7 @@ end;
 
 { TXMLAlpha_func }
 
-procedure TXMLAlpha_func.AfterConstruction;
+procedure TXMLAlpha_func.DoBeforeCreate;
 begin
   ClassesTree.Add('func', TXMLAlpha_func_func);
   ClassesTree.Add('value', TXMLAlpha_func_value);
@@ -60877,7 +60877,7 @@ end;
 
 { TXMLColor_material }
 
-procedure TXMLColor_material.AfterConstruction;
+procedure TXMLColor_material.DoBeforeCreate;
 begin
   ClassesTree.Add('face', TXMLColor_material_face);
   ClassesTree.Add('mode', TXMLColor_material_mode);
@@ -61028,7 +61028,7 @@ end;
 
 { TXMLPolygon_mode }
 
-procedure TXMLPolygon_mode.AfterConstruction;
+procedure TXMLPolygon_mode.DoBeforeCreate;
 begin
   ClassesTree.Add('face', TXMLPolygon_mode_face);
   ClassesTree.Add('mode', TXMLPolygon_mode_mode);
@@ -61465,7 +61465,7 @@ end;
 
 { TXMLTexture1D }
 
-procedure TXMLTexture1D.AfterConstruction;
+procedure TXMLTexture1D.DoBeforeCreate;
 begin
   ClassesTree.Add('value', TXMLFx_sampler1D_type);
   inherited;
@@ -61498,7 +61498,7 @@ end;
 
 { TXMLTexture2D }
 
-procedure TXMLTexture2D.AfterConstruction;
+procedure TXMLTexture2D.DoBeforeCreate;
 begin
   ClassesTree.Add('value', TXMLFx_sampler2D_type);
   inherited;
@@ -61531,7 +61531,7 @@ end;
 
 { TXMLTexture3D }
 
-procedure TXMLTexture3D.AfterConstruction;
+procedure TXMLTexture3D.DoBeforeCreate;
 begin
   ClassesTree.Add('value', TXMLFx_sampler3D_type);
   inherited;
@@ -61564,7 +61564,7 @@ end;
 
 { TXMLTextureCUBE }
 
-procedure TXMLTextureCUBE.AfterConstruction;
+procedure TXMLTextureCUBE.DoBeforeCreate;
 begin
   ClassesTree.Add('value', TXMLFx_samplerCUBE_type);
   inherited;
@@ -61597,7 +61597,7 @@ end;
 
 { TXMLTextureRECT }
 
-procedure TXMLTextureRECT.AfterConstruction;
+procedure TXMLTextureRECT.DoBeforeCreate;
 begin
   ClassesTree.Add('value', TXMLFx_samplerRECT_type);
   inherited;
@@ -61630,7 +61630,7 @@ end;
 
 { TXMLTextureDEPTH }
 
-procedure TXMLTextureDEPTH.AfterConstruction;
+procedure TXMLTextureDEPTH.DoBeforeCreate;
 begin
   ClassesTree.Add('value', TXMLFx_samplerDEPTH_type);
   inherited;
@@ -62841,7 +62841,7 @@ end;
 
 { TXMLGlsl_program_type }
 
-procedure TXMLGlsl_program_type.AfterConstruction;
+procedure TXMLGlsl_program_type.DoBeforeCreate;
 begin
   ClassesTree.Add('shader', TXMLGlsl_shader_type);
   ClassesTree.Add('bind_attribute', TXMLGlsl_program_type_bind_attribute);
@@ -62869,7 +62869,7 @@ end;
 
 { TXMLGlsl_shader_type }
 
-procedure TXMLGlsl_shader_type.AfterConstruction;
+procedure TXMLGlsl_shader_type.DoBeforeCreate;
 begin
   ClassesTree.Add('sources', TXMLFx_sources_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -62911,7 +62911,7 @@ end;
 
 function TXMLGlsl_shader_typeList.Get_Item(Index: Integer): IXMLGlsl_shader_type;
 begin
-  Result := List.NodesI[Index] as IXMLGlsl_shader_type;
+  Result := Nodes[Index] as IXMLGlsl_shader_type;
 end;
 
 { TXMLGlsl_program_type_bind_attribute }
@@ -62950,12 +62950,12 @@ end;
 
 function TXMLGlsl_program_type_bind_attributeList.Get_Item(Index: Integer): IXMLGlsl_program_type_bind_attribute;
 begin
-  Result := List.NodesI[Index] as IXMLGlsl_program_type_bind_attribute;
+  Result := Nodes[Index] as IXMLGlsl_program_type_bind_attribute;
 end;
 
 { TXMLGlsl_program_type_bind_uniform }
 
-procedure TXMLGlsl_program_type_bind_uniform.AfterConstruction;
+procedure TXMLGlsl_program_type_bind_uniform.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLGlsl_program_type_bind_uniform_param);
   ClassesTree.Add('sampler1D', TXMLFx_sampler1D_type);
@@ -63192,7 +63192,7 @@ end;
 
 function TXMLGlsl_program_type_bind_uniformList.Get_Item(Index: Integer): IXMLGlsl_program_type_bind_uniform;
 begin
-  Result := List.NodesI[Index] as IXMLGlsl_program_type_bind_uniform;
+  Result := Nodes[Index] as IXMLGlsl_program_type_bind_uniform;
 end;
 
 { TXMLGlsl_program_type_bind_uniform_param }
@@ -63209,7 +63209,7 @@ end;
 
 { TXMLProfile_glsl_type_technique_pass_evaluate }
 
-procedure TXMLProfile_glsl_type_technique_pass_evaluate.AfterConstruction;
+procedure TXMLProfile_glsl_type_technique_pass_evaluate.DoBeforeCreate;
 begin
   ClassesTree.Add('color_target', TXMLFx_colortarget_type);
   ClassesTree.Add('depth_target', TXMLFx_depthtarget_type);
@@ -63268,7 +63268,7 @@ end;
 
 { TXMLProfile_cg_type }
 
-procedure TXMLProfile_cg_type.AfterConstruction;
+procedure TXMLProfile_cg_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('code', TXMLFx_code_type);
@@ -63336,7 +63336,7 @@ end;
 
 { TXMLCg_newparam_type }
 
-procedure TXMLCg_newparam_type.AfterConstruction;
+procedure TXMLCg_newparam_type.DoBeforeCreate;
 begin
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
   ClassesTree.Add('sampler1D', TXMLFx_sampler1D_type);
@@ -64260,12 +64260,12 @@ end;
 
 function TXMLCg_newparam_typeList.Get_Item(Index: Integer): IXMLCg_newparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLCg_newparam_type;
+  Result := Nodes[Index] as IXMLCg_newparam_type;
 end;
 
 { TXMLCg_array_type }
 
-procedure TXMLCg_array_type.AfterConstruction;
+procedure TXMLCg_array_type.DoBeforeCreate;
 begin
   ClassesTree.Add('sampler1D', TXMLFx_sampler1D_type);
   ClassesTree.Add('sampler2D', TXMLFx_sampler2D_type);
@@ -65160,7 +65160,7 @@ end;
 
 { TXMLCg_user_type }
 
-procedure TXMLCg_user_type.AfterConstruction;
+procedure TXMLCg_user_type.DoBeforeCreate;
 begin
   ClassesTree.Add('setparam', TXMLCg_setparam_type);
   Tag := 'setparam';
@@ -65190,7 +65190,7 @@ end;
 
 function TXMLCg_user_type.Get_Setparam(Index: Integer): IXMLCg_setparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLCg_setparam_type;
+  Result := Nodes[Index] as IXMLCg_setparam_type;
 end;
 
 function TXMLCg_user_type.Add: IXMLCg_setparam_type;
@@ -65205,7 +65205,7 @@ end;
 
 { TXMLCg_setparam_type }
 
-procedure TXMLCg_setparam_type.AfterConstruction;
+procedure TXMLCg_setparam_type.DoBeforeCreate;
 begin
   ClassesTree.Add('sampler1D', TXMLFx_sampler1D_type);
   ClassesTree.Add('sampler2D', TXMLFx_sampler2D_type);
@@ -66090,7 +66090,7 @@ end;
 
 { TXMLProfile_cg_type_technique }
 
-procedure TXMLProfile_cg_type_technique.AfterConstruction;
+procedure TXMLProfile_cg_type_technique.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
@@ -66156,12 +66156,12 @@ end;
 
 function TXMLProfile_cg_type_techniqueList.Get_Item(Index: Integer): IXMLProfile_cg_type_technique;
 begin
-  Result := List.NodesI[Index] as IXMLProfile_cg_type_technique;
+  Result := Nodes[Index] as IXMLProfile_cg_type_technique;
 end;
 
 { TXMLCg_pass_type }
 
-procedure TXMLCg_pass_type.AfterConstruction;
+procedure TXMLCg_pass_type.DoBeforeCreate;
 begin
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
   ClassesTree.Add('states', TXMLCg_pass_type_states);
@@ -66222,12 +66222,12 @@ end;
 
 function TXMLCg_pass_typeList.Get_Item(Index: Integer): IXMLCg_pass_type;
 begin
-  Result := List.NodesI[Index] as IXMLCg_pass_type;
+  Result := Nodes[Index] as IXMLCg_pass_type;
 end;
 
 { TXMLCg_pass_type_states }
 
-procedure TXMLCg_pass_type_states.AfterConstruction;
+procedure TXMLCg_pass_type_states.DoBeforeCreate;
 begin
   ClassesTree.Add('alpha_func', TXMLAlpha_func);
   ClassesTree.Add('blend_func', TXMLBlend_func);
@@ -66858,7 +66858,7 @@ end;
 
 { TXMLCg_pass_type_program }
 
-procedure TXMLCg_pass_type_program.AfterConstruction;
+procedure TXMLCg_pass_type_program.DoBeforeCreate;
 begin
   ClassesTree.Add('shader', TXMLCg_pass_type_program_shader);
   Tag := 'shader';
@@ -66868,7 +66868,7 @@ end;
 
 function TXMLCg_pass_type_program.Get_Shader(Index: Integer): IXMLCg_pass_type_program_shader;
 begin
-  Result := List.NodesI[Index] as IXMLCg_pass_type_program_shader;
+  Result := Nodes[Index] as IXMLCg_pass_type_program_shader;
 end;
 
 function TXMLCg_pass_type_program.Add: IXMLCg_pass_type_program_shader;
@@ -66883,7 +66883,7 @@ end;
 
 { TXMLCg_pass_type_program_shader }
 
-procedure TXMLCg_pass_type_program_shader.AfterConstruction;
+procedure TXMLCg_pass_type_program_shader.DoBeforeCreate;
 begin
   ClassesTree.Add('sources', TXMLCg_pass_type_program_shader_sources);
   ClassesTree.Add('compiler', TXMLFx_target_type);
@@ -66932,7 +66932,7 @@ end;
 
 { TXMLCg_pass_type_program_shader_bind_uniform }
 
-procedure TXMLCg_pass_type_program_shader_bind_uniform.AfterConstruction;
+procedure TXMLCg_pass_type_program_shader_bind_uniform.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLCg_pass_type_program_shader_bind_uniform_param);
   ClassesTree.Add('sampler1D', TXMLFx_sampler1D_type);
@@ -67835,7 +67835,7 @@ end;
 
 function TXMLCg_pass_type_program_shader_bind_uniformList.Get_Item(Index: Integer): IXMLCg_pass_type_program_shader_bind_uniform;
 begin
-  Result := List.NodesI[Index] as IXMLCg_pass_type_program_shader_bind_uniform;
+  Result := Nodes[Index] as IXMLCg_pass_type_program_shader_bind_uniform;
 end;
 
 { TXMLCg_pass_type_program_shader_bind_uniform_param }
@@ -67852,7 +67852,7 @@ end;
 
 { TXMLCg_pass_type_evaluate }
 
-procedure TXMLCg_pass_type_evaluate.AfterConstruction;
+procedure TXMLCg_pass_type_evaluate.DoBeforeCreate;
 begin
   ClassesTree.Add('color_target', TXMLFx_colortarget_type);
   ClassesTree.Add('depth_target', TXMLFx_depthtarget_type);
@@ -67911,7 +67911,7 @@ end;
 
 { TXMLProfile_gles_type }
 
-procedure TXMLProfile_gles_type.AfterConstruction;
+procedure TXMLProfile_gles_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('newparam', TXMLGles_newparam_type);
@@ -67965,7 +67965,7 @@ end;
 
 { TXMLGles_newparam_type }
 
-procedure TXMLGles_newparam_type.AfterConstruction;
+procedure TXMLGles_newparam_type.DoBeforeCreate;
 begin
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
   ClassesTree.Add('sampler2D', TXMLGles_sampler_type);
@@ -68317,12 +68317,12 @@ end;
 
 function TXMLGles_newparam_typeList.Get_Item(Index: Integer): IXMLGles_newparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLGles_newparam_type;
+  Result := Nodes[Index] as IXMLGles_newparam_type;
 end;
 
 { TXMLGles_sampler_type }
 
-procedure TXMLGles_sampler_type.AfterConstruction;
+procedure TXMLGles_sampler_type.DoBeforeCreate;
 begin
   ClassesTree.Add('instance_image', TXMLInstance_image_type);
   ClassesTree.Add('texcoord', TXMLGles_sampler_type_texcoord);
@@ -68430,7 +68430,7 @@ end;
 
 { TXMLProfile_gles_type_technique }
 
-procedure TXMLProfile_gles_type_technique.AfterConstruction;
+procedure TXMLProfile_gles_type_technique.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
@@ -68496,12 +68496,12 @@ end;
 
 function TXMLProfile_gles_type_techniqueList.Get_Item(Index: Integer): IXMLProfile_gles_type_technique;
 begin
-  Result := List.NodesI[Index] as IXMLProfile_gles_type_technique;
+  Result := Nodes[Index] as IXMLProfile_gles_type_technique;
 end;
 
 { TXMLProfile_gles_type_technique_pass }
 
-procedure TXMLProfile_gles_type_technique_pass.AfterConstruction;
+procedure TXMLProfile_gles_type_technique_pass.DoBeforeCreate;
 begin
   ClassesTree.Add('annotate', TXMLFx_annotate_type);
   ClassesTree.Add('states', TXMLProfile_gles_type_technique_pass_states);
@@ -68556,12 +68556,12 @@ end;
 
 function TXMLProfile_gles_type_technique_passList.Get_Item(Index: Integer): IXMLProfile_gles_type_technique_pass;
 begin
-  Result := List.NodesI[Index] as IXMLProfile_gles_type_technique_pass;
+  Result := Nodes[Index] as IXMLProfile_gles_type_technique_pass;
 end;
 
 { TXMLProfile_gles_type_technique_pass_states }
 
-procedure TXMLProfile_gles_type_technique_pass_states.AfterConstruction;
+procedure TXMLProfile_gles_type_technique_pass_states.DoBeforeCreate;
 begin
   ClassesTree.Add('alpha_func', TXMLAlpha_func);
   ClassesTree.Add('blend_func', TXMLBlend_func);
@@ -68982,7 +68982,7 @@ end;
 
 { TXMLTexture_pipeline }
 
-procedure TXMLTexture_pipeline.AfterConstruction;
+procedure TXMLTexture_pipeline.DoBeforeCreate;
 begin
   ClassesTree.Add('value', TXMLGles_texture_pipeline_type);
   inherited;
@@ -68995,7 +68995,7 @@ end;
 
 { TXMLGles_texture_pipeline_type }
 
-procedure TXMLGles_texture_pipeline_type.AfterConstruction;
+procedure TXMLGles_texture_pipeline_type.DoBeforeCreate;
 begin
   ClassesTree.Add('texcombiner', TXMLGles_texcombiner_command_type);
   ClassesTree.Add('texenv', TXMLGles_texenv_command_type);
@@ -69033,7 +69033,7 @@ end;
 
 { TXMLGles_texcombiner_command_type }
 
-procedure TXMLGles_texcombiner_command_type.AfterConstruction;
+procedure TXMLGles_texcombiner_command_type.DoBeforeCreate;
 begin
   ClassesTree.Add('constant', TXMLGles_texture_constant_type);
   ClassesTree.Add('RGB', TXMLGles_texcombiner_command_rgb_type);
@@ -69070,7 +69070,7 @@ end;
 
 function TXMLGles_texcombiner_command_typeList.Get_Item(Index: Integer): IXMLGles_texcombiner_command_type;
 begin
-  Result := List.NodesI[Index] as IXMLGles_texcombiner_command_type;
+  Result := Nodes[Index] as IXMLGles_texcombiner_command_type;
 end;
 
 { TXMLGles_texture_constant_type }
@@ -69097,7 +69097,7 @@ end;
 
 { TXMLGles_texcombiner_command_rgb_type }
 
-procedure TXMLGles_texcombiner_command_rgb_type.AfterConstruction;
+procedure TXMLGles_texcombiner_command_rgb_type.DoBeforeCreate;
 begin
   ClassesTree.Add('argument', TXMLGles_texcombiner_argument_rgb_type);
   Tag := 'argument';
@@ -69127,7 +69127,7 @@ end;
 
 function TXMLGles_texcombiner_command_rgb_type.Get_Argument(Index: Integer): IXMLGles_texcombiner_argument_rgb_type;
 begin
-  Result := List.NodesI[Index] as IXMLGles_texcombiner_argument_rgb_type;
+  Result := Nodes[Index] as IXMLGles_texcombiner_argument_rgb_type;
 end;
 
 function TXMLGles_texcombiner_command_rgb_type.Add: IXMLGles_texcombiner_argument_rgb_type;
@@ -69174,7 +69174,7 @@ end;
 
 { TXMLGles_texcombiner_command_alpha_type }
 
-procedure TXMLGles_texcombiner_command_alpha_type.AfterConstruction;
+procedure TXMLGles_texcombiner_command_alpha_type.DoBeforeCreate;
 begin
   ClassesTree.Add('argument', TXMLGles_texcombiner_argument_alpha_type);
   Tag := 'argument';
@@ -69204,7 +69204,7 @@ end;
 
 function TXMLGles_texcombiner_command_alpha_type.Get_Argument(Index: Integer): IXMLGles_texcombiner_argument_alpha_type;
 begin
-  Result := List.NodesI[Index] as IXMLGles_texcombiner_argument_alpha_type;
+  Result := Nodes[Index] as IXMLGles_texcombiner_argument_alpha_type;
 end;
 
 function TXMLGles_texcombiner_command_alpha_type.Add: IXMLGles_texcombiner_argument_alpha_type;
@@ -69251,7 +69251,7 @@ end;
 
 { TXMLGles_texenv_command_type }
 
-procedure TXMLGles_texenv_command_type.AfterConstruction;
+procedure TXMLGles_texenv_command_type.DoBeforeCreate;
 begin
   ClassesTree.Add('constant', TXMLGles_texture_constant_type);
   inherited;
@@ -69296,12 +69296,12 @@ end;
 
 function TXMLGles_texenv_command_typeList.Get_Item(Index: Integer): IXMLGles_texenv_command_type;
 begin
-  Result := List.NodesI[Index] as IXMLGles_texenv_command_type;
+  Result := Nodes[Index] as IXMLGles_texenv_command_type;
 end;
 
 { TXMLProfile_gles_type_technique_pass_evaluate }
 
-procedure TXMLProfile_gles_type_technique_pass_evaluate.AfterConstruction;
+procedure TXMLProfile_gles_type_technique_pass_evaluate.DoBeforeCreate;
 begin
   ClassesTree.Add('color_target', TXMLFx_colortarget_type);
   ClassesTree.Add('depth_target', TXMLFx_depthtarget_type);
@@ -69360,7 +69360,7 @@ end;
 
 { TXMLLibrary_force_fields_type }
 
-procedure TXMLLibrary_force_fields_type.AfterConstruction;
+procedure TXMLLibrary_force_fields_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('force_field', TXMLForce_field_type);
@@ -69419,12 +69419,12 @@ end;
 
 function TXMLLibrary_force_fields_typeList.Get_Item(Index: Integer): IXMLLibrary_force_fields_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_force_fields_type;
+  Result := Nodes[Index] as IXMLLibrary_force_fields_type;
 end;
 
 { TXMLForce_field_type }
 
-procedure TXMLForce_field_type.AfterConstruction;
+procedure TXMLForce_field_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('technique', TXMLTechnique_type);
@@ -69483,12 +69483,12 @@ end;
 
 function TXMLForce_field_typeList.Get_Item(Index: Integer): IXMLForce_field_type;
 begin
-  Result := List.NodesI[Index] as IXMLForce_field_type;
+  Result := Nodes[Index] as IXMLForce_field_type;
 end;
 
 { TXMLLibrary_images_type }
 
-procedure TXMLLibrary_images_type.AfterConstruction;
+procedure TXMLLibrary_images_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('image', TXMLImage_type);
@@ -69547,12 +69547,12 @@ end;
 
 function TXMLLibrary_images_typeList.Get_Item(Index: Integer): IXMLLibrary_images_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_images_type;
+  Result := Nodes[Index] as IXMLLibrary_images_type;
 end;
 
 { TXMLImage_type }
 
-procedure TXMLImage_type.AfterConstruction;
+procedure TXMLImage_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('renderable', TXMLImage_type_renderable);
@@ -69644,7 +69644,7 @@ end;
 
 function TXMLImage_typeList.Get_Item(Index: Integer): IXMLImage_type;
 begin
-  Result := List.NodesI[Index] as IXMLImage_type;
+  Result := Nodes[Index] as IXMLImage_type;
 end;
 
 { TXMLImage_type_renderable }
@@ -69661,7 +69661,7 @@ end;
 
 { TXMLImage_source_type }
 
-procedure TXMLImage_source_type.AfterConstruction;
+procedure TXMLImage_source_type.DoBeforeCreate;
 begin
   ClassesTree.Add('hex', TXMLImage_source_type_hex);
   inherited;
@@ -69708,7 +69708,7 @@ end;
 
 { TXMLImage_type_create_2d }
 
-procedure TXMLImage_type_create_2d.AfterConstruction;
+procedure TXMLImage_type_create_2d.DoBeforeCreate;
 begin
   ClassesTree.Add('size_exact', TXMLImage_type_create_2d_size_exact);
   ClassesTree.Add('size_ratio', TXMLImage_type_create_2d_size_ratio);
@@ -69840,7 +69840,7 @@ end;
 
 { TXMLImage_type_create_2d_format }
 
-procedure TXMLImage_type_create_2d_format.AfterConstruction;
+procedure TXMLImage_type_create_2d_format.DoBeforeCreate;
 begin
   ClassesTree.Add('hint', TXMLImage_type_create_2d_format_hint);
   inherited;
@@ -69939,12 +69939,12 @@ end;
 
 function TXMLImage_type_create_2d_init_fromList.Get_Item(Index: Integer): IXMLImage_type_create_2d_init_from;
 begin
-  Result := List.NodesI[Index] as IXMLImage_type_create_2d_init_from;
+  Result := Nodes[Index] as IXMLImage_type_create_2d_init_from;
 end;
 
 { TXMLImage_type_create_3d }
 
-procedure TXMLImage_type_create_3d.AfterConstruction;
+procedure TXMLImage_type_create_3d.DoBeforeCreate;
 begin
   ClassesTree.Add('size', TXMLImage_type_create_3d_size);
   ClassesTree.Add('mips', TXMLImage_mips_type);
@@ -70026,7 +70026,7 @@ end;
 
 { TXMLImage_type_create_3d_format }
 
-procedure TXMLImage_type_create_3d_format.AfterConstruction;
+procedure TXMLImage_type_create_3d_format.DoBeforeCreate;
 begin
   ClassesTree.Add('hint', TXMLImage_type_create_3d_format_hint);
   inherited;
@@ -70135,12 +70135,12 @@ end;
 
 function TXMLImage_type_create_3d_init_fromList.Get_Item(Index: Integer): IXMLImage_type_create_3d_init_from;
 begin
-  Result := List.NodesI[Index] as IXMLImage_type_create_3d_init_from;
+  Result := Nodes[Index] as IXMLImage_type_create_3d_init_from;
 end;
 
 { TXMLImage_type_create_cube }
 
-procedure TXMLImage_type_create_cube.AfterConstruction;
+procedure TXMLImage_type_create_cube.DoBeforeCreate;
 begin
   ClassesTree.Add('size', TXMLImage_type_create_cube_size);
   ClassesTree.Add('mips', TXMLImage_mips_type);
@@ -70202,7 +70202,7 @@ end;
 
 { TXMLImage_type_create_cube_format }
 
-procedure TXMLImage_type_create_cube_format.AfterConstruction;
+procedure TXMLImage_type_create_cube_format.DoBeforeCreate;
 begin
   ClassesTree.Add('hint', TXMLImage_type_create_cube_format_hint);
   inherited;
@@ -70311,12 +70311,12 @@ end;
 
 function TXMLImage_type_create_cube_init_fromList.Get_Item(Index: Integer): IXMLImage_type_create_cube_init_from;
 begin
-  Result := List.NodesI[Index] as IXMLImage_type_create_cube_init_from;
+  Result := Nodes[Index] as IXMLImage_type_create_cube_init_from;
 end;
 
 { TXMLLibrary_lights_type }
 
-procedure TXMLLibrary_lights_type.AfterConstruction;
+procedure TXMLLibrary_lights_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('light', TXMLLight_type);
@@ -70375,12 +70375,12 @@ end;
 
 function TXMLLibrary_lights_typeList.Get_Item(Index: Integer): IXMLLibrary_lights_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_lights_type;
+  Result := Nodes[Index] as IXMLLibrary_lights_type;
 end;
 
 { TXMLLight_type }
 
-procedure TXMLLight_type.AfterConstruction;
+procedure TXMLLight_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('technique_common', TXMLLight_type_technique_common);
@@ -70445,12 +70445,12 @@ end;
 
 function TXMLLight_typeList.Get_Item(Index: Integer): IXMLLight_type;
 begin
-  Result := List.NodesI[Index] as IXMLLight_type;
+  Result := Nodes[Index] as IXMLLight_type;
 end;
 
 { TXMLLight_type_technique_common }
 
-procedure TXMLLight_type_technique_common.AfterConstruction;
+procedure TXMLLight_type_technique_common.DoBeforeCreate;
 begin
   ClassesTree.Add('ambient', TXMLLight_type_technique_common_ambient);
   ClassesTree.Add('directional', TXMLLight_type_technique_common_directional);
@@ -70481,7 +70481,7 @@ end;
 
 { TXMLLight_type_technique_common_ambient }
 
-procedure TXMLLight_type_technique_common_ambient.AfterConstruction;
+procedure TXMLLight_type_technique_common_ambient.DoBeforeCreate;
 begin
   ClassesTree.Add('color', TXMLTargetable_float3_type);
   inherited;
@@ -70506,7 +70506,7 @@ end;
 
 { TXMLLight_type_technique_common_directional }
 
-procedure TXMLLight_type_technique_common_directional.AfterConstruction;
+procedure TXMLLight_type_technique_common_directional.DoBeforeCreate;
 begin
   ClassesTree.Add('color', TXMLTargetable_float3_type);
   inherited;
@@ -70519,7 +70519,7 @@ end;
 
 { TXMLLight_type_technique_common_point }
 
-procedure TXMLLight_type_technique_common_point.AfterConstruction;
+procedure TXMLLight_type_technique_common_point.DoBeforeCreate;
 begin
   ClassesTree.Add('color', TXMLTargetable_float3_type);
   ClassesTree.Add('constant_attenuation', TXMLTargetable_float_type);
@@ -70550,7 +70550,7 @@ end;
 
 { TXMLLight_type_technique_common_spot }
 
-procedure TXMLLight_type_technique_common_spot.AfterConstruction;
+procedure TXMLLight_type_technique_common_spot.DoBeforeCreate;
 begin
   ClassesTree.Add('color', TXMLTargetable_float3_type);
   ClassesTree.Add('constant_attenuation', TXMLTargetable_float_type);
@@ -70593,7 +70593,7 @@ end;
 
 { TXMLLibrary_materials_type }
 
-procedure TXMLLibrary_materials_type.AfterConstruction;
+procedure TXMLLibrary_materials_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('material', TXMLMaterial_type);
@@ -70652,12 +70652,12 @@ end;
 
 function TXMLLibrary_materials_typeList.Get_Item(Index: Integer): IXMLLibrary_materials_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_materials_type;
+  Result := Nodes[Index] as IXMLLibrary_materials_type;
 end;
 
 { TXMLMaterial_type }
 
-procedure TXMLMaterial_type.AfterConstruction;
+procedure TXMLMaterial_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('instance_effect', TXMLInstance_effect_type);
@@ -70715,12 +70715,12 @@ end;
 
 function TXMLMaterial_typeList.Get_Item(Index: Integer): IXMLMaterial_type;
 begin
-  Result := List.NodesI[Index] as IXMLMaterial_type;
+  Result := Nodes[Index] as IXMLMaterial_type;
 end;
 
 { TXMLInstance_effect_type }
 
-procedure TXMLInstance_effect_type.AfterConstruction;
+procedure TXMLInstance_effect_type.DoBeforeCreate;
 begin
   ClassesTree.Add('technique_hint', TXMLInstance_effect_type_technique_hint);
   ClassesTree.Add('setparam', TXMLInstance_effect_type_setparam);
@@ -70822,12 +70822,12 @@ end;
 
 function TXMLInstance_effect_type_technique_hintList.Get_Item(Index: Integer): IXMLInstance_effect_type_technique_hint;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_effect_type_technique_hint;
+  Result := Nodes[Index] as IXMLInstance_effect_type_technique_hint;
 end;
 
 { TXMLInstance_effect_type_setparam }
 
-procedure TXMLInstance_effect_type_setparam.AfterConstruction;
+procedure TXMLInstance_effect_type_setparam.DoBeforeCreate;
 begin
   ClassesTree.Add('sampler_image', TXMLInstance_image_type);
   ClassesTree.Add('sampler_states', TXMLSampler_states);
@@ -71118,12 +71118,12 @@ end;
 
 function TXMLInstance_effect_type_setparamList.Get_Item(Index: Integer): IXMLInstance_effect_type_setparam;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_effect_type_setparam;
+  Result := Nodes[Index] as IXMLInstance_effect_type_setparam;
 end;
 
 { TXMLSampler_states }
 
-procedure TXMLSampler_states.AfterConstruction;
+procedure TXMLSampler_states.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -71247,7 +71247,7 @@ end;
 
 { TXMLLibrary_nodes_type }
 
-procedure TXMLLibrary_nodes_type.AfterConstruction;
+procedure TXMLLibrary_nodes_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('node', TXMLNode_type);
@@ -71306,12 +71306,12 @@ end;
 
 function TXMLLibrary_nodes_typeList.Get_Item(Index: Integer): IXMLLibrary_nodes_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_nodes_type;
+  Result := Nodes[Index] as IXMLLibrary_nodes_type;
 end;
 
 { TXMLNode_type }
 
-procedure TXMLNode_type.AfterConstruction;
+procedure TXMLNode_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('lookat', TXMLLookat_type);
@@ -71477,7 +71477,7 @@ end;
 
 function TXMLNode_typeList.Get_Item(Index: Integer): IXMLNode_type;
 begin
-  Result := List.NodesI[Index] as IXMLNode_type;
+  Result := Nodes[Index] as IXMLNode_type;
 end;
 
 { TXMLLookat_type }
@@ -71506,7 +71506,7 @@ end;
 
 function TXMLLookat_typeList.Get_Item(Index: Integer): IXMLLookat_type;
 begin
-  Result := List.NodesI[Index] as IXMLLookat_type;
+  Result := Nodes[Index] as IXMLLookat_type;
 end;
 
 { TXMLMatrix_type }
@@ -71535,7 +71535,7 @@ end;
 
 function TXMLMatrix_typeList.Get_Item(Index: Integer): IXMLMatrix_type;
 begin
-  Result := List.NodesI[Index] as IXMLMatrix_type;
+  Result := Nodes[Index] as IXMLMatrix_type;
 end;
 
 { TXMLRotate_type }
@@ -71554,7 +71554,7 @@ end;
 
 function TXMLRotate_typeList.Get_Item(Index: Integer): IXMLRotate_type;
 begin
-  Result := List.NodesI[Index] as IXMLRotate_type;
+  Result := Nodes[Index] as IXMLRotate_type;
 end;
 
 { TXMLScale_type }
@@ -71573,7 +71573,7 @@ end;
 
 function TXMLScale_typeList.Get_Item(Index: Integer): IXMLScale_type;
 begin
-  Result := List.NodesI[Index] as IXMLScale_type;
+  Result := Nodes[Index] as IXMLScale_type;
 end;
 
 { TXMLSkew_type }
@@ -71602,7 +71602,7 @@ end;
 
 function TXMLSkew_typeList.Get_Item(Index: Integer): IXMLSkew_type;
 begin
-  Result := List.NodesI[Index] as IXMLSkew_type;
+  Result := Nodes[Index] as IXMLSkew_type;
 end;
 
 { TXMLTranslate_type }
@@ -71621,7 +71621,7 @@ end;
 
 function TXMLTranslate_typeList.Get_Item(Index: Integer): IXMLTranslate_type;
 begin
-  Result := List.NodesI[Index] as IXMLTranslate_type;
+  Result := Nodes[Index] as IXMLTranslate_type;
 end;
 
 { TXMLInstance_camera_type }
@@ -71640,12 +71640,12 @@ end;
 
 function TXMLInstance_camera_typeList.Get_Item(Index: Integer): IXMLInstance_camera_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_camera_type;
+  Result := Nodes[Index] as IXMLInstance_camera_type;
 end;
 
 { TXMLInstance_controller_type }
 
-procedure TXMLInstance_controller_type.AfterConstruction;
+procedure TXMLInstance_controller_type.DoBeforeCreate;
 begin
   ClassesTree.Add('bind_material', TXMLBind_material_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -71713,12 +71713,12 @@ end;
 
 function TXMLInstance_controller_typeList.Get_Item(Index: Integer): IXMLInstance_controller_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_controller_type;
+  Result := Nodes[Index] as IXMLInstance_controller_type;
 end;
 
 { TXMLBind_material_type }
 
-procedure TXMLBind_material_type.AfterConstruction;
+procedure TXMLBind_material_type.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLParam_type);
   ClassesTree.Add('technique_common', TXMLBind_material_type_technique_common);
@@ -71752,7 +71752,7 @@ end;
 
 { TXMLBind_material_type_technique_common }
 
-procedure TXMLBind_material_type_technique_common.AfterConstruction;
+procedure TXMLBind_material_type_technique_common.DoBeforeCreate;
 begin
   ClassesTree.Add('instance_material', TXMLInstance_material_type);
   Tag := 'instance_material';
@@ -71762,7 +71762,7 @@ end;
 
 function TXMLBind_material_type_technique_common.Get_Instance_material(Index: Integer): IXMLInstance_material_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_material_type;
+  Result := Nodes[Index] as IXMLInstance_material_type;
 end;
 
 function TXMLBind_material_type_technique_common.Add: IXMLInstance_material_type;
@@ -71777,7 +71777,7 @@ end;
 
 { TXMLInstance_material_type }
 
-procedure TXMLInstance_material_type.AfterConstruction;
+procedure TXMLInstance_material_type.DoBeforeCreate;
 begin
   ClassesTree.Add('bind', TXMLInstance_material_type_bind);
   ClassesTree.Add('bind_vertex_input', TXMLInstance_material_type_bind_vertex_input);
@@ -71879,7 +71879,7 @@ end;
 
 function TXMLInstance_material_type_bindList.Get_Item(Index: Integer): IXMLInstance_material_type_bind;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_material_type_bind;
+  Result := Nodes[Index] as IXMLInstance_material_type_bind;
 end;
 
 { TXMLInstance_material_type_bind_vertex_input }
@@ -71928,12 +71928,12 @@ end;
 
 function TXMLInstance_material_type_bind_vertex_inputList.Get_Item(Index: Integer): IXMLInstance_material_type_bind_vertex_input;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_material_type_bind_vertex_input;
+  Result := Nodes[Index] as IXMLInstance_material_type_bind_vertex_input;
 end;
 
 { TXMLInstance_geometry_type }
 
-procedure TXMLInstance_geometry_type.AfterConstruction;
+procedure TXMLInstance_geometry_type.DoBeforeCreate;
 begin
   ClassesTree.Add('bind_material', TXMLBind_material_type);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -71995,7 +71995,7 @@ end;
 
 function TXMLInstance_geometry_typeList.Get_Item(Index: Integer): IXMLInstance_geometry_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_geometry_type;
+  Result := Nodes[Index] as IXMLInstance_geometry_type;
 end;
 
 { TXMLInstance_light_type }
@@ -72014,7 +72014,7 @@ end;
 
 function TXMLInstance_light_typeList.Get_Item(Index: Integer): IXMLInstance_light_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_light_type;
+  Result := Nodes[Index] as IXMLInstance_light_type;
 end;
 
 { TXMLInstance_node_type }
@@ -72043,12 +72043,12 @@ end;
 
 function TXMLInstance_node_typeList.Get_Item(Index: Integer): IXMLInstance_node_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_node_type;
+  Result := Nodes[Index] as IXMLInstance_node_type;
 end;
 
 { TXMLLibrary_physics_materials_type }
 
-procedure TXMLLibrary_physics_materials_type.AfterConstruction;
+procedure TXMLLibrary_physics_materials_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('physics_material', TXMLPhysics_material_type);
@@ -72107,12 +72107,12 @@ end;
 
 function TXMLLibrary_physics_materials_typeList.Get_Item(Index: Integer): IXMLLibrary_physics_materials_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_physics_materials_type;
+  Result := Nodes[Index] as IXMLLibrary_physics_materials_type;
 end;
 
 { TXMLPhysics_material_type }
 
-procedure TXMLPhysics_material_type.AfterConstruction;
+procedure TXMLPhysics_material_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('technique_common', TXMLPhysics_material_type_technique_common);
@@ -72177,12 +72177,12 @@ end;
 
 function TXMLPhysics_material_typeList.Get_Item(Index: Integer): IXMLPhysics_material_type;
 begin
-  Result := List.NodesI[Index] as IXMLPhysics_material_type;
+  Result := Nodes[Index] as IXMLPhysics_material_type;
 end;
 
 { TXMLPhysics_material_type_technique_common }
 
-procedure TXMLPhysics_material_type_technique_common.AfterConstruction;
+procedure TXMLPhysics_material_type_technique_common.DoBeforeCreate;
 begin
   ClassesTree.Add('dynamic_friction', TXMLTargetable_float_type);
   ClassesTree.Add('restitution', TXMLTargetable_float_type);
@@ -72207,7 +72207,7 @@ end;
 
 { TXMLLibrary_physics_models_type }
 
-procedure TXMLLibrary_physics_models_type.AfterConstruction;
+procedure TXMLLibrary_physics_models_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('physics_model', TXMLPhysics_model_type);
@@ -72266,12 +72266,12 @@ end;
 
 function TXMLLibrary_physics_models_typeList.Get_Item(Index: Integer): IXMLLibrary_physics_models_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_physics_models_type;
+  Result := Nodes[Index] as IXMLLibrary_physics_models_type;
 end;
 
 { TXMLPhysics_model_type }
 
-procedure TXMLPhysics_model_type.AfterConstruction;
+procedure TXMLPhysics_model_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('rigid_body', TXMLRigid_body_type);
@@ -72344,12 +72344,12 @@ end;
 
 function TXMLPhysics_model_typeList.Get_Item(Index: Integer): IXMLPhysics_model_type;
 begin
-  Result := List.NodesI[Index] as IXMLPhysics_model_type;
+  Result := Nodes[Index] as IXMLPhysics_model_type;
 end;
 
 { TXMLRigid_body_type }
 
-procedure TXMLRigid_body_type.AfterConstruction;
+procedure TXMLRigid_body_type.DoBeforeCreate;
 begin
   ClassesTree.Add('technique_common', TXMLRigid_body_type_technique_common);
   ClassesTree.Add('technique', TXMLTechnique_type);
@@ -72418,12 +72418,12 @@ end;
 
 function TXMLRigid_body_typeList.Get_Item(Index: Integer): IXMLRigid_body_type;
 begin
-  Result := List.NodesI[Index] as IXMLRigid_body_type;
+  Result := Nodes[Index] as IXMLRigid_body_type;
 end;
 
 { TXMLRigid_body_type_technique_common }
 
-procedure TXMLRigid_body_type_technique_common.AfterConstruction;
+procedure TXMLRigid_body_type_technique_common.DoBeforeCreate;
 begin
   ClassesTree.Add('dynamic', TXMLRigid_body_type_technique_common_dynamic);
   ClassesTree.Add('mass', TXMLTargetable_float_type);
@@ -72485,7 +72485,7 @@ end;
 
 { TXMLRigid_body_type_technique_common_mass_frame }
 
-procedure TXMLRigid_body_type_technique_common_mass_frame.AfterConstruction;
+procedure TXMLRigid_body_type_technique_common_mass_frame.DoBeforeCreate;
 begin
   ClassesTree.Add('translate', TXMLTranslate_type);
   ClassesTree.Add('rotate', TXMLRotate_type);
@@ -72508,7 +72508,7 @@ end;
 
 { TXMLRigid_body_type_technique_common_shape }
 
-procedure TXMLRigid_body_type_technique_common_shape.AfterConstruction;
+procedure TXMLRigid_body_type_technique_common_shape.DoBeforeCreate;
 begin
   ClassesTree.Add('hollow', TXMLRigid_body_type_technique_common_shape_hollow);
   ClassesTree.Add('mass', TXMLTargetable_float_type);
@@ -72614,7 +72614,7 @@ end;
 
 function TXMLRigid_body_type_technique_common_shapeList.Get_Item(Index: Integer): IXMLRigid_body_type_technique_common_shape;
 begin
-  Result := List.NodesI[Index] as IXMLRigid_body_type_technique_common_shape;
+  Result := Nodes[Index] as IXMLRigid_body_type_technique_common_shape;
 end;
 
 { TXMLRigid_body_type_technique_common_shape_hollow }
@@ -72631,7 +72631,7 @@ end;
 
 { TXMLBox_type }
 
-procedure TXMLBox_type.AfterConstruction;
+procedure TXMLBox_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -72655,7 +72655,7 @@ end;
 
 { TXMLCylinder_type }
 
-procedure TXMLCylinder_type.AfterConstruction;
+procedure TXMLCylinder_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -72689,7 +72689,7 @@ end;
 
 { TXMLCapsule_type }
 
-procedure TXMLCapsule_type.AfterConstruction;
+procedure TXMLCapsule_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
@@ -72723,7 +72723,7 @@ end;
 
 { TXMLRigid_constraint_type }
 
-procedure TXMLRigid_constraint_type.AfterConstruction;
+procedure TXMLRigid_constraint_type.DoBeforeCreate;
 begin
   ClassesTree.Add('ref_attachment', TXMLRigid_constraint_type_ref_attachment);
   ClassesTree.Add('attachment', TXMLRigid_constraint_type_attachment);
@@ -72794,12 +72794,12 @@ end;
 
 function TXMLRigid_constraint_typeList.Get_Item(Index: Integer): IXMLRigid_constraint_type;
 begin
-  Result := List.NodesI[Index] as IXMLRigid_constraint_type;
+  Result := Nodes[Index] as IXMLRigid_constraint_type;
 end;
 
 { TXMLRigid_constraint_type_ref_attachment }
 
-procedure TXMLRigid_constraint_type_ref_attachment.AfterConstruction;
+procedure TXMLRigid_constraint_type_ref_attachment.DoBeforeCreate;
 begin
   ClassesTree.Add('translate', TXMLTranslate_type);
   ClassesTree.Add('rotate', TXMLRotate_type);
@@ -72837,7 +72837,7 @@ end;
 
 { TXMLRigid_constraint_type_attachment }
 
-procedure TXMLRigid_constraint_type_attachment.AfterConstruction;
+procedure TXMLRigid_constraint_type_attachment.DoBeforeCreate;
 begin
   ClassesTree.Add('translate', TXMLTranslate_type);
   ClassesTree.Add('rotate', TXMLRotate_type);
@@ -72875,7 +72875,7 @@ end;
 
 { TXMLRigid_constraint_type_technique_common }
 
-procedure TXMLRigid_constraint_type_technique_common.AfterConstruction;
+procedure TXMLRigid_constraint_type_technique_common.DoBeforeCreate;
 begin
   ClassesTree.Add('enabled', TXMLRigid_constraint_type_technique_common_enabled);
   ClassesTree.Add('interpenetrate', TXMLRigid_constraint_type_technique_common_interpenetrate);
@@ -72930,7 +72930,7 @@ end;
 
 { TXMLRigid_constraint_type_technique_common_limits }
 
-procedure TXMLRigid_constraint_type_technique_common_limits.AfterConstruction;
+procedure TXMLRigid_constraint_type_technique_common_limits.DoBeforeCreate;
 begin
   ClassesTree.Add('swing_cone_and_twist', TXMLRigid_constraint_type_technique_common_limits_swing_cone_and_twist);
   ClassesTree.Add('linear', TXMLRigid_constraint_type_technique_common_limits_linear);
@@ -72949,7 +72949,7 @@ end;
 
 { TXMLRigid_constraint_type_technique_common_limits_swing_cone_and_twist }
 
-procedure TXMLRigid_constraint_type_technique_common_limits_swing_cone_and_twist.AfterConstruction;
+procedure TXMLRigid_constraint_type_technique_common_limits_swing_cone_and_twist.DoBeforeCreate;
 begin
   ClassesTree.Add('min', TXMLTargetable_float3_type);
   ClassesTree.Add('max', TXMLTargetable_float3_type);
@@ -72968,7 +72968,7 @@ end;
 
 { TXMLRigid_constraint_type_technique_common_limits_linear }
 
-procedure TXMLRigid_constraint_type_technique_common_limits_linear.AfterConstruction;
+procedure TXMLRigid_constraint_type_technique_common_limits_linear.DoBeforeCreate;
 begin
   ClassesTree.Add('min', TXMLTargetable_float3_type);
   ClassesTree.Add('max', TXMLTargetable_float3_type);
@@ -72987,7 +72987,7 @@ end;
 
 { TXMLRigid_constraint_type_technique_common_spring }
 
-procedure TXMLRigid_constraint_type_technique_common_spring.AfterConstruction;
+procedure TXMLRigid_constraint_type_technique_common_spring.DoBeforeCreate;
 begin
   ClassesTree.Add('angular', TXMLRigid_constraint_type_technique_common_spring_angular);
   ClassesTree.Add('linear', TXMLRigid_constraint_type_technique_common_spring_linear);
@@ -73006,7 +73006,7 @@ end;
 
 { TXMLRigid_constraint_type_technique_common_spring_angular }
 
-procedure TXMLRigid_constraint_type_technique_common_spring_angular.AfterConstruction;
+procedure TXMLRigid_constraint_type_technique_common_spring_angular.DoBeforeCreate;
 begin
   ClassesTree.Add('stiffness', TXMLTargetable_float_type);
   ClassesTree.Add('damping', TXMLTargetable_float_type);
@@ -73031,7 +73031,7 @@ end;
 
 { TXMLRigid_constraint_type_technique_common_spring_linear }
 
-procedure TXMLRigid_constraint_type_technique_common_spring_linear.AfterConstruction;
+procedure TXMLRigid_constraint_type_technique_common_spring_linear.DoBeforeCreate;
 begin
   ClassesTree.Add('stiffness', TXMLTargetable_float_type);
   ClassesTree.Add('damping', TXMLTargetable_float_type);
@@ -73056,7 +73056,7 @@ end;
 
 { TXMLInstance_physics_model_type }
 
-procedure TXMLInstance_physics_model_type.AfterConstruction;
+procedure TXMLInstance_physics_model_type.DoBeforeCreate;
 begin
   ClassesTree.Add('instance_force_field', TXMLInstance_force_field_type);
   ClassesTree.Add('instance_rigid_body', TXMLInstance_rigid_body_type);
@@ -73143,7 +73143,7 @@ end;
 
 function TXMLInstance_physics_model_typeList.Get_Item(Index: Integer): IXMLInstance_physics_model_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_physics_model_type;
+  Result := Nodes[Index] as IXMLInstance_physics_model_type;
 end;
 
 { TXMLInstance_force_field_type }
@@ -73162,12 +73162,12 @@ end;
 
 function TXMLInstance_force_field_typeList.Get_Item(Index: Integer): IXMLInstance_force_field_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_force_field_type;
+  Result := Nodes[Index] as IXMLInstance_force_field_type;
 end;
 
 { TXMLInstance_rigid_body_type }
 
-procedure TXMLInstance_rigid_body_type.AfterConstruction;
+procedure TXMLInstance_rigid_body_type.DoBeforeCreate;
 begin
   ClassesTree.Add('technique_common', TXMLInstance_rigid_body_type_technique_common);
   ClassesTree.Add('technique', TXMLTechnique_type);
@@ -73246,12 +73246,12 @@ end;
 
 function TXMLInstance_rigid_body_typeList.Get_Item(Index: Integer): IXMLInstance_rigid_body_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_rigid_body_type;
+  Result := Nodes[Index] as IXMLInstance_rigid_body_type;
 end;
 
 { TXMLInstance_rigid_body_type_technique_common }
 
-procedure TXMLInstance_rigid_body_type_technique_common.AfterConstruction;
+procedure TXMLInstance_rigid_body_type_technique_common.DoBeforeCreate;
 begin
   ClassesTree.Add('dynamic', TXMLInstance_rigid_body_type_technique_common_dynamic);
   ClassesTree.Add('mass', TXMLTargetable_float_type);
@@ -73333,7 +73333,7 @@ end;
 
 { TXMLInstance_rigid_body_type_technique_common_mass_frame }
 
-procedure TXMLInstance_rigid_body_type_technique_common_mass_frame.AfterConstruction;
+procedure TXMLInstance_rigid_body_type_technique_common_mass_frame.DoBeforeCreate;
 begin
   ClassesTree.Add('translate', TXMLTranslate_type);
   ClassesTree.Add('rotate', TXMLRotate_type);
@@ -73354,7 +73354,7 @@ end;
 
 { TXMLInstance_rigid_body_type_technique_common_shape }
 
-procedure TXMLInstance_rigid_body_type_technique_common_shape.AfterConstruction;
+procedure TXMLInstance_rigid_body_type_technique_common_shape.DoBeforeCreate;
 begin
   ClassesTree.Add('hollow', TXMLInstance_rigid_body_type_technique_common_shape_hollow);
   ClassesTree.Add('mass', TXMLTargetable_float_type);
@@ -73460,7 +73460,7 @@ end;
 
 function TXMLInstance_rigid_body_type_technique_common_shapeList.Get_Item(Index: Integer): IXMLInstance_rigid_body_type_technique_common_shape;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_rigid_body_type_technique_common_shape;
+  Result := Nodes[Index] as IXMLInstance_rigid_body_type_technique_common_shape;
 end;
 
 { TXMLInstance_rigid_body_type_technique_common_shape_hollow }
@@ -73477,7 +73477,7 @@ end;
 
 { TXMLInstance_rigid_constraint_type }
 
-procedure TXMLInstance_rigid_constraint_type.AfterConstruction;
+procedure TXMLInstance_rigid_constraint_type.DoBeforeCreate;
 begin
   ClassesTree.Add('extra', TXMLExtra_type);
   Tag := 'extra';
@@ -73517,7 +73517,7 @@ end;
 
 function TXMLInstance_rigid_constraint_type.Get_Extra(Index: Integer): IXMLExtra_type;
 begin
-  Result := List.NodesI[Index] as IXMLExtra_type;
+  Result := Nodes[Index] as IXMLExtra_type;
 end;
 
 function TXMLInstance_rigid_constraint_type.Add: IXMLExtra_type;
@@ -73544,12 +73544,12 @@ end;
 
 function TXMLInstance_rigid_constraint_typeList.Get_Item(Index: Integer): IXMLInstance_rigid_constraint_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_rigid_constraint_type;
+  Result := Nodes[Index] as IXMLInstance_rigid_constraint_type;
 end;
 
 { TXMLLibrary_physics_scenes_type }
 
-procedure TXMLLibrary_physics_scenes_type.AfterConstruction;
+procedure TXMLLibrary_physics_scenes_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('physics_scene', TXMLPhysics_scene_type);
@@ -73608,12 +73608,12 @@ end;
 
 function TXMLLibrary_physics_scenes_typeList.Get_Item(Index: Integer): IXMLLibrary_physics_scenes_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_physics_scenes_type;
+  Result := Nodes[Index] as IXMLLibrary_physics_scenes_type;
 end;
 
 { TXMLPhysics_scene_type }
 
-procedure TXMLPhysics_scene_type.AfterConstruction;
+procedure TXMLPhysics_scene_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('instance_force_field', TXMLInstance_force_field_type);
@@ -73692,12 +73692,12 @@ end;
 
 function TXMLPhysics_scene_typeList.Get_Item(Index: Integer): IXMLPhysics_scene_type;
 begin
-  Result := List.NodesI[Index] as IXMLPhysics_scene_type;
+  Result := Nodes[Index] as IXMLPhysics_scene_type;
 end;
 
 { TXMLPhysics_scene_type_technique_common }
 
-procedure TXMLPhysics_scene_type_technique_common.AfterConstruction;
+procedure TXMLPhysics_scene_type_technique_common.DoBeforeCreate;
 begin
   ClassesTree.Add('gravity', TXMLTargetable_float3_type);
   ClassesTree.Add('time_step', TXMLTargetable_float_type);
@@ -73716,7 +73716,7 @@ end;
 
 { TXMLLibrary_visual_scenes_type }
 
-procedure TXMLLibrary_visual_scenes_type.AfterConstruction;
+procedure TXMLLibrary_visual_scenes_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('visual_scene', TXMLVisual_scene_type);
@@ -73775,12 +73775,12 @@ end;
 
 function TXMLLibrary_visual_scenes_typeList.Get_Item(Index: Integer): IXMLLibrary_visual_scenes_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_visual_scenes_type;
+  Result := Nodes[Index] as IXMLLibrary_visual_scenes_type;
 end;
 
 { TXMLVisual_scene_type }
 
-procedure TXMLVisual_scene_type.AfterConstruction;
+procedure TXMLVisual_scene_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('node', TXMLNode_type);
@@ -73846,12 +73846,12 @@ end;
 
 function TXMLVisual_scene_typeList.Get_Item(Index: Integer): IXMLVisual_scene_type;
 begin
-  Result := List.NodesI[Index] as IXMLVisual_scene_type;
+  Result := Nodes[Index] as IXMLVisual_scene_type;
 end;
 
 { TXMLVisual_scene_type_evaluate_scene }
 
-procedure TXMLVisual_scene_type_evaluate_scene.AfterConstruction;
+procedure TXMLVisual_scene_type_evaluate_scene.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('render', TXMLVisual_scene_type_evaluate_scene_render);
@@ -73930,12 +73930,12 @@ end;
 
 function TXMLVisual_scene_type_evaluate_sceneList.Get_Item(Index: Integer): IXMLVisual_scene_type_evaluate_scene;
 begin
-  Result := List.NodesI[Index] as IXMLVisual_scene_type_evaluate_scene;
+  Result := Nodes[Index] as IXMLVisual_scene_type_evaluate_scene;
 end;
 
 { TXMLVisual_scene_type_evaluate_scene_render }
 
-procedure TXMLVisual_scene_type_evaluate_scene_render.AfterConstruction;
+procedure TXMLVisual_scene_type_evaluate_scene_render.DoBeforeCreate;
 begin
   ClassesTree.Add('instance_material', TXMLVisual_scene_type_evaluate_scene_render_instance_material);
   ClassesTree.Add('extra', TXMLExtra_type);
@@ -74003,12 +74003,12 @@ end;
 
 function TXMLVisual_scene_type_evaluate_scene_renderList.Get_Item(Index: Integer): IXMLVisual_scene_type_evaluate_scene_render;
 begin
-  Result := List.NodesI[Index] as IXMLVisual_scene_type_evaluate_scene_render;
+  Result := Nodes[Index] as IXMLVisual_scene_type_evaluate_scene_render;
 end;
 
 { TXMLVisual_scene_type_evaluate_scene_render_instance_material }
 
-procedure TXMLVisual_scene_type_evaluate_scene_render_instance_material.AfterConstruction;
+procedure TXMLVisual_scene_type_evaluate_scene_render_instance_material.DoBeforeCreate;
 begin
   ClassesTree.Add('technique_override', TXMLVisual_scene_type_evaluate_scene_render_instance_material_technique_override);
   ClassesTree.Add('bind', TXMLVisual_scene_type_evaluate_scene_render_instance_material_bind);
@@ -74101,12 +74101,12 @@ end;
 
 function TXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList.Get_Item(Index: Integer): IXMLVisual_scene_type_evaluate_scene_render_instance_material_bind;
 begin
-  Result := List.NodesI[Index] as IXMLVisual_scene_type_evaluate_scene_render_instance_material_bind;
+  Result := Nodes[Index] as IXMLVisual_scene_type_evaluate_scene_render_instance_material_bind;
 end;
 
 { TXMLLibrary_joints_type }
 
-procedure TXMLLibrary_joints_type.AfterConstruction;
+procedure TXMLLibrary_joints_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('joint', TXMLJoint_type);
@@ -74165,12 +74165,12 @@ end;
 
 function TXMLLibrary_joints_typeList.Get_Item(Index: Integer): IXMLLibrary_joints_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_joints_type;
+  Result := Nodes[Index] as IXMLLibrary_joints_type;
 end;
 
 { TXMLJoint_type }
 
-procedure TXMLJoint_type.AfterConstruction;
+procedure TXMLJoint_type.DoBeforeCreate;
 begin
   ClassesTree.Add('prismatic', TXMLAxis_constraint_type);
   ClassesTree.Add('revolute', TXMLAxis_constraint_type);
@@ -74240,12 +74240,12 @@ end;
 
 function TXMLJoint_typeList.Get_Item(Index: Integer): IXMLJoint_type;
 begin
-  Result := List.NodesI[Index] as IXMLJoint_type;
+  Result := Nodes[Index] as IXMLJoint_type;
 end;
 
 { TXMLAxis_constraint_type }
 
-procedure TXMLAxis_constraint_type.AfterConstruction;
+procedure TXMLAxis_constraint_type.DoBeforeCreate;
 begin
   ClassesTree.Add('axis', TXMLAxis_type);
   ClassesTree.Add('limits', TXMLJoint_limits_type);
@@ -74286,7 +74286,7 @@ end;
 
 function TXMLAxis_constraint_typeList.Get_Item(Index: Integer): IXMLAxis_constraint_type;
 begin
-  Result := List.NodesI[Index] as IXMLAxis_constraint_type;
+  Result := Nodes[Index] as IXMLAxis_constraint_type;
 end;
 
 { TXMLAxis_type }
@@ -74313,7 +74313,7 @@ end;
 
 { TXMLJoint_limits_type }
 
-procedure TXMLJoint_limits_type.AfterConstruction;
+procedure TXMLJoint_limits_type.DoBeforeCreate;
 begin
   ClassesTree.Add('min', TXMLMinmax_type);
   ClassesTree.Add('max', TXMLMinmax_type);
@@ -74354,7 +74354,7 @@ end;
 
 { TXMLLibrary_kinematics_models_type }
 
-procedure TXMLLibrary_kinematics_models_type.AfterConstruction;
+procedure TXMLLibrary_kinematics_models_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('kinematics_model', TXMLKinematics_model_type);
@@ -74413,12 +74413,12 @@ end;
 
 function TXMLLibrary_kinematics_models_typeList.Get_Item(Index: Integer): IXMLLibrary_kinematics_models_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_kinematics_models_type;
+  Result := Nodes[Index] as IXMLLibrary_kinematics_models_type;
 end;
 
 { TXMLKinematics_model_type }
 
-procedure TXMLKinematics_model_type.AfterConstruction;
+procedure TXMLKinematics_model_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('technique_common', TXMLKinematics_model_technique_type);
@@ -74483,12 +74483,12 @@ end;
 
 function TXMLKinematics_model_typeList.Get_Item(Index: Integer): IXMLKinematics_model_type;
 begin
-  Result := List.NodesI[Index] as IXMLKinematics_model_type;
+  Result := Nodes[Index] as IXMLKinematics_model_type;
 end;
 
 { TXMLKinematics_model_technique_type }
 
-procedure TXMLKinematics_model_technique_type.AfterConstruction;
+procedure TXMLKinematics_model_technique_type.DoBeforeCreate;
 begin
   ClassesTree.Add('newparam', TXMLKinematics_newparam_type);
   ClassesTree.Add('instance_joint', TXMLInstance_joint_type);
@@ -74601,7 +74601,7 @@ end;
 
 function TXMLKinematics_newparam_typeList.Get_Item(Index: Integer): IXMLKinematics_newparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLKinematics_newparam_type;
+  Result := Nodes[Index] as IXMLKinematics_newparam_type;
 end;
 
 { TXMLInstance_joint_type }
@@ -74620,12 +74620,12 @@ end;
 
 function TXMLInstance_joint_typeList.Get_Item(Index: Integer): IXMLInstance_joint_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_joint_type;
+  Result := Nodes[Index] as IXMLInstance_joint_type;
 end;
 
 { TXMLLink_type }
 
-procedure TXMLLink_type.AfterConstruction;
+procedure TXMLLink_type.DoBeforeCreate;
 begin
   ClassesTree.Add('rotate', TXMLRotate_type);
   ClassesTree.Add('translate', TXMLTranslate_type);
@@ -74699,12 +74699,12 @@ end;
 
 function TXMLLink_typeList.Get_Item(Index: Integer): IXMLLink_type;
 begin
-  Result := List.NodesI[Index] as IXMLLink_type;
+  Result := Nodes[Index] as IXMLLink_type;
 end;
 
 { TXMLLink_type_attachment_full }
 
-procedure TXMLLink_type_attachment_full.AfterConstruction;
+procedure TXMLLink_type_attachment_full.DoBeforeCreate;
 begin
   ClassesTree.Add('rotate', TXMLRotate_type);
   ClassesTree.Add('translate', TXMLTranslate_type);
@@ -74753,12 +74753,12 @@ end;
 
 function TXMLLink_type_attachment_fullList.Get_Item(Index: Integer): IXMLLink_type_attachment_full;
 begin
-  Result := List.NodesI[Index] as IXMLLink_type_attachment_full;
+  Result := Nodes[Index] as IXMLLink_type_attachment_full;
 end;
 
 { TXMLLink_type_attachment_start }
 
-procedure TXMLLink_type_attachment_start.AfterConstruction;
+procedure TXMLLink_type_attachment_start.DoBeforeCreate;
 begin
   ClassesTree.Add('rotate', TXMLRotate_type);
   ClassesTree.Add('translate', TXMLTranslate_type);
@@ -74801,12 +74801,12 @@ end;
 
 function TXMLLink_type_attachment_startList.Get_Item(Index: Integer): IXMLLink_type_attachment_start;
 begin
-  Result := List.NodesI[Index] as IXMLLink_type_attachment_start;
+  Result := Nodes[Index] as IXMLLink_type_attachment_start;
 end;
 
 { TXMLLink_type_attachment_end }
 
-procedure TXMLLink_type_attachment_end.AfterConstruction;
+procedure TXMLLink_type_attachment_end.DoBeforeCreate;
 begin
   ClassesTree.Add('rotate', TXMLRotate_type);
   ClassesTree.Add('translate', TXMLTranslate_type);
@@ -74849,12 +74849,12 @@ end;
 
 function TXMLLink_type_attachment_endList.Get_Item(Index: Integer): IXMLLink_type_attachment_end;
 begin
-  Result := List.NodesI[Index] as IXMLLink_type_attachment_end;
+  Result := Nodes[Index] as IXMLLink_type_attachment_end;
 end;
 
 { TXMLFormula_type }
 
-procedure TXMLFormula_type.AfterConstruction;
+procedure TXMLFormula_type.DoBeforeCreate;
 begin
   ClassesTree.Add('newparam', TXMLFormula_newparam_type);
   ClassesTree.Add('target', TXMLCommon_float_or_param_type);
@@ -74929,7 +74929,7 @@ end;
 
 function TXMLFormula_typeList.Get_Item(Index: Integer): IXMLFormula_type;
 begin
-  Result := List.NodesI[Index] as IXMLFormula_type;
+  Result := Nodes[Index] as IXMLFormula_type;
 end;
 
 { TXMLFormula_newparam_type }
@@ -74998,12 +74998,12 @@ end;
 
 function TXMLFormula_newparam_typeList.Get_Item(Index: Integer): IXMLFormula_newparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLFormula_newparam_type;
+  Result := Nodes[Index] as IXMLFormula_newparam_type;
 end;
 
 { TXMLCommon_float_or_param_type }
 
-procedure TXMLCommon_float_or_param_type.AfterConstruction;
+procedure TXMLCommon_float_or_param_type.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLCommon_param_type);
   inherited;
@@ -75028,7 +75028,7 @@ end;
 
 { TXMLFormula_technique_type }
 
-procedure TXMLFormula_technique_type.AfterConstruction;
+procedure TXMLFormula_technique_type.DoBeforeCreate;
 begin
   ClassesTree.Add('math', TXMLMathtype);
   inherited;
@@ -75041,7 +75041,7 @@ end;
 
 { TXMLMathtype }
 
-procedure TXMLMathtype.AfterConstruction;
+procedure TXMLMathtype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -76194,7 +76194,7 @@ end;
 
 { TXMLMitype }
 
-procedure TXMLMitype.AfterConstruction;
+procedure TXMLMitype.DoBeforeCreate;
 begin
   ClassesTree.Add('malignmark', TXMLMalignmarktype);
   ClassesTree.Add('mglyph', TXMLMglyphtype);
@@ -76397,7 +76397,7 @@ end;
 
 { TXMLMotype }
 
-procedure TXMLMotype.AfterConstruction;
+procedure TXMLMotype.DoBeforeCreate;
 begin
   ClassesTree.Add('malignmark', TXMLMalignmarktype);
   ClassesTree.Add('mglyph', TXMLMglyphtype);
@@ -76626,7 +76626,7 @@ end;
 
 { TXMLMntype }
 
-procedure TXMLMntype.AfterConstruction;
+procedure TXMLMntype.DoBeforeCreate;
 begin
   ClassesTree.Add('malignmark', TXMLMalignmarktype);
   ClassesTree.Add('mglyph', TXMLMglyphtype);
@@ -76735,7 +76735,7 @@ end;
 
 { TXMLMtexttype }
 
-procedure TXMLMtexttype.AfterConstruction;
+procedure TXMLMtexttype.DoBeforeCreate;
 begin
   ClassesTree.Add('malignmark', TXMLMalignmarktype);
   ClassesTree.Add('mglyph', TXMLMglyphtype);
@@ -76844,7 +76844,7 @@ end;
 
 { TXMLMstype }
 
-procedure TXMLMstype.AfterConstruction;
+procedure TXMLMstype.DoBeforeCreate;
 begin
   ClassesTree.Add('malignmark', TXMLMalignmarktype);
   ClassesTree.Add('mglyph', TXMLMglyphtype);
@@ -76973,7 +76973,7 @@ end;
 
 { TXMLMrowtype }
 
-procedure TXMLMrowtype.AfterConstruction;
+procedure TXMLMrowtype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -78026,7 +78026,7 @@ end;
 
 { TXMLMfractype }
 
-procedure TXMLMfractype.AfterConstruction;
+procedure TXMLMfractype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -79119,7 +79119,7 @@ end;
 
 { TXMLMsqrttype }
 
-procedure TXMLMsqrttype.AfterConstruction;
+procedure TXMLMsqrttype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -80172,7 +80172,7 @@ end;
 
 { TXMLMroottype }
 
-procedure TXMLMroottype.AfterConstruction;
+procedure TXMLMroottype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -81225,7 +81225,7 @@ end;
 
 { TXMLMpaddedtype }
 
-procedure TXMLMpaddedtype.AfterConstruction;
+procedure TXMLMpaddedtype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -82318,7 +82318,7 @@ end;
 
 { TXMLMphantomtype }
 
-procedure TXMLMphantomtype.AfterConstruction;
+procedure TXMLMphantomtype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -83371,7 +83371,7 @@ end;
 
 { TXMLMfencedtype }
 
-procedure TXMLMfencedtype.AfterConstruction;
+procedure TXMLMfencedtype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -84454,7 +84454,7 @@ end;
 
 { TXMLMenclosetype }
 
-procedure TXMLMenclosetype.AfterConstruction;
+procedure TXMLMenclosetype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -85517,7 +85517,7 @@ end;
 
 { TXMLMsubtype }
 
-procedure TXMLMsubtype.AfterConstruction;
+procedure TXMLMsubtype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -86580,7 +86580,7 @@ end;
 
 { TXMLMsuptype }
 
-procedure TXMLMsuptype.AfterConstruction;
+procedure TXMLMsuptype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -87643,7 +87643,7 @@ end;
 
 { TXMLMsubsuptype }
 
-procedure TXMLMsubsuptype.AfterConstruction;
+procedure TXMLMsubsuptype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -88716,7 +88716,7 @@ end;
 
 { TXMLMundertype }
 
-procedure TXMLMundertype.AfterConstruction;
+procedure TXMLMundertype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -89779,7 +89779,7 @@ end;
 
 { TXMLMovertype }
 
-procedure TXMLMovertype.AfterConstruction;
+procedure TXMLMovertype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -90842,7 +90842,7 @@ end;
 
 { TXMLMunderovertype }
 
-procedure TXMLMunderovertype.AfterConstruction;
+procedure TXMLMunderovertype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -91915,7 +91915,7 @@ end;
 
 { TXMLMmultiscriptstype }
 
-procedure TXMLMmultiscriptstype.AfterConstruction;
+procedure TXMLMmultiscriptstype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -92980,7 +92980,7 @@ end;
 
 { TXMLMtabletype }
 
-procedure TXMLMtabletype.AfterConstruction;
+procedure TXMLMtabletype.DoBeforeCreate;
 begin
   ClassesTree.Add('mtr', TXMLMtrtype);
   ClassesTree.Add('mlabeledtr', TXMLMlabeledtrtype);
@@ -93229,7 +93229,7 @@ end;
 
 { TXMLMtrtype }
 
-procedure TXMLMtrtype.AfterConstruction;
+procedure TXMLMtrtype.DoBeforeCreate;
 begin
   ClassesTree.Add('mtd', TXMLMtdtype);
   inherited;
@@ -93322,7 +93322,7 @@ end;
 
 { TXMLMtdtype }
 
-procedure TXMLMtdtype.AfterConstruction;
+procedure TXMLMtdtype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -94579,7 +94579,7 @@ end;
 
 { TXMLMactiontype }
 
-procedure TXMLMactiontype.AfterConstruction;
+procedure TXMLMactiontype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -95652,7 +95652,7 @@ end;
 
 { TXMLMerrortype }
 
-procedure TXMLMerrortype.AfterConstruction;
+procedure TXMLMerrortype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -96705,7 +96705,7 @@ end;
 
 { TXMLMstyletype }
 
-procedure TXMLMstyletype.AfterConstruction;
+procedure TXMLMstyletype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -98058,7 +98058,7 @@ end;
 
 { TXMLCntype }
 
-procedure TXMLCntype.AfterConstruction;
+procedure TXMLCntype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -99157,7 +99157,7 @@ end;
 
 { TXMLCitype }
 
-procedure TXMLCitype.AfterConstruction;
+procedure TXMLCitype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -100240,7 +100240,7 @@ end;
 
 { TXMLCsymboltype }
 
-procedure TXMLCsymboltype.AfterConstruction;
+procedure TXMLCsymboltype.DoBeforeCreate;
 begin
   ClassesTree.Add('mi', TXMLMitype);
   ClassesTree.Add('mo', TXMLMotype);
@@ -101457,7 +101457,7 @@ end;
 
 { TXMLDomainofapplicationtype }
 
-procedure TXMLDomainofapplicationtype.AfterConstruction;
+procedure TXMLDomainofapplicationtype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -102746,7 +102746,7 @@ end;
 
 { TXMLSettype }
 
-procedure TXMLSettype.AfterConstruction;
+procedure TXMLSettype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -103809,7 +103809,7 @@ end;
 
 { TXMLListtype }
 
-procedure TXMLListtype.AfterConstruction;
+procedure TXMLListtype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -105736,7 +105736,7 @@ end;
 
 { TXMLLogbasetype }
 
-procedure TXMLLogbasetype.AfterConstruction;
+procedure TXMLLogbasetype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -107077,7 +107077,7 @@ end;
 
 { TXMLLowlimittype }
 
-procedure TXMLLowlimittype.AfterConstruction;
+procedure TXMLLowlimittype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -108150,7 +108150,7 @@ end;
 
 { TXMLUplimittype }
 
-procedure TXMLUplimittype.AfterConstruction;
+procedure TXMLUplimittype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -109305,7 +109305,7 @@ end;
 
 { TXMLVectortype }
 
-procedure TXMLVectortype.AfterConstruction;
+procedure TXMLVectortype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -110358,7 +110358,7 @@ end;
 
 { TXMLMatrixtype }
 
-procedure TXMLMatrixtype.AfterConstruction;
+procedure TXMLMatrixtype.DoBeforeCreate;
 begin
   ClassesTree.Add('matrixrow', TXMLMatrixrowtype);
   inherited;
@@ -110421,7 +110421,7 @@ end;
 
 { TXMLMatrixrowtype }
 
-procedure TXMLMatrixrowtype.AfterConstruction;
+procedure TXMLMatrixrowtype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -112626,7 +112626,7 @@ end;
 
 { TXMLMomentabouttype }
 
-procedure TXMLMomentabouttype.AfterConstruction;
+procedure TXMLMomentabouttype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -113699,7 +113699,7 @@ end;
 
 { TXMLApplytype }
 
-procedure TXMLApplytype.AfterConstruction;
+procedure TXMLApplytype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -114752,7 +114752,7 @@ end;
 
 { TXMLIntervaltype }
 
-procedure TXMLIntervaltype.AfterConstruction;
+procedure TXMLIntervaltype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -115887,7 +115887,7 @@ end;
 
 { TXMLConditiontype }
 
-procedure TXMLConditiontype.AfterConstruction;
+procedure TXMLConditiontype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -116910,7 +116910,7 @@ end;
 
 { TXMLDeclaretype }
 
-procedure TXMLDeclaretype.AfterConstruction;
+procedure TXMLDeclaretype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -117973,7 +117973,7 @@ end;
 
 { TXMLLambdatype }
 
-procedure TXMLLambdatype.AfterConstruction;
+procedure TXMLLambdatype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -119026,7 +119026,7 @@ end;
 
 { TXMLPiecewisetype }
 
-procedure TXMLPiecewisetype.AfterConstruction;
+procedure TXMLPiecewisetype.DoBeforeCreate;
 begin
   ClassesTree.Add('piece', TXMLPiecetype);
   ClassesTree.Add('otherwise', TXMLOtherwisetype);
@@ -119096,7 +119096,7 @@ end;
 
 { TXMLPiecetype }
 
-procedure TXMLPiecetype.AfterConstruction;
+procedure TXMLPiecetype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -120111,12 +120111,12 @@ end;
 
 function TXMLPiecetypeList.Get_Item(Index: Integer): IXMLPiecetype;
 begin
-  Result := List.NodesI[Index] as IXMLPiecetype;
+  Result := Nodes[Index] as IXMLPiecetype;
 end;
 
 { TXMLBvartype }
 
-procedure TXMLBvartype.AfterConstruction;
+procedure TXMLBvartype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -121169,7 +121169,7 @@ end;
 
 { TXMLDegreetype }
 
-procedure TXMLDegreetype.AfterConstruction;
+procedure TXMLDegreetype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -122222,7 +122222,7 @@ end;
 
 { TXMLSemanticstype }
 
-procedure TXMLSemanticstype.AfterConstruction;
+procedure TXMLSemanticstype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -123431,7 +123431,7 @@ end;
 
 { TXMLOtherwisetype }
 
-procedure TXMLOtherwisetype.AfterConstruction;
+procedure TXMLOtherwisetype.DoBeforeCreate;
 begin
   ClassesTree.Add('cn', TXMLCntype);
   ClassesTree.Add('ci', TXMLCitype);
@@ -124486,7 +124486,7 @@ end;
 
 { TXMLMlabeledtrtype }
 
-procedure TXMLMlabeledtrtype.AfterConstruction;
+procedure TXMLMlabeledtrtype.DoBeforeCreate;
 begin
   ClassesTree.Add('mtd', TXMLMtdtype);
   inherited;
@@ -124583,7 +124583,7 @@ end;
 
 { TXMLLibrary_articulated_systems_type }
 
-procedure TXMLLibrary_articulated_systems_type.AfterConstruction;
+procedure TXMLLibrary_articulated_systems_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('articulated_system', TXMLArticulated_system_type);
@@ -124642,12 +124642,12 @@ end;
 
 function TXMLLibrary_articulated_systems_typeList.Get_Item(Index: Integer): IXMLLibrary_articulated_systems_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_articulated_systems_type;
+  Result := Nodes[Index] as IXMLLibrary_articulated_systems_type;
 end;
 
 { TXMLArticulated_system_type }
 
-procedure TXMLArticulated_system_type.AfterConstruction;
+procedure TXMLArticulated_system_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('kinematics', TXMLKinematics_type);
@@ -124711,12 +124711,12 @@ end;
 
 function TXMLArticulated_system_typeList.Get_Item(Index: Integer): IXMLArticulated_system_type;
 begin
-  Result := List.NodesI[Index] as IXMLArticulated_system_type;
+  Result := Nodes[Index] as IXMLArticulated_system_type;
 end;
 
 { TXMLKinematics_type }
 
-procedure TXMLKinematics_type.AfterConstruction;
+procedure TXMLKinematics_type.DoBeforeCreate;
 begin
   ClassesTree.Add('instance_kinematics_model', TXMLInstance_kinematics_model_type);
   ClassesTree.Add('technique_common', TXMLKinematics_technique_type);
@@ -124750,7 +124750,7 @@ end;
 
 { TXMLInstance_kinematics_model_type }
 
-procedure TXMLInstance_kinematics_model_type.AfterConstruction;
+procedure TXMLInstance_kinematics_model_type.DoBeforeCreate;
 begin
   ClassesTree.Add('bind', TXMLKinematics_bind_type);
   ClassesTree.Add('newparam', TXMLKinematics_newparam_type);
@@ -124827,12 +124827,12 @@ end;
 
 function TXMLInstance_kinematics_model_typeList.Get_Item(Index: Integer): IXMLInstance_kinematics_model_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_kinematics_model_type;
+  Result := Nodes[Index] as IXMLInstance_kinematics_model_type;
 end;
 
 { TXMLKinematics_bind_type }
 
-procedure TXMLKinematics_bind_type.AfterConstruction;
+procedure TXMLKinematics_bind_type.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLKinematics_param_type);
   inherited;
@@ -124907,7 +124907,7 @@ end;
 
 function TXMLKinematics_bind_typeList.Get_Item(Index: Integer): IXMLKinematics_bind_type;
 begin
-  Result := List.NodesI[Index] as IXMLKinematics_bind_type;
+  Result := Nodes[Index] as IXMLKinematics_bind_type;
 end;
 
 { TXMLKinematics_param_type }
@@ -124924,7 +124924,7 @@ end;
 
 { TXMLKinematics_setparam_type }
 
-procedure TXMLKinematics_setparam_type.AfterConstruction;
+procedure TXMLKinematics_setparam_type.DoBeforeCreate;
 begin
   ClassesTree.Add('connect_param', TXMLKinematics_connect_param_type);
   inherited;
@@ -124999,12 +124999,12 @@ end;
 
 function TXMLKinematics_setparam_typeList.Get_Item(Index: Integer): IXMLKinematics_setparam_type;
 begin
-  Result := List.NodesI[Index] as IXMLKinematics_setparam_type;
+  Result := Nodes[Index] as IXMLKinematics_setparam_type;
 end;
 
 { TXMLKinematics_technique_type }
 
-procedure TXMLKinematics_technique_type.AfterConstruction;
+procedure TXMLKinematics_technique_type.DoBeforeCreate;
 begin
   ClassesTree.Add('axis_info', TXMLKinematics_axis_info_type);
   ClassesTree.Add('frame_origin', TXMLKinematics_frame_type);
@@ -125042,7 +125042,7 @@ end;
 
 { TXMLKinematics_axis_info_type }
 
-procedure TXMLKinematics_axis_info_type.AfterConstruction;
+procedure TXMLKinematics_axis_info_type.DoBeforeCreate;
 begin
   ClassesTree.Add('newparam', TXMLKinematics_newparam_type);
   ClassesTree.Add('active', TXMLCommon_bool_or_param_type);
@@ -125137,12 +125137,12 @@ end;
 
 function TXMLKinematics_axis_info_typeList.Get_Item(Index: Integer): IXMLKinematics_axis_info_type;
 begin
-  Result := List.NodesI[Index] as IXMLKinematics_axis_info_type;
+  Result := Nodes[Index] as IXMLKinematics_axis_info_type;
 end;
 
 { TXMLCommon_bool_or_param_type }
 
-procedure TXMLCommon_bool_or_param_type.AfterConstruction;
+procedure TXMLCommon_bool_or_param_type.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLCommon_param_type);
   inherited;
@@ -125165,7 +125165,7 @@ end;
 
 { TXMLCommon_int_or_param_type }
 
-procedure TXMLCommon_int_or_param_type.AfterConstruction;
+procedure TXMLCommon_int_or_param_type.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLCommon_param_type);
   inherited;
@@ -125212,12 +125212,12 @@ end;
 
 function TXMLKinematics_index_typeList.Get_Item(Index: Integer): IXMLKinematics_index_type;
 begin
-  Result := List.NodesI[Index] as IXMLKinematics_index_type;
+  Result := Nodes[Index] as IXMLKinematics_index_type;
 end;
 
 { TXMLKinematics_limits_type }
 
-procedure TXMLKinematics_limits_type.AfterConstruction;
+procedure TXMLKinematics_limits_type.DoBeforeCreate;
 begin
   ClassesTree.Add('min', TXMLCommon_float_or_param_type);
   ClassesTree.Add('max', TXMLCommon_float_or_param_type);
@@ -125236,7 +125236,7 @@ end;
 
 { TXMLKinematics_frame_type }
 
-procedure TXMLKinematics_frame_type.AfterConstruction;
+procedure TXMLKinematics_frame_type.DoBeforeCreate;
 begin
   ClassesTree.Add('translate', TXMLTranslate_type);
   ClassesTree.Add('rotate', TXMLRotate_type);
@@ -125267,7 +125267,7 @@ end;
 
 { TXMLMotion_type }
 
-procedure TXMLMotion_type.AfterConstruction;
+procedure TXMLMotion_type.DoBeforeCreate;
 begin
   ClassesTree.Add('instance_articulated_system', TXMLInstance_articulated_system_type);
   ClassesTree.Add('technique_common', TXMLMotion_technique_type);
@@ -125300,7 +125300,7 @@ end;
 
 { TXMLInstance_articulated_system_type }
 
-procedure TXMLInstance_articulated_system_type.AfterConstruction;
+procedure TXMLInstance_articulated_system_type.DoBeforeCreate;
 begin
   ClassesTree.Add('bind', TXMLKinematics_bind_type);
   ClassesTree.Add('setparam', TXMLKinematics_setparam_type);
@@ -125377,12 +125377,12 @@ end;
 
 function TXMLInstance_articulated_system_typeList.Get_Item(Index: Integer): IXMLInstance_articulated_system_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_articulated_system_type;
+  Result := Nodes[Index] as IXMLInstance_articulated_system_type;
 end;
 
 { TXMLMotion_technique_type }
 
-procedure TXMLMotion_technique_type.AfterConstruction;
+procedure TXMLMotion_technique_type.DoBeforeCreate;
 begin
   ClassesTree.Add('axis_info', TXMLMotion_axis_info_type);
   ClassesTree.Add('effector_info', TXMLMotion_effector_info_type);
@@ -125402,7 +125402,7 @@ end;
 
 { TXMLMotion_axis_info_type }
 
-procedure TXMLMotion_axis_info_type.AfterConstruction;
+procedure TXMLMotion_axis_info_type.DoBeforeCreate;
 begin
   ClassesTree.Add('bind', TXMLKinematics_bind_type);
   ClassesTree.Add('newparam', TXMLKinematics_newparam_type);
@@ -125496,12 +125496,12 @@ end;
 
 function TXMLMotion_axis_info_typeList.Get_Item(Index: Integer): IXMLMotion_axis_info_type;
 begin
-  Result := List.NodesI[Index] as IXMLMotion_axis_info_type;
+  Result := Nodes[Index] as IXMLMotion_axis_info_type;
 end;
 
 { TXMLMotion_effector_info_type }
 
-procedure TXMLMotion_effector_info_type.AfterConstruction;
+procedure TXMLMotion_effector_info_type.DoBeforeCreate;
 begin
   ClassesTree.Add('bind', TXMLKinematics_bind_type);
   ClassesTree.Add('newparam', TXMLKinematics_newparam_type);
@@ -125573,7 +125573,7 @@ end;
 
 { TXMLCommon_float2_or_param_type }
 
-procedure TXMLCommon_float2_or_param_type.AfterConstruction;
+procedure TXMLCommon_float2_or_param_type.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLCommon_param_type);
   inherited;
@@ -125596,7 +125596,7 @@ end;
 
 { TXMLLibrary_kinematics_scenes_type }
 
-procedure TXMLLibrary_kinematics_scenes_type.AfterConstruction;
+procedure TXMLLibrary_kinematics_scenes_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('kinematics_scene', TXMLKinematics_scene_type);
@@ -125655,12 +125655,12 @@ end;
 
 function TXMLLibrary_kinematics_scenes_typeList.Get_Item(Index: Integer): IXMLLibrary_kinematics_scenes_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_kinematics_scenes_type;
+  Result := Nodes[Index] as IXMLLibrary_kinematics_scenes_type;
 end;
 
 { TXMLKinematics_scene_type }
 
-procedure TXMLKinematics_scene_type.AfterConstruction;
+procedure TXMLKinematics_scene_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('instance_kinematics_model', TXMLInstance_kinematics_model_type);
@@ -125726,12 +125726,12 @@ end;
 
 function TXMLKinematics_scene_typeList.Get_Item(Index: Integer): IXMLKinematics_scene_type;
 begin
-  Result := List.NodesI[Index] as IXMLKinematics_scene_type;
+  Result := Nodes[Index] as IXMLKinematics_scene_type;
 end;
 
 { TXMLLibrary_formulas_type }
 
-procedure TXMLLibrary_formulas_type.AfterConstruction;
+procedure TXMLLibrary_formulas_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('formula', TXMLFormula_type);
@@ -125790,12 +125790,12 @@ end;
 
 function TXMLLibrary_formulas_typeList.Get_Item(Index: Integer): IXMLLibrary_formulas_type;
 begin
-  Result := List.NodesI[Index] as IXMLLibrary_formulas_type;
+  Result := Nodes[Index] as IXMLLibrary_formulas_type;
 end;
 
 { TXMLCOLLADA_scene }
 
-procedure TXMLCOLLADA_scene.AfterConstruction;
+procedure TXMLCOLLADA_scene.DoBeforeCreate;
 begin
   ClassesTree.Add('instance_physics_scene', TXMLInstance_with_extra_type);
   ClassesTree.Add('instance_visual_scene', TXMLInstance_with_extra_type);
@@ -125829,7 +125829,7 @@ end;
 
 { TXMLInstance_kinematics_scene_type }
 
-procedure TXMLInstance_kinematics_scene_type.AfterConstruction;
+procedure TXMLInstance_kinematics_scene_type.DoBeforeCreate;
 begin
   ClassesTree.Add('asset', TXMLAsset_type);
   ClassesTree.Add('newparam', TXMLKinematics_newparam_type);
@@ -125919,12 +125919,12 @@ end;
 
 function TXMLInstance_kinematics_scene_typeList.Get_Item(Index: Integer): IXMLInstance_kinematics_scene_type;
 begin
-  Result := List.NodesI[Index] as IXMLInstance_kinematics_scene_type;
+  Result := Nodes[Index] as IXMLInstance_kinematics_scene_type;
 end;
 
 { TXMLCommon_sidref_or_param_type }
 
-procedure TXMLCommon_sidref_or_param_type.AfterConstruction;
+procedure TXMLCommon_sidref_or_param_type.DoBeforeCreate;
 begin
   ClassesTree.Add('param', TXMLCommon_param_type);
   inherited;
@@ -125971,12 +125971,12 @@ end;
 
 function TXMLBind_kinematics_model_typeList.Get_Item(Index: Integer): IXMLBind_kinematics_model_type;
 begin
-  Result := List.NodesI[Index] as IXMLBind_kinematics_model_type;
+  Result := Nodes[Index] as IXMLBind_kinematics_model_type;
 end;
 
 { TXMLBind_joint_axis_type }
 
-procedure TXMLBind_joint_axis_type.AfterConstruction;
+procedure TXMLBind_joint_axis_type.DoBeforeCreate;
 begin
   ClassesTree.Add('axis', TXMLCommon_sidref_or_param_type);
   ClassesTree.Add('value', TXMLCommon_float_or_param_type);
@@ -126017,7 +126017,7 @@ end;
 
 function TXMLBind_joint_axis_typeList.Get_Item(Index: Integer): IXMLBind_joint_axis_type;
 begin
-  Result := List.NodesI[Index] as IXMLBind_joint_axis_type;
+  Result := Nodes[Index] as IXMLBind_joint_axis_type;
 end;
 
 { TXMLInput_global_type }
@@ -126094,7 +126094,7 @@ end;
 
 function TXMLList_of_uints_typeList.Get_Item(Index: Integer): UnicodeString;
 begin
-  Result := List.NodesI[Index].Content;
+  Result := Nodes[Index].Content;
 end;
 
 { TXMLAnyURIList }
@@ -126113,7 +126113,7 @@ end;
 
 function TXMLAnyURIList.Get_Item(Index: Integer): UnicodeString;
 begin
-  Result := List.NodesI[Index].Content;
+  Result := Nodes[Index].Content;
 end;
 
 { TXMLString_List }
@@ -126132,7 +126132,7 @@ end;
 
 function TXMLString_List.Get_Item(Index: Integer): UnicodeString;
 begin
-  Result := List.NodesI[Index].Content;
+  Result := Nodes[Index].Content;
 end;
 
 { TXMLNCNameList }
@@ -126151,7 +126151,7 @@ end;
 
 function TXMLNCNameList.Get_Item(Index: Integer): UnicodeString;
 begin
-  Result := List.NodesI[Index].Content;
+  Result := Nodes[Index].Content;
 end;
 
 end.
