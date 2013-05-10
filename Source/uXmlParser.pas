@@ -94,6 +94,14 @@ type
     property NodesI[Idx: LongInt]: IXML read GetNodeI;
   end;
 
+  IXMLFilter = interface(IXML)
+    function GetCount: Integer;
+    function GetNode(Index: Integer): IXML;
+    function Remove(const Node: IXML): Integer;
+    property Count: Integer read GetCount;
+    property Nodes[Index: Integer]: IXML read GetNode; default;
+  end;
+
   TXML = class;
   TXMLClass = class of TXML;
 
@@ -102,8 +110,8 @@ type
     constructor CreateClassesTree;
   end;
 
-  TXMLCollection = class;
-  TXMLCollectionClass = class of TXMLCollection;
+  TXMLFilter = class;
+  TXMLFilterClass = class of TXMLFilter;
 
   IXMLList = interface
     function GetCount: Integer;
@@ -145,7 +153,6 @@ type
     procedure SetTag(const aValue: WideString);
     function GetTag: WideString;
     procedure SetContent(const aValue: TXMLVariant);
-    procedure SetNodes(const aList: IXMLList);
   public
     procedure DoRegisterChildClasses; virtual;
     constructor Create(const Text: WideString; BeginPos: LongInt);
@@ -153,8 +160,9 @@ type
     class function Load(const FileName: string): IXML;
     procedure RegisterChildNode(const TagName: WideString;
       ChildNodeClass: TXMLClass);
-    function CreateCollection(const CollectionClass: TXMLCollectionClass;
-      const anItemIterface: TGuid; const ItemTag: WideString): TXMLCollection;
+    function CreateFilter(const aFilterClass: TXMLFilterClass;
+      const aFiltrateClass: TXMLClass;
+      const anInterface: TGuid): IXMLFilter;
     property Count: LongInt read GetCount;
     property Tag: WideString read GetTag write SetTag;
     property Content: TXMLVariant read GetContent write SetContent;
@@ -170,7 +178,6 @@ type
     function GetCount: Integer;
     function GetNode(const Name: WideString): IXML;
   protected
-    destructor Destroy; override;
     function Add(const Node: IXML): Integer;
     procedure Clear;
     function Delete(const Index: Integer): Integer; overload;
@@ -192,32 +199,25 @@ type
     constructor Create;
   end;
 
-  IXMLCollection = interface(IXML)
-    function GetCount: Integer;
-    function GetNode(Index: Integer): IXML;
-//    procedure Clear;
-//    procedure Delete(Index: Integer);
-    function Remove(const Node: IXML): Integer;
-    property Count: Integer read GetCount;
-    property Nodes[Index: Integer]: IXML read GetNode; default;
-  end;
-
-  TXMLCollection = class(TXML, IXMLCollection)
+  TXMLFilter = class(TXML, IXMLFilter)
   private
     FList: IXMLList;
+    FItemClass: TXMLClass;
     FItemInterface: TGuid;
   protected
     function GetCount: Integer;
     function GetNode(Index: Integer): IXML;
     function GetList: IXMLList; virtual;
     function Remove(const Node: IXML): Integer;
-    procedure SetNodes(const aList: IXMLList);
     property Count: Integer read GetCount;
     property Nodes[Index: Integer]: IXML read GetNode; default;
+    property ItemClass: TXMLClass read FItemClass;
     property ItemInterface: TGuid read FItemInterface write FItemInterface;
-    property Tag: WideString read FTag write FTag;
-//    function AddItem(Index: Integer): IXML; virtual;
+    function AddItem(Index: Integer): IXML; virtual;
     property List: IXMLList read GetList;
+  public
+    constructor CreateAsFilter(const aList: IXMLList;
+      const aClass: TXMLClass; const anInterface: TGuid);
   end;
 
 implementation
@@ -335,8 +335,11 @@ begin
     Size := Stream.Size;
     SetLength(UTF8Text, Size);
     Stream.Read(UTF8Text[1], Size);
+{$IFDEF FPC}
     Text := UTF8Decode(UTF8Text);
-    // UTF8ToWideString(UTF8Text);//UTF8ToString(UTF8Text);
+{$ELSE}
+    Text := UTF8ToWideString(UTF8Text);
+{$ENDIF}
     Result := Create(Text, 1);
     Stream.Free;
   end
@@ -353,11 +356,6 @@ end;
 procedure TXML.SetContent(const aValue: TXMLVariant);
 begin
   FContent := aValue;
-end;
-
-procedure TXML.SetNodes(const aList: IXMLList);
-begin
-  FNodes := aList;
 end;
 
 procedure TXML.SetTag(const aValue: WideString);
@@ -496,21 +494,15 @@ begin
     FTag := ClassName;
 end;
 
-function TXML.CreateCollection(const CollectionClass: TXMLCollectionClass;
-  const anItemIterface: TGuid; const ItemTag: WideString): TXMLCollection;
+function TXML.CreateFilter(const aFilterClass: TXMLFilterClass;
+      const aFiltrateClass: TXMLClass;
+      const anInterface: TGuid): IXMLFilter;
 begin
-  Result := CollectionClass.Create('', 1);
-  Result.ItemInterface := anItemIterface;
-  Result.Tag := ItemTag;
-  if Assigned(FNodes) then
-    Result.SetNodes(FNodes);
+  Result := aFilterClass.CreateAsFilter(FNodes, aFiltrateClass, anInterface);
 end;
 
 destructor TXML.Destroy;
 begin
-  WriteLn(CLassName);
-  while FNodes.Count > 0 do
-    FNodes.Delete(0);
   Params.Free;
   FClassesTree.Free;
   inherited;
@@ -607,12 +599,6 @@ begin
     Result := -1;
 end;
 
-destructor TXMLList.Destroy;
-begin
-  FList.Clear;
-  inherited;
-end;
-
 function TXMLList.Delete(const Index: Integer): Integer;
 begin
   Result := Remove(Get(Index));
@@ -694,31 +680,41 @@ end;
 
 {$ENDREGION}
 
+{$REGION 'TXMLFilter'}
 
-{$REGION 'TXMLCollection'}
+function TXMLFilter.AddItem(Index: Integer): IXML;
+var
+  NewXML: TXML;
+begin
+  NewXML := FItemClass.Create('', 1);
+  Result := NewXML;
+  if Index > -1 then
+    FList.Insert(Index, NewXML)
+  else
+    FList.Add(NewXML);
+end;
 
-//function TXMLCollection.AddItem(Index: Integer): IXML;
-//var
-//  NewXML: TXML;
-//begin
-//  NewXML := TXML.Create('', 1);
-//  Result := NewXML;
-//  if Index > -1 then
-//
-//end;
+constructor TXMLFilter.CreateAsFilter(const aList: IXMLList;
+  const aClass: TXMLClass;
+  const anInterface: TGuid);
+begin
+  FList := aList;
+  FItemClass := aClass;
+  FItemInterface := anInterface;
+end;
 
-function TXMLCollection.GetCount: Integer;
+function TXMLFilter.GetCount: Integer;
 var
   I: Integer;
-  Obj: Pointer;
+  Temp: IXML;
 begin
   Result := 0;
   for I := 0 to List.Count - 1 do
-    if List.NodesI[I].QueryInterface(FItemInterface, Obj) = S_OK then
+    if List.NodesI[I].QueryInterface(FItemInterface, Temp) = S_OK then
       Inc(Result);
 end;
 
-function TXMLCollection.GetList: IXMLList;
+function TXMLFilter.GetList: IXMLList;
 begin
   if Assigned(FList) then
     Result := FList
@@ -726,34 +722,29 @@ begin
     Result := FNodes;
 end;
 
-function TXMLCollection.GetNode(Index: Integer): IXML;
+function TXMLFilter.GetNode(Index: Integer): IXML;
 var
   I, J: Integer;
-  X: IXML;
+  Temp: IXML;
 begin
-  Result := nil;
   J := 0;
   for I := 0 to List.Count - 1 do
   begin
-    if List.NodesI[I].QueryInterface(FItemInterface, X) = S_OK then
+    Result := List.NodesI[I];
+    if Result.QueryInterface(FItemInterface, Temp) = S_OK then
       if J = Index then
-        Exit(X)
+        Exit(Result)
       else
         Inc(J);
   end;
+  Result := nil;
 end;
 
-function TXMLCollection.Remove(const Node: IXML): Integer;
+function TXMLFilter.Remove(const Node: IXML): Integer;
 begin
   Result := List.IndexOf(Node);
   Assert(Result >=0);
   FNodes.Remove(Node);
-end;
-
-procedure TXMLCollection.SetNodes(const aList: IXMLList);
-begin
-  inherited SetNodes(aList);
-  FList := aList;
 end;
 
 {$ENDREGION}
@@ -942,7 +933,7 @@ end;
 
 {$ENDREGION 'TXMLVariant'}
 
-{ TXMLClassesTree }
+{$REGION 'TXMLClassesTree'}
 
 function CompareAnsiStrings(const Item1, Item2: AnsiString): Integer;
 var
@@ -961,5 +952,7 @@ constructor TXMLClassesTree.CreateClassesTree;
 begin
   Create(CompareAnsiStrings, nil);
 end;
+
+{$ENDREGION}
 
 end.

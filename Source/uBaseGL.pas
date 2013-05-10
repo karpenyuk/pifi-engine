@@ -962,6 +962,8 @@ begin
     begin
       if Sender = FGLBuffer then
         FGLBuffer := nil;
+      if Sender = FAttribObject then
+        FAttribObject := nil;
       DispatchMessage(NM_ResourceChanged);
     end;
   end;

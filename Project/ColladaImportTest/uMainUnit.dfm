@@ -21,16 +21,9 @@ object Form5: TForm5
     Height = 480
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
-    Context.DepthBits = 24
-    Context.StencilBits = 8
-    Context.AALevel = 0
     Align = alClient
     OnCanResize = GLViewer1CanResize
     OnMouseDown = GLViewer1MouseDown
     OnMouseMove = GLViewer1MouseMove
-    ExplicitLeft = 96
-    ExplicitTop = 80
-    ExplicitWidth = 225
-    ExplicitHeight = 129
   end
 end

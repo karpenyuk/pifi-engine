@@ -45,7 +45,6 @@ implementation
 {$R *.dfm}
 
 uses
-  XML.XMLDoc,
   uFileFormatDAE,
   uRenderResource,
   uVMath,
@@ -65,6 +64,9 @@ begin
   glFinish;
   GLViewer1.OnRender := nil;
   GLViewer1.Context.Deactivate;
+  Mesh.Attribs[0].Destroy; // Notification force attributes to be packed
+  Mesh.Attribs[0].Destroy;
+  Mesh.Attribs[0].Destroy;
   Mesh.Destroy;
   Shader1.Destroy;
   Drawer.Destroy;

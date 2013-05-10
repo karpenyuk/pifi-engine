@@ -876,7 +876,7 @@ type
 
 { IXMLAsset_type_contributorList }
 
-  IXMLAsset_type_contributorList = interface(IXMLCollection)
+  IXMLAsset_type_contributorList = interface(IXMLFilter)
     ['{BCA69F12-A95F-4263-9C40-1BE868EED828}']
     { Methods & Properties }
     function Add: IXMLAsset_type_contributor;
@@ -960,7 +960,7 @@ type
 
 { IXMLExtra_typeList }
 
-  IXMLExtra_typeList = interface(IXMLCollection)
+  IXMLExtra_typeList = interface(IXMLFilter)
     ['{7C9901CB-06D5-4526-9F69-69859E475061}']
     { Methods & Properties }
     function Add: IXMLExtra_type;
@@ -983,7 +983,7 @@ type
 
 { IXMLTechnique_typeList }
 
-  IXMLTechnique_typeList = interface(IXMLCollection)
+  IXMLTechnique_typeList = interface(IXMLFilter)
     ['{37A03A3F-E96C-4E89-8FEF-9749B0C5F797}']
     { Methods & Properties }
     function Add: IXMLTechnique_type;
@@ -1015,7 +1015,7 @@ type
 
 { IXMLLibrary_animations_typeList }
 
-  IXMLLibrary_animations_typeList = interface(IXMLCollection)
+  IXMLLibrary_animations_typeList = interface(IXMLFilter)
     ['{979F0CD9-5D3D-45D2-BAF0-AA163EF16B49}']
     { Methods & Properties }
     function Add: IXMLLibrary_animations_type;
@@ -1053,7 +1053,7 @@ type
 
 { IXMLAnimation_typeList }
 
-  IXMLAnimation_typeList = interface(IXMLCollection)
+  IXMLAnimation_typeList = interface(IXMLFilter)
     ['{8F7EC455-840C-48E9-B343-D941085C5481}']
     { Methods & Properties }
     function Add: IXMLAnimation_type;
@@ -1099,7 +1099,7 @@ type
 
 { IXMLSource_typeList }
 
-  IXMLSource_typeList = interface(IXMLCollection)
+  IXMLSource_typeList = interface(IXMLFilter)
     ['{D82E89EC-55B0-4F15-B26E-A24955B95929}']
     { Methods & Properties }
     function Add: IXMLSource_type;
@@ -1252,7 +1252,7 @@ type
 
 { IXMLAccessor_type }
 
-  IXMLAccessor_type = interface(IXMLCollection)
+  IXMLAccessor_type = interface(IXMLFilter)
     ['{C0439A49-5F10-48F5-9D4B-20357B0A088E}']
     { Property Accessors }
     function Get_Count: Int64;
@@ -1296,7 +1296,7 @@ type
 
 { IXMLParam_typeList }
 
-  IXMLParam_typeList = interface(IXMLCollection)
+  IXMLParam_typeList = interface(IXMLFilter)
     ['{26B3907A-FECB-4765-9680-8C77150CCC3D}']
     { Methods & Properties }
     function Add: IXMLParam_type;
@@ -1308,7 +1308,7 @@ type
 
 { IXMLSampler_type }
 
-  IXMLSampler_type = interface(IXMLCollection)
+  IXMLSampler_type = interface(IXMLFilter)
     ['{8E517DB1-04B0-426E-96A3-D8D98935F7C6}']
     { Property Accessors }
     function Get_Id: UnicodeString;
@@ -1329,7 +1329,7 @@ type
 
 { IXMLSampler_typeList }
 
-  IXMLSampler_typeList = interface(IXMLCollection)
+  IXMLSampler_typeList = interface(IXMLFilter)
     ['{9124F427-54E1-4044-B7BD-567EBD56CFF1}']
     { Methods & Properties }
     function Add: IXMLSampler_type;
@@ -1355,7 +1355,7 @@ type
 
 { IXMLInput_local_typeList }
 
-  IXMLInput_local_typeList = interface(IXMLCollection)
+  IXMLInput_local_typeList = interface(IXMLFilter)
     ['{A9A362FF-4CC2-4B1C-B3EF-11797B51BF54}']
     { Methods & Properties }
     function Add: IXMLInput_local_type;
@@ -1381,7 +1381,7 @@ type
 
 { IXMLChannel_typeList }
 
-  IXMLChannel_typeList = interface(IXMLCollection)
+  IXMLChannel_typeList = interface(IXMLFilter)
     ['{CB881648-6608-405A-A7E8-59DDF0CE7530}']
     { Methods & Properties }
     function Add: IXMLChannel_type;
@@ -1413,7 +1413,7 @@ type
 
 { IXMLLibrary_animation_clips_typeList }
 
-  IXMLLibrary_animation_clips_typeList = interface(IXMLCollection)
+  IXMLLibrary_animation_clips_typeList = interface(IXMLFilter)
     ['{A0526617-5EC7-4D02-879B-16E47DE22CA5}']
     { Methods & Properties }
     function Add: IXMLLibrary_animation_clips_type;
@@ -1453,7 +1453,7 @@ type
 
 { IXMLAnimation_clip_typeList }
 
-  IXMLAnimation_clip_typeList = interface(IXMLCollection)
+  IXMLAnimation_clip_typeList = interface(IXMLFilter)
     ['{D851BC0F-714A-430C-87CC-B75303D133DE}']
     { Methods & Properties }
     function Add: IXMLAnimation_clip_type;
@@ -1465,7 +1465,7 @@ type
 
 { IXMLInstance_with_extra_type }
 
-  IXMLInstance_with_extra_type = interface(IXMLCollection)
+  IXMLInstance_with_extra_type = interface(IXMLFilter)
     ['{13BBF11D-7325-4978-8394-A103AE661FCD}']
     { Property Accessors }
     function Get_Url: UnicodeString;
@@ -1486,7 +1486,7 @@ type
 
 { IXMLInstance_with_extra_typeList }
 
-  IXMLInstance_with_extra_typeList = interface(IXMLCollection)
+  IXMLInstance_with_extra_typeList = interface(IXMLFilter)
     ['{6A69BF46-9B27-4BA1-B85D-F7420AE4860A}']
     { Methods & Properties }
     function Add: IXMLInstance_with_extra_type;
@@ -1498,7 +1498,7 @@ type
 
 { IXMLInstance_formula_type }
 
-  IXMLInstance_formula_type = interface(IXMLCollection)
+  IXMLInstance_formula_type = interface(IXMLFilter)
     ['{A1745384-C1C3-45AF-B3D0-90C5E1829ECC}']
     { Property Accessors }
     function Get_Sid: UnicodeString;
@@ -1519,7 +1519,7 @@ type
 
 { IXMLInstance_formula_typeList }
 
-  IXMLInstance_formula_typeList = interface(IXMLCollection)
+  IXMLInstance_formula_typeList = interface(IXMLFilter)
     ['{46116BEF-8D85-460C-88C8-5640781B1999}']
     { Methods & Properties }
     function Add: IXMLInstance_formula_type;
@@ -1587,7 +1587,7 @@ type
 
 { IXMLLibrary_cameras_typeList }
 
-  IXMLLibrary_cameras_typeList = interface(IXMLCollection)
+  IXMLLibrary_cameras_typeList = interface(IXMLFilter)
     ['{82D8A111-B8BC-4667-9DC3-5B3C659D193E}']
     { Methods & Properties }
     function Add: IXMLLibrary_cameras_type;
@@ -1621,7 +1621,7 @@ type
 
 { IXMLCamera_typeList }
 
-  IXMLCamera_typeList = interface(IXMLCollection)
+  IXMLCamera_typeList = interface(IXMLFilter)
     ['{FFA00A1C-82C4-4E31-99A6-7A77B9C3C5B7}']
     { Methods & Properties }
     function Add: IXMLCamera_type;
@@ -1738,7 +1738,7 @@ type
 
 { IXMLLibrary_controllers_typeList }
 
-  IXMLLibrary_controllers_typeList = interface(IXMLCollection)
+  IXMLLibrary_controllers_typeList = interface(IXMLFilter)
     ['{94CBE6D7-5733-487D-846B-0C9A21BD4EBA}']
     { Methods & Properties }
     function Add: IXMLLibrary_controllers_type;
@@ -1772,7 +1772,7 @@ type
 
 { IXMLController_typeList }
 
-  IXMLController_typeList = interface(IXMLCollection)
+  IXMLController_typeList = interface(IXMLFilter)
     ['{696AD688-9FF1-4375-AB51-C0BD820BAD47}']
     { Methods & Properties }
     function Add: IXMLController_type;
@@ -1859,7 +1859,7 @@ type
 
 { IXMLInput_local_offset_typeList }
 
-  IXMLInput_local_offset_typeList = interface(IXMLCollection)
+  IXMLInput_local_offset_typeList = interface(IXMLFilter)
     ['{A55C8DB1-3AA0-4DE8-AE9B-FE50EAAE4FAC}']
     { Methods & Properties }
     function Add: IXMLInput_local_offset_type;
@@ -1923,7 +1923,7 @@ type
 
 { IXMLLibrary_geometries_typeList }
 
-  IXMLLibrary_geometries_typeList = interface(IXMLCollection)
+  IXMLLibrary_geometries_typeList = interface(IXMLFilter)
     ['{720DDC1F-EC1D-422D-A873-AB0D05E9660B}']
     { Methods & Properties }
     function Add: IXMLLibrary_geometries_type;
@@ -1961,7 +1961,7 @@ type
 
 { IXMLGeometry_typeList }
 
-  IXMLGeometry_typeList = interface(IXMLCollection)
+  IXMLGeometry_typeList = interface(IXMLFilter)
     ['{A3F51B5D-DF15-40E5-88F1-A5B36F4B3B3B}']
     { Methods & Properties }
     function Add: IXMLGeometry_type;
@@ -2045,7 +2045,7 @@ type
 
 { IXMLLines_typeList }
 
-  IXMLLines_typeList = interface(IXMLCollection)
+  IXMLLines_typeList = interface(IXMLFilter)
     ['{DB2A7778-AEAD-4A82-A967-3F3407DE0CC8}']
     { Methods & Properties }
     function Add: IXMLLines_type;
@@ -2063,7 +2063,7 @@ type
 
 { IXMLP_typeList }
 
-  IXMLP_typeList = interface(IXMLCollection)
+  IXMLP_typeList = interface(IXMLFilter)
     ['{BBD3DB84-7CD5-4CDC-B940-DC1F5CE9117A}']
     { Methods & Properties }
     function Add: IXMLP_type;
@@ -2098,7 +2098,7 @@ type
 
 { IXMLLinestrips_typeList }
 
-  IXMLLinestrips_typeList = interface(IXMLCollection)
+  IXMLLinestrips_typeList = interface(IXMLFilter)
     ['{65C880F2-F8E6-4735-9EED-E1687FFD538A}']
     { Methods & Properties }
     function Add: IXMLLinestrips_type;
@@ -2135,7 +2135,7 @@ type
 
 { IXMLPolygons_typeList }
 
-  IXMLPolygons_typeList = interface(IXMLCollection)
+  IXMLPolygons_typeList = interface(IXMLFilter)
     ['{A2295B3A-0D11-41BC-BC58-54C3C2347FF5}']
     { Methods & Properties }
     function Add: IXMLPolygons_type;
@@ -2159,7 +2159,7 @@ type
 
 { IXMLPolygons_type_phList }
 
-  IXMLPolygons_type_phList = interface(IXMLCollection)
+  IXMLPolygons_type_phList = interface(IXMLFilter)
     ['{F1E12625-A134-4043-BE84-1720B441AC53}']
     { Methods & Properties }
     function Add: IXMLPolygons_type_ph;
@@ -2197,7 +2197,7 @@ type
 
 { IXMLPolylist_typeList }
 
-  IXMLPolylist_typeList = interface(IXMLCollection)
+  IXMLPolylist_typeList = interface(IXMLFilter)
     ['{2A8B658A-D68C-470B-AFEB-D8E61CDC8839}']
     { Methods & Properties }
     function Add: IXMLPolylist_type;
@@ -2232,7 +2232,7 @@ type
 
 { IXMLTriangles_typeList }
 
-  IXMLTriangles_typeList = interface(IXMLCollection)
+  IXMLTriangles_typeList = interface(IXMLFilter)
     ['{84FEBFE9-6187-426E-9D80-2801AFDF7309}']
     { Methods & Properties }
     function Add: IXMLTriangles_type;
@@ -2267,7 +2267,7 @@ type
 
 { IXMLTrifans_typeList }
 
-  IXMLTrifans_typeList = interface(IXMLCollection)
+  IXMLTrifans_typeList = interface(IXMLFilter)
     ['{6CB0908F-0C16-4C99-B865-E6D5AF8FDDEE}']
     { Methods & Properties }
     function Add: IXMLTrifans_type;
@@ -2302,7 +2302,7 @@ type
 
 { IXMLTristrips_typeList }
 
-  IXMLTristrips_typeList = interface(IXMLCollection)
+  IXMLTristrips_typeList = interface(IXMLFilter)
     ['{8FF7C902-5CF2-44BA-B856-D573F6E9F20F}']
     { Methods & Properties }
     function Add: IXMLTristrips_type;
@@ -2445,7 +2445,7 @@ type
 
 { IXMLCurve_typeList }
 
-  IXMLCurve_typeList = interface(IXMLCollection)
+  IXMLCurve_typeList = interface(IXMLFilter)
     ['{092457F5-7449-4FF1-938B-1B66A3E748C4}']
     { Methods & Properties }
     function Add: IXMLCurve_type;
@@ -2563,7 +2563,7 @@ type
 
 { IXMLOrient_typeList }
 
-  IXMLOrient_typeList = interface(IXMLCollection)
+  IXMLOrient_typeList = interface(IXMLFilter)
     ['{75C6169D-9DCA-402E-A98F-194700D869FD}']
     { Methods & Properties }
     function Add: IXMLOrient_type;
@@ -2637,7 +2637,7 @@ type
 
 { IXMLSurface_typeList }
 
-  IXMLSurface_typeList = interface(IXMLCollection)
+  IXMLSurface_typeList = interface(IXMLFilter)
     ['{092EDA98-E4CF-4BE0-8C42-FDE4423D8FBA}']
     { Methods & Properties }
     function Add: IXMLSurface_type;
@@ -2949,7 +2949,7 @@ type
 
 { IXMLLibrary_effects_typeList }
 
-  IXMLLibrary_effects_typeList = interface(IXMLCollection)
+  IXMLLibrary_effects_typeList = interface(IXMLFilter)
     ['{B705E97F-8470-462C-93FD-FA8F337853BF}']
     { Methods & Properties }
     function Add: IXMLLibrary_effects_type;
@@ -2995,7 +2995,7 @@ type
 
 { IXMLEffect_typeList }
 
-  IXMLEffect_typeList = interface(IXMLCollection)
+  IXMLEffect_typeList = interface(IXMLFilter)
     ['{348F39F4-CC11-45E6-B8A9-6A88CB7C88D3}']
     { Methods & Properties }
     function Add: IXMLEffect_type;
@@ -3066,7 +3066,7 @@ type
 
 { IXMLFx_annotate_typeList }
 
-  IXMLFx_annotate_typeList = interface(IXMLCollection)
+  IXMLFx_annotate_typeList = interface(IXMLFilter)
     ['{1FE321B4-FE0D-4B88-BDCA-8F28E169772F}']
     { Methods & Properties }
     function Add: IXMLFx_annotate_type;
@@ -3184,7 +3184,7 @@ type
 
 { IXMLFx_newparam_typeList }
 
-  IXMLFx_newparam_typeList = interface(IXMLCollection)
+  IXMLFx_newparam_typeList = interface(IXMLFilter)
     ['{901883AF-47EB-45FB-9925-82736EAB7391}']
     { Methods & Properties }
     function Add: IXMLFx_newparam_type;
@@ -3330,7 +3330,7 @@ type
 
 { IXMLFx_common_newparam_typeList }
 
-  IXMLFx_common_newparam_typeList = interface(IXMLCollection)
+  IXMLFx_common_newparam_typeList = interface(IXMLFilter)
     ['{FECE62AC-EA3E-4438-B9CE-7B4E5EC15B8A}']
     { Methods & Properties }
     function Add: IXMLFx_common_newparam_type;
@@ -3424,7 +3424,7 @@ type
 
 { IXMLFx_common_color_or_texture_type_texture }
 
-  IXMLFx_common_color_or_texture_type_texture = interface(IXMLCollection)
+  IXMLFx_common_color_or_texture_type_texture = interface(IXMLFilter)
     ['{DB13C7F4-37C9-46D9-866D-5CC72BA6DE3B}']
     { Property Accessors }
     function Get_Texture: UnicodeString;
@@ -3631,7 +3631,7 @@ type
 
 { IXMLFx_include_typeList }
 
-  IXMLFx_include_typeList = interface(IXMLCollection)
+  IXMLFx_include_typeList = interface(IXMLFilter)
     ['{B8378A46-0AE4-43B8-8BD3-FDBB43905472}']
     { Methods & Properties }
     function Add: IXMLFx_include_type;
@@ -3654,7 +3654,7 @@ type
 
 { IXMLFx_code_typeList }
 
-  IXMLFx_code_typeList = interface(IXMLCollection)
+  IXMLFx_code_typeList = interface(IXMLFilter)
     ['{8E3E971E-AE0B-4465-9A9B-A42BBB104891}']
     { Methods & Properties }
     function Add: IXMLFx_code_type;
@@ -3745,7 +3745,7 @@ type
 
 { IXMLUsertype }
 
-  IXMLUsertype = interface(IXMLCollection)
+  IXMLUsertype = interface(IXMLFilter)
     ['{A2AFABAD-5ECE-4604-BDFA-81D3F6B93A79}']
     { Property Accessors }
     function Get_Typename: UnicodeString;
@@ -3908,7 +3908,7 @@ type
 
 { IXMLProfile_gles2_type_newparamList }
 
-  IXMLProfile_gles2_type_newparamList = interface(IXMLCollection)
+  IXMLProfile_gles2_type_newparamList = interface(IXMLFilter)
     ['{15B5BFB0-79F9-46A5-98F1-749C6477D1F1}']
     { Methods & Properties }
     function Add: IXMLProfile_gles2_type_newparam;
@@ -3942,7 +3942,7 @@ type
 
 { IXMLProfile_gles2_type_techniqueList }
 
-  IXMLProfile_gles2_type_techniqueList = interface(IXMLCollection)
+  IXMLProfile_gles2_type_techniqueList = interface(IXMLFilter)
     ['{ED2DFC28-0CDC-4AEE-8245-81DCD15CA371}']
     { Methods & Properties }
     function Add: IXMLProfile_gles2_type_technique;
@@ -3975,7 +3975,7 @@ type
 
 { IXMLGles2_pass_typeList }
 
-  IXMLGles2_pass_typeList = interface(IXMLCollection)
+  IXMLGles2_pass_typeList = interface(IXMLFilter)
     ['{B841D5EE-E8AF-479F-A35C-479D7ED83501}']
     { Methods & Properties }
     function Add: IXMLGles2_pass_type;
@@ -4902,7 +4902,7 @@ type
 
 { IXMLGles2_shader_typeList }
 
-  IXMLGles2_shader_typeList = interface(IXMLCollection)
+  IXMLGles2_shader_typeList = interface(IXMLFilter)
     ['{5698DA63-5909-4C0E-95D9-E060443198E7}']
     { Methods & Properties }
     function Add: IXMLGles2_shader_type;
@@ -4937,7 +4937,7 @@ type
 
 { IXMLFx_sources_type_importList }
 
-  IXMLFx_sources_type_importList = interface(IXMLCollection)
+  IXMLFx_sources_type_importList = interface(IXMLFilter)
     ['{C4C78965-04AF-4885-A77F-A46E462A1451}']
     { Methods & Properties }
     function Add: IXMLFx_sources_type_import;
@@ -4979,7 +4979,7 @@ type
 
 { IXMLFx_target_typeList }
 
-  IXMLFx_target_typeList = interface(IXMLCollection)
+  IXMLFx_target_typeList = interface(IXMLFilter)
     ['{EFA3EBA8-3E18-4F89-A301-1ED936C785A0}']
     { Methods & Properties }
     function Add: IXMLFx_target_type;
@@ -5029,7 +5029,7 @@ type
 
 { IXMLGles2_program_type_bind_attributeList }
 
-  IXMLGles2_program_type_bind_attributeList = interface(IXMLCollection)
+  IXMLGles2_program_type_bind_attributeList = interface(IXMLFilter)
     ['{284365A5-F8EB-41CF-8715-25FBF74974C6}']
     { Methods & Properties }
     function Add: IXMLGles2_program_type_bind_attribute;
@@ -5114,7 +5114,7 @@ type
 
 { IXMLGles2_program_type_bind_uniformList }
 
-  IXMLGles2_program_type_bind_uniformList = interface(IXMLCollection)
+  IXMLGles2_program_type_bind_uniformList = interface(IXMLFilter)
     ['{2AE2D982-6084-4CF8-9BA6-08B54CF70FD6}']
     { Methods & Properties }
     function Add: IXMLGles2_program_type_bind_uniform;
@@ -5201,7 +5201,7 @@ type
 
 { IXMLFx_colortarget_typeList }
 
-  IXMLFx_colortarget_typeList = interface(IXMLCollection)
+  IXMLFx_colortarget_typeList = interface(IXMLFilter)
     ['{C35D0FC9-25D9-4E8B-99AA-A42ED8478DA0}']
     { Methods & Properties }
     function Add: IXMLFx_colortarget_type;
@@ -5219,7 +5219,7 @@ type
 
 { IXMLFx_depthtarget_typeList }
 
-  IXMLFx_depthtarget_typeList = interface(IXMLCollection)
+  IXMLFx_depthtarget_typeList = interface(IXMLFilter)
     ['{32DEDD42-8B5D-45C2-89DC-530529A6B323}']
     { Methods & Properties }
     function Add: IXMLFx_depthtarget_type;
@@ -5237,7 +5237,7 @@ type
 
 { IXMLFx_stenciltarget_typeList }
 
-  IXMLFx_stenciltarget_typeList = interface(IXMLCollection)
+  IXMLFx_stenciltarget_typeList = interface(IXMLFilter)
     ['{D09D1DA0-6639-49D9-B04F-D9060B38DFE8}']
     { Methods & Properties }
     function Add: IXMLFx_stenciltarget_type;
@@ -5260,7 +5260,7 @@ type
 
 { IXMLFx_clearcolor_typeList }
 
-  IXMLFx_clearcolor_typeList = interface(IXMLCollection)
+  IXMLFx_clearcolor_typeList = interface(IXMLFilter)
     ['{30155194-3B14-4D46-B938-C4754675CCD8}']
     { Methods & Properties }
     function Add: IXMLFx_clearcolor_type;
@@ -5283,7 +5283,7 @@ type
 
 { IXMLFx_clearstencil_typeList }
 
-  IXMLFx_clearstencil_typeList = interface(IXMLCollection)
+  IXMLFx_clearstencil_typeList = interface(IXMLFilter)
     ['{0C9379AC-17F3-4545-A066-956117243B3A}']
     { Methods & Properties }
     function Add: IXMLFx_clearstencil_type;
@@ -5306,7 +5306,7 @@ type
 
 { IXMLFx_cleardepth_typeList }
 
-  IXMLFx_cleardepth_typeList = interface(IXMLCollection)
+  IXMLFx_cleardepth_typeList = interface(IXMLFilter)
     ['{63114096-FD8B-4AF5-AC7B-A9935B91DFF9}']
     { Methods & Properties }
     function Add: IXMLFx_cleardepth_type;
@@ -5425,7 +5425,7 @@ type
 
 { IXMLGlsl_newparam_typeList }
 
-  IXMLGlsl_newparam_typeList = interface(IXMLCollection)
+  IXMLGlsl_newparam_typeList = interface(IXMLFilter)
     ['{FA39269A-59A3-4D82-A262-22F174382B5C}']
     { Methods & Properties }
     function Add: IXMLGlsl_newparam_type;
@@ -5532,7 +5532,7 @@ type
 
 { IXMLProfile_glsl_type_techniqueList }
 
-  IXMLProfile_glsl_type_techniqueList = interface(IXMLCollection)
+  IXMLProfile_glsl_type_techniqueList = interface(IXMLFilter)
     ['{EEBA4612-061E-483C-86D3-6376D84BF311}']
     { Methods & Properties }
     function Add: IXMLProfile_glsl_type_technique;
@@ -5565,7 +5565,7 @@ type
 
 { IXMLProfile_glsl_type_technique_passList }
 
-  IXMLProfile_glsl_type_technique_passList = interface(IXMLCollection)
+  IXMLProfile_glsl_type_technique_passList = interface(IXMLFilter)
     ['{C2FDFD20-8C7A-4776-BA98-A5DB352A5BDC}']
     { Methods & Properties }
     function Add: IXMLProfile_glsl_type_technique_pass;
@@ -7011,7 +7011,7 @@ type
 
 { IXMLGlsl_shader_typeList }
 
-  IXMLGlsl_shader_typeList = interface(IXMLCollection)
+  IXMLGlsl_shader_typeList = interface(IXMLFilter)
     ['{AC9CFA59-3EE9-4EEF-ADD8-21A37E2DC54E}']
     { Methods & Properties }
     function Add: IXMLGlsl_shader_type;
@@ -7037,7 +7037,7 @@ type
 
 { IXMLGlsl_program_type_bind_attributeList }
 
-  IXMLGlsl_program_type_bind_attributeList = interface(IXMLCollection)
+  IXMLGlsl_program_type_bind_attributeList = interface(IXMLFilter)
     ['{AE4DBB61-3748-488E-A457-311C3F512780}']
     { Methods & Properties }
     function Add: IXMLGlsl_program_type_bind_attribute;
@@ -7124,7 +7124,7 @@ type
 
 { IXMLGlsl_program_type_bind_uniformList }
 
-  IXMLGlsl_program_type_bind_uniformList = interface(IXMLCollection)
+  IXMLGlsl_program_type_bind_uniformList = interface(IXMLFilter)
     ['{14EEEEE4-2FF0-48CD-B7BC-6438026A6E60}']
     { Methods & Properties }
     function Add: IXMLGlsl_program_type_bind_uniform;
@@ -7477,7 +7477,7 @@ type
 
 { IXMLCg_newparam_typeList }
 
-  IXMLCg_newparam_typeList = interface(IXMLCollection)
+  IXMLCg_newparam_typeList = interface(IXMLFilter)
     ['{291DE285-B968-4BC2-8F93-1684386D0551}']
     { Methods & Properties }
     function Add: IXMLCg_newparam_type;
@@ -7765,7 +7765,7 @@ type
 
 { IXMLCg_user_type }
 
-  IXMLCg_user_type = interface(IXMLCollection)
+  IXMLCg_user_type = interface(IXMLFilter)
     ['{CDEA4C31-C2D5-4BB6-AF5D-F43A97E1D0E3}']
     { Property Accessors }
     function Get_Typename: UnicodeString;
@@ -8078,7 +8078,7 @@ type
 
 { IXMLProfile_cg_type_techniqueList }
 
-  IXMLProfile_cg_type_techniqueList = interface(IXMLCollection)
+  IXMLProfile_cg_type_techniqueList = interface(IXMLFilter)
     ['{B33EF92E-9251-4C2B-80CF-A5EDEA8732B2}']
     { Methods & Properties }
     function Add: IXMLProfile_cg_type_technique;
@@ -8111,7 +8111,7 @@ type
 
 { IXMLCg_pass_typeList }
 
-  IXMLCg_pass_typeList = interface(IXMLCollection)
+  IXMLCg_pass_typeList = interface(IXMLFilter)
     ['{2061889B-8C77-4273-BC7D-468BC52F4FA5}']
     { Methods & Properties }
     function Add: IXMLCg_pass_type;
@@ -8339,7 +8339,7 @@ type
 
 { IXMLCg_pass_type_program }
 
-  IXMLCg_pass_type_program = interface(IXMLCollection)
+  IXMLCg_pass_type_program = interface(IXMLFilter)
     ['{C08A8BFF-44BD-419B-A001-644E85549108}']
     { Property Accessors }
     function Get_Shader(Index: Integer): IXMLCg_pass_type_program_shader;
@@ -8654,7 +8654,7 @@ type
 
 { IXMLCg_pass_type_program_shader_bind_uniformList }
 
-  IXMLCg_pass_type_program_shader_bind_uniformList = interface(IXMLCollection)
+  IXMLCg_pass_type_program_shader_bind_uniformList = interface(IXMLFilter)
     ['{B77F4022-1452-49B9-B2A5-47311E38FDF8}']
     { Methods & Properties }
     function Add: IXMLCg_pass_type_program_shader_bind_uniform;
@@ -8830,7 +8830,7 @@ type
 
 { IXMLGles_newparam_typeList }
 
-  IXMLGles_newparam_typeList = interface(IXMLCollection)
+  IXMLGles_newparam_typeList = interface(IXMLFilter)
     ['{B4E15F98-8CF2-486D-A624-4A23945AF6E7}']
     { Methods & Properties }
     function Add: IXMLGles_newparam_type;
@@ -8910,7 +8910,7 @@ type
 
 { IXMLProfile_gles_type_techniqueList }
 
-  IXMLProfile_gles_type_techniqueList = interface(IXMLCollection)
+  IXMLProfile_gles_type_techniqueList = interface(IXMLFilter)
     ['{1822A2B6-BD9F-40F6-B9B4-6AC0624A7F6F}']
     { Methods & Properties }
     function Add: IXMLProfile_gles_type_technique;
@@ -8941,7 +8941,7 @@ type
 
 { IXMLProfile_gles_type_technique_passList }
 
-  IXMLProfile_gles_type_technique_passList = interface(IXMLCollection)
+  IXMLProfile_gles_type_technique_passList = interface(IXMLFilter)
     ['{18C47783-A687-457E-808C-1486D26ED40B}']
     { Methods & Properties }
     function Add: IXMLProfile_gles_type_technique_pass;
@@ -9140,7 +9140,7 @@ type
 
 { IXMLGles_texcombiner_command_typeList }
 
-  IXMLGles_texcombiner_command_typeList = interface(IXMLCollection)
+  IXMLGles_texcombiner_command_typeList = interface(IXMLFilter)
     ['{E2C998D7-2C42-4E41-B881-04F8A3915AA6}']
     { Methods & Properties }
     function Add: IXMLGles_texcombiner_command_type;
@@ -9166,7 +9166,7 @@ type
 
 { IXMLGles_texcombiner_command_rgb_type }
 
-  IXMLGles_texcombiner_command_rgb_type = interface(IXMLCollection)
+  IXMLGles_texcombiner_command_rgb_type = interface(IXMLFilter)
     ['{0BFCFC20-E47B-42A9-9174-C8860E132D58}']
     { Property Accessors }
     function Get_Operator_: UnicodeString;
@@ -9201,7 +9201,7 @@ type
 
 { IXMLGles_texcombiner_command_alpha_type }
 
-  IXMLGles_texcombiner_command_alpha_type = interface(IXMLCollection)
+  IXMLGles_texcombiner_command_alpha_type = interface(IXMLFilter)
     ['{C1D4C2AF-B501-4148-80A1-8DFF326616C9}']
     { Property Accessors }
     function Get_Operator_: UnicodeString;
@@ -9252,7 +9252,7 @@ type
 
 { IXMLGles_texenv_command_typeList }
 
-  IXMLGles_texenv_command_typeList = interface(IXMLCollection)
+  IXMLGles_texenv_command_typeList = interface(IXMLFilter)
     ['{ABA87D0A-FE26-47B2-99A2-BE93D5CEB9C6}']
     { Methods & Properties }
     function Add: IXMLGles_texenv_command_type;
@@ -9307,7 +9307,7 @@ type
 
 { IXMLLibrary_force_fields_typeList }
 
-  IXMLLibrary_force_fields_typeList = interface(IXMLCollection)
+  IXMLLibrary_force_fields_typeList = interface(IXMLFilter)
     ['{45D9FF3A-9BC7-4E5A-AFED-1F4F2E331156}']
     { Methods & Properties }
     function Add: IXMLLibrary_force_fields_type;
@@ -9339,7 +9339,7 @@ type
 
 { IXMLForce_field_typeList }
 
-  IXMLForce_field_typeList = interface(IXMLCollection)
+  IXMLForce_field_typeList = interface(IXMLFilter)
     ['{140FEEF5-ED8E-463B-8616-3E2665FA7621}']
     { Methods & Properties }
     function Add: IXMLForce_field_type;
@@ -9371,7 +9371,7 @@ type
 
 { IXMLLibrary_images_typeList }
 
-  IXMLLibrary_images_typeList = interface(IXMLCollection)
+  IXMLLibrary_images_typeList = interface(IXMLFilter)
     ['{6741D692-4C87-482B-A8DA-A4DE0847201B}']
     { Methods & Properties }
     function Add: IXMLLibrary_images_type;
@@ -9414,7 +9414,7 @@ type
 
 { IXMLImage_typeList }
 
-  IXMLImage_typeList = interface(IXMLCollection)
+  IXMLImage_typeList = interface(IXMLFilter)
     ['{F57D5CEB-667D-4E65-B49A-53FC3EFA28CB}']
     { Methods & Properties }
     function Add: IXMLImage_type;
@@ -9595,7 +9595,7 @@ type
 
 { IXMLImage_type_create_2d_init_fromList }
 
-  IXMLImage_type_create_2d_init_fromList = interface(IXMLCollection)
+  IXMLImage_type_create_2d_init_fromList = interface(IXMLFilter)
     ['{E1439912-D88F-48F2-ADD5-B14E0E78DA47}']
     { Methods & Properties }
     function Add: IXMLImage_type_create_2d_init_from;
@@ -9703,7 +9703,7 @@ type
 
 { IXMLImage_type_create_3d_init_fromList }
 
-  IXMLImage_type_create_3d_init_fromList = interface(IXMLCollection)
+  IXMLImage_type_create_3d_init_fromList = interface(IXMLFilter)
     ['{9C3EB80B-C872-443A-A7BC-FFB55FFA4529}']
     { Methods & Properties }
     function Add: IXMLImage_type_create_3d_init_from;
@@ -9805,7 +9805,7 @@ type
 
 { IXMLImage_type_create_cube_init_fromList }
 
-  IXMLImage_type_create_cube_init_fromList = interface(IXMLCollection)
+  IXMLImage_type_create_cube_init_fromList = interface(IXMLFilter)
     ['{1A3EBEF8-140F-45C6-BB7A-C61CEEFFEA23}']
     { Methods & Properties }
     function Add: IXMLImage_type_create_cube_init_from;
@@ -9837,7 +9837,7 @@ type
 
 { IXMLLibrary_lights_typeList }
 
-  IXMLLibrary_lights_typeList = interface(IXMLCollection)
+  IXMLLibrary_lights_typeList = interface(IXMLFilter)
     ['{F9973F75-A1FD-435A-8784-11BB5B0FD695}']
     { Methods & Properties }
     function Add: IXMLLibrary_lights_type;
@@ -9871,7 +9871,7 @@ type
 
 { IXMLLight_typeList }
 
-  IXMLLight_typeList = interface(IXMLCollection)
+  IXMLLight_typeList = interface(IXMLFilter)
     ['{4AEF2D45-7DE8-4544-99ED-642F317B9082}']
     { Methods & Properties }
     function Add: IXMLLight_type;
@@ -9986,7 +9986,7 @@ type
 
 { IXMLLibrary_materials_typeList }
 
-  IXMLLibrary_materials_typeList = interface(IXMLCollection)
+  IXMLLibrary_materials_typeList = interface(IXMLFilter)
     ['{095A2657-D4CD-4DB2-A687-FFBFBE9E4BF8}']
     { Methods & Properties }
     function Add: IXMLLibrary_materials_type;
@@ -10018,7 +10018,7 @@ type
 
 { IXMLMaterial_typeList }
 
-  IXMLMaterial_typeList = interface(IXMLCollection)
+  IXMLMaterial_typeList = interface(IXMLFilter)
     ['{ED4F63B1-0F45-40DF-886E-135C90AB75AF}']
     { Methods & Properties }
     function Add: IXMLMaterial_type;
@@ -10070,7 +10070,7 @@ type
 
 { IXMLInstance_effect_type_technique_hintList }
 
-  IXMLInstance_effect_type_technique_hintList = interface(IXMLCollection)
+  IXMLInstance_effect_type_technique_hintList = interface(IXMLFilter)
     ['{F6DBE24A-3305-4D18-A02A-AF8728142B51}']
     { Methods & Properties }
     function Add: IXMLInstance_effect_type_technique_hint;
@@ -10172,7 +10172,7 @@ type
 
 { IXMLInstance_effect_type_setparamList }
 
-  IXMLInstance_effect_type_setparamList = interface(IXMLCollection)
+  IXMLInstance_effect_type_setparamList = interface(IXMLFilter)
     ['{EAA436A7-9D08-47AE-8688-95E3E755975A}']
     { Methods & Properties }
     function Add: IXMLInstance_effect_type_setparam;
@@ -10247,7 +10247,7 @@ type
 
 { IXMLLibrary_nodes_typeList }
 
-  IXMLLibrary_nodes_typeList = interface(IXMLCollection)
+  IXMLLibrary_nodes_typeList = interface(IXMLFilter)
     ['{D5C5A734-21C0-4C52-A2F7-62ACCC8E2CCC}']
     { Methods & Properties }
     function Add: IXMLLibrary_nodes_type;
@@ -10310,7 +10310,7 @@ type
 
 { IXMLNode_typeList }
 
-  IXMLNode_typeList = interface(IXMLCollection)
+  IXMLNode_typeList = interface(IXMLFilter)
     ['{484AE685-C0A4-4BB2-AA7B-0C8DFFA7B983}']
     { Methods & Properties }
     function Add: IXMLNode_type;
@@ -10333,7 +10333,7 @@ type
 
 { IXMLLookat_typeList }
 
-  IXMLLookat_typeList = interface(IXMLCollection)
+  IXMLLookat_typeList = interface(IXMLFilter)
     ['{DDCAD133-55DC-40AD-BF4A-361B31BCFC62}']
     { Methods & Properties }
     function Add: IXMLLookat_type;
@@ -10356,7 +10356,7 @@ type
 
 { IXMLMatrix_typeList }
 
-  IXMLMatrix_typeList = interface(IXMLCollection)
+  IXMLMatrix_typeList = interface(IXMLFilter)
     ['{F666417E-2448-4DA7-B31D-F5BE2C663A40}']
     { Methods & Properties }
     function Add: IXMLMatrix_type;
@@ -10374,7 +10374,7 @@ type
 
 { IXMLRotate_typeList }
 
-  IXMLRotate_typeList = interface(IXMLCollection)
+  IXMLRotate_typeList = interface(IXMLFilter)
     ['{AB442D8F-D134-4F41-B1B6-F0448B21BDC5}']
     { Methods & Properties }
     function Add: IXMLRotate_type;
@@ -10392,7 +10392,7 @@ type
 
 { IXMLScale_typeList }
 
-  IXMLScale_typeList = interface(IXMLCollection)
+  IXMLScale_typeList = interface(IXMLFilter)
     ['{8356967F-64EA-467E-BF0E-A7CD6E0222B0}']
     { Methods & Properties }
     function Add: IXMLScale_type;
@@ -10415,7 +10415,7 @@ type
 
 { IXMLSkew_typeList }
 
-  IXMLSkew_typeList = interface(IXMLCollection)
+  IXMLSkew_typeList = interface(IXMLFilter)
     ['{C0D3BB54-7196-4111-AA35-1C837F4B478B}']
     { Methods & Properties }
     function Add: IXMLSkew_type;
@@ -10433,7 +10433,7 @@ type
 
 { IXMLTranslate_typeList }
 
-  IXMLTranslate_typeList = interface(IXMLCollection)
+  IXMLTranslate_typeList = interface(IXMLFilter)
     ['{E86E701F-6580-47FE-8879-57C998A4A5DF}']
     { Methods & Properties }
     function Add: IXMLTranslate_type;
@@ -10451,7 +10451,7 @@ type
 
 { IXMLInstance_camera_typeList }
 
-  IXMLInstance_camera_typeList = interface(IXMLCollection)
+  IXMLInstance_camera_typeList = interface(IXMLFilter)
     ['{887B2444-9B95-4E42-95BD-3CBC04617D50}']
     { Methods & Properties }
     function Add: IXMLInstance_camera_type;
@@ -10486,7 +10486,7 @@ type
 
 { IXMLInstance_controller_typeList }
 
-  IXMLInstance_controller_typeList = interface(IXMLCollection)
+  IXMLInstance_controller_typeList = interface(IXMLFilter)
     ['{1EC7CCCB-EAD2-4179-98BD-59F576026E71}']
     { Methods & Properties }
     function Add: IXMLInstance_controller_type;
@@ -10514,7 +10514,7 @@ type
 
 { IXMLBind_material_type_technique_common }
 
-  IXMLBind_material_type_technique_common = interface(IXMLCollection)
+  IXMLBind_material_type_technique_common = interface(IXMLFilter)
     ['{D3D840AC-A22D-466B-84BB-C07F0949EA57}']
     { Property Accessors }
     function Get_Instance_material(Index: Integer): IXMLInstance_material_type;
@@ -10566,7 +10566,7 @@ type
 
 { IXMLInstance_material_type_bindList }
 
-  IXMLInstance_material_type_bindList = interface(IXMLCollection)
+  IXMLInstance_material_type_bindList = interface(IXMLFilter)
     ['{841E1982-5295-4FE1-9574-C7EF39C3EEE9}']
     { Methods & Properties }
     function Add: IXMLInstance_material_type_bind;
@@ -10595,7 +10595,7 @@ type
 
 { IXMLInstance_material_type_bind_vertex_inputList }
 
-  IXMLInstance_material_type_bind_vertex_inputList = interface(IXMLCollection)
+  IXMLInstance_material_type_bind_vertex_inputList = interface(IXMLFilter)
     ['{D816B776-7AB7-471B-A172-EB9286C2C768}']
     { Methods & Properties }
     function Add: IXMLInstance_material_type_bind_vertex_input;
@@ -10628,7 +10628,7 @@ type
 
 { IXMLInstance_geometry_typeList }
 
-  IXMLInstance_geometry_typeList = interface(IXMLCollection)
+  IXMLInstance_geometry_typeList = interface(IXMLFilter)
     ['{73A91257-91DF-4729-BA1F-4E9D0417DACF}']
     { Methods & Properties }
     function Add: IXMLInstance_geometry_type;
@@ -10646,7 +10646,7 @@ type
 
 { IXMLInstance_light_typeList }
 
-  IXMLInstance_light_typeList = interface(IXMLCollection)
+  IXMLInstance_light_typeList = interface(IXMLFilter)
     ['{9957EC14-ABD0-46C3-93D7-9CFE6C607EE2}']
     { Methods & Properties }
     function Add: IXMLInstance_light_type;
@@ -10669,7 +10669,7 @@ type
 
 { IXMLInstance_node_typeList }
 
-  IXMLInstance_node_typeList = interface(IXMLCollection)
+  IXMLInstance_node_typeList = interface(IXMLFilter)
     ['{AB84CC73-29D3-4917-89E0-A4FC4F50858B}']
     { Methods & Properties }
     function Add: IXMLInstance_node_type;
@@ -10701,7 +10701,7 @@ type
 
 { IXMLLibrary_physics_materials_typeList }
 
-  IXMLLibrary_physics_materials_typeList = interface(IXMLCollection)
+  IXMLLibrary_physics_materials_typeList = interface(IXMLFilter)
     ['{C6D23C00-48C3-43BE-9C34-5587FF453544}']
     { Methods & Properties }
     function Add: IXMLLibrary_physics_materials_type;
@@ -10735,7 +10735,7 @@ type
 
 { IXMLPhysics_material_typeList }
 
-  IXMLPhysics_material_typeList = interface(IXMLCollection)
+  IXMLPhysics_material_typeList = interface(IXMLFilter)
     ['{3001DCBB-6B8C-491F-9EC9-50FD8EBB3925}']
     { Methods & Properties }
     function Add: IXMLPhysics_material_type;
@@ -10781,7 +10781,7 @@ type
 
 { IXMLLibrary_physics_models_typeList }
 
-  IXMLLibrary_physics_models_typeList = interface(IXMLCollection)
+  IXMLLibrary_physics_models_typeList = interface(IXMLFilter)
     ['{54560EED-E8A3-4A60-A815-EDAADD9EA759}']
     { Methods & Properties }
     function Add: IXMLLibrary_physics_models_type;
@@ -10817,7 +10817,7 @@ type
 
 { IXMLPhysics_model_typeList }
 
-  IXMLPhysics_model_typeList = interface(IXMLCollection)
+  IXMLPhysics_model_typeList = interface(IXMLFilter)
     ['{0A82128E-1E20-4192-8FA5-CFAD28314E83}']
     { Methods & Properties }
     function Add: IXMLPhysics_model_type;
@@ -10852,7 +10852,7 @@ type
 
 { IXMLRigid_body_typeList }
 
-  IXMLRigid_body_typeList = interface(IXMLCollection)
+  IXMLRigid_body_typeList = interface(IXMLFilter)
     ['{CA85938E-3C17-4C2A-BFC2-5CD0263F2735}']
     { Methods & Properties }
     function Add: IXMLRigid_body_type;
@@ -10951,7 +10951,7 @@ type
 
 { IXMLRigid_body_type_technique_common_shapeList }
 
-  IXMLRigid_body_type_technique_common_shapeList = interface(IXMLCollection)
+  IXMLRigid_body_type_technique_common_shapeList = interface(IXMLFilter)
     ['{C45ABAA1-7147-4676-8992-B463606B7A1A}']
     { Methods & Properties }
     function Add: IXMLRigid_body_type_technique_common_shape;
@@ -11043,7 +11043,7 @@ type
 
 { IXMLRigid_constraint_typeList }
 
-  IXMLRigid_constraint_typeList = interface(IXMLCollection)
+  IXMLRigid_constraint_typeList = interface(IXMLFilter)
     ['{A7DE783D-FA02-41B9-9827-0E6A5FCB61C6}']
     { Methods & Properties }
     function Add: IXMLRigid_constraint_type;
@@ -11231,7 +11231,7 @@ type
 
 { IXMLInstance_physics_model_typeList }
 
-  IXMLInstance_physics_model_typeList = interface(IXMLCollection)
+  IXMLInstance_physics_model_typeList = interface(IXMLFilter)
     ['{F2472D51-CF3A-4682-898E-5CCA83D1B34C}']
     { Methods & Properties }
     function Add: IXMLInstance_physics_model_type;
@@ -11249,7 +11249,7 @@ type
 
 { IXMLInstance_force_field_typeList }
 
-  IXMLInstance_force_field_typeList = interface(IXMLCollection)
+  IXMLInstance_force_field_typeList = interface(IXMLFilter)
     ['{C628CA92-0C20-4EF4-BA1F-71260B7287A0}']
     { Methods & Properties }
     function Add: IXMLInstance_force_field_type;
@@ -11287,7 +11287,7 @@ type
 
 { IXMLInstance_rigid_body_typeList }
 
-  IXMLInstance_rigid_body_typeList = interface(IXMLCollection)
+  IXMLInstance_rigid_body_typeList = interface(IXMLFilter)
     ['{5BF138B8-BD6A-4348-9A9C-324C82FD9F40}']
     { Methods & Properties }
     function Add: IXMLInstance_rigid_body_type;
@@ -11386,7 +11386,7 @@ type
 
 { IXMLInstance_rigid_body_type_technique_common_shapeList }
 
-  IXMLInstance_rigid_body_type_technique_common_shapeList = interface(IXMLCollection)
+  IXMLInstance_rigid_body_type_technique_common_shapeList = interface(IXMLFilter)
     ['{386D9DD2-FB93-4A91-B3B2-F12CD4C930D8}']
     { Methods & Properties }
     function Add: IXMLInstance_rigid_body_type_technique_common_shape;
@@ -11409,7 +11409,7 @@ type
 
 { IXMLInstance_rigid_constraint_type }
 
-  IXMLInstance_rigid_constraint_type = interface(IXMLCollection)
+  IXMLInstance_rigid_constraint_type = interface(IXMLFilter)
     ['{19591973-BCA9-40A6-B2A2-DB7ECA9B3E0B}']
     { Property Accessors }
     function Get_Constraint: UnicodeString;
@@ -11430,7 +11430,7 @@ type
 
 { IXMLInstance_rigid_constraint_typeList }
 
-  IXMLInstance_rigid_constraint_typeList = interface(IXMLCollection)
+  IXMLInstance_rigid_constraint_typeList = interface(IXMLFilter)
     ['{A953D189-D85B-476D-81E1-C5E35EA5C4C1}']
     { Methods & Properties }
     function Add: IXMLInstance_rigid_constraint_type;
@@ -11462,7 +11462,7 @@ type
 
 { IXMLLibrary_physics_scenes_typeList }
 
-  IXMLLibrary_physics_scenes_typeList = interface(IXMLCollection)
+  IXMLLibrary_physics_scenes_typeList = interface(IXMLFilter)
     ['{871C7616-E7C8-4D9D-BA35-7ACC79C2ED5A}']
     { Methods & Properties }
     function Add: IXMLLibrary_physics_scenes_type;
@@ -11500,7 +11500,7 @@ type
 
 { IXMLPhysics_scene_typeList }
 
-  IXMLPhysics_scene_typeList = interface(IXMLCollection)
+  IXMLPhysics_scene_typeList = interface(IXMLFilter)
     ['{E78DEFAC-A13A-4B85-B2AA-B40FDC0C2615}']
     { Methods & Properties }
     function Add: IXMLPhysics_scene_type;
@@ -11544,7 +11544,7 @@ type
 
 { IXMLLibrary_visual_scenes_typeList }
 
-  IXMLLibrary_visual_scenes_typeList = interface(IXMLCollection)
+  IXMLLibrary_visual_scenes_typeList = interface(IXMLFilter)
     ['{31D19CE1-E239-4171-80AE-8A46D5E1C5DE}']
     { Methods & Properties }
     function Add: IXMLLibrary_visual_scenes_type;
@@ -11578,7 +11578,7 @@ type
 
 { IXMLVisual_scene_typeList }
 
-  IXMLVisual_scene_typeList = interface(IXMLCollection)
+  IXMLVisual_scene_typeList = interface(IXMLFilter)
     ['{CE492611-FB51-4365-AAD3-4AF59143574E}']
     { Methods & Properties }
     function Add: IXMLVisual_scene_type;
@@ -11616,7 +11616,7 @@ type
 
 { IXMLVisual_scene_type_evaluate_sceneList }
 
-  IXMLVisual_scene_type_evaluate_sceneList = interface(IXMLCollection)
+  IXMLVisual_scene_type_evaluate_sceneList = interface(IXMLFilter)
     ['{21F4AEFB-A10C-40F3-A7FF-43C7033180AD}']
     { Methods & Properties }
     function Add: IXMLVisual_scene_type_evaluate_scene;
@@ -11651,7 +11651,7 @@ type
 
 { IXMLVisual_scene_type_evaluate_scene_renderList }
 
-  IXMLVisual_scene_type_evaluate_scene_renderList = interface(IXMLCollection)
+  IXMLVisual_scene_type_evaluate_scene_renderList = interface(IXMLFilter)
     ['{BE011F81-D4BE-4B18-B4E0-4EA41F6BB63D}']
     { Methods & Properties }
     function Add: IXMLVisual_scene_type_evaluate_scene_render;
@@ -11708,7 +11708,7 @@ type
 
 { IXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList }
 
-  IXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList = interface(IXMLCollection)
+  IXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList = interface(IXMLFilter)
     ['{A2892DFE-3061-426A-9CAB-A67D71F9FFA6}']
     { Methods & Properties }
     function Add: IXMLVisual_scene_type_evaluate_scene_render_instance_material_bind;
@@ -11740,7 +11740,7 @@ type
 
 { IXMLLibrary_joints_typeList }
 
-  IXMLLibrary_joints_typeList = interface(IXMLCollection)
+  IXMLLibrary_joints_typeList = interface(IXMLFilter)
     ['{24F8D0A7-31E0-4D5B-A4E1-52A86102A063}']
     { Methods & Properties }
     function Add: IXMLLibrary_joints_type;
@@ -11775,7 +11775,7 @@ type
 
 { IXMLJoint_typeList }
 
-  IXMLJoint_typeList = interface(IXMLCollection)
+  IXMLJoint_typeList = interface(IXMLFilter)
     ['{F716CA4F-80F4-4761-ADC0-60C711648CA4}']
     { Methods & Properties }
     function Add: IXMLJoint_type;
@@ -11802,7 +11802,7 @@ type
 
 { IXMLAxis_constraint_typeList }
 
-  IXMLAxis_constraint_typeList = interface(IXMLCollection)
+  IXMLAxis_constraint_typeList = interface(IXMLFilter)
     ['{07DA52C3-AF35-4074-866C-10B427C556B4}']
     { Methods & Properties }
     function Add: IXMLAxis_constraint_type;
@@ -11874,7 +11874,7 @@ type
 
 { IXMLLibrary_kinematics_models_typeList }
 
-  IXMLLibrary_kinematics_models_typeList = interface(IXMLCollection)
+  IXMLLibrary_kinematics_models_typeList = interface(IXMLFilter)
     ['{27B9AE42-AD88-4FCA-BCDB-8E03BE7828A2}']
     { Methods & Properties }
     function Add: IXMLLibrary_kinematics_models_type;
@@ -11908,7 +11908,7 @@ type
 
 { IXMLKinematics_model_typeList }
 
-  IXMLKinematics_model_typeList = interface(IXMLCollection)
+  IXMLKinematics_model_typeList = interface(IXMLFilter)
     ['{C433C8D7-F3E1-422B-8137-FE4261CA06E7}']
     { Methods & Properties }
     function Add: IXMLKinematics_model_type;
@@ -11963,7 +11963,7 @@ type
 
 { IXMLKinematics_newparam_typeList }
 
-  IXMLKinematics_newparam_typeList = interface(IXMLCollection)
+  IXMLKinematics_newparam_typeList = interface(IXMLFilter)
     ['{1081A336-6187-463C-85BA-476B81612457}']
     { Methods & Properties }
     function Add: IXMLKinematics_newparam_type;
@@ -11981,7 +11981,7 @@ type
 
 { IXMLInstance_joint_typeList }
 
-  IXMLInstance_joint_typeList = interface(IXMLCollection)
+  IXMLInstance_joint_typeList = interface(IXMLFilter)
     ['{A76664CE-B5C5-437B-BBFF-9998AD43FEC3}']
     { Methods & Properties }
     function Add: IXMLInstance_joint_type;
@@ -12017,7 +12017,7 @@ type
 
 { IXMLLink_typeList }
 
-  IXMLLink_typeList = interface(IXMLCollection)
+  IXMLLink_typeList = interface(IXMLFilter)
     ['{924BBC92-2DA6-45D5-A912-0D4A11B6C22C}']
     { Methods & Properties }
     function Add: IXMLLink_type;
@@ -12046,7 +12046,7 @@ type
 
 { IXMLLink_type_attachment_fullList }
 
-  IXMLLink_type_attachment_fullList = interface(IXMLCollection)
+  IXMLLink_type_attachment_fullList = interface(IXMLFilter)
     ['{0D6F6566-DBCA-4FFD-B6C8-5CC2D3E016C1}']
     { Methods & Properties }
     function Add: IXMLLink_type_attachment_full;
@@ -12073,7 +12073,7 @@ type
 
 { IXMLLink_type_attachment_startList }
 
-  IXMLLink_type_attachment_startList = interface(IXMLCollection)
+  IXMLLink_type_attachment_startList = interface(IXMLFilter)
     ['{E82BD051-BE8F-41D0-A85D-4041880D6BBF}']
     { Methods & Properties }
     function Add: IXMLLink_type_attachment_start;
@@ -12100,7 +12100,7 @@ type
 
 { IXMLLink_type_attachment_endList }
 
-  IXMLLink_type_attachment_endList = interface(IXMLCollection)
+  IXMLLink_type_attachment_endList = interface(IXMLFilter)
     ['{ABAC4D73-42C4-41A3-8589-4611993D6D74}']
     { Methods & Properties }
     function Add: IXMLLink_type_attachment_end;
@@ -12137,7 +12137,7 @@ type
 
 { IXMLFormula_typeList }
 
-  IXMLFormula_typeList = interface(IXMLCollection)
+  IXMLFormula_typeList = interface(IXMLFilter)
     ['{A5CBCF87-F45C-4CEC-8877-34160A3181EB}']
     { Methods & Properties }
     function Add: IXMLFormula_type;
@@ -12172,7 +12172,7 @@ type
 
 { IXMLFormula_newparam_typeList }
 
-  IXMLFormula_newparam_typeList = interface(IXMLCollection)
+  IXMLFormula_newparam_typeList = interface(IXMLFilter)
     ['{0A000FDA-DF8F-48EB-9659-9EF0D06054A6}']
     { Methods & Properties }
     function Add: IXMLFormula_newparam_type;
@@ -27591,7 +27591,7 @@ type
 
 { IXMLPiecetypeList }
 
-  IXMLPiecetypeList = interface(IXMLCollection)
+  IXMLPiecetypeList = interface(IXMLFilter)
     ['{47E4B8DE-AED3-41EC-A115-307D816DE798}']
     { Methods & Properties }
     function Add: IXMLPiecetype;
@@ -29157,7 +29157,7 @@ type
 
 { IXMLLibrary_articulated_systems_typeList }
 
-  IXMLLibrary_articulated_systems_typeList = interface(IXMLCollection)
+  IXMLLibrary_articulated_systems_typeList = interface(IXMLFilter)
     ['{3A238278-CE27-487A-9FC9-C2B01CEC7890}']
     { Methods & Properties }
     function Add: IXMLLibrary_articulated_systems_type;
@@ -29191,7 +29191,7 @@ type
 
 { IXMLArticulated_system_typeList }
 
-  IXMLArticulated_system_typeList = interface(IXMLCollection)
+  IXMLArticulated_system_typeList = interface(IXMLFilter)
     ['{1ADD6853-E2C3-4BD0-88F4-DAA5F1ECFE92}']
     { Methods & Properties }
     function Add: IXMLArticulated_system_type;
@@ -29244,7 +29244,7 @@ type
 
 { IXMLInstance_kinematics_model_typeList }
 
-  IXMLInstance_kinematics_model_typeList = interface(IXMLCollection)
+  IXMLInstance_kinematics_model_typeList = interface(IXMLFilter)
     ['{A9DCECA7-B524-4BE2-8B08-D69F46D9D583}']
     { Methods & Properties }
     function Add: IXMLInstance_kinematics_model_type;
@@ -29281,7 +29281,7 @@ type
 
 { IXMLKinematics_bind_typeList }
 
-  IXMLKinematics_bind_typeList = interface(IXMLCollection)
+  IXMLKinematics_bind_typeList = interface(IXMLFilter)
     ['{F4181527-8F3A-4816-928E-96362D25FABA}']
     { Methods & Properties }
     function Add: IXMLKinematics_bind_type;
@@ -29329,7 +29329,7 @@ type
 
 { IXMLKinematics_setparam_typeList }
 
-  IXMLKinematics_setparam_typeList = interface(IXMLCollection)
+  IXMLKinematics_setparam_typeList = interface(IXMLFilter)
     ['{AC068131-85A7-4EF8-82BE-4EF69B4F60E3}']
     { Methods & Properties }
     function Add: IXMLKinematics_setparam_type;
@@ -29390,7 +29390,7 @@ type
 
 { IXMLKinematics_axis_info_typeList }
 
-  IXMLKinematics_axis_info_typeList = interface(IXMLCollection)
+  IXMLKinematics_axis_info_typeList = interface(IXMLFilter)
     ['{464B984E-903F-4511-BF8A-3FCF53B59512}']
     { Methods & Properties }
     function Add: IXMLKinematics_axis_info_type;
@@ -29439,7 +29439,7 @@ type
 
 { IXMLKinematics_index_typeList }
 
-  IXMLKinematics_index_typeList = interface(IXMLCollection)
+  IXMLKinematics_index_typeList = interface(IXMLFilter)
     ['{74B22F00-7D6E-4332-90EB-D9853D7BF556}']
     { Methods & Properties }
     function Add: IXMLKinematics_index_type;
@@ -29519,7 +29519,7 @@ type
 
 { IXMLInstance_articulated_system_typeList }
 
-  IXMLInstance_articulated_system_typeList = interface(IXMLCollection)
+  IXMLInstance_articulated_system_typeList = interface(IXMLFilter)
     ['{32B467C8-DD36-47AC-9110-36AEEBF7FE73}']
     { Methods & Properties }
     function Add: IXMLInstance_articulated_system_type;
@@ -29574,7 +29574,7 @@ type
 
 { IXMLMotion_axis_info_typeList }
 
-  IXMLMotion_axis_info_typeList = interface(IXMLCollection)
+  IXMLMotion_axis_info_typeList = interface(IXMLFilter)
     ['{D8122DBF-1D81-4F45-A050-7F9A6FEBC8C4}']
     { Methods & Properties }
     function Add: IXMLMotion_axis_info_type;
@@ -29647,7 +29647,7 @@ type
 
 { IXMLLibrary_kinematics_scenes_typeList }
 
-  IXMLLibrary_kinematics_scenes_typeList = interface(IXMLCollection)
+  IXMLLibrary_kinematics_scenes_typeList = interface(IXMLFilter)
     ['{835ACB60-37EB-49AF-AA90-DFC557879DBE}']
     { Methods & Properties }
     function Add: IXMLLibrary_kinematics_scenes_type;
@@ -29681,7 +29681,7 @@ type
 
 { IXMLKinematics_scene_typeList }
 
-  IXMLKinematics_scene_typeList = interface(IXMLCollection)
+  IXMLKinematics_scene_typeList = interface(IXMLFilter)
     ['{C25CAD61-9BDE-4393-8CE1-93032CB85190}']
     { Methods & Properties }
     function Add: IXMLKinematics_scene_type;
@@ -29713,7 +29713,7 @@ type
 
 { IXMLLibrary_formulas_typeList }
 
-  IXMLLibrary_formulas_typeList = interface(IXMLCollection)
+  IXMLLibrary_formulas_typeList = interface(IXMLFilter)
     ['{F639FA70-A751-404B-A260-671AAF2FDD82}']
     { Methods & Properties }
     function Add: IXMLLibrary_formulas_type;
@@ -29770,7 +29770,7 @@ type
 
 { IXMLInstance_kinematics_scene_typeList }
 
-  IXMLInstance_kinematics_scene_typeList = interface(IXMLCollection)
+  IXMLInstance_kinematics_scene_typeList = interface(IXMLFilter)
     ['{B24CD20B-D8B4-4AFD-93F7-F3B5E46CBB7D}']
     { Methods & Properties }
     function Add: IXMLInstance_kinematics_scene_type;
@@ -29806,7 +29806,7 @@ type
 
 { IXMLBind_kinematics_model_typeList }
 
-  IXMLBind_kinematics_model_typeList = interface(IXMLCollection)
+  IXMLBind_kinematics_model_typeList = interface(IXMLFilter)
     ['{62082C76-30E6-4860-A78D-38EA959000FB}']
     { Methods & Properties }
     function Add: IXMLBind_kinematics_model_type;
@@ -29833,7 +29833,7 @@ type
 
 { IXMLBind_joint_axis_typeList }
 
-  IXMLBind_joint_axis_typeList = interface(IXMLCollection)
+  IXMLBind_joint_axis_typeList = interface(IXMLFilter)
     ['{74208069-AEDA-40F0-8655-3F239BEC99F2}']
     { Methods & Properties }
     function Add: IXMLBind_joint_axis_type;
@@ -29892,7 +29892,7 @@ type
 
 { IXMLList_of_uints_typeList }
 
-  IXMLList_of_uints_typeList = interface(IXMLCollection)
+  IXMLList_of_uints_typeList = interface(IXMLFilter)
     ['{B4A9F255-C214-4E94-BE57-69D471B93723}']
     { Methods & Properties }
     function Add(const Value: UnicodeString): IXML;
@@ -29904,7 +29904,7 @@ type
 
 { IXMLAnyURIList }
 
-  IXMLAnyURIList = interface(IXMLCollection)
+  IXMLAnyURIList = interface(IXMLFilter)
     ['{A731B061-0ED7-40C6-BAEF-2949BBDEB54F}']
     { Methods & Properties }
     function Add(const Value: UnicodeString): IXML;
@@ -29916,7 +29916,7 @@ type
 
 { IXMLString_List }
 
-  IXMLString_List = interface(IXMLCollection)
+  IXMLString_List = interface(IXMLFilter)
     ['{D4C163D2-215B-4CDD-BB6C-3FC09451359C}']
     { Methods & Properties }
     function Add(const Value: UnicodeString): IXML;
@@ -29928,7 +29928,7 @@ type
 
 { IXMLNCNameList }
 
-  IXMLNCNameList = interface(IXMLCollection)
+  IXMLNCNameList = interface(IXMLFilter)
     ['{2A0921D6-C018-4B86-A20D-A2FC3BFEF4DD}']
     { Methods & Properties }
     function Add(const Value: UnicodeString): IXML;
@@ -30791,7 +30791,7 @@ type
 
 { TXMLAsset_type_contributorList }
 
-  TXMLAsset_type_contributorList = class(TXMLCollection, IXMLAsset_type_contributorList)
+  TXMLAsset_type_contributorList = class(TXMLFilter, IXMLAsset_type_contributorList)
   protected
     { IXMLAsset_type_contributorList }
     function Add: IXMLAsset_type_contributor;
@@ -30865,7 +30865,7 @@ type
 
 { TXMLExtra_typeList }
 
-  TXMLExtra_typeList = class(TXMLCollection, IXMLExtra_typeList)
+  TXMLExtra_typeList = class(TXMLFilter, IXMLExtra_typeList)
   protected
     { IXMLExtra_typeList }
     function Add: IXMLExtra_type;
@@ -30885,7 +30885,7 @@ type
 
 { TXMLTechnique_typeList }
 
-  TXMLTechnique_typeList = class(TXMLCollection, IXMLTechnique_typeList)
+  TXMLTechnique_typeList = class(TXMLFilter, IXMLTechnique_typeList)
   protected
     { IXMLTechnique_typeList }
     function Add: IXMLTechnique_type;
@@ -30915,7 +30915,7 @@ type
 
 { TXMLLibrary_animations_typeList }
 
-  TXMLLibrary_animations_typeList = class(TXMLCollection, IXMLLibrary_animations_typeList)
+  TXMLLibrary_animations_typeList = class(TXMLFilter, IXMLLibrary_animations_typeList)
   protected
     { IXMLLibrary_animations_typeList }
     function Add: IXMLLibrary_animations_type;
@@ -30951,7 +30951,7 @@ type
 
 { TXMLAnimation_typeList }
 
-  TXMLAnimation_typeList = class(TXMLCollection, IXMLAnimation_typeList)
+  TXMLAnimation_typeList = class(TXMLFilter, IXMLAnimation_typeList)
   protected
     { IXMLAnimation_typeList }
     function Add: IXMLAnimation_type;
@@ -30987,7 +30987,7 @@ type
 
 { TXMLSource_typeList }
 
-  TXMLSource_typeList = class(TXMLCollection, IXMLSource_typeList)
+  TXMLSource_typeList = class(TXMLFilter, IXMLSource_typeList)
   protected
     { IXMLSource_typeList }
     function Add: IXMLSource_type;
@@ -31107,7 +31107,7 @@ type
 
 { TXMLAccessor_type }
 
-  TXMLAccessor_type = class(TXMLCollection, IXMLAccessor_type)
+  TXMLAccessor_type = class(TXMLFilter, IXMLAccessor_type)
   protected
     { IXMLAccessor_type }
     function Get_Count: Int64;
@@ -31142,7 +31142,7 @@ type
 
 { TXMLParam_typeList }
 
-  TXMLParam_typeList = class(TXMLCollection, IXMLParam_typeList)
+  TXMLParam_typeList = class(TXMLFilter, IXMLParam_typeList)
   protected
     { IXMLParam_typeList }
     function Add: IXMLParam_type;
@@ -31153,7 +31153,7 @@ type
 
 { TXMLSampler_type }
 
-  TXMLSampler_type = class(TXMLCollection, IXMLSampler_type)
+  TXMLSampler_type = class(TXMLFilter, IXMLSampler_type)
   protected
     { IXMLSampler_type }
     function Get_Id: UnicodeString;
@@ -31171,7 +31171,7 @@ type
 
 { TXMLSampler_typeList }
 
-  TXMLSampler_typeList = class(TXMLCollection, IXMLSampler_typeList)
+  TXMLSampler_typeList = class(TXMLFilter, IXMLSampler_typeList)
   protected
     { IXMLSampler_typeList }
     function Add: IXMLSampler_type;
@@ -31193,7 +31193,7 @@ type
 
 { TXMLInput_local_typeList }
 
-  TXMLInput_local_typeList = class(TXMLCollection, IXMLInput_local_typeList)
+  TXMLInput_local_typeList = class(TXMLFilter, IXMLInput_local_typeList)
   protected
     { IXMLInput_local_typeList }
     function Add: IXMLInput_local_type;
@@ -31215,7 +31215,7 @@ type
 
 { TXMLChannel_typeList }
 
-  TXMLChannel_typeList = class(TXMLCollection, IXMLChannel_typeList)
+  TXMLChannel_typeList = class(TXMLFilter, IXMLChannel_typeList)
   protected
     { IXMLChannel_typeList }
     function Add: IXMLChannel_type;
@@ -31245,7 +31245,7 @@ type
 
 { TXMLLibrary_animation_clips_typeList }
 
-  TXMLLibrary_animation_clips_typeList = class(TXMLCollection, IXMLLibrary_animation_clips_typeList)
+  TXMLLibrary_animation_clips_typeList = class(TXMLFilter, IXMLLibrary_animation_clips_typeList)
   protected
     { IXMLLibrary_animation_clips_typeList }
     function Add: IXMLLibrary_animation_clips_type;
@@ -31281,7 +31281,7 @@ type
 
 { TXMLAnimation_clip_typeList }
 
-  TXMLAnimation_clip_typeList = class(TXMLCollection, IXMLAnimation_clip_typeList)
+  TXMLAnimation_clip_typeList = class(TXMLFilter, IXMLAnimation_clip_typeList)
   protected
     { IXMLAnimation_clip_typeList }
     function Add: IXMLAnimation_clip_type;
@@ -31292,7 +31292,7 @@ type
 
 { TXMLInstance_with_extra_type }
 
-  TXMLInstance_with_extra_type = class(TXMLCollection, IXMLInstance_with_extra_type)
+  TXMLInstance_with_extra_type = class(TXMLFilter, IXMLInstance_with_extra_type)
   protected
     { IXMLInstance_with_extra_type }
     function Get_Url: UnicodeString;
@@ -31310,7 +31310,7 @@ type
 
 { TXMLInstance_with_extra_typeList }
 
-  TXMLInstance_with_extra_typeList = class(TXMLCollection, IXMLInstance_with_extra_typeList)
+  TXMLInstance_with_extra_typeList = class(TXMLFilter, IXMLInstance_with_extra_typeList)
   protected
     { IXMLInstance_with_extra_typeList }
     function Add: IXMLInstance_with_extra_type;
@@ -31321,7 +31321,7 @@ type
 
 { TXMLInstance_formula_type }
 
-  TXMLInstance_formula_type = class(TXMLCollection, IXMLInstance_formula_type)
+  TXMLInstance_formula_type = class(TXMLFilter, IXMLInstance_formula_type)
   protected
     { IXMLInstance_formula_type }
     function Get_Sid: UnicodeString;
@@ -31339,7 +31339,7 @@ type
 
 { TXMLInstance_formula_typeList }
 
-  TXMLInstance_formula_typeList = class(TXMLCollection, IXMLInstance_formula_typeList)
+  TXMLInstance_formula_typeList = class(TXMLFilter, IXMLInstance_formula_typeList)
   protected
     { IXMLInstance_formula_typeList }
     function Add: IXMLInstance_formula_type;
@@ -31398,7 +31398,7 @@ type
 
 { TXMLLibrary_cameras_typeList }
 
-  TXMLLibrary_cameras_typeList = class(TXMLCollection, IXMLLibrary_cameras_typeList)
+  TXMLLibrary_cameras_typeList = class(TXMLFilter, IXMLLibrary_cameras_typeList)
   protected
     { IXMLLibrary_cameras_typeList }
     function Add: IXMLLibrary_cameras_type;
@@ -31428,7 +31428,7 @@ type
 
 { TXMLCamera_typeList }
 
-  TXMLCamera_typeList = class(TXMLCollection, IXMLCamera_typeList)
+  TXMLCamera_typeList = class(TXMLFilter, IXMLCamera_typeList)
   protected
     { IXMLCamera_typeList }
     function Add: IXMLCamera_type;
@@ -31535,7 +31535,7 @@ type
 
 { TXMLLibrary_controllers_typeList }
 
-  TXMLLibrary_controllers_typeList = class(TXMLCollection, IXMLLibrary_controllers_typeList)
+  TXMLLibrary_controllers_typeList = class(TXMLFilter, IXMLLibrary_controllers_typeList)
   protected
     { IXMLLibrary_controllers_typeList }
     function Add: IXMLLibrary_controllers_type;
@@ -31565,7 +31565,7 @@ type
 
 { TXMLController_typeList }
 
-  TXMLController_typeList = class(TXMLCollection, IXMLController_typeList)
+  TXMLController_typeList = class(TXMLFilter, IXMLController_typeList)
   protected
     { IXMLController_typeList }
     function Add: IXMLController_type;
@@ -31645,7 +31645,7 @@ type
 
 { TXMLInput_local_offset_typeList }
 
-  TXMLInput_local_offset_typeList = class(TXMLCollection, IXMLInput_local_offset_typeList)
+  TXMLInput_local_offset_typeList = class(TXMLFilter, IXMLInput_local_offset_typeList)
   protected
     { IXMLInput_local_offset_typeList }
     function Add: IXMLInput_local_offset_type;
@@ -31709,7 +31709,7 @@ type
 
 { TXMLLibrary_geometries_typeList }
 
-  TXMLLibrary_geometries_typeList = class(TXMLCollection, IXMLLibrary_geometries_typeList)
+  TXMLLibrary_geometries_typeList = class(TXMLFilter, IXMLLibrary_geometries_typeList)
   protected
     { IXMLLibrary_geometries_typeList }
     function Add: IXMLLibrary_geometries_type;
@@ -31742,7 +31742,7 @@ type
 
 { TXMLGeometry_typeList }
 
-  TXMLGeometry_typeList = class(TXMLCollection, IXMLGeometry_typeList)
+  TXMLGeometry_typeList = class(TXMLFilter, IXMLGeometry_typeList)
   protected
     { IXMLGeometry_typeList }
     function Add: IXMLGeometry_type;
@@ -31823,7 +31823,7 @@ type
 
 { TXMLLines_typeList }
 
-  TXMLLines_typeList = class(TXMLCollection, IXMLLines_typeList)
+  TXMLLines_typeList = class(TXMLFilter, IXMLLines_typeList)
   protected
     { IXMLLines_typeList }
     function Add: IXMLLines_type;
@@ -31841,7 +31841,7 @@ type
 
 { TXMLP_typeList }
 
-  TXMLP_typeList = class(TXMLCollection, IXMLP_typeList)
+  TXMLP_typeList = class(TXMLFilter, IXMLP_typeList)
   protected
     { IXMLP_typeList }
     function Add: IXMLP_type;
@@ -31874,7 +31874,7 @@ type
 
 { TXMLLinestrips_typeList }
 
-  TXMLLinestrips_typeList = class(TXMLCollection, IXMLLinestrips_typeList)
+  TXMLLinestrips_typeList = class(TXMLFilter, IXMLLinestrips_typeList)
   protected
     { IXMLLinestrips_typeList }
     function Add: IXMLLinestrips_type;
@@ -31909,7 +31909,7 @@ type
 
 { TXMLPolygons_typeList }
 
-  TXMLPolygons_typeList = class(TXMLCollection, IXMLPolygons_typeList)
+  TXMLPolygons_typeList = class(TXMLFilter, IXMLPolygons_typeList)
   protected
     { IXMLPolygons_typeList }
     function Add: IXMLPolygons_type;
@@ -31933,7 +31933,7 @@ type
 
 { TXMLPolygons_type_phList }
 
-  TXMLPolygons_type_phList = class(TXMLCollection, IXMLPolygons_type_phList)
+  TXMLPolygons_type_phList = class(TXMLFilter, IXMLPolygons_type_phList)
   protected
     { IXMLPolygons_type_phList }
     function Add: IXMLPolygons_type_ph;
@@ -31967,7 +31967,7 @@ type
 
 { TXMLPolylist_typeList }
 
-  TXMLPolylist_typeList = class(TXMLCollection, IXMLPolylist_typeList)
+  TXMLPolylist_typeList = class(TXMLFilter, IXMLPolylist_typeList)
   protected
     { IXMLPolylist_typeList }
     function Add: IXMLPolylist_type;
@@ -31999,7 +31999,7 @@ type
 
 { TXMLTriangles_typeList }
 
-  TXMLTriangles_typeList = class(TXMLCollection, IXMLTriangles_typeList)
+  TXMLTriangles_typeList = class(TXMLFilter, IXMLTriangles_typeList)
   protected
     { IXMLTriangles_typeList }
     function Add: IXMLTriangles_type;
@@ -32032,7 +32032,7 @@ type
 
 { TXMLTrifans_typeList }
 
-  TXMLTrifans_typeList = class(TXMLCollection, IXMLTrifans_typeList)
+  TXMLTrifans_typeList = class(TXMLFilter, IXMLTrifans_typeList)
   protected
     { IXMLTrifans_typeList }
     function Add: IXMLTrifans_type;
@@ -32065,7 +32065,7 @@ type
 
 { TXMLTristrips_typeList }
 
-  TXMLTristrips_typeList = class(TXMLCollection, IXMLTristrips_typeList)
+  TXMLTristrips_typeList = class(TXMLFilter, IXMLTristrips_typeList)
   protected
     { IXMLTristrips_typeList }
     function Add: IXMLTristrips_type;
@@ -32197,7 +32197,7 @@ type
 
 { TXMLCurve_typeList }
 
-  TXMLCurve_typeList = class(TXMLCollection, IXMLCurve_typeList)
+  TXMLCurve_typeList = class(TXMLFilter, IXMLCurve_typeList)
   protected
     { IXMLCurve_typeList }
     function Add: IXMLCurve_type;
@@ -32320,7 +32320,7 @@ type
 
 { TXMLOrient_typeList }
 
-  TXMLOrient_typeList = class(TXMLCollection, IXMLOrient_typeList)
+  TXMLOrient_typeList = class(TXMLFilter, IXMLOrient_typeList)
   protected
     { IXMLOrient_typeList }
     function Add: IXMLOrient_type;
@@ -32390,7 +32390,7 @@ type
 
 { TXMLSurface_typeList }
 
-  TXMLSurface_typeList = class(TXMLCollection, IXMLSurface_typeList)
+  TXMLSurface_typeList = class(TXMLFilter, IXMLSurface_typeList)
   protected
     { IXMLSurface_typeList }
     function Add: IXMLSurface_type;
@@ -32684,7 +32684,7 @@ type
 
 { TXMLLibrary_effects_typeList }
 
-  TXMLLibrary_effects_typeList = class(TXMLCollection, IXMLLibrary_effects_typeList)
+  TXMLLibrary_effects_typeList = class(TXMLFilter, IXMLLibrary_effects_typeList)
   protected
     { IXMLLibrary_effects_typeList }
     function Add: IXMLLibrary_effects_type;
@@ -32722,7 +32722,7 @@ type
 
 { TXMLEffect_typeList }
 
-  TXMLEffect_typeList = class(TXMLCollection, IXMLEffect_typeList)
+  TXMLEffect_typeList = class(TXMLFilter, IXMLEffect_typeList)
   protected
     { IXMLEffect_typeList }
     function Add: IXMLEffect_type;
@@ -32774,7 +32774,7 @@ type
 
 { TXMLFx_annotate_typeList }
 
-  TXMLFx_annotate_typeList = class(TXMLCollection, IXMLFx_annotate_typeList)
+  TXMLFx_annotate_typeList = class(TXMLFilter, IXMLFx_annotate_typeList)
   protected
     { IXMLFx_annotate_typeList }
     function Add: IXMLFx_annotate_type;
@@ -32859,7 +32859,7 @@ type
 
 { TXMLFx_newparam_typeList }
 
-  TXMLFx_newparam_typeList = class(TXMLCollection, IXMLFx_newparam_typeList)
+  TXMLFx_newparam_typeList = class(TXMLFilter, IXMLFx_newparam_typeList)
   protected
     { IXMLFx_newparam_typeList }
     function Add: IXMLFx_newparam_type;
@@ -32994,7 +32994,7 @@ type
 
 { TXMLFx_common_newparam_typeList }
 
-  TXMLFx_common_newparam_typeList = class(TXMLCollection, IXMLFx_common_newparam_typeList)
+  TXMLFx_common_newparam_typeList = class(TXMLFilter, IXMLFx_common_newparam_typeList)
   protected
     { IXMLFx_common_newparam_typeList }
     function Add: IXMLFx_common_newparam_type;
@@ -33071,7 +33071,7 @@ type
 
 { TXMLFx_common_color_or_texture_type_texture }
 
-  TXMLFx_common_color_or_texture_type_texture = class(TXMLCollection, IXMLFx_common_color_or_texture_type_texture)
+  TXMLFx_common_color_or_texture_type_texture = class(TXMLFilter, IXMLFx_common_color_or_texture_type_texture)
   protected
     { IXMLFx_common_color_or_texture_type_texture }
     function Get_Texture: UnicodeString;
@@ -33237,7 +33237,7 @@ type
 
 { TXMLFx_include_typeList }
 
-  TXMLFx_include_typeList = class(TXMLCollection, IXMLFx_include_typeList)
+  TXMLFx_include_typeList = class(TXMLFilter, IXMLFx_include_typeList)
   protected
     { IXMLFx_include_typeList }
     function Add: IXMLFx_include_type;
@@ -33257,7 +33257,7 @@ type
 
 { TXMLFx_code_typeList }
 
-  TXMLFx_code_typeList = class(TXMLCollection, IXMLFx_code_typeList)
+  TXMLFx_code_typeList = class(TXMLFilter, IXMLFx_code_typeList)
   protected
     { IXMLFx_code_typeList }
     function Add: IXMLFx_code_type;
@@ -33324,7 +33324,7 @@ type
 
 { TXMLUsertype }
 
-  TXMLUsertype = class(TXMLCollection, IXMLUsertype)
+  TXMLUsertype = class(TXMLFilter, IXMLUsertype)
   protected
     { IXMLUsertype }
     function Get_Typename: UnicodeString;
@@ -33443,7 +33443,7 @@ type
 
 { TXMLProfile_gles2_type_newparamList }
 
-  TXMLProfile_gles2_type_newparamList = class(TXMLCollection, IXMLProfile_gles2_type_newparamList)
+  TXMLProfile_gles2_type_newparamList = class(TXMLFilter, IXMLProfile_gles2_type_newparamList)
   protected
     { IXMLProfile_gles2_type_newparamList }
     function Add: IXMLProfile_gles2_type_newparam;
@@ -33475,7 +33475,7 @@ type
 
 { TXMLProfile_gles2_type_techniqueList }
 
-  TXMLProfile_gles2_type_techniqueList = class(TXMLCollection, IXMLProfile_gles2_type_techniqueList)
+  TXMLProfile_gles2_type_techniqueList = class(TXMLFilter, IXMLProfile_gles2_type_techniqueList)
   protected
     { IXMLProfile_gles2_type_techniqueList }
     function Add: IXMLProfile_gles2_type_technique;
@@ -33505,7 +33505,7 @@ type
 
 { TXMLGles2_pass_typeList }
 
-  TXMLGles2_pass_typeList = class(TXMLCollection, IXMLGles2_pass_typeList)
+  TXMLGles2_pass_typeList = class(TXMLFilter, IXMLGles2_pass_typeList)
   protected
     { IXMLGles2_pass_typeList }
     function Add: IXMLGles2_pass_type;
@@ -34238,7 +34238,7 @@ type
 
 { TXMLGles2_shader_typeList }
 
-  TXMLGles2_shader_typeList = class(TXMLCollection, IXMLGles2_shader_typeList)
+  TXMLGles2_shader_typeList = class(TXMLFilter, IXMLGles2_shader_typeList)
   protected
     { IXMLGles2_shader_typeList }
     function Add: IXMLGles2_shader_type;
@@ -34272,7 +34272,7 @@ type
 
 { TXMLFx_sources_type_importList }
 
-  TXMLFx_sources_type_importList = class(TXMLCollection, IXMLFx_sources_type_importList)
+  TXMLFx_sources_type_importList = class(TXMLFilter, IXMLFx_sources_type_importList)
   protected
     { IXMLFx_sources_type_importList }
     function Add: IXMLFx_sources_type_import;
@@ -34308,7 +34308,7 @@ type
 
 { TXMLFx_target_typeList }
 
-  TXMLFx_target_typeList = class(TXMLCollection, IXMLFx_target_typeList)
+  TXMLFx_target_typeList = class(TXMLFilter, IXMLFx_target_typeList)
   protected
     { IXMLFx_target_typeList }
     function Add: IXMLFx_target_type;
@@ -34351,7 +34351,7 @@ type
 
 { TXMLGles2_program_type_bind_attributeList }
 
-  TXMLGles2_program_type_bind_attributeList = class(TXMLCollection, IXMLGles2_program_type_bind_attributeList)
+  TXMLGles2_program_type_bind_attributeList = class(TXMLFilter, IXMLGles2_program_type_bind_attributeList)
   protected
     { IXMLGles2_program_type_bind_attributeList }
     function Add: IXMLGles2_program_type_bind_attribute;
@@ -34412,7 +34412,7 @@ type
 
 { TXMLGles2_program_type_bind_uniformList }
 
-  TXMLGles2_program_type_bind_uniformList = class(TXMLCollection, IXMLGles2_program_type_bind_uniformList)
+  TXMLGles2_program_type_bind_uniformList = class(TXMLFilter, IXMLGles2_program_type_bind_uniformList)
   protected
     { IXMLGles2_program_type_bind_uniformList }
     function Add: IXMLGles2_program_type_bind_uniform;
@@ -34491,7 +34491,7 @@ type
 
 { TXMLFx_colortarget_typeList }
 
-  TXMLFx_colortarget_typeList = class(TXMLCollection, IXMLFx_colortarget_typeList)
+  TXMLFx_colortarget_typeList = class(TXMLFilter, IXMLFx_colortarget_typeList)
   protected
     { IXMLFx_colortarget_typeList }
     function Add: IXMLFx_colortarget_type;
@@ -34509,7 +34509,7 @@ type
 
 { TXMLFx_depthtarget_typeList }
 
-  TXMLFx_depthtarget_typeList = class(TXMLCollection, IXMLFx_depthtarget_typeList)
+  TXMLFx_depthtarget_typeList = class(TXMLFilter, IXMLFx_depthtarget_typeList)
   protected
     { IXMLFx_depthtarget_typeList }
     function Add: IXMLFx_depthtarget_type;
@@ -34527,7 +34527,7 @@ type
 
 { TXMLFx_stenciltarget_typeList }
 
-  TXMLFx_stenciltarget_typeList = class(TXMLCollection, IXMLFx_stenciltarget_typeList)
+  TXMLFx_stenciltarget_typeList = class(TXMLFilter, IXMLFx_stenciltarget_typeList)
   protected
     { IXMLFx_stenciltarget_typeList }
     function Add: IXMLFx_stenciltarget_type;
@@ -34547,7 +34547,7 @@ type
 
 { TXMLFx_clearcolor_typeList }
 
-  TXMLFx_clearcolor_typeList = class(TXMLCollection, IXMLFx_clearcolor_typeList)
+  TXMLFx_clearcolor_typeList = class(TXMLFilter, IXMLFx_clearcolor_typeList)
   protected
     { IXMLFx_clearcolor_typeList }
     function Add: IXMLFx_clearcolor_type;
@@ -34567,7 +34567,7 @@ type
 
 { TXMLFx_clearstencil_typeList }
 
-  TXMLFx_clearstencil_typeList = class(TXMLCollection, IXMLFx_clearstencil_typeList)
+  TXMLFx_clearstencil_typeList = class(TXMLFilter, IXMLFx_clearstencil_typeList)
   protected
     { IXMLFx_clearstencil_typeList }
     function Add: IXMLFx_clearstencil_type;
@@ -34587,7 +34587,7 @@ type
 
 { TXMLFx_cleardepth_typeList }
 
-  TXMLFx_cleardepth_typeList = class(TXMLCollection, IXMLFx_cleardepth_typeList)
+  TXMLFx_cleardepth_typeList = class(TXMLFilter, IXMLFx_cleardepth_typeList)
   protected
     { IXMLFx_cleardepth_typeList }
     function Add: IXMLFx_cleardepth_type;
@@ -34680,7 +34680,7 @@ type
 
 { TXMLGlsl_newparam_typeList }
 
-  TXMLGlsl_newparam_typeList = class(TXMLCollection, IXMLGlsl_newparam_typeList)
+  TXMLGlsl_newparam_typeList = class(TXMLFilter, IXMLGlsl_newparam_typeList)
   protected
     { IXMLGlsl_newparam_typeList }
     function Add: IXMLGlsl_newparam_type;
@@ -34762,7 +34762,7 @@ type
 
 { TXMLProfile_glsl_type_techniqueList }
 
-  TXMLProfile_glsl_type_techniqueList = class(TXMLCollection, IXMLProfile_glsl_type_techniqueList)
+  TXMLProfile_glsl_type_techniqueList = class(TXMLFilter, IXMLProfile_glsl_type_techniqueList)
   protected
     { IXMLProfile_glsl_type_techniqueList }
     function Add: IXMLProfile_glsl_type_technique;
@@ -34792,7 +34792,7 @@ type
 
 { TXMLProfile_glsl_type_technique_passList }
 
-  TXMLProfile_glsl_type_technique_passList = class(TXMLCollection, IXMLProfile_glsl_type_technique_passList)
+  TXMLProfile_glsl_type_technique_passList = class(TXMLFilter, IXMLProfile_glsl_type_technique_passList)
   protected
     { IXMLProfile_glsl_type_technique_passList }
     function Add: IXMLProfile_glsl_type_technique_pass;
@@ -35887,7 +35887,7 @@ type
 
 { TXMLGlsl_shader_typeList }
 
-  TXMLGlsl_shader_typeList = class(TXMLCollection, IXMLGlsl_shader_typeList)
+  TXMLGlsl_shader_typeList = class(TXMLFilter, IXMLGlsl_shader_typeList)
   protected
     { IXMLGlsl_shader_typeList }
     function Add: IXMLGlsl_shader_type;
@@ -35909,7 +35909,7 @@ type
 
 { TXMLGlsl_program_type_bind_attributeList }
 
-  TXMLGlsl_program_type_bind_attributeList = class(TXMLCollection, IXMLGlsl_program_type_bind_attributeList)
+  TXMLGlsl_program_type_bind_attributeList = class(TXMLFilter, IXMLGlsl_program_type_bind_attributeList)
   protected
     { IXMLGlsl_program_type_bind_attributeList }
     function Add: IXMLGlsl_program_type_bind_attribute;
@@ -35971,7 +35971,7 @@ type
 
 { TXMLGlsl_program_type_bind_uniformList }
 
-  TXMLGlsl_program_type_bind_uniformList = class(TXMLCollection, IXMLGlsl_program_type_bind_uniformList)
+  TXMLGlsl_program_type_bind_uniformList = class(TXMLFilter, IXMLGlsl_program_type_bind_uniformList)
   protected
     { IXMLGlsl_program_type_bind_uniformList }
     function Add: IXMLGlsl_program_type_bind_uniform;
@@ -36230,7 +36230,7 @@ type
 
 { TXMLCg_newparam_typeList }
 
-  TXMLCg_newparam_typeList = class(TXMLCollection, IXMLCg_newparam_typeList)
+  TXMLCg_newparam_typeList = class(TXMLFilter, IXMLCg_newparam_typeList)
   protected
     { IXMLCg_newparam_typeList }
     function Add: IXMLCg_newparam_type;
@@ -36426,7 +36426,7 @@ type
 
 { TXMLCg_user_type }
 
-  TXMLCg_user_type = class(TXMLCollection, IXMLCg_user_type)
+  TXMLCg_user_type = class(TXMLFilter, IXMLCg_user_type)
   protected
     { IXMLCg_user_type }
     function Get_Typename: UnicodeString;
@@ -36646,7 +36646,7 @@ type
 
 { TXMLProfile_cg_type_techniqueList }
 
-  TXMLProfile_cg_type_techniqueList = class(TXMLCollection, IXMLProfile_cg_type_techniqueList)
+  TXMLProfile_cg_type_techniqueList = class(TXMLFilter, IXMLProfile_cg_type_techniqueList)
   protected
     { IXMLProfile_cg_type_techniqueList }
     function Add: IXMLProfile_cg_type_technique;
@@ -36676,7 +36676,7 @@ type
 
 { TXMLCg_pass_typeList }
 
-  TXMLCg_pass_typeList = class(TXMLCollection, IXMLCg_pass_typeList)
+  TXMLCg_pass_typeList = class(TXMLFilter, IXMLCg_pass_typeList)
   protected
     { IXMLCg_pass_typeList }
     function Add: IXMLCg_pass_type;
@@ -36800,7 +36800,7 @@ type
 
 { TXMLCg_pass_type_program }
 
-  TXMLCg_pass_type_program = class(TXMLCollection, IXMLCg_pass_type_program)
+  TXMLCg_pass_type_program = class(TXMLFilter, IXMLCg_pass_type_program)
   protected
     { IXMLCg_pass_type_program }
     function Get_Shader(Index: Integer): IXMLCg_pass_type_program_shader;
@@ -37022,7 +37022,7 @@ type
 
 { TXMLCg_pass_type_program_shader_bind_uniformList }
 
-  TXMLCg_pass_type_program_shader_bind_uniformList = class(TXMLCollection, IXMLCg_pass_type_program_shader_bind_uniformList)
+  TXMLCg_pass_type_program_shader_bind_uniformList = class(TXMLFilter, IXMLCg_pass_type_program_shader_bind_uniformList)
   protected
     { IXMLCg_pass_type_program_shader_bind_uniformList }
     function Add: IXMLCg_pass_type_program_shader_bind_uniform;
@@ -37164,7 +37164,7 @@ type
 
 { TXMLGles_newparam_typeList }
 
-  TXMLGles_newparam_typeList = class(TXMLCollection, IXMLGles_newparam_typeList)
+  TXMLGles_newparam_typeList = class(TXMLFilter, IXMLGles_newparam_typeList)
   protected
     { IXMLGles_newparam_typeList }
     function Add: IXMLGles_newparam_type;
@@ -37233,7 +37233,7 @@ type
 
 { TXMLProfile_gles_type_techniqueList }
 
-  TXMLProfile_gles_type_techniqueList = class(TXMLCollection, IXMLProfile_gles_type_techniqueList)
+  TXMLProfile_gles_type_techniqueList = class(TXMLFilter, IXMLProfile_gles_type_techniqueList)
   protected
     { IXMLProfile_gles_type_techniqueList }
     function Add: IXMLProfile_gles_type_technique;
@@ -37262,7 +37262,7 @@ type
 
 { TXMLProfile_gles_type_technique_passList }
 
-  TXMLProfile_gles_type_technique_passList = class(TXMLCollection, IXMLProfile_gles_type_technique_passList)
+  TXMLProfile_gles_type_technique_passList = class(TXMLFilter, IXMLProfile_gles_type_technique_passList)
   protected
     { IXMLProfile_gles_type_technique_passList }
     function Add: IXMLProfile_gles_type_technique_pass;
@@ -37391,7 +37391,7 @@ type
 
 { TXMLGles_texcombiner_command_typeList }
 
-  TXMLGles_texcombiner_command_typeList = class(TXMLCollection, IXMLGles_texcombiner_command_typeList)
+  TXMLGles_texcombiner_command_typeList = class(TXMLFilter, IXMLGles_texcombiner_command_typeList)
   protected
     { IXMLGles_texcombiner_command_typeList }
     function Add: IXMLGles_texcombiner_command_type;
@@ -37413,7 +37413,7 @@ type
 
 { TXMLGles_texcombiner_command_rgb_type }
 
-  TXMLGles_texcombiner_command_rgb_type = class(TXMLCollection, IXMLGles_texcombiner_command_rgb_type)
+  TXMLGles_texcombiner_command_rgb_type = class(TXMLFilter, IXMLGles_texcombiner_command_rgb_type)
   protected
     { IXMLGles_texcombiner_command_rgb_type }
     function Get_Operator_: UnicodeString;
@@ -37442,7 +37442,7 @@ type
 
 { TXMLGles_texcombiner_command_alpha_type }
 
-  TXMLGles_texcombiner_command_alpha_type = class(TXMLCollection, IXMLGles_texcombiner_command_alpha_type)
+  TXMLGles_texcombiner_command_alpha_type = class(TXMLFilter, IXMLGles_texcombiner_command_alpha_type)
   protected
     { IXMLGles_texcombiner_command_alpha_type }
     function Get_Operator_: UnicodeString;
@@ -37485,7 +37485,7 @@ type
 
 { TXMLGles_texenv_command_typeList }
 
-  TXMLGles_texenv_command_typeList = class(TXMLCollection, IXMLGles_texenv_command_typeList)
+  TXMLGles_texenv_command_typeList = class(TXMLFilter, IXMLGles_texenv_command_typeList)
   protected
     { IXMLGles_texenv_command_typeList }
     function Add: IXMLGles_texenv_command_type;
@@ -37539,7 +37539,7 @@ type
 
 { TXMLLibrary_force_fields_typeList }
 
-  TXMLLibrary_force_fields_typeList = class(TXMLCollection, IXMLLibrary_force_fields_typeList)
+  TXMLLibrary_force_fields_typeList = class(TXMLFilter, IXMLLibrary_force_fields_typeList)
   protected
     { IXMLLibrary_force_fields_typeList }
     function Add: IXMLLibrary_force_fields_type;
@@ -37569,7 +37569,7 @@ type
 
 { TXMLForce_field_typeList }
 
-  TXMLForce_field_typeList = class(TXMLCollection, IXMLForce_field_typeList)
+  TXMLForce_field_typeList = class(TXMLFilter, IXMLForce_field_typeList)
   protected
     { IXMLForce_field_typeList }
     function Add: IXMLForce_field_type;
@@ -37599,7 +37599,7 @@ type
 
 { TXMLLibrary_images_typeList }
 
-  TXMLLibrary_images_typeList = class(TXMLCollection, IXMLLibrary_images_typeList)
+  TXMLLibrary_images_typeList = class(TXMLFilter, IXMLLibrary_images_typeList)
   protected
     { IXMLLibrary_images_typeList }
     function Add: IXMLLibrary_images_type;
@@ -37634,7 +37634,7 @@ type
 
 { TXMLImage_typeList }
 
-  TXMLImage_typeList = class(TXMLCollection, IXMLImage_typeList)
+  TXMLImage_typeList = class(TXMLFilter, IXMLImage_typeList)
   protected
     { IXMLImage_typeList }
     function Add: IXMLImage_type;
@@ -37783,7 +37783,7 @@ type
 
 { TXMLImage_type_create_2d_init_fromList }
 
-  TXMLImage_type_create_2d_init_fromList = class(TXMLCollection, IXMLImage_type_create_2d_init_fromList)
+  TXMLImage_type_create_2d_init_fromList = class(TXMLFilter, IXMLImage_type_create_2d_init_fromList)
   protected
     { IXMLImage_type_create_2d_init_fromList }
     function Add: IXMLImage_type_create_2d_init_from;
@@ -37872,7 +37872,7 @@ type
 
 { TXMLImage_type_create_3d_init_fromList }
 
-  TXMLImage_type_create_3d_init_fromList = class(TXMLCollection, IXMLImage_type_create_3d_init_fromList)
+  TXMLImage_type_create_3d_init_fromList = class(TXMLFilter, IXMLImage_type_create_3d_init_fromList)
   protected
     { IXMLImage_type_create_3d_init_fromList }
     function Add: IXMLImage_type_create_3d_init_from;
@@ -37957,7 +37957,7 @@ type
 
 { TXMLImage_type_create_cube_init_fromList }
 
-  TXMLImage_type_create_cube_init_fromList = class(TXMLCollection, IXMLImage_type_create_cube_init_fromList)
+  TXMLImage_type_create_cube_init_fromList = class(TXMLFilter, IXMLImage_type_create_cube_init_fromList)
   protected
     { IXMLImage_type_create_cube_init_fromList }
     function Add: IXMLImage_type_create_cube_init_from;
@@ -37987,7 +37987,7 @@ type
 
 { TXMLLibrary_lights_typeList }
 
-  TXMLLibrary_lights_typeList = class(TXMLCollection, IXMLLibrary_lights_typeList)
+  TXMLLibrary_lights_typeList = class(TXMLFilter, IXMLLibrary_lights_typeList)
   protected
     { IXMLLibrary_lights_typeList }
     function Add: IXMLLibrary_lights_type;
@@ -38018,7 +38018,7 @@ type
 
 { TXMLLight_typeList }
 
-  TXMLLight_typeList = class(TXMLCollection, IXMLLight_typeList)
+  TXMLLight_typeList = class(TXMLFilter, IXMLLight_typeList)
   protected
     { IXMLLight_typeList }
     function Add: IXMLLight_type;
@@ -38118,7 +38118,7 @@ type
 
 { TXMLLibrary_materials_typeList }
 
-  TXMLLibrary_materials_typeList = class(TXMLCollection, IXMLLibrary_materials_typeList)
+  TXMLLibrary_materials_typeList = class(TXMLFilter, IXMLLibrary_materials_typeList)
   protected
     { IXMLLibrary_materials_typeList }
     function Add: IXMLLibrary_materials_type;
@@ -38147,7 +38147,7 @@ type
 
 { TXMLMaterial_typeList }
 
-  TXMLMaterial_typeList = class(TXMLCollection, IXMLMaterial_typeList)
+  TXMLMaterial_typeList = class(TXMLFilter, IXMLMaterial_typeList)
   protected
     { IXMLMaterial_typeList }
     function Add: IXMLMaterial_type;
@@ -38193,7 +38193,7 @@ type
 
 { TXMLInstance_effect_type_technique_hintList }
 
-  TXMLInstance_effect_type_technique_hintList = class(TXMLCollection, IXMLInstance_effect_type_technique_hintList)
+  TXMLInstance_effect_type_technique_hintList = class(TXMLFilter, IXMLInstance_effect_type_technique_hintList)
   protected
     { IXMLInstance_effect_type_technique_hintList }
     function Add: IXMLInstance_effect_type_technique_hint;
@@ -38267,7 +38267,7 @@ type
 
 { TXMLInstance_effect_type_setparamList }
 
-  TXMLInstance_effect_type_setparamList = class(TXMLCollection, IXMLInstance_effect_type_setparamList)
+  TXMLInstance_effect_type_setparamList = class(TXMLFilter, IXMLInstance_effect_type_setparamList)
   protected
     { IXMLInstance_effect_type_setparamList }
     function Add: IXMLInstance_effect_type_setparam;
@@ -38331,7 +38331,7 @@ type
 
 { TXMLLibrary_nodes_typeList }
 
-  TXMLLibrary_nodes_typeList = class(TXMLCollection, IXMLLibrary_nodes_typeList)
+  TXMLLibrary_nodes_typeList = class(TXMLFilter, IXMLLibrary_nodes_typeList)
   protected
     { IXMLLibrary_nodes_typeList }
     function Add: IXMLLibrary_nodes_type;
@@ -38389,7 +38389,7 @@ type
 
 { TXMLNode_typeList }
 
-  TXMLNode_typeList = class(TXMLCollection, IXMLNode_typeList)
+  TXMLNode_typeList = class(TXMLFilter, IXMLNode_typeList)
   protected
     { IXMLNode_typeList }
     function Add: IXMLNode_type;
@@ -38409,7 +38409,7 @@ type
 
 { TXMLLookat_typeList }
 
-  TXMLLookat_typeList = class(TXMLCollection, IXMLLookat_typeList)
+  TXMLLookat_typeList = class(TXMLFilter, IXMLLookat_typeList)
   protected
     { IXMLLookat_typeList }
     function Add: IXMLLookat_type;
@@ -38429,7 +38429,7 @@ type
 
 { TXMLMatrix_typeList }
 
-  TXMLMatrix_typeList = class(TXMLCollection, IXMLMatrix_typeList)
+  TXMLMatrix_typeList = class(TXMLFilter, IXMLMatrix_typeList)
   protected
     { IXMLMatrix_typeList }
     function Add: IXMLMatrix_type;
@@ -38447,7 +38447,7 @@ type
 
 { TXMLRotate_typeList }
 
-  TXMLRotate_typeList = class(TXMLCollection, IXMLRotate_typeList)
+  TXMLRotate_typeList = class(TXMLFilter, IXMLRotate_typeList)
   protected
     { IXMLRotate_typeList }
     function Add: IXMLRotate_type;
@@ -38465,7 +38465,7 @@ type
 
 { TXMLScale_typeList }
 
-  TXMLScale_typeList = class(TXMLCollection, IXMLScale_typeList)
+  TXMLScale_typeList = class(TXMLFilter, IXMLScale_typeList)
   protected
     { IXMLScale_typeList }
     function Add: IXMLScale_type;
@@ -38485,7 +38485,7 @@ type
 
 { TXMLSkew_typeList }
 
-  TXMLSkew_typeList = class(TXMLCollection, IXMLSkew_typeList)
+  TXMLSkew_typeList = class(TXMLFilter, IXMLSkew_typeList)
   protected
     { IXMLSkew_typeList }
     function Add: IXMLSkew_type;
@@ -38503,7 +38503,7 @@ type
 
 { TXMLTranslate_typeList }
 
-  TXMLTranslate_typeList = class(TXMLCollection, IXMLTranslate_typeList)
+  TXMLTranslate_typeList = class(TXMLFilter, IXMLTranslate_typeList)
   protected
     { IXMLTranslate_typeList }
     function Add: IXMLTranslate_type;
@@ -38521,7 +38521,7 @@ type
 
 { TXMLInstance_camera_typeList }
 
-  TXMLInstance_camera_typeList = class(TXMLCollection, IXMLInstance_camera_typeList)
+  TXMLInstance_camera_typeList = class(TXMLFilter, IXMLInstance_camera_typeList)
   protected
     { IXMLInstance_camera_typeList }
     function Add: IXMLInstance_camera_type;
@@ -38553,7 +38553,7 @@ type
 
 { TXMLInstance_controller_typeList }
 
-  TXMLInstance_controller_typeList = class(TXMLCollection, IXMLInstance_controller_typeList)
+  TXMLInstance_controller_typeList = class(TXMLFilter, IXMLInstance_controller_typeList)
   protected
     { IXMLInstance_controller_typeList }
     function Add: IXMLInstance_controller_type;
@@ -38581,7 +38581,7 @@ type
 
 { TXMLBind_material_type_technique_common }
 
-  TXMLBind_material_type_technique_common = class(TXMLCollection, IXMLBind_material_type_technique_common)
+  TXMLBind_material_type_technique_common = class(TXMLFilter, IXMLBind_material_type_technique_common)
   protected
     { IXMLBind_material_type_technique_common }
     function Get_Instance_material(Index: Integer): IXMLInstance_material_type;
@@ -38628,7 +38628,7 @@ type
 
 { TXMLInstance_material_type_bindList }
 
-  TXMLInstance_material_type_bindList = class(TXMLCollection, IXMLInstance_material_type_bindList)
+  TXMLInstance_material_type_bindList = class(TXMLFilter, IXMLInstance_material_type_bindList)
   protected
     { IXMLInstance_material_type_bindList }
     function Add: IXMLInstance_material_type_bind;
@@ -38652,7 +38652,7 @@ type
 
 { TXMLInstance_material_type_bind_vertex_inputList }
 
-  TXMLInstance_material_type_bind_vertex_inputList = class(TXMLCollection, IXMLInstance_material_type_bind_vertex_inputList)
+  TXMLInstance_material_type_bind_vertex_inputList = class(TXMLFilter, IXMLInstance_material_type_bind_vertex_inputList)
   protected
     { IXMLInstance_material_type_bind_vertex_inputList }
     function Add: IXMLInstance_material_type_bind_vertex_input;
@@ -38682,7 +38682,7 @@ type
 
 { TXMLInstance_geometry_typeList }
 
-  TXMLInstance_geometry_typeList = class(TXMLCollection, IXMLInstance_geometry_typeList)
+  TXMLInstance_geometry_typeList = class(TXMLFilter, IXMLInstance_geometry_typeList)
   protected
     { IXMLInstance_geometry_typeList }
     function Add: IXMLInstance_geometry_type;
@@ -38700,7 +38700,7 @@ type
 
 { TXMLInstance_light_typeList }
 
-  TXMLInstance_light_typeList = class(TXMLCollection, IXMLInstance_light_typeList)
+  TXMLInstance_light_typeList = class(TXMLFilter, IXMLInstance_light_typeList)
   protected
     { IXMLInstance_light_typeList }
     function Add: IXMLInstance_light_type;
@@ -38720,7 +38720,7 @@ type
 
 { TXMLInstance_node_typeList }
 
-  TXMLInstance_node_typeList = class(TXMLCollection, IXMLInstance_node_typeList)
+  TXMLInstance_node_typeList = class(TXMLFilter, IXMLInstance_node_typeList)
   protected
     { IXMLInstance_node_typeList }
     function Add: IXMLInstance_node_type;
@@ -38750,7 +38750,7 @@ type
 
 { TXMLLibrary_physics_materials_typeList }
 
-  TXMLLibrary_physics_materials_typeList = class(TXMLCollection, IXMLLibrary_physics_materials_typeList)
+  TXMLLibrary_physics_materials_typeList = class(TXMLFilter, IXMLLibrary_physics_materials_typeList)
   protected
     { IXMLLibrary_physics_materials_typeList }
     function Add: IXMLLibrary_physics_materials_type;
@@ -38781,7 +38781,7 @@ type
 
 { TXMLPhysics_material_typeList }
 
-  TXMLPhysics_material_typeList = class(TXMLCollection, IXMLPhysics_material_typeList)
+  TXMLPhysics_material_typeList = class(TXMLFilter, IXMLPhysics_material_typeList)
   protected
     { IXMLPhysics_material_typeList }
     function Add: IXMLPhysics_material_type;
@@ -38823,7 +38823,7 @@ type
 
 { TXMLLibrary_physics_models_typeList }
 
-  TXMLLibrary_physics_models_typeList = class(TXMLCollection, IXMLLibrary_physics_models_typeList)
+  TXMLLibrary_physics_models_typeList = class(TXMLFilter, IXMLLibrary_physics_models_typeList)
   protected
     { IXMLLibrary_physics_models_typeList }
     function Add: IXMLLibrary_physics_models_type;
@@ -38857,7 +38857,7 @@ type
 
 { TXMLPhysics_model_typeList }
 
-  TXMLPhysics_model_typeList = class(TXMLCollection, IXMLPhysics_model_typeList)
+  TXMLPhysics_model_typeList = class(TXMLFilter, IXMLPhysics_model_typeList)
   protected
     { IXMLPhysics_model_typeList }
     function Add: IXMLPhysics_model_type;
@@ -38889,7 +38889,7 @@ type
 
 { TXMLRigid_body_typeList }
 
-  TXMLRigid_body_typeList = class(TXMLCollection, IXMLRigid_body_typeList)
+  TXMLRigid_body_typeList = class(TXMLFilter, IXMLRigid_body_typeList)
   protected
     { IXMLRigid_body_typeList }
     function Add: IXMLRigid_body_type;
@@ -38975,7 +38975,7 @@ type
 
 { TXMLRigid_body_type_technique_common_shapeList }
 
-  TXMLRigid_body_type_technique_common_shapeList = class(TXMLCollection, IXMLRigid_body_type_technique_common_shapeList)
+  TXMLRigid_body_type_technique_common_shapeList = class(TXMLFilter, IXMLRigid_body_type_technique_common_shapeList)
   protected
     { IXMLRigid_body_type_technique_common_shapeList }
     function Add: IXMLRigid_body_type_technique_common_shape;
@@ -39062,7 +39062,7 @@ type
 
 { TXMLRigid_constraint_typeList }
 
-  TXMLRigid_constraint_typeList = class(TXMLCollection, IXMLRigid_constraint_typeList)
+  TXMLRigid_constraint_typeList = class(TXMLFilter, IXMLRigid_constraint_typeList)
   protected
     { IXMLRigid_constraint_typeList }
     function Add: IXMLRigid_constraint_type;
@@ -39234,7 +39234,7 @@ type
 
 { TXMLInstance_physics_model_typeList }
 
-  TXMLInstance_physics_model_typeList = class(TXMLCollection, IXMLInstance_physics_model_typeList)
+  TXMLInstance_physics_model_typeList = class(TXMLFilter, IXMLInstance_physics_model_typeList)
   protected
     { IXMLInstance_physics_model_typeList }
     function Add: IXMLInstance_physics_model_type;
@@ -39252,7 +39252,7 @@ type
 
 { TXMLInstance_force_field_typeList }
 
-  TXMLInstance_force_field_typeList = class(TXMLCollection, IXMLInstance_force_field_typeList)
+  TXMLInstance_force_field_typeList = class(TXMLFilter, IXMLInstance_force_field_typeList)
   protected
     { IXMLInstance_force_field_typeList }
     function Add: IXMLInstance_force_field_type;
@@ -39286,7 +39286,7 @@ type
 
 { TXMLInstance_rigid_body_typeList }
 
-  TXMLInstance_rigid_body_typeList = class(TXMLCollection, IXMLInstance_rigid_body_typeList)
+  TXMLInstance_rigid_body_typeList = class(TXMLFilter, IXMLInstance_rigid_body_typeList)
   protected
     { IXMLInstance_rigid_body_typeList }
     function Add: IXMLInstance_rigid_body_type;
@@ -39369,7 +39369,7 @@ type
 
 { TXMLInstance_rigid_body_type_technique_common_shapeList }
 
-  TXMLInstance_rigid_body_type_technique_common_shapeList = class(TXMLCollection, IXMLInstance_rigid_body_type_technique_common_shapeList)
+  TXMLInstance_rigid_body_type_technique_common_shapeList = class(TXMLFilter, IXMLInstance_rigid_body_type_technique_common_shapeList)
   protected
     { IXMLInstance_rigid_body_type_technique_common_shapeList }
     function Add: IXMLInstance_rigid_body_type_technique_common_shape;
@@ -39389,7 +39389,7 @@ type
 
 { TXMLInstance_rigid_constraint_type }
 
-  TXMLInstance_rigid_constraint_type = class(TXMLCollection, IXMLInstance_rigid_constraint_type)
+  TXMLInstance_rigid_constraint_type = class(TXMLFilter, IXMLInstance_rigid_constraint_type)
   protected
     { IXMLInstance_rigid_constraint_type }
     function Get_Constraint: UnicodeString;
@@ -39407,7 +39407,7 @@ type
 
 { TXMLInstance_rigid_constraint_typeList }
 
-  TXMLInstance_rigid_constraint_typeList = class(TXMLCollection, IXMLInstance_rigid_constraint_typeList)
+  TXMLInstance_rigid_constraint_typeList = class(TXMLFilter, IXMLInstance_rigid_constraint_typeList)
   protected
     { IXMLInstance_rigid_constraint_typeList }
     function Add: IXMLInstance_rigid_constraint_type;
@@ -39437,7 +39437,7 @@ type
 
 { TXMLLibrary_physics_scenes_typeList }
 
-  TXMLLibrary_physics_scenes_typeList = class(TXMLCollection, IXMLLibrary_physics_scenes_typeList)
+  TXMLLibrary_physics_scenes_typeList = class(TXMLFilter, IXMLLibrary_physics_scenes_typeList)
   protected
     { IXMLLibrary_physics_scenes_typeList }
     function Add: IXMLLibrary_physics_scenes_type;
@@ -39472,7 +39472,7 @@ type
 
 { TXMLPhysics_scene_typeList }
 
-  TXMLPhysics_scene_typeList = class(TXMLCollection, IXMLPhysics_scene_typeList)
+  TXMLPhysics_scene_typeList = class(TXMLFilter, IXMLPhysics_scene_typeList)
   protected
     { IXMLPhysics_scene_typeList }
     function Add: IXMLPhysics_scene_type;
@@ -39513,7 +39513,7 @@ type
 
 { TXMLLibrary_visual_scenes_typeList }
 
-  TXMLLibrary_visual_scenes_typeList = class(TXMLCollection, IXMLLibrary_visual_scenes_typeList)
+  TXMLLibrary_visual_scenes_typeList = class(TXMLFilter, IXMLLibrary_visual_scenes_typeList)
   protected
     { IXMLLibrary_visual_scenes_typeList }
     function Add: IXMLLibrary_visual_scenes_type;
@@ -39545,7 +39545,7 @@ type
 
 { TXMLVisual_scene_typeList }
 
-  TXMLVisual_scene_typeList = class(TXMLCollection, IXMLVisual_scene_typeList)
+  TXMLVisual_scene_typeList = class(TXMLFilter, IXMLVisual_scene_typeList)
   protected
     { IXMLVisual_scene_typeList }
     function Add: IXMLVisual_scene_type;
@@ -39579,7 +39579,7 @@ type
 
 { TXMLVisual_scene_type_evaluate_sceneList }
 
-  TXMLVisual_scene_type_evaluate_sceneList = class(TXMLCollection, IXMLVisual_scene_type_evaluate_sceneList)
+  TXMLVisual_scene_type_evaluate_sceneList = class(TXMLFilter, IXMLVisual_scene_type_evaluate_sceneList)
   protected
     { IXMLVisual_scene_type_evaluate_sceneList }
     function Add: IXMLVisual_scene_type_evaluate_scene;
@@ -39611,7 +39611,7 @@ type
 
 { TXMLVisual_scene_type_evaluate_scene_renderList }
 
-  TXMLVisual_scene_type_evaluate_scene_renderList = class(TXMLCollection, IXMLVisual_scene_type_evaluate_scene_renderList)
+  TXMLVisual_scene_type_evaluate_scene_renderList = class(TXMLFilter, IXMLVisual_scene_type_evaluate_scene_renderList)
   protected
     { IXMLVisual_scene_type_evaluate_scene_renderList }
     function Add: IXMLVisual_scene_type_evaluate_scene_render;
@@ -39661,7 +39661,7 @@ type
 
 { TXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList }
 
-  TXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList = class(TXMLCollection, IXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList)
+  TXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList = class(TXMLFilter, IXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList)
   protected
     { IXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList }
     function Add: IXMLVisual_scene_type_evaluate_scene_render_instance_material_bind;
@@ -39691,7 +39691,7 @@ type
 
 { TXMLLibrary_joints_typeList }
 
-  TXMLLibrary_joints_typeList = class(TXMLCollection, IXMLLibrary_joints_typeList)
+  TXMLLibrary_joints_typeList = class(TXMLFilter, IXMLLibrary_joints_typeList)
   protected
     { IXMLLibrary_joints_typeList }
     function Add: IXMLLibrary_joints_type;
@@ -39724,7 +39724,7 @@ type
 
 { TXMLJoint_typeList }
 
-  TXMLJoint_typeList = class(TXMLCollection, IXMLJoint_typeList)
+  TXMLJoint_typeList = class(TXMLFilter, IXMLJoint_typeList)
   protected
     { IXMLJoint_typeList }
     function Add: IXMLJoint_type;
@@ -39748,7 +39748,7 @@ type
 
 { TXMLAxis_constraint_typeList }
 
-  TXMLAxis_constraint_typeList = class(TXMLCollection, IXMLAxis_constraint_typeList)
+  TXMLAxis_constraint_typeList = class(TXMLFilter, IXMLAxis_constraint_typeList)
   protected
     { IXMLAxis_constraint_typeList }
     function Add: IXMLAxis_constraint_type;
@@ -39811,7 +39811,7 @@ type
 
 { TXMLLibrary_kinematics_models_typeList }
 
-  TXMLLibrary_kinematics_models_typeList = class(TXMLCollection, IXMLLibrary_kinematics_models_typeList)
+  TXMLLibrary_kinematics_models_typeList = class(TXMLFilter, IXMLLibrary_kinematics_models_typeList)
   protected
     { IXMLLibrary_kinematics_models_typeList }
     function Add: IXMLLibrary_kinematics_models_type;
@@ -39842,7 +39842,7 @@ type
 
 { TXMLKinematics_model_typeList }
 
-  TXMLKinematics_model_typeList = class(TXMLCollection, IXMLKinematics_model_typeList)
+  TXMLKinematics_model_typeList = class(TXMLFilter, IXMLKinematics_model_typeList)
   protected
     { IXMLKinematics_model_typeList }
     function Add: IXMLKinematics_model_type;
@@ -39892,7 +39892,7 @@ type
 
 { TXMLKinematics_newparam_typeList }
 
-  TXMLKinematics_newparam_typeList = class(TXMLCollection, IXMLKinematics_newparam_typeList)
+  TXMLKinematics_newparam_typeList = class(TXMLFilter, IXMLKinematics_newparam_typeList)
   protected
     { IXMLKinematics_newparam_typeList }
     function Add: IXMLKinematics_newparam_type;
@@ -39910,7 +39910,7 @@ type
 
 { TXMLInstance_joint_typeList }
 
-  TXMLInstance_joint_typeList = class(TXMLCollection, IXMLInstance_joint_typeList)
+  TXMLInstance_joint_typeList = class(TXMLFilter, IXMLInstance_joint_typeList)
   protected
     { IXMLInstance_joint_typeList }
     function Add: IXMLInstance_joint_type;
@@ -39945,7 +39945,7 @@ type
 
 { TXMLLink_typeList }
 
-  TXMLLink_typeList = class(TXMLCollection, IXMLLink_typeList)
+  TXMLLink_typeList = class(TXMLFilter, IXMLLink_typeList)
   protected
     { IXMLLink_typeList }
     function Add: IXMLLink_type;
@@ -39973,7 +39973,7 @@ type
 
 { TXMLLink_type_attachment_fullList }
 
-  TXMLLink_type_attachment_fullList = class(TXMLCollection, IXMLLink_type_attachment_fullList)
+  TXMLLink_type_attachment_fullList = class(TXMLFilter, IXMLLink_type_attachment_fullList)
   protected
     { IXMLLink_type_attachment_fullList }
     function Add: IXMLLink_type_attachment_full;
@@ -40000,7 +40000,7 @@ type
 
 { TXMLLink_type_attachment_startList }
 
-  TXMLLink_type_attachment_startList = class(TXMLCollection, IXMLLink_type_attachment_startList)
+  TXMLLink_type_attachment_startList = class(TXMLFilter, IXMLLink_type_attachment_startList)
   protected
     { IXMLLink_type_attachment_startList }
     function Add: IXMLLink_type_attachment_start;
@@ -40027,7 +40027,7 @@ type
 
 { TXMLLink_type_attachment_endList }
 
-  TXMLLink_type_attachment_endList = class(TXMLCollection, IXMLLink_type_attachment_endList)
+  TXMLLink_type_attachment_endList = class(TXMLFilter, IXMLLink_type_attachment_endList)
   protected
     { IXMLLink_type_attachment_endList }
     function Add: IXMLLink_type_attachment_end;
@@ -40060,7 +40060,7 @@ type
 
 { TXMLFormula_typeList }
 
-  TXMLFormula_typeList = class(TXMLCollection, IXMLFormula_typeList)
+  TXMLFormula_typeList = class(TXMLFilter, IXMLFormula_typeList)
   protected
     { IXMLFormula_typeList }
     function Add: IXMLFormula_type;
@@ -40088,7 +40088,7 @@ type
 
 { TXMLFormula_newparam_typeList }
 
-  TXMLFormula_newparam_typeList = class(TXMLCollection, IXMLFormula_newparam_typeList)
+  TXMLFormula_newparam_typeList = class(TXMLFilter, IXMLFormula_newparam_typeList)
   protected
     { IXMLFormula_newparam_typeList }
     function Add: IXMLFormula_newparam_type;
@@ -48517,7 +48517,7 @@ type
 
 { TXMLPiecetypeList }
 
-  TXMLPiecetypeList = class(TXMLCollection, IXMLPiecetypeList)
+  TXMLPiecetypeList = class(TXMLFilter, IXMLPiecetypeList)
   protected
     { IXMLPiecetypeList }
     function Add: IXMLPiecetype;
@@ -49378,7 +49378,7 @@ type
 
 { TXMLLibrary_articulated_systems_typeList }
 
-  TXMLLibrary_articulated_systems_typeList = class(TXMLCollection, IXMLLibrary_articulated_systems_typeList)
+  TXMLLibrary_articulated_systems_typeList = class(TXMLFilter, IXMLLibrary_articulated_systems_typeList)
   protected
     { IXMLLibrary_articulated_systems_typeList }
     function Add: IXMLLibrary_articulated_systems_type;
@@ -49408,7 +49408,7 @@ type
 
 { TXMLArticulated_system_typeList }
 
-  TXMLArticulated_system_typeList = class(TXMLCollection, IXMLArticulated_system_typeList)
+  TXMLArticulated_system_typeList = class(TXMLFilter, IXMLArticulated_system_typeList)
   protected
     { IXMLArticulated_system_typeList }
     function Add: IXMLArticulated_system_type;
@@ -49460,7 +49460,7 @@ type
 
 { TXMLInstance_kinematics_model_typeList }
 
-  TXMLInstance_kinematics_model_typeList = class(TXMLCollection, IXMLInstance_kinematics_model_typeList)
+  TXMLInstance_kinematics_model_typeList = class(TXMLFilter, IXMLInstance_kinematics_model_typeList)
   protected
     { IXMLInstance_kinematics_model_typeList }
     function Add: IXMLInstance_kinematics_model_type;
@@ -49491,7 +49491,7 @@ type
 
 { TXMLKinematics_bind_typeList }
 
-  TXMLKinematics_bind_typeList = class(TXMLCollection, IXMLKinematics_bind_typeList)
+  TXMLKinematics_bind_typeList = class(TXMLFilter, IXMLKinematics_bind_typeList)
   protected
     { IXMLKinematics_bind_typeList }
     function Add: IXMLKinematics_bind_type;
@@ -49531,7 +49531,7 @@ type
 
 { TXMLKinematics_setparam_typeList }
 
-  TXMLKinematics_setparam_typeList = class(TXMLCollection, IXMLKinematics_setparam_typeList)
+  TXMLKinematics_setparam_typeList = class(TXMLFilter, IXMLKinematics_setparam_typeList)
   protected
     { IXMLKinematics_setparam_typeList }
     function Add: IXMLKinematics_setparam_type;
@@ -49585,7 +49585,7 @@ type
 
 { TXMLKinematics_axis_info_typeList }
 
-  TXMLKinematics_axis_info_typeList = class(TXMLCollection, IXMLKinematics_axis_info_typeList)
+  TXMLKinematics_axis_info_typeList = class(TXMLFilter, IXMLKinematics_axis_info_typeList)
   protected
     { IXMLKinematics_axis_info_typeList }
     function Add: IXMLKinematics_axis_info_type;
@@ -49629,7 +49629,7 @@ type
 
 { TXMLKinematics_index_typeList }
 
-  TXMLKinematics_index_typeList = class(TXMLCollection, IXMLKinematics_index_typeList)
+  TXMLKinematics_index_typeList = class(TXMLFilter, IXMLKinematics_index_typeList)
   protected
     { IXMLKinematics_index_typeList }
     function Add: IXMLKinematics_index_type;
@@ -49707,7 +49707,7 @@ type
 
 { TXMLInstance_articulated_system_typeList }
 
-  TXMLInstance_articulated_system_typeList = class(TXMLCollection, IXMLInstance_articulated_system_typeList)
+  TXMLInstance_articulated_system_typeList = class(TXMLFilter, IXMLInstance_articulated_system_typeList)
   protected
     { IXMLInstance_articulated_system_typeList }
     function Add: IXMLInstance_articulated_system_type;
@@ -49757,7 +49757,7 @@ type
 
 { TXMLMotion_axis_info_typeList }
 
-  TXMLMotion_axis_info_typeList = class(TXMLCollection, IXMLMotion_axis_info_typeList)
+  TXMLMotion_axis_info_typeList = class(TXMLFilter, IXMLMotion_axis_info_typeList)
   protected
     { IXMLMotion_axis_info_typeList }
     function Add: IXMLMotion_axis_info_type;
@@ -49823,7 +49823,7 @@ type
 
 { TXMLLibrary_kinematics_scenes_typeList }
 
-  TXMLLibrary_kinematics_scenes_typeList = class(TXMLCollection, IXMLLibrary_kinematics_scenes_typeList)
+  TXMLLibrary_kinematics_scenes_typeList = class(TXMLFilter, IXMLLibrary_kinematics_scenes_typeList)
   protected
     { IXMLLibrary_kinematics_scenes_typeList }
     function Add: IXMLLibrary_kinematics_scenes_type;
@@ -49855,7 +49855,7 @@ type
 
 { TXMLKinematics_scene_typeList }
 
-  TXMLKinematics_scene_typeList = class(TXMLCollection, IXMLKinematics_scene_typeList)
+  TXMLKinematics_scene_typeList = class(TXMLFilter, IXMLKinematics_scene_typeList)
   protected
     { IXMLKinematics_scene_typeList }
     function Add: IXMLKinematics_scene_type;
@@ -49885,7 +49885,7 @@ type
 
 { TXMLLibrary_formulas_typeList }
 
-  TXMLLibrary_formulas_typeList = class(TXMLCollection, IXMLLibrary_formulas_typeList)
+  TXMLLibrary_formulas_typeList = class(TXMLFilter, IXMLLibrary_formulas_typeList)
   protected
     { IXMLLibrary_formulas_typeList }
     function Add: IXMLLibrary_formulas_type;
@@ -49940,7 +49940,7 @@ type
 
 { TXMLInstance_kinematics_scene_typeList }
 
-  TXMLInstance_kinematics_scene_typeList = class(TXMLCollection, IXMLInstance_kinematics_scene_typeList)
+  TXMLInstance_kinematics_scene_typeList = class(TXMLFilter, IXMLInstance_kinematics_scene_typeList)
   protected
     { IXMLInstance_kinematics_scene_typeList }
     function Add: IXMLInstance_kinematics_scene_type;
@@ -49972,7 +49972,7 @@ type
 
 { TXMLBind_kinematics_model_typeList }
 
-  TXMLBind_kinematics_model_typeList = class(TXMLCollection, IXMLBind_kinematics_model_typeList)
+  TXMLBind_kinematics_model_typeList = class(TXMLFilter, IXMLBind_kinematics_model_typeList)
   protected
     { IXMLBind_kinematics_model_typeList }
     function Add: IXMLBind_kinematics_model_type;
@@ -49996,7 +49996,7 @@ type
 
 { TXMLBind_joint_axis_typeList }
 
-  TXMLBind_joint_axis_typeList = class(TXMLCollection, IXMLBind_joint_axis_typeList)
+  TXMLBind_joint_axis_typeList = class(TXMLFilter, IXMLBind_joint_axis_typeList)
   protected
     { IXMLBind_joint_axis_typeList }
     function Add: IXMLBind_joint_axis_type;
@@ -50045,7 +50045,7 @@ type
 
 { TXMLList_of_uints_typeList }
 
-  TXMLList_of_uints_typeList = class(TXMLCollection, IXMLList_of_uints_typeList)
+  TXMLList_of_uints_typeList = class(TXMLFilter, IXMLList_of_uints_typeList)
   protected
     { IXMLList_of_uints_typeList }
     function Add(const Value: UnicodeString): IXML;
@@ -50056,7 +50056,7 @@ type
 
 { TXMLAnyURIList }
 
-  TXMLAnyURIList = class(TXMLCollection, IXMLAnyURIList)
+  TXMLAnyURIList = class(TXMLFilter, IXMLAnyURIList)
   protected
     { IXMLAnyURIList }
     function Add(const Value: UnicodeString): IXML;
@@ -50067,7 +50067,7 @@ type
 
 { TXMLString_List }
 
-  TXMLString_List = class(TXMLCollection, IXMLString_List)
+  TXMLString_List = class(TXMLFilter, IXMLString_List)
   protected
     { IXMLString_List }
     function Add(const Value: UnicodeString): IXML;
@@ -50078,7 +50078,7 @@ type
 
 { TXMLNCNameList }
 
-  TXMLNCNameList = class(TXMLCollection, IXMLNCNameList)
+  TXMLNCNameList = class(TXMLFilter, IXMLNCNameList)
   protected
     { IXMLNCNameList }
     function Add(const Value: UnicodeString): IXML;
@@ -50116,27 +50116,27 @@ begin
   FClassesTree.Add('library_formulas', TXMLLibrary_formulas_type);
   FClassesTree.Add('scene', TXMLCOLLADA_scene);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FLibrary_animations := CreateCollection(TXMLLibrary_animations_typeList, IXMLLibrary_animations_type, 'library_animations') as IXMLLibrary_animations_typeList;
-  FLibrary_animation_clips := CreateCollection(TXMLLibrary_animation_clips_typeList, IXMLLibrary_animation_clips_type, 'library_animation_clips') as IXMLLibrary_animation_clips_typeList;
-  FLibrary_cameras := CreateCollection(TXMLLibrary_cameras_typeList, IXMLLibrary_cameras_type, 'library_cameras') as IXMLLibrary_cameras_typeList;
-  FLibrary_controllers := CreateCollection(TXMLLibrary_controllers_typeList, IXMLLibrary_controllers_type, 'library_controllers') as IXMLLibrary_controllers_typeList;
-  FLibrary_geometries := CreateCollection(TXMLLibrary_geometries_typeList, IXMLLibrary_geometries_type, 'library_geometries') as IXMLLibrary_geometries_typeList;
-  FLibrary_effects := CreateCollection(TXMLLibrary_effects_typeList, IXMLLibrary_effects_type, 'library_effects') as IXMLLibrary_effects_typeList;
-  FLibrary_force_fields := CreateCollection(TXMLLibrary_force_fields_typeList, IXMLLibrary_force_fields_type, 'library_force_fields') as IXMLLibrary_force_fields_typeList;
-  FLibrary_images := CreateCollection(TXMLLibrary_images_typeList, IXMLLibrary_images_type, 'library_images') as IXMLLibrary_images_typeList;
-  FLibrary_lights := CreateCollection(TXMLLibrary_lights_typeList, IXMLLibrary_lights_type, 'library_lights') as IXMLLibrary_lights_typeList;
-  FLibrary_materials := CreateCollection(TXMLLibrary_materials_typeList, IXMLLibrary_materials_type, 'library_materials') as IXMLLibrary_materials_typeList;
-  FLibrary_nodes := CreateCollection(TXMLLibrary_nodes_typeList, IXMLLibrary_nodes_type, 'library_nodes') as IXMLLibrary_nodes_typeList;
-  FLibrary_physics_materials := CreateCollection(TXMLLibrary_physics_materials_typeList, IXMLLibrary_physics_materials_type, 'library_physics_materials') as IXMLLibrary_physics_materials_typeList;
-  FLibrary_physics_models := CreateCollection(TXMLLibrary_physics_models_typeList, IXMLLibrary_physics_models_type, 'library_physics_models') as IXMLLibrary_physics_models_typeList;
-  FLibrary_physics_scenes := CreateCollection(TXMLLibrary_physics_scenes_typeList, IXMLLibrary_physics_scenes_type, 'library_physics_scenes') as IXMLLibrary_physics_scenes_typeList;
-  FLibrary_visual_scenes := CreateCollection(TXMLLibrary_visual_scenes_typeList, IXMLLibrary_visual_scenes_type, 'library_visual_scenes') as IXMLLibrary_visual_scenes_typeList;
-  FLibrary_joints := CreateCollection(TXMLLibrary_joints_typeList, IXMLLibrary_joints_type, 'library_joints') as IXMLLibrary_joints_typeList;
-  FLibrary_kinematics_models := CreateCollection(TXMLLibrary_kinematics_models_typeList, IXMLLibrary_kinematics_models_type, 'library_kinematics_models') as IXMLLibrary_kinematics_models_typeList;
-  FLibrary_articulated_systems := CreateCollection(TXMLLibrary_articulated_systems_typeList, IXMLLibrary_articulated_systems_type, 'library_articulated_systems') as IXMLLibrary_articulated_systems_typeList;
-  FLibrary_kinematics_scenes := CreateCollection(TXMLLibrary_kinematics_scenes_typeList, IXMLLibrary_kinematics_scenes_type, 'library_kinematics_scenes') as IXMLLibrary_kinematics_scenes_typeList;
-  FLibrary_formulas := CreateCollection(TXMLLibrary_formulas_typeList, IXMLLibrary_formulas_type, 'library_formulas') as IXMLLibrary_formulas_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FLibrary_animations := CreateFilter(TXMLLibrary_animations_typeList, TXMLLibrary_animations_type, IXMLLibrary_animations_type) as IXMLLibrary_animations_typeList;
+  FLibrary_animation_clips := CreateFilter(TXMLLibrary_animation_clips_typeList, TXMLLibrary_animation_clips_type, IXMLLibrary_animation_clips_type) as IXMLLibrary_animation_clips_typeList;
+  FLibrary_cameras := CreateFilter(TXMLLibrary_cameras_typeList, TXMLLibrary_cameras_type, IXMLLibrary_cameras_type) as IXMLLibrary_cameras_typeList;
+  FLibrary_controllers := CreateFilter(TXMLLibrary_controllers_typeList, TXMLLibrary_controllers_type, IXMLLibrary_controllers_type) as IXMLLibrary_controllers_typeList;
+  FLibrary_geometries := CreateFilter(TXMLLibrary_geometries_typeList, TXMLLibrary_geometries_type, IXMLLibrary_geometries_type) as IXMLLibrary_geometries_typeList;
+  FLibrary_effects := CreateFilter(TXMLLibrary_effects_typeList, TXMLLibrary_effects_type, IXMLLibrary_effects_type) as IXMLLibrary_effects_typeList;
+  FLibrary_force_fields := CreateFilter(TXMLLibrary_force_fields_typeList, TXMLLibrary_force_fields_type, IXMLLibrary_force_fields_type) as IXMLLibrary_force_fields_typeList;
+  FLibrary_images := CreateFilter(TXMLLibrary_images_typeList, TXMLLibrary_images_type, IXMLLibrary_images_type) as IXMLLibrary_images_typeList;
+  FLibrary_lights := CreateFilter(TXMLLibrary_lights_typeList, TXMLLibrary_lights_type, IXMLLibrary_lights_type) as IXMLLibrary_lights_typeList;
+  FLibrary_materials := CreateFilter(TXMLLibrary_materials_typeList, TXMLLibrary_materials_type, IXMLLibrary_materials_type) as IXMLLibrary_materials_typeList;
+  FLibrary_nodes := CreateFilter(TXMLLibrary_nodes_typeList, TXMLLibrary_nodes_type, IXMLLibrary_nodes_type) as IXMLLibrary_nodes_typeList;
+  FLibrary_physics_materials := CreateFilter(TXMLLibrary_physics_materials_typeList, TXMLLibrary_physics_materials_type, IXMLLibrary_physics_materials_type) as IXMLLibrary_physics_materials_typeList;
+  FLibrary_physics_models := CreateFilter(TXMLLibrary_physics_models_typeList, TXMLLibrary_physics_models_type, IXMLLibrary_physics_models_type) as IXMLLibrary_physics_models_typeList;
+  FLibrary_physics_scenes := CreateFilter(TXMLLibrary_physics_scenes_typeList, TXMLLibrary_physics_scenes_type, IXMLLibrary_physics_scenes_type) as IXMLLibrary_physics_scenes_typeList;
+  FLibrary_visual_scenes := CreateFilter(TXMLLibrary_visual_scenes_typeList, TXMLLibrary_visual_scenes_type, IXMLLibrary_visual_scenes_type) as IXMLLibrary_visual_scenes_typeList;
+  FLibrary_joints := CreateFilter(TXMLLibrary_joints_typeList, TXMLLibrary_joints_type, IXMLLibrary_joints_type) as IXMLLibrary_joints_typeList;
+  FLibrary_kinematics_models := CreateFilter(TXMLLibrary_kinematics_models_typeList, TXMLLibrary_kinematics_models_type, IXMLLibrary_kinematics_models_type) as IXMLLibrary_kinematics_models_typeList;
+  FLibrary_articulated_systems := CreateFilter(TXMLLibrary_articulated_systems_typeList, TXMLLibrary_articulated_systems_type, IXMLLibrary_articulated_systems_type) as IXMLLibrary_articulated_systems_typeList;
+  FLibrary_kinematics_scenes := CreateFilter(TXMLLibrary_kinematics_scenes_typeList, TXMLLibrary_kinematics_scenes_type, IXMLLibrary_kinematics_scenes_type) as IXMLLibrary_kinematics_scenes_typeList;
+  FLibrary_formulas := CreateFilter(TXMLLibrary_formulas_typeList, TXMLLibrary_formulas_type, IXMLLibrary_formulas_type) as IXMLLibrary_formulas_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -50283,8 +50283,8 @@ begin
   FClassesTree.Add('coverage', TXMLAsset_type_coverage);
   FClassesTree.Add('unit', TXMLAsset_type_unit);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FContributor := CreateCollection(TXMLAsset_type_contributorList, IXMLAsset_type_contributor, 'contributor') as IXMLAsset_type_contributorList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FContributor := CreateFilter(TXMLAsset_type_contributorList, TXMLAsset_type_contributor, IXMLAsset_type_contributor) as IXMLAsset_type_contributorList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -50553,7 +50553,7 @@ procedure TXMLExtra_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('technique', TXMLTechnique_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
   inherited;
 end;
 
@@ -50650,8 +50650,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('animation', TXMLAnimation_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnimation := CreateCollection(TXMLAnimation_typeList, IXMLAnimation_type, 'animation') as IXMLAnimation_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnimation := CreateFilter(TXMLAnimation_typeList, TXMLAnimation_type, IXMLAnimation_type) as IXMLAnimation_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -50717,11 +50717,11 @@ begin
   FClassesTree.Add('channel', TXMLChannel_type);
   FClassesTree.Add('animation', TXMLAnimation_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSource := CreateCollection(TXMLSource_typeList, IXMLSource_type, 'source') as IXMLSource_typeList;
-  FSampler := CreateCollection(TXMLSampler_typeList, IXMLSampler_type, 'sampler') as IXMLSampler_typeList;
-  FChannel := CreateCollection(TXMLChannel_typeList, IXMLChannel_type, 'channel') as IXMLChannel_typeList;
-  FAnimation := CreateCollection(TXMLAnimation_typeList, IXMLAnimation_type, 'animation') as IXMLAnimation_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSource := CreateFilter(TXMLSource_typeList, TXMLSource_type, IXMLSource_type) as IXMLSource_typeList;
+  FSampler := CreateFilter(TXMLSampler_typeList, TXMLSampler_type, IXMLSampler_type) as IXMLSampler_typeList;
+  FChannel := CreateFilter(TXMLChannel_typeList, TXMLChannel_type, IXMLChannel_type) as IXMLChannel_typeList;
+  FAnimation := CreateFilter(TXMLAnimation_typeList, TXMLAnimation_type, IXMLAnimation_type) as IXMLAnimation_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -50806,7 +50806,7 @@ begin
   FClassesTree.Add('SIDREF_array', TXMLSidref_array_type);
   FClassesTree.Add('technique_common', TXMLSource_type_technique_common);
   FClassesTree.Add('technique', TXMLTechnique_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
   inherited;
 end;
 
@@ -51455,8 +51455,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('animation_clip', TXMLAnimation_clip_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnimation_clip := CreateCollection(TXMLAnimation_clip_typeList, IXMLAnimation_clip_type, 'animation_clip') as IXMLAnimation_clip_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnimation_clip := CreateFilter(TXMLAnimation_clip_typeList, TXMLAnimation_clip_type, IXMLAnimation_clip_type) as IXMLAnimation_clip_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -51520,9 +51520,9 @@ begin
   FClassesTree.Add('instance_animation', TXMLInstance_with_extra_type);
   FClassesTree.Add('instance_formula', TXMLInstance_formula_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInstance_animation := CreateCollection(TXMLInstance_with_extra_typeList, IXMLInstance_with_extra_type, 'instance_animation') as IXMLInstance_with_extra_typeList;
-  FInstance_formula := CreateCollection(TXMLInstance_formula_typeList, IXMLInstance_formula_type, 'instance_formula') as IXMLInstance_formula_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInstance_animation := CreateFilter(TXMLInstance_with_extra_typeList, TXMLInstance_with_extra_type, IXMLInstance_with_extra_type) as IXMLInstance_with_extra_typeList;
+  FInstance_formula := CreateFilter(TXMLInstance_formula_typeList, TXMLInstance_formula_type, IXMLInstance_formula_type) as IXMLInstance_formula_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -51829,8 +51829,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('camera', TXMLCamera_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FCamera := CreateCollection(TXMLCamera_typeList, IXMLCamera_type, 'camera') as IXMLCamera_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FCamera := CreateFilter(TXMLCamera_typeList, TXMLCamera_type, IXMLCamera_type) as IXMLCamera_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -51894,7 +51894,7 @@ begin
   FClassesTree.Add('optics', TXMLCamera_type_optics);
   FClassesTree.Add('imager', TXMLCamera_type_imager);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -51962,8 +51962,8 @@ begin
   FClassesTree.Add('technique_common', TXMLCamera_type_optics_technique_common);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52093,8 +52093,8 @@ procedure TXMLCamera_type_imager.DoRegisterChildClasses;
 begin
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52115,8 +52115,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('controller', TXMLController_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FController := CreateCollection(TXMLController_typeList, IXMLController_type, 'controller') as IXMLController_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FController := CreateFilter(TXMLController_typeList, TXMLController_type, IXMLController_type) as IXMLController_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52180,7 +52180,7 @@ begin
   FClassesTree.Add('skin', TXMLSkin_type);
   FClassesTree.Add('morph', TXMLMorph_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52249,8 +52249,8 @@ begin
   FClassesTree.Add('joints', TXMLSkin_type_joints);
   FClassesTree.Add('vertex_weights', TXMLSkin_type_vertex_weights);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSourceList := CreateCollection(TXMLSource_typeList, IXMLSource_type, 'source') as IXMLSource_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSourceList := CreateFilter(TXMLSource_typeList, TXMLSource_type, IXMLSource_type) as IXMLSource_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52300,8 +52300,8 @@ procedure TXMLSkin_type_joints.DoRegisterChildClasses;
 begin
   FClassesTree.Add('input', TXMLInput_local_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_typeList, IXMLInput_local_type, 'input') as IXMLInput_local_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_typeList, TXMLInput_local_type, IXMLInput_local_type) as IXMLInput_local_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52321,8 +52321,8 @@ procedure TXMLSkin_type_vertex_weights.DoRegisterChildClasses;
 begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52432,8 +52432,8 @@ begin
   FClassesTree.Add('source', TXMLSource_type);
   FClassesTree.Add('targets', TXMLMorph_type_targets);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSourceList := CreateCollection(TXMLSource_typeList, IXMLSource_type, 'source') as IXMLSource_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSourceList := CreateFilter(TXMLSource_typeList, TXMLSource_type, IXMLSource_type) as IXMLSource_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52478,8 +52478,8 @@ procedure TXMLMorph_type_targets.DoRegisterChildClasses;
 begin
   FClassesTree.Add('input', TXMLInput_local_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_typeList, IXMLInput_local_type, 'input') as IXMLInput_local_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_typeList, TXMLInput_local_type, IXMLInput_local_type) as IXMLInput_local_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52506,8 +52506,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('geometry', TXMLGeometry_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FGeometry := CreateCollection(TXMLGeometry_typeList, IXMLGeometry_type, 'geometry') as IXMLGeometry_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FGeometry := CreateFilter(TXMLGeometry_typeList, TXMLGeometry_type, IXMLGeometry_type) as IXMLGeometry_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52579,7 +52579,7 @@ begin
   FClassesTree.Add('spline', TXMLSpline_type);
   FClassesTree.Add('brep', TXMLBrep_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52664,15 +52664,15 @@ begin
   FClassesTree.Add('trifans', TXMLTrifans_type);
   FClassesTree.Add('tristrips', TXMLTristrips_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSource := CreateCollection(TXMLSource_typeList, IXMLSource_type, 'source') as IXMLSource_typeList;
-  FLines := CreateCollection(TXMLLines_typeList, IXMLLines_type, 'lines') as IXMLLines_typeList;
-  FLinestrips := CreateCollection(TXMLLinestrips_typeList, IXMLLinestrips_type, 'linestrips') as IXMLLinestrips_typeList;
-  FPolygons := CreateCollection(TXMLPolygons_typeList, IXMLPolygons_type, 'polygons') as IXMLPolygons_typeList;
-  FPolylist := CreateCollection(TXMLPolylist_typeList, IXMLPolylist_type, 'polylist') as IXMLPolylist_typeList;
-  FTriangles := CreateCollection(TXMLTriangles_typeList, IXMLTriangles_type, 'triangles') as IXMLTriangles_typeList;
-  FTrifans := CreateCollection(TXMLTrifans_typeList, IXMLTrifans_type, 'trifans') as IXMLTrifans_typeList;
-  FTristrips := CreateCollection(TXMLTristrips_typeList, IXMLTristrips_type, 'tristrips') as IXMLTristrips_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSource := CreateFilter(TXMLSource_typeList, TXMLSource_type, IXMLSource_type) as IXMLSource_typeList;
+  FLines := CreateFilter(TXMLLines_typeList, TXMLLines_type, IXMLLines_type) as IXMLLines_typeList;
+  FLinestrips := CreateFilter(TXMLLinestrips_typeList, TXMLLinestrips_type, IXMLLinestrips_type) as IXMLLinestrips_typeList;
+  FPolygons := CreateFilter(TXMLPolygons_typeList, TXMLPolygons_type, IXMLPolygons_type) as IXMLPolygons_typeList;
+  FPolylist := CreateFilter(TXMLPolylist_typeList, TXMLPolylist_type, IXMLPolylist_type) as IXMLPolylist_typeList;
+  FTriangles := CreateFilter(TXMLTriangles_typeList, TXMLTriangles_type, IXMLTriangles_type) as IXMLTriangles_typeList;
+  FTrifans := CreateFilter(TXMLTrifans_typeList, TXMLTrifans_type, IXMLTrifans_type) as IXMLTrifans_typeList;
+  FTristrips := CreateFilter(TXMLTristrips_typeList, TXMLTristrips_type, IXMLTristrips_type) as IXMLTristrips_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52742,8 +52742,8 @@ procedure TXMLVertices_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('input', TXMLInput_local_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_typeList, IXMLInput_local_type, 'input') as IXMLInput_local_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_typeList, TXMLInput_local_type, IXMLInput_local_type) as IXMLInput_local_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52784,8 +52784,8 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52877,9 +52877,9 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FP := CreateCollection(TXMLP_typeList, IXMLP_type, 'p') as IXMLP_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FP := CreateFilter(TXMLP_typeList, TXMLP_type, IXMLP_type) as IXMLP_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -52953,10 +52953,10 @@ begin
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('ph', TXMLPolygons_type_ph);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FP := CreateCollection(TXMLP_typeList, IXMLP_type, 'p') as IXMLP_typeList;
-  FPh := CreateCollection(TXMLPolygons_type_phList, IXMLPolygons_type_ph, 'ph') as IXMLPolygons_type_phList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FP := CreateFilter(TXMLP_typeList, TXMLP_type, IXMLP_type) as IXMLP_typeList;
+  FPh := CreateFilter(TXMLPolygons_type_phList, TXMLPolygons_type_ph, IXMLPolygons_type_ph) as IXMLPolygons_type_phList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53032,7 +53032,7 @@ end;
 procedure TXMLPolygons_type_ph.DoRegisterChildClasses;
 begin
   FClassesTree.Add('p', TXMLP_type);
-  FH := CreateCollection(TXMLList_of_uints_typeList, IXML, 'h') as IXMLList_of_uints_typeList;
+  FH := CreateFilter(TXMLList_of_uints_typeList, TXML, IXML) as IXMLList_of_uints_typeList;
   inherited;
 end;
 
@@ -53070,8 +53070,8 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53154,8 +53154,8 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53228,9 +53228,9 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FP := CreateCollection(TXMLP_typeList, IXMLP_type, 'p') as IXMLP_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FP := CreateFilter(TXMLP_typeList, TXMLP_type, IXMLP_type) as IXMLP_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53303,9 +53303,9 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FP := CreateCollection(TXMLP_typeList, IXMLP_type, 'p') as IXMLP_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FP := CreateFilter(TXMLP_typeList, TXMLP_type, IXMLP_type) as IXMLP_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53385,15 +53385,15 @@ begin
   FClassesTree.Add('trifans', TXMLTrifans_type);
   FClassesTree.Add('tristrips', TXMLTristrips_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSource := CreateCollection(TXMLSource_typeList, IXMLSource_type, 'source') as IXMLSource_typeList;
-  FLines := CreateCollection(TXMLLines_typeList, IXMLLines_type, 'lines') as IXMLLines_typeList;
-  FLinestrips := CreateCollection(TXMLLinestrips_typeList, IXMLLinestrips_type, 'linestrips') as IXMLLinestrips_typeList;
-  FPolygons := CreateCollection(TXMLPolygons_typeList, IXMLPolygons_type, 'polygons') as IXMLPolygons_typeList;
-  FPolylist := CreateCollection(TXMLPolylist_typeList, IXMLPolylist_type, 'polylist') as IXMLPolylist_typeList;
-  FTriangles := CreateCollection(TXMLTriangles_typeList, IXMLTriangles_type, 'triangles') as IXMLTriangles_typeList;
-  FTrifans := CreateCollection(TXMLTrifans_typeList, IXMLTrifans_type, 'trifans') as IXMLTrifans_typeList;
-  FTristrips := CreateCollection(TXMLTristrips_typeList, IXMLTristrips_type, 'tristrips') as IXMLTristrips_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSource := CreateFilter(TXMLSource_typeList, TXMLSource_type, IXMLSource_type) as IXMLSource_typeList;
+  FLines := CreateFilter(TXMLLines_typeList, TXMLLines_type, IXMLLines_type) as IXMLLines_typeList;
+  FLinestrips := CreateFilter(TXMLLinestrips_typeList, TXMLLinestrips_type, IXMLLinestrips_type) as IXMLLinestrips_typeList;
+  FPolygons := CreateFilter(TXMLPolygons_typeList, TXMLPolygons_type, IXMLPolygons_type) as IXMLPolygons_typeList;
+  FPolylist := CreateFilter(TXMLPolylist_typeList, TXMLPolylist_type, IXMLPolylist_type) as IXMLPolylist_typeList;
+  FTriangles := CreateFilter(TXMLTriangles_typeList, TXMLTriangles_type, IXMLTriangles_type) as IXMLTriangles_typeList;
+  FTrifans := CreateFilter(TXMLTrifans_typeList, TXMLTrifans_type, IXMLTrifans_type) as IXMLTrifans_typeList;
+  FTristrips := CreateFilter(TXMLTristrips_typeList, TXMLTristrips_type, IXMLTristrips_type) as IXMLTristrips_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53454,8 +53454,8 @@ begin
   FClassesTree.Add('source', TXMLSource_type);
   FClassesTree.Add('control_vertices', TXMLSpline_type_control_vertices);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSource := CreateCollection(TXMLSource_typeList, IXMLSource_type, 'source') as IXMLSource_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSource := CreateFilter(TXMLSource_typeList, TXMLSource_type, IXMLSource_type) as IXMLSource_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53490,8 +53490,8 @@ procedure TXMLSpline_type_control_vertices.DoRegisterChildClasses;
 begin
   FClassesTree.Add('input', TXMLInput_local_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_typeList, IXMLInput_local_type, 'input') as IXMLInput_local_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_typeList, TXMLInput_local_type, IXMLInput_local_type) as IXMLInput_local_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53521,8 +53521,8 @@ begin
   FClassesTree.Add('shells', TXMLShells_type);
   FClassesTree.Add('solids', TXMLSolids_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSource := CreateCollection(TXMLSource_typeList, IXMLSource_type, 'source') as IXMLSource_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSource := CreateFilter(TXMLSource_typeList, TXMLSource_type, IXMLSource_type) as IXMLSource_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53592,8 +53592,8 @@ procedure TXMLCurves_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('curve', TXMLCurve_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FCurve := CreateCollection(TXMLCurve_typeList, IXMLCurve_type, 'curve') as IXMLCurve_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FCurve := CreateFilter(TXMLCurve_typeList, TXMLCurve_type, IXMLCurve_type) as IXMLCurve_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53619,7 +53619,7 @@ begin
   FClassesTree.Add('nurbs', TXMLNurbs_type);
   FClassesTree.Add('orient', TXMLOrient_type);
   FClassesTree.Add('origin', TXMLOrigin_type);
-  FOrient := CreateCollection(TXMLOrient_typeList, IXMLOrient_type, 'orient') as IXMLOrient_typeList;
+  FOrient := CreateFilter(TXMLOrient_typeList, TXMLOrient_type, IXMLOrient_type) as IXMLOrient_typeList;
   inherited;
 end;
 
@@ -53705,7 +53705,7 @@ end;
 procedure TXMLLine_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53739,7 +53739,7 @@ end;
 procedure TXMLCircle_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53763,7 +53763,7 @@ end;
 procedure TXMLEllipse_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53787,7 +53787,7 @@ end;
 procedure TXMLParabola_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53811,7 +53811,7 @@ end;
 procedure TXMLHyperbola_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53837,8 +53837,8 @@ begin
   FClassesTree.Add('source', TXMLSource_type);
   FClassesTree.Add('control_vertices', TXMLNurbs_type_control_vertices);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSource := CreateCollection(TXMLSource_typeList, IXMLSource_type, 'source') as IXMLSource_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSource := CreateFilter(TXMLSource_typeList, TXMLSource_type, IXMLSource_type) as IXMLSource_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53883,8 +53883,8 @@ procedure TXMLNurbs_type_control_vertices.DoRegisterChildClasses;
 begin
   FClassesTree.Add('input', TXMLInput_local_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_typeList, IXMLInput_local_type, 'input') as IXMLInput_local_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_typeList, TXMLInput_local_type, IXMLInput_local_type) as IXMLInput_local_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53925,8 +53925,8 @@ procedure TXMLSurface_curves_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('curve', TXMLCurve_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FCurve := CreateCollection(TXMLCurve_typeList, IXMLCurve_type, 'curve') as IXMLCurve_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FCurve := CreateFilter(TXMLCurve_typeList, TXMLCurve_type, IXMLCurve_type) as IXMLCurve_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53946,8 +53946,8 @@ procedure TXMLSurfaces_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('surface', TXMLSurface_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSurface := CreateCollection(TXMLSurface_typeList, IXMLSurface_type, 'surface') as IXMLSurface_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSurface := CreateFilter(TXMLSurface_typeList, TXMLSurface_type, IXMLSurface_type) as IXMLSurface_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -53974,7 +53974,7 @@ begin
   FClassesTree.Add('cylinder', TXMLSurface_type_cylinder);
   FClassesTree.Add('orient', TXMLOrient_type);
   FClassesTree.Add('origin', TXMLOrigin_type);
-  FOrient := CreateCollection(TXMLOrient_typeList, IXMLOrient_type, 'orient') as IXMLOrient_typeList;
+  FOrient := CreateFilter(TXMLOrient_typeList, TXMLOrient_type, IXMLOrient_type) as IXMLOrient_typeList;
   inherited;
 end;
 
@@ -54065,7 +54065,7 @@ end;
 procedure TXMLPlane_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54089,7 +54089,7 @@ end;
 procedure TXMLSphere_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54113,7 +54113,7 @@ end;
 procedure TXMLTorus_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54138,7 +54138,7 @@ procedure TXMLSwept_surface_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('curve', TXMLCurve_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54189,8 +54189,8 @@ begin
   FClassesTree.Add('source', TXMLSource_type);
   FClassesTree.Add('control_vertices', TXMLNurbs_surface_type_control_vertices);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSource := CreateCollection(TXMLSource_typeList, IXMLSource_type, 'source') as IXMLSource_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSource := CreateFilter(TXMLSource_typeList, TXMLSource_type, IXMLSource_type) as IXMLSource_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54255,8 +54255,8 @@ procedure TXMLNurbs_surface_type_control_vertices.DoRegisterChildClasses;
 begin
   FClassesTree.Add('input', TXMLInput_local_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_typeList, IXMLInput_local_type, 'input') as IXMLInput_local_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_typeList, TXMLInput_local_type, IXMLInput_local_type) as IXMLInput_local_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54275,7 +54275,7 @@ end;
 procedure TXMLCone_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54309,7 +54309,7 @@ end;
 procedure TXMLSurface_type_cylinder.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54335,8 +54335,8 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54392,8 +54392,8 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54459,8 +54459,8 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54526,8 +54526,8 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54593,8 +54593,8 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54660,8 +54660,8 @@ begin
   FClassesTree.Add('input', TXMLInput_local_offset_type);
   FClassesTree.Add('p', TXMLP_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInput := CreateCollection(TXMLInput_local_offset_typeList, IXMLInput_local_offset_type, 'input') as IXMLInput_local_offset_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInput := CreateFilter(TXMLInput_local_offset_typeList, TXMLInput_local_offset_type, IXMLInput_local_offset_type) as IXMLInput_local_offset_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54727,8 +54727,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('effect', TXMLEffect_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FEffect := CreateCollection(TXMLEffect_typeList, IXMLEffect_type, 'effect') as IXMLEffect_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FEffect := CreateFilter(TXMLEffect_typeList, TXMLEffect_type, IXMLEffect_type) as IXMLEffect_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -54798,9 +54798,9 @@ begin
   FClassesTree.Add('profile_CG', TXMLProfile_cg_type);
   FClassesTree.Add('profile_GLES', TXMLProfile_gles_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
-  FNewparam := CreateCollection(TXMLFx_newparam_typeList, IXMLFx_newparam_type, 'newparam') as IXMLFx_newparam_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
+  FNewparam := CreateFilter(TXMLFx_newparam_typeList, TXMLFx_newparam_type, IXMLFx_newparam_type) as IXMLFx_newparam_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -55091,7 +55091,7 @@ begin
   FClassesTree.Add('samplerCUBE', TXMLFx_samplerCUBE_type);
   FClassesTree.Add('samplerRECT', TXMLFx_samplerRECT_type);
   FClassesTree.Add('samplerDEPTH', TXMLFx_samplerDEPTH_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
   inherited;
 end;
 
@@ -55433,7 +55433,7 @@ procedure TXMLFx_sampler_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('instance_image', TXMLInstance_image_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -55579,8 +55579,8 @@ begin
   FClassesTree.Add('newparam', TXMLFx_common_newparam_type);
   FClassesTree.Add('technique', TXMLProfile_common_type_technique);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FNewparam := CreateCollection(TXMLFx_common_newparam_typeList, IXMLFx_common_newparam_type, 'newparam') as IXMLFx_common_newparam_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FNewparam := CreateFilter(TXMLFx_common_newparam_typeList, TXMLFx_common_newparam_type, IXMLFx_common_newparam_type) as IXMLFx_common_newparam_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -55714,7 +55714,7 @@ begin
   FClassesTree.Add('phong', TXMLProfile_common_type_technique_phong);
   FClassesTree.Add('blinn', TXMLProfile_common_type_technique_blinn);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -56155,7 +56155,7 @@ procedure TXMLProfile_bridge_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -56209,11 +56209,11 @@ begin
   FClassesTree.Add('newparam', TXMLProfile_gles2_type_newparam);
   FClassesTree.Add('technique', TXMLProfile_gles2_type_technique);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInclude := CreateCollection(TXMLFx_include_typeList, IXMLFx_include_type, 'include') as IXMLFx_include_typeList;
-  FCode := CreateCollection(TXMLFx_code_typeList, IXMLFx_code_type, 'code') as IXMLFx_code_typeList;
-  FNewparam := CreateCollection(TXMLProfile_gles2_type_newparamList, IXMLProfile_gles2_type_newparam, 'newparam') as IXMLProfile_gles2_type_newparamList;
-  FTechnique := CreateCollection(TXMLProfile_gles2_type_techniqueList, IXMLProfile_gles2_type_technique, 'technique') as IXMLProfile_gles2_type_techniqueList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInclude := CreateFilter(TXMLFx_include_typeList, TXMLFx_include_type, IXMLFx_include_type) as IXMLFx_include_typeList;
+  FCode := CreateFilter(TXMLFx_code_typeList, TXMLFx_code_type, IXMLFx_code_type) as IXMLFx_code_typeList;
+  FNewparam := CreateFilter(TXMLProfile_gles2_type_newparamList, TXMLProfile_gles2_type_newparam, IXMLProfile_gles2_type_newparam) as IXMLProfile_gles2_type_newparamList;
+  FTechnique := CreateFilter(TXMLProfile_gles2_type_techniqueList, TXMLProfile_gles2_type_technique, IXMLProfile_gles2_type_technique) as IXMLProfile_gles2_type_techniqueList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -56356,7 +56356,7 @@ begin
   FClassesTree.Add('samplerDEPTH', TXMLFx_samplerDEPTH_type);
   FClassesTree.Add('usertype', TXMLUsertype);
   FClassesTree.Add('array', TXMLArray_);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
   inherited;
 end;
 
@@ -57073,9 +57073,9 @@ begin
   FClassesTree.Add('annotate', TXMLFx_annotate_type);
   FClassesTree.Add('pass', TXMLGles2_pass_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
-  FPass := CreateCollection(TXMLGles2_pass_typeList, IXMLGles2_pass_type, 'pass') as IXMLGles2_pass_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
+  FPass := CreateFilter(TXMLGles2_pass_typeList, TXMLGles2_pass_type, IXMLGles2_pass_type) as IXMLGles2_pass_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -57145,8 +57145,8 @@ begin
   FClassesTree.Add('program', TXMLGles2_program_type);
   FClassesTree.Add('evaluate', TXMLGles2_pass_type_evaluate);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -58706,10 +58706,10 @@ begin
   FClassesTree.Add('linker', TXMLFx_target_type);
   FClassesTree.Add('bind_attribute', TXMLGles2_program_type_bind_attribute);
   FClassesTree.Add('bind_uniform', TXMLGles2_program_type_bind_uniform);
-  FShader := CreateCollection(TXMLGles2_shader_typeList, IXMLGles2_shader_type, 'shader') as IXMLGles2_shader_typeList;
-  FLinker := CreateCollection(TXMLFx_target_typeList, IXMLFx_target_type, 'linker') as IXMLFx_target_typeList;
-  FBind_attribute := CreateCollection(TXMLGles2_program_type_bind_attributeList, IXMLGles2_program_type_bind_attribute, 'bind_attribute') as IXMLGles2_program_type_bind_attributeList;
-  FBind_uniform := CreateCollection(TXMLGles2_program_type_bind_uniformList, IXMLGles2_program_type_bind_uniform, 'bind_uniform') as IXMLGles2_program_type_bind_uniformList;
+  FShader := CreateFilter(TXMLGles2_shader_typeList, TXMLGles2_shader_type, IXMLGles2_shader_type) as IXMLGles2_shader_typeList;
+  FLinker := CreateFilter(TXMLFx_target_typeList, TXMLFx_target_type, IXMLFx_target_type) as IXMLFx_target_typeList;
+  FBind_attribute := CreateFilter(TXMLGles2_program_type_bind_attributeList, TXMLGles2_program_type_bind_attribute, IXMLGles2_program_type_bind_attribute) as IXMLGles2_program_type_bind_attributeList;
+  FBind_uniform := CreateFilter(TXMLGles2_program_type_bind_uniformList, TXMLGles2_program_type_bind_uniform, IXMLGles2_program_type_bind_uniform) as IXMLGles2_program_type_bind_uniformList;
   inherited;
 end;
 
@@ -58740,8 +58740,8 @@ begin
   FClassesTree.Add('sources', TXMLGles2_shader_type_sources);
   FClassesTree.Add('compiler', TXMLFx_target_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FCompiler := CreateCollection(TXMLFx_target_typeList, IXMLFx_target_type, 'compiler') as IXMLFx_target_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FCompiler := CreateFilter(TXMLFx_target_typeList, TXMLFx_target_type, IXMLFx_target_type) as IXMLFx_target_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -58792,8 +58792,8 @@ end;
 procedure TXMLFx_sources_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('import', TXMLFx_sources_type_import);
-  FInline_ := CreateCollection(TXMLString_List, IXML, 'inline') as IXMLString_List;
-  FImport := CreateCollection(TXMLFx_sources_type_importList, IXMLFx_sources_type_import, 'import') as IXMLFx_sources_type_importList;
+  FInline_ := CreateFilter(TXMLString_List, TXML, IXML) as IXMLString_List;
+  FImport := CreateFilter(TXMLFx_sources_type_importList, TXMLFx_sources_type_import, IXMLFx_sources_type_import) as IXMLFx_sources_type_importList;
   inherited;
 end;
 
@@ -59240,12 +59240,12 @@ begin
   FClassesTree.Add('color_clear', TXMLFx_clearcolor_type);
   FClassesTree.Add('stencil_clear', TXMLFx_clearstencil_type);
   FClassesTree.Add('depth_clear', TXMLFx_cleardepth_type);
-  FColor_target := CreateCollection(TXMLFx_colortarget_typeList, IXMLFx_colortarget_type, 'color_target') as IXMLFx_colortarget_typeList;
-  FDepth_target := CreateCollection(TXMLFx_depthtarget_typeList, IXMLFx_depthtarget_type, 'depth_target') as IXMLFx_depthtarget_typeList;
-  FStencil_target := CreateCollection(TXMLFx_stenciltarget_typeList, IXMLFx_stenciltarget_type, 'stencil_target') as IXMLFx_stenciltarget_typeList;
-  FColor_clear := CreateCollection(TXMLFx_clearcolor_typeList, IXMLFx_clearcolor_type, 'color_clear') as IXMLFx_clearcolor_typeList;
-  FStencil_clear := CreateCollection(TXMLFx_clearstencil_typeList, IXMLFx_clearstencil_type, 'stencil_clear') as IXMLFx_clearstencil_typeList;
-  FDepth_clear := CreateCollection(TXMLFx_cleardepth_typeList, IXMLFx_cleardepth_type, 'depth_clear') as IXMLFx_cleardepth_typeList;
+  FColor_target := CreateFilter(TXMLFx_colortarget_typeList, TXMLFx_colortarget_type, IXMLFx_colortarget_type) as IXMLFx_colortarget_typeList;
+  FDepth_target := CreateFilter(TXMLFx_depthtarget_typeList, TXMLFx_depthtarget_type, IXMLFx_depthtarget_type) as IXMLFx_depthtarget_typeList;
+  FStencil_target := CreateFilter(TXMLFx_stenciltarget_typeList, TXMLFx_stenciltarget_type, IXMLFx_stenciltarget_type) as IXMLFx_stenciltarget_typeList;
+  FColor_clear := CreateFilter(TXMLFx_clearcolor_typeList, TXMLFx_clearcolor_type, IXMLFx_clearcolor_type) as IXMLFx_clearcolor_typeList;
+  FStencil_clear := CreateFilter(TXMLFx_clearstencil_typeList, TXMLFx_clearstencil_type, IXMLFx_clearstencil_type) as IXMLFx_clearstencil_typeList;
+  FDepth_clear := CreateFilter(TXMLFx_cleardepth_typeList, TXMLFx_cleardepth_type, IXMLFx_cleardepth_type) as IXMLFx_cleardepth_typeList;
   inherited;
 end;
 
@@ -59514,11 +59514,11 @@ begin
   FClassesTree.Add('newparam', TXMLGlsl_newparam_type);
   FClassesTree.Add('technique', TXMLProfile_glsl_type_technique);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FCode := CreateCollection(TXMLFx_code_typeList, IXMLFx_code_type, 'code') as IXMLFx_code_typeList;
-  FInclude := CreateCollection(TXMLFx_include_typeList, IXMLFx_include_type, 'include') as IXMLFx_include_typeList;
-  FNewparam := CreateCollection(TXMLGlsl_newparam_typeList, IXMLGlsl_newparam_type, 'newparam') as IXMLGlsl_newparam_typeList;
-  FTechnique := CreateCollection(TXMLProfile_glsl_type_techniqueList, IXMLProfile_glsl_type_technique, 'technique') as IXMLProfile_glsl_type_techniqueList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FCode := CreateFilter(TXMLFx_code_typeList, TXMLFx_code_type, IXMLFx_code_type) as IXMLFx_code_typeList;
+  FInclude := CreateFilter(TXMLFx_include_typeList, TXMLFx_include_type, IXMLFx_include_type) as IXMLFx_include_typeList;
+  FNewparam := CreateFilter(TXMLGlsl_newparam_typeList, TXMLGlsl_newparam_type, IXMLGlsl_newparam_type) as IXMLGlsl_newparam_typeList;
+  FTechnique := CreateFilter(TXMLProfile_glsl_type_techniqueList, TXMLProfile_glsl_type_technique, IXMLProfile_glsl_type_technique) as IXMLProfile_glsl_type_techniqueList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -59584,7 +59584,7 @@ begin
   FClassesTree.Add('samplerRECT', TXMLFx_samplerRECT_type);
   FClassesTree.Add('samplerDEPTH', TXMLFx_samplerDEPTH_type);
   FClassesTree.Add('array', TXMLGlsl_array_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
   inherited;
 end;
 
@@ -60062,9 +60062,9 @@ begin
   FClassesTree.Add('annotate', TXMLFx_annotate_type);
   FClassesTree.Add('pass', TXMLProfile_glsl_type_technique_pass);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
-  FPass := CreateCollection(TXMLProfile_glsl_type_technique_passList, IXMLProfile_glsl_type_technique_pass, 'pass') as IXMLProfile_glsl_type_technique_passList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
+  FPass := CreateFilter(TXMLProfile_glsl_type_technique_passList, TXMLProfile_glsl_type_technique_pass, IXMLProfile_glsl_type_technique_pass) as IXMLProfile_glsl_type_technique_passList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -60134,8 +60134,8 @@ begin
   FClassesTree.Add('program', TXMLGlsl_program_type);
   FClassesTree.Add('evaluate', TXMLProfile_glsl_type_technique_pass_evaluate);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -62856,9 +62856,9 @@ begin
   FClassesTree.Add('shader', TXMLGlsl_shader_type);
   FClassesTree.Add('bind_attribute', TXMLGlsl_program_type_bind_attribute);
   FClassesTree.Add('bind_uniform', TXMLGlsl_program_type_bind_uniform);
-  FShader := CreateCollection(TXMLGlsl_shader_typeList, IXMLGlsl_shader_type, 'shader') as IXMLGlsl_shader_typeList;
-  FBind_attribute := CreateCollection(TXMLGlsl_program_type_bind_attributeList, IXMLGlsl_program_type_bind_attribute, 'bind_attribute') as IXMLGlsl_program_type_bind_attributeList;
-  FBind_uniform := CreateCollection(TXMLGlsl_program_type_bind_uniformList, IXMLGlsl_program_type_bind_uniform, 'bind_uniform') as IXMLGlsl_program_type_bind_uniformList;
+  FShader := CreateFilter(TXMLGlsl_shader_typeList, TXMLGlsl_shader_type, IXMLGlsl_shader_type) as IXMLGlsl_shader_typeList;
+  FBind_attribute := CreateFilter(TXMLGlsl_program_type_bind_attributeList, TXMLGlsl_program_type_bind_attribute, IXMLGlsl_program_type_bind_attribute) as IXMLGlsl_program_type_bind_attributeList;
+  FBind_uniform := CreateFilter(TXMLGlsl_program_type_bind_uniformList, TXMLGlsl_program_type_bind_uniform, IXMLGlsl_program_type_bind_uniform) as IXMLGlsl_program_type_bind_uniformList;
   inherited;
 end;
 
@@ -62883,7 +62883,7 @@ procedure TXMLGlsl_shader_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('sources', TXMLFx_sources_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -63227,12 +63227,12 @@ begin
   FClassesTree.Add('color_clear', TXMLFx_clearcolor_type);
   FClassesTree.Add('depth_clear', TXMLFx_cleardepth_type);
   FClassesTree.Add('stencil_clear', TXMLFx_clearstencil_type);
-  FColor_target := CreateCollection(TXMLFx_colortarget_typeList, IXMLFx_colortarget_type, 'color_target') as IXMLFx_colortarget_typeList;
-  FDepth_target := CreateCollection(TXMLFx_depthtarget_typeList, IXMLFx_depthtarget_type, 'depth_target') as IXMLFx_depthtarget_typeList;
-  FStencil_target := CreateCollection(TXMLFx_stenciltarget_typeList, IXMLFx_stenciltarget_type, 'stencil_target') as IXMLFx_stenciltarget_typeList;
-  FColor_clear := CreateCollection(TXMLFx_clearcolor_typeList, IXMLFx_clearcolor_type, 'color_clear') as IXMLFx_clearcolor_typeList;
-  FDepth_clear := CreateCollection(TXMLFx_cleardepth_typeList, IXMLFx_cleardepth_type, 'depth_clear') as IXMLFx_cleardepth_typeList;
-  FStencil_clear := CreateCollection(TXMLFx_clearstencil_typeList, IXMLFx_clearstencil_type, 'stencil_clear') as IXMLFx_clearstencil_typeList;
+  FColor_target := CreateFilter(TXMLFx_colortarget_typeList, TXMLFx_colortarget_type, IXMLFx_colortarget_type) as IXMLFx_colortarget_typeList;
+  FDepth_target := CreateFilter(TXMLFx_depthtarget_typeList, TXMLFx_depthtarget_type, IXMLFx_depthtarget_type) as IXMLFx_depthtarget_typeList;
+  FStencil_target := CreateFilter(TXMLFx_stenciltarget_typeList, TXMLFx_stenciltarget_type, IXMLFx_stenciltarget_type) as IXMLFx_stenciltarget_typeList;
+  FColor_clear := CreateFilter(TXMLFx_clearcolor_typeList, TXMLFx_clearcolor_type, IXMLFx_clearcolor_type) as IXMLFx_clearcolor_typeList;
+  FDepth_clear := CreateFilter(TXMLFx_cleardepth_typeList, TXMLFx_cleardepth_type, IXMLFx_cleardepth_type) as IXMLFx_cleardepth_typeList;
+  FStencil_clear := CreateFilter(TXMLFx_clearstencil_typeList, TXMLFx_clearstencil_type, IXMLFx_clearstencil_type) as IXMLFx_clearstencil_typeList;
   inherited;
 end;
 
@@ -63286,11 +63286,11 @@ begin
   FClassesTree.Add('newparam', TXMLCg_newparam_type);
   FClassesTree.Add('technique', TXMLProfile_cg_type_technique);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FCode := CreateCollection(TXMLFx_code_typeList, IXMLFx_code_type, 'code') as IXMLFx_code_typeList;
-  FInclude := CreateCollection(TXMLFx_include_typeList, IXMLFx_include_type, 'include') as IXMLFx_include_typeList;
-  FNewparam := CreateCollection(TXMLCg_newparam_typeList, IXMLCg_newparam_type, 'newparam') as IXMLCg_newparam_typeList;
-  FTechnique := CreateCollection(TXMLProfile_cg_type_techniqueList, IXMLProfile_cg_type_technique, 'technique') as IXMLProfile_cg_type_techniqueList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FCode := CreateFilter(TXMLFx_code_typeList, TXMLFx_code_type, IXMLFx_code_type) as IXMLFx_code_typeList;
+  FInclude := CreateFilter(TXMLFx_include_typeList, TXMLFx_include_type, IXMLFx_include_type) as IXMLFx_include_typeList;
+  FNewparam := CreateFilter(TXMLCg_newparam_typeList, TXMLCg_newparam_type, IXMLCg_newparam_type) as IXMLCg_newparam_typeList;
+  FTechnique := CreateFilter(TXMLProfile_cg_type_techniqueList, TXMLProfile_cg_type_technique, IXMLProfile_cg_type_technique) as IXMLProfile_cg_type_techniqueList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -63357,7 +63357,7 @@ begin
   FClassesTree.Add('samplerDEPTH', TXMLFx_samplerDEPTH_type);
   FClassesTree.Add('array', TXMLCg_array_type);
   FClassesTree.Add('usertype', TXMLCg_user_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
   inherited;
 end;
 
@@ -66106,9 +66106,9 @@ begin
   FClassesTree.Add('annotate', TXMLFx_annotate_type);
   FClassesTree.Add('pass', TXMLCg_pass_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
-  FPass := CreateCollection(TXMLCg_pass_typeList, IXMLCg_pass_type, 'pass') as IXMLCg_pass_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
+  FPass := CreateFilter(TXMLCg_pass_typeList, TXMLCg_pass_type, IXMLCg_pass_type) as IXMLCg_pass_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -66178,8 +66178,8 @@ begin
   FClassesTree.Add('program', TXMLCg_pass_type_program);
   FClassesTree.Add('evaluate', TXMLCg_pass_type_evaluate);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -66898,8 +66898,8 @@ begin
   FClassesTree.Add('sources', TXMLCg_pass_type_program_shader_sources);
   FClassesTree.Add('compiler', TXMLFx_target_type);
   FClassesTree.Add('bind_uniform', TXMLCg_pass_type_program_shader_bind_uniform);
-  FCompiler := CreateCollection(TXMLFx_target_typeList, IXMLFx_target_type, 'compiler') as IXMLFx_target_typeList;
-  FBind_uniform := CreateCollection(TXMLCg_pass_type_program_shader_bind_uniformList, IXMLCg_pass_type_program_shader_bind_uniform, 'bind_uniform') as IXMLCg_pass_type_program_shader_bind_uniformList;
+  FCompiler := CreateFilter(TXMLFx_target_typeList, TXMLFx_target_type, IXMLFx_target_type) as IXMLFx_target_typeList;
+  FBind_uniform := CreateFilter(TXMLCg_pass_type_program_shader_bind_uniformList, TXMLCg_pass_type_program_shader_bind_uniform, IXMLCg_pass_type_program_shader_bind_uniform) as IXMLCg_pass_type_program_shader_bind_uniformList;
   inherited;
 end;
 
@@ -67870,12 +67870,12 @@ begin
   FClassesTree.Add('color_clear', TXMLFx_clearcolor_type);
   FClassesTree.Add('depth_clear', TXMLFx_cleardepth_type);
   FClassesTree.Add('stencil_clear', TXMLFx_clearstencil_type);
-  FColor_target := CreateCollection(TXMLFx_colortarget_typeList, IXMLFx_colortarget_type, 'color_target') as IXMLFx_colortarget_typeList;
-  FDepth_target := CreateCollection(TXMLFx_depthtarget_typeList, IXMLFx_depthtarget_type, 'depth_target') as IXMLFx_depthtarget_typeList;
-  FStencil_target := CreateCollection(TXMLFx_stenciltarget_typeList, IXMLFx_stenciltarget_type, 'stencil_target') as IXMLFx_stenciltarget_typeList;
-  FColor_clear := CreateCollection(TXMLFx_clearcolor_typeList, IXMLFx_clearcolor_type, 'color_clear') as IXMLFx_clearcolor_typeList;
-  FDepth_clear := CreateCollection(TXMLFx_cleardepth_typeList, IXMLFx_cleardepth_type, 'depth_clear') as IXMLFx_cleardepth_typeList;
-  FStencil_clear := CreateCollection(TXMLFx_clearstencil_typeList, IXMLFx_clearstencil_type, 'stencil_clear') as IXMLFx_clearstencil_typeList;
+  FColor_target := CreateFilter(TXMLFx_colortarget_typeList, TXMLFx_colortarget_type, IXMLFx_colortarget_type) as IXMLFx_colortarget_typeList;
+  FDepth_target := CreateFilter(TXMLFx_depthtarget_typeList, TXMLFx_depthtarget_type, IXMLFx_depthtarget_type) as IXMLFx_depthtarget_typeList;
+  FStencil_target := CreateFilter(TXMLFx_stenciltarget_typeList, TXMLFx_stenciltarget_type, IXMLFx_stenciltarget_type) as IXMLFx_stenciltarget_typeList;
+  FColor_clear := CreateFilter(TXMLFx_clearcolor_typeList, TXMLFx_clearcolor_type, IXMLFx_clearcolor_type) as IXMLFx_clearcolor_typeList;
+  FDepth_clear := CreateFilter(TXMLFx_cleardepth_typeList, TXMLFx_cleardepth_type, IXMLFx_cleardepth_type) as IXMLFx_cleardepth_typeList;
+  FStencil_clear := CreateFilter(TXMLFx_clearstencil_typeList, TXMLFx_clearstencil_type, IXMLFx_clearstencil_type) as IXMLFx_clearstencil_typeList;
   inherited;
 end;
 
@@ -67927,9 +67927,9 @@ begin
   FClassesTree.Add('newparam', TXMLGles_newparam_type);
   FClassesTree.Add('technique', TXMLProfile_gles_type_technique);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FNewparam := CreateCollection(TXMLGles_newparam_typeList, IXMLGles_newparam_type, 'newparam') as IXMLGles_newparam_typeList;
-  FTechnique := CreateCollection(TXMLProfile_gles_type_techniqueList, IXMLProfile_gles_type_technique, 'technique') as IXMLProfile_gles_type_techniqueList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FNewparam := CreateFilter(TXMLGles_newparam_typeList, TXMLGles_newparam_type, IXMLGles_newparam_type) as IXMLGles_newparam_typeList;
+  FTechnique := CreateFilter(TXMLProfile_gles_type_techniqueList, TXMLProfile_gles_type_technique, IXMLProfile_gles_type_technique) as IXMLProfile_gles_type_techniqueList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -67979,7 +67979,7 @@ procedure TXMLGles_newparam_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('annotate', TXMLFx_annotate_type);
   FClassesTree.Add('sampler2D', TXMLGles_sampler_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
   inherited;
 end;
 
@@ -68337,7 +68337,7 @@ begin
   FClassesTree.Add('instance_image', TXMLInstance_image_type);
   FClassesTree.Add('texcoord', TXMLGles_sampler_type_texcoord);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -68446,9 +68446,9 @@ begin
   FClassesTree.Add('annotate', TXMLFx_annotate_type);
   FClassesTree.Add('pass', TXMLProfile_gles_type_technique_pass);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
-  FPass := CreateCollection(TXMLProfile_gles_type_technique_passList, IXMLProfile_gles_type_technique_pass, 'pass') as IXMLProfile_gles_type_technique_passList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
+  FPass := CreateFilter(TXMLProfile_gles_type_technique_passList, TXMLProfile_gles_type_technique_pass, IXMLProfile_gles_type_technique_pass) as IXMLProfile_gles_type_technique_passList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -68517,8 +68517,8 @@ begin
   FClassesTree.Add('states', TXMLProfile_gles_type_technique_pass_states);
   FClassesTree.Add('evaluate', TXMLProfile_gles_type_technique_pass_evaluate);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FAnnotate := CreateCollection(TXMLFx_annotate_typeList, IXMLFx_annotate_type, 'annotate') as IXMLFx_annotate_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FAnnotate := CreateFilter(TXMLFx_annotate_typeList, TXMLFx_annotate_type, IXMLFx_annotate_type) as IXMLFx_annotate_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -69010,9 +69010,9 @@ begin
   FClassesTree.Add('texcombiner', TXMLGles_texcombiner_command_type);
   FClassesTree.Add('texenv', TXMLGles_texenv_command_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTexcombiner := CreateCollection(TXMLGles_texcombiner_command_typeList, IXMLGles_texcombiner_command_type, 'texcombiner') as IXMLGles_texcombiner_command_typeList;
-  FTexenv := CreateCollection(TXMLGles_texenv_command_typeList, IXMLGles_texenv_command_type, 'texenv') as IXMLGles_texenv_command_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTexcombiner := CreateFilter(TXMLGles_texcombiner_command_typeList, TXMLGles_texcombiner_command_type, IXMLGles_texcombiner_command_type) as IXMLGles_texcombiner_command_typeList;
+  FTexenv := CreateFilter(TXMLGles_texenv_command_typeList, TXMLGles_texenv_command_type, IXMLGles_texenv_command_type) as IXMLGles_texenv_command_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -69319,12 +69319,12 @@ begin
   FClassesTree.Add('color_clear', TXMLFx_clearcolor_type);
   FClassesTree.Add('depth_clear', TXMLFx_cleardepth_type);
   FClassesTree.Add('stencil_clear', TXMLFx_clearstencil_type);
-  FColor_target := CreateCollection(TXMLFx_colortarget_typeList, IXMLFx_colortarget_type, 'color_target') as IXMLFx_colortarget_typeList;
-  FDepth_target := CreateCollection(TXMLFx_depthtarget_typeList, IXMLFx_depthtarget_type, 'depth_target') as IXMLFx_depthtarget_typeList;
-  FStencil_target := CreateCollection(TXMLFx_stenciltarget_typeList, IXMLFx_stenciltarget_type, 'stencil_target') as IXMLFx_stenciltarget_typeList;
-  FColor_clear := CreateCollection(TXMLFx_clearcolor_typeList, IXMLFx_clearcolor_type, 'color_clear') as IXMLFx_clearcolor_typeList;
-  FDepth_clear := CreateCollection(TXMLFx_cleardepth_typeList, IXMLFx_cleardepth_type, 'depth_clear') as IXMLFx_cleardepth_typeList;
-  FStencil_clear := CreateCollection(TXMLFx_clearstencil_typeList, IXMLFx_clearstencil_type, 'stencil_clear') as IXMLFx_clearstencil_typeList;
+  FColor_target := CreateFilter(TXMLFx_colortarget_typeList, TXMLFx_colortarget_type, IXMLFx_colortarget_type) as IXMLFx_colortarget_typeList;
+  FDepth_target := CreateFilter(TXMLFx_depthtarget_typeList, TXMLFx_depthtarget_type, IXMLFx_depthtarget_type) as IXMLFx_depthtarget_typeList;
+  FStencil_target := CreateFilter(TXMLFx_stenciltarget_typeList, TXMLFx_stenciltarget_type, IXMLFx_stenciltarget_type) as IXMLFx_stenciltarget_typeList;
+  FColor_clear := CreateFilter(TXMLFx_clearcolor_typeList, TXMLFx_clearcolor_type, IXMLFx_clearcolor_type) as IXMLFx_clearcolor_typeList;
+  FDepth_clear := CreateFilter(TXMLFx_cleardepth_typeList, TXMLFx_cleardepth_type, IXMLFx_cleardepth_type) as IXMLFx_cleardepth_typeList;
+  FStencil_clear := CreateFilter(TXMLFx_clearstencil_typeList, TXMLFx_clearstencil_type, IXMLFx_clearstencil_type) as IXMLFx_clearstencil_typeList;
   inherited;
 end;
 
@@ -69375,8 +69375,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('force_field', TXMLForce_field_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FForce_field := CreateCollection(TXMLForce_field_typeList, IXMLForce_field_type, 'force_field') as IXMLForce_field_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FForce_field := CreateFilter(TXMLForce_field_typeList, TXMLForce_field_type, IXMLForce_field_type) as IXMLForce_field_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -69439,8 +69439,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -69503,8 +69503,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('image', TXMLImage_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FImage := CreateCollection(TXMLImage_typeList, IXMLImage_type, 'image') as IXMLImage_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FImage := CreateFilter(TXMLImage_typeList, TXMLImage_type, IXMLImage_type) as IXMLImage_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -69571,7 +69571,7 @@ begin
   FClassesTree.Add('create_3d', TXMLImage_type_create_3d);
   FClassesTree.Add('create_cube', TXMLImage_type_create_cube);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -69726,7 +69726,7 @@ begin
   FClassesTree.Add('array', TXMLImage_type_create_2d_array);
   FClassesTree.Add('format', TXMLImage_type_create_2d_format);
   FClassesTree.Add('init_from', TXMLImage_type_create_2d_init_from);
-  FInit_from := CreateCollection(TXMLImage_type_create_2d_init_fromList, IXMLImage_type_create_2d_init_from, 'init_from') as IXMLImage_type_create_2d_init_fromList;
+  FInit_from := CreateFilter(TXMLImage_type_create_2d_init_fromList, TXMLImage_type_create_2d_init_from, IXMLImage_type_create_2d_init_from) as IXMLImage_type_create_2d_init_fromList;
   inherited;
 end;
 
@@ -69961,7 +69961,7 @@ begin
   FClassesTree.Add('array', TXMLImage_type_create_3d_array);
   FClassesTree.Add('format', TXMLImage_type_create_3d_format);
   FClassesTree.Add('init_from', TXMLImage_type_create_3d_init_from);
-  FInit_from := CreateCollection(TXMLImage_type_create_3d_init_fromList, IXMLImage_type_create_3d_init_from, 'init_from') as IXMLImage_type_create_3d_init_fromList;
+  FInit_from := CreateFilter(TXMLImage_type_create_3d_init_fromList, TXMLImage_type_create_3d_init_from, IXMLImage_type_create_3d_init_from) as IXMLImage_type_create_3d_init_fromList;
   inherited;
 end;
 
@@ -70157,7 +70157,7 @@ begin
   FClassesTree.Add('array', TXMLImage_type_create_cube_array);
   FClassesTree.Add('format', TXMLImage_type_create_cube_format);
   FClassesTree.Add('init_from', TXMLImage_type_create_cube_init_from);
-  FInit_from := CreateCollection(TXMLImage_type_create_cube_init_fromList, IXMLImage_type_create_cube_init_from, 'init_from') as IXMLImage_type_create_cube_init_fromList;
+  FInit_from := CreateFilter(TXMLImage_type_create_cube_init_fromList, TXMLImage_type_create_cube_init_from, IXMLImage_type_create_cube_init_from) as IXMLImage_type_create_cube_init_fromList;
   inherited;
 end;
 
@@ -70331,8 +70331,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('light', TXMLLight_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FLight := CreateCollection(TXMLLight_typeList, IXMLLight_type, 'light') as IXMLLight_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FLight := CreateFilter(TXMLLight_typeList, TXMLLight_type, IXMLLight_type) as IXMLLight_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -70396,8 +70396,8 @@ begin
   FClassesTree.Add('technique_common', TXMLLight_type_technique_common);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -70608,8 +70608,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('material', TXMLMaterial_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FMaterial := CreateCollection(TXMLMaterial_typeList, IXMLMaterial_type, 'material') as IXMLMaterial_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FMaterial := CreateFilter(TXMLMaterial_typeList, TXMLMaterial_type, IXMLMaterial_type) as IXMLMaterial_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -70672,7 +70672,7 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('instance_effect', TXMLInstance_effect_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -70735,9 +70735,9 @@ begin
   FClassesTree.Add('technique_hint', TXMLInstance_effect_type_technique_hint);
   FClassesTree.Add('setparam', TXMLInstance_effect_type_setparam);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique_hint := CreateCollection(TXMLInstance_effect_type_technique_hintList, IXMLInstance_effect_type_technique_hint, 'technique_hint') as IXMLInstance_effect_type_technique_hintList;
-  FSetparam := CreateCollection(TXMLInstance_effect_type_setparamList, IXMLInstance_effect_type_setparam, 'setparam') as IXMLInstance_effect_type_setparamList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique_hint := CreateFilter(TXMLInstance_effect_type_technique_hintList, TXMLInstance_effect_type_technique_hint, IXMLInstance_effect_type_technique_hint) as IXMLInstance_effect_type_technique_hintList;
+  FSetparam := CreateFilter(TXMLInstance_effect_type_setparamList, TXMLInstance_effect_type_setparam, IXMLInstance_effect_type_setparam) as IXMLInstance_effect_type_setparamList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -71136,7 +71136,7 @@ end;
 procedure TXMLSampler_states.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -71262,8 +71262,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('node', TXMLNode_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FNode := CreateCollection(TXMLNode_typeList, IXMLNode_type, 'node') as IXMLNode_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FNode := CreateFilter(TXMLNode_typeList, TXMLNode_type, IXMLNode_type) as IXMLNode_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -71337,19 +71337,19 @@ begin
   FClassesTree.Add('instance_node', TXMLInstance_node_type);
   FClassesTree.Add('node', TXMLNode_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FLookat := CreateCollection(TXMLLookat_typeList, IXMLLookat_type, 'lookat') as IXMLLookat_typeList;
-  FMatrix := CreateCollection(TXMLMatrix_typeList, IXMLMatrix_type, 'matrix') as IXMLMatrix_typeList;
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
-  FScale := CreateCollection(TXMLScale_typeList, IXMLScale_type, 'scale') as IXMLScale_typeList;
-  FSkew := CreateCollection(TXMLSkew_typeList, IXMLSkew_type, 'skew') as IXMLSkew_typeList;
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
-  FInstance_camera := CreateCollection(TXMLInstance_camera_typeList, IXMLInstance_camera_type, 'instance_camera') as IXMLInstance_camera_typeList;
-  FInstance_controller := CreateCollection(TXMLInstance_controller_typeList, IXMLInstance_controller_type, 'instance_controller') as IXMLInstance_controller_typeList;
-  FInstance_geometry := CreateCollection(TXMLInstance_geometry_typeList, IXMLInstance_geometry_type, 'instance_geometry') as IXMLInstance_geometry_typeList;
-  FInstance_light := CreateCollection(TXMLInstance_light_typeList, IXMLInstance_light_type, 'instance_light') as IXMLInstance_light_typeList;
-  FInstance_node := CreateCollection(TXMLInstance_node_typeList, IXMLInstance_node_type, 'instance_node') as IXMLInstance_node_typeList;
-  FNode := CreateCollection(TXMLNode_typeList, IXMLNode_type, 'node') as IXMLNode_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FLookat := CreateFilter(TXMLLookat_typeList, TXMLLookat_type, IXMLLookat_type) as IXMLLookat_typeList;
+  FMatrix := CreateFilter(TXMLMatrix_typeList, TXMLMatrix_type, IXMLMatrix_type) as IXMLMatrix_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
+  FScale := CreateFilter(TXMLScale_typeList, TXMLScale_type, IXMLScale_type) as IXMLScale_typeList;
+  FSkew := CreateFilter(TXMLSkew_typeList, TXMLSkew_type, IXMLSkew_type) as IXMLSkew_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
+  FInstance_camera := CreateFilter(TXMLInstance_camera_typeList, TXMLInstance_camera_type, IXMLInstance_camera_type) as IXMLInstance_camera_typeList;
+  FInstance_controller := CreateFilter(TXMLInstance_controller_typeList, TXMLInstance_controller_type, IXMLInstance_controller_type) as IXMLInstance_controller_typeList;
+  FInstance_geometry := CreateFilter(TXMLInstance_geometry_typeList, TXMLInstance_geometry_type, IXMLInstance_geometry_type) as IXMLInstance_geometry_typeList;
+  FInstance_light := CreateFilter(TXMLInstance_light_typeList, TXMLInstance_light_type, IXMLInstance_light_type) as IXMLInstance_light_typeList;
+  FInstance_node := CreateFilter(TXMLInstance_node_typeList, TXMLInstance_node_type, IXMLInstance_node_type) as IXMLInstance_node_typeList;
+  FNode := CreateFilter(TXMLNode_typeList, TXMLNode_type, IXMLNode_type) as IXMLNode_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -71659,8 +71659,8 @@ procedure TXMLInstance_controller_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('bind_material', TXMLBind_material_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FSkeleton := CreateCollection(TXMLAnyURIList, IXML, 'skeleton') as IXMLAnyURIList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FSkeleton := CreateFilter(TXMLAnyURIList, TXML, IXML) as IXMLAnyURIList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -71734,9 +71734,9 @@ begin
   FClassesTree.Add('technique_common', TXMLBind_material_type_technique_common);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FParam := CreateCollection(TXMLParam_typeList, IXMLParam_type, 'param') as IXMLParam_typeList;
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FParam := CreateFilter(TXMLParam_typeList, TXMLParam_type, IXMLParam_type) as IXMLParam_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -71792,9 +71792,9 @@ begin
   FClassesTree.Add('bind', TXMLInstance_material_type_bind);
   FClassesTree.Add('bind_vertex_input', TXMLInstance_material_type_bind_vertex_input);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FBind := CreateCollection(TXMLInstance_material_type_bindList, IXMLInstance_material_type_bind, 'bind') as IXMLInstance_material_type_bindList;
-  FBind_vertex_input := CreateCollection(TXMLInstance_material_type_bind_vertex_inputList, IXMLInstance_material_type_bind_vertex_input, 'bind_vertex_input') as IXMLInstance_material_type_bind_vertex_inputList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FBind := CreateFilter(TXMLInstance_material_type_bindList, TXMLInstance_material_type_bind, IXMLInstance_material_type_bind) as IXMLInstance_material_type_bindList;
+  FBind_vertex_input := CreateFilter(TXMLInstance_material_type_bind_vertex_inputList, TXMLInstance_material_type_bind_vertex_input, IXMLInstance_material_type_bind_vertex_input) as IXMLInstance_material_type_bind_vertex_inputList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -71947,7 +71947,7 @@ procedure TXMLInstance_geometry_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('bind_material', TXMLBind_material_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72063,8 +72063,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('physics_material', TXMLPhysics_material_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FPhysics_material := CreateCollection(TXMLPhysics_material_typeList, IXMLPhysics_material_type, 'physics_material') as IXMLPhysics_material_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FPhysics_material := CreateFilter(TXMLPhysics_material_typeList, TXMLPhysics_material_type, IXMLPhysics_material_type) as IXMLPhysics_material_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72128,8 +72128,8 @@ begin
   FClassesTree.Add('technique_common', TXMLPhysics_material_type_technique_common);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72222,8 +72222,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('physics_model', TXMLPhysics_model_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FPhysics_model := CreateCollection(TXMLPhysics_model_typeList, IXMLPhysics_model_type, 'physics_model') as IXMLPhysics_model_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FPhysics_model := CreateFilter(TXMLPhysics_model_typeList, TXMLPhysics_model_type, IXMLPhysics_model_type) as IXMLPhysics_model_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72288,10 +72288,10 @@ begin
   FClassesTree.Add('rigid_constraint', TXMLRigid_constraint_type);
   FClassesTree.Add('instance_physics_model', TXMLInstance_physics_model_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FRigid_body := CreateCollection(TXMLRigid_body_typeList, IXMLRigid_body_type, 'rigid_body') as IXMLRigid_body_typeList;
-  FRigid_constraint := CreateCollection(TXMLRigid_constraint_typeList, IXMLRigid_constraint_type, 'rigid_constraint') as IXMLRigid_constraint_typeList;
-  FInstance_physics_model := CreateCollection(TXMLInstance_physics_model_typeList, IXMLInstance_physics_model_type, 'instance_physics_model') as IXMLInstance_physics_model_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FRigid_body := CreateFilter(TXMLRigid_body_typeList, TXMLRigid_body_type, IXMLRigid_body_type) as IXMLRigid_body_typeList;
+  FRigid_constraint := CreateFilter(TXMLRigid_constraint_typeList, TXMLRigid_constraint_type, IXMLRigid_constraint_type) as IXMLRigid_constraint_typeList;
+  FInstance_physics_model := CreateFilter(TXMLInstance_physics_model_typeList, TXMLInstance_physics_model_type, IXMLInstance_physics_model_type) as IXMLInstance_physics_model_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72364,8 +72364,8 @@ begin
   FClassesTree.Add('technique_common', TXMLRigid_body_type_technique_common);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72442,7 +72442,7 @@ begin
   FClassesTree.Add('instance_physics_material', TXMLInstance_physics_material_type);
   FClassesTree.Add('physics_material', TXMLPhysics_material_type);
   FClassesTree.Add('shape', TXMLRigid_body_type_technique_common_shape);
-  FShape := CreateCollection(TXMLRigid_body_type_technique_common_shapeList, IXMLRigid_body_type_technique_common_shape, 'shape') as IXMLRigid_body_type_technique_common_shapeList;
+  FShape := CreateFilter(TXMLRigid_body_type_technique_common_shapeList, TXMLRigid_body_type_technique_common_shape, IXMLRigid_body_type_technique_common_shape) as IXMLRigid_body_type_technique_common_shapeList;
   inherited;
 end;
 
@@ -72499,8 +72499,8 @@ procedure TXMLRigid_body_type_technique_common_mass_frame.DoRegisterChildClasses
 begin
   FClassesTree.Add('translate', TXMLTranslate_type);
   FClassesTree.Add('rotate', TXMLRotate_type);
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
   inherited;
 end;
 
@@ -72534,9 +72534,9 @@ begin
   FClassesTree.Add('translate', TXMLTranslate_type);
   FClassesTree.Add('rotate', TXMLRotate_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72644,7 +72644,7 @@ end;
 procedure TXMLBox_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72668,7 +72668,7 @@ end;
 procedure TXMLCylinder_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72702,7 +72702,7 @@ end;
 procedure TXMLCapsule_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72740,8 +72740,8 @@ begin
   FClassesTree.Add('technique_common', TXMLRigid_constraint_type_technique_common);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72814,9 +72814,9 @@ begin
   FClassesTree.Add('translate', TXMLTranslate_type);
   FClassesTree.Add('rotate', TXMLRotate_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -72852,9 +72852,9 @@ begin
   FClassesTree.Add('translate', TXMLTranslate_type);
   FClassesTree.Add('rotate', TXMLRotate_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -73072,10 +73072,10 @@ begin
   FClassesTree.Add('instance_rigid_body', TXMLInstance_rigid_body_type);
   FClassesTree.Add('instance_rigid_constraint', TXMLInstance_rigid_constraint_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInstance_force_field := CreateCollection(TXMLInstance_force_field_typeList, IXMLInstance_force_field_type, 'instance_force_field') as IXMLInstance_force_field_typeList;
-  FInstance_rigid_body := CreateCollection(TXMLInstance_rigid_body_typeList, IXMLInstance_rigid_body_type, 'instance_rigid_body') as IXMLInstance_rigid_body_typeList;
-  FInstance_rigid_constraint := CreateCollection(TXMLInstance_rigid_constraint_typeList, IXMLInstance_rigid_constraint_type, 'instance_rigid_constraint') as IXMLInstance_rigid_constraint_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInstance_force_field := CreateFilter(TXMLInstance_force_field_typeList, TXMLInstance_force_field_type, IXMLInstance_force_field_type) as IXMLInstance_force_field_typeList;
+  FInstance_rigid_body := CreateFilter(TXMLInstance_rigid_body_typeList, TXMLInstance_rigid_body_type, IXMLInstance_rigid_body_type) as IXMLInstance_rigid_body_typeList;
+  FInstance_rigid_constraint := CreateFilter(TXMLInstance_rigid_constraint_typeList, TXMLInstance_rigid_constraint_type, IXMLInstance_rigid_constraint_type) as IXMLInstance_rigid_constraint_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -73182,8 +73182,8 @@ begin
   FClassesTree.Add('technique_common', TXMLInstance_rigid_body_type_technique_common);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -73270,7 +73270,7 @@ begin
   FClassesTree.Add('instance_physics_material', TXMLInstance_physics_material_type);
   FClassesTree.Add('physics_material', TXMLPhysics_material_type);
   FClassesTree.Add('shape', TXMLInstance_rigid_body_type_technique_common_shape);
-  FShape := CreateCollection(TXMLInstance_rigid_body_type_technique_common_shapeList, IXMLInstance_rigid_body_type_technique_common_shape, 'shape') as IXMLInstance_rigid_body_type_technique_common_shapeList;
+  FShape := CreateFilter(TXMLInstance_rigid_body_type_technique_common_shapeList, TXMLInstance_rigid_body_type_technique_common_shape, IXMLInstance_rigid_body_type_technique_common_shape) as IXMLInstance_rigid_body_type_technique_common_shapeList;
   inherited;
 end;
 
@@ -73347,8 +73347,8 @@ procedure TXMLInstance_rigid_body_type_technique_common_mass_frame.DoRegisterChi
 begin
   FClassesTree.Add('translate', TXMLTranslate_type);
   FClassesTree.Add('rotate', TXMLRotate_type);
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
   inherited;
 end;
 
@@ -73380,9 +73380,9 @@ begin
   FClassesTree.Add('translate', TXMLTranslate_type);
   FClassesTree.Add('rotate', TXMLRotate_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -73564,8 +73564,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('physics_scene', TXMLPhysics_scene_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FPhysics_scene := CreateCollection(TXMLPhysics_scene_typeList, IXMLPhysics_scene_type, 'physics_scene') as IXMLPhysics_scene_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FPhysics_scene := CreateFilter(TXMLPhysics_scene_typeList, TXMLPhysics_scene_type, IXMLPhysics_scene_type) as IXMLPhysics_scene_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -73631,10 +73631,10 @@ begin
   FClassesTree.Add('technique_common', TXMLPhysics_scene_type_technique_common);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInstance_force_field := CreateCollection(TXMLInstance_force_field_typeList, IXMLInstance_force_field_type, 'instance_force_field') as IXMLInstance_force_field_typeList;
-  FInstance_physics_model := CreateCollection(TXMLInstance_physics_model_typeList, IXMLInstance_physics_model_type, 'instance_physics_model') as IXMLInstance_physics_model_typeList;
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInstance_force_field := CreateFilter(TXMLInstance_force_field_typeList, TXMLInstance_force_field_type, IXMLInstance_force_field_type) as IXMLInstance_force_field_typeList;
+  FInstance_physics_model := CreateFilter(TXMLInstance_physics_model_typeList, TXMLInstance_physics_model_type, IXMLInstance_physics_model_type) as IXMLInstance_physics_model_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -73731,8 +73731,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('visual_scene', TXMLVisual_scene_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FVisual_scene := CreateCollection(TXMLVisual_scene_typeList, IXMLVisual_scene_type, 'visual_scene') as IXMLVisual_scene_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FVisual_scene := CreateFilter(TXMLVisual_scene_typeList, TXMLVisual_scene_type, IXMLVisual_scene_type) as IXMLVisual_scene_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -73796,9 +73796,9 @@ begin
   FClassesTree.Add('node', TXMLNode_type);
   FClassesTree.Add('evaluate_scene', TXMLVisual_scene_type_evaluate_scene);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FNode := CreateCollection(TXMLNode_typeList, IXMLNode_type, 'node') as IXMLNode_typeList;
-  FEvaluate_scene := CreateCollection(TXMLVisual_scene_type_evaluate_sceneList, IXMLVisual_scene_type_evaluate_scene, 'evaluate_scene') as IXMLVisual_scene_type_evaluate_sceneList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FNode := CreateFilter(TXMLNode_typeList, TXMLNode_type, IXMLNode_type) as IXMLNode_typeList;
+  FEvaluate_scene := CreateFilter(TXMLVisual_scene_type_evaluate_sceneList, TXMLVisual_scene_type_evaluate_scene, IXMLVisual_scene_type_evaluate_scene) as IXMLVisual_scene_type_evaluate_sceneList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -73866,8 +73866,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('render', TXMLVisual_scene_type_evaluate_scene_render);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FRender := CreateCollection(TXMLVisual_scene_type_evaluate_scene_renderList, IXMLVisual_scene_type_evaluate_scene_render, 'render') as IXMLVisual_scene_type_evaluate_scene_renderList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FRender := CreateFilter(TXMLVisual_scene_type_evaluate_scene_renderList, TXMLVisual_scene_type_evaluate_scene_render, IXMLVisual_scene_type_evaluate_scene_render) as IXMLVisual_scene_type_evaluate_scene_renderList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -73949,8 +73949,8 @@ procedure TXMLVisual_scene_type_evaluate_scene_render.DoRegisterChildClasses;
 begin
   FClassesTree.Add('instance_material', TXMLVisual_scene_type_evaluate_scene_render_instance_material);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FLayer := CreateCollection(TXMLNCNameList, IXML, 'layer') as IXMLNCNameList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FLayer := CreateFilter(TXMLNCNameList, TXML, IXML) as IXMLNCNameList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -74023,8 +74023,8 @@ begin
   FClassesTree.Add('technique_override', TXMLVisual_scene_type_evaluate_scene_render_instance_material_technique_override);
   FClassesTree.Add('bind', TXMLVisual_scene_type_evaluate_scene_render_instance_material_bind);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FBind := CreateCollection(TXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList, IXMLVisual_scene_type_evaluate_scene_render_instance_material_bind, 'bind') as IXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FBind := CreateFilter(TXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList, TXMLVisual_scene_type_evaluate_scene_render_instance_material_bind, IXMLVisual_scene_type_evaluate_scene_render_instance_material_bind) as IXMLVisual_scene_type_evaluate_scene_render_instance_material_bindList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -74121,8 +74121,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('joint', TXMLJoint_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FJoint := CreateCollection(TXMLJoint_typeList, IXMLJoint_type, 'joint') as IXMLJoint_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FJoint := CreateFilter(TXMLJoint_typeList, TXMLJoint_type, IXMLJoint_type) as IXMLJoint_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -74185,9 +74185,9 @@ begin
   FClassesTree.Add('prismatic', TXMLAxis_constraint_type);
   FClassesTree.Add('revolute', TXMLAxis_constraint_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FPrismatic := CreateCollection(TXMLAxis_constraint_typeList, IXMLAxis_constraint_type, 'prismatic') as IXMLAxis_constraint_typeList;
-  FRevolute := CreateCollection(TXMLAxis_constraint_typeList, IXMLAxis_constraint_type, 'revolute') as IXMLAxis_constraint_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FPrismatic := CreateFilter(TXMLAxis_constraint_typeList, TXMLAxis_constraint_type, IXMLAxis_constraint_type) as IXMLAxis_constraint_typeList;
+  FRevolute := CreateFilter(TXMLAxis_constraint_typeList, TXMLAxis_constraint_type, IXMLAxis_constraint_type) as IXMLAxis_constraint_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -74369,8 +74369,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('kinematics_model', TXMLKinematics_model_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FKinematics_model := CreateCollection(TXMLKinematics_model_typeList, IXMLKinematics_model_type, 'kinematics_model') as IXMLKinematics_model_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FKinematics_model := CreateFilter(TXMLKinematics_model_typeList, TXMLKinematics_model_type, IXMLKinematics_model_type) as IXMLKinematics_model_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -74434,8 +74434,8 @@ begin
   FClassesTree.Add('technique_common', TXMLKinematics_model_technique_type);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -74506,12 +74506,12 @@ begin
   FClassesTree.Add('link', TXMLLink_type);
   FClassesTree.Add('formula', TXMLFormula_type);
   FClassesTree.Add('instance_formula', TXMLInstance_formula_type);
-  FNewparam := CreateCollection(TXMLKinematics_newparam_typeList, IXMLKinematics_newparam_type, 'newparam') as IXMLKinematics_newparam_typeList;
-  FInstance_joint := CreateCollection(TXMLInstance_joint_typeList, IXMLInstance_joint_type, 'instance_joint') as IXMLInstance_joint_typeList;
-  FJoint := CreateCollection(TXMLJoint_typeList, IXMLJoint_type, 'joint') as IXMLJoint_typeList;
-  FLink := CreateCollection(TXMLLink_typeList, IXMLLink_type, 'link') as IXMLLink_typeList;
-  FFormula := CreateCollection(TXMLFormula_typeList, IXMLFormula_type, 'formula') as IXMLFormula_typeList;
-  FInstance_formula := CreateCollection(TXMLInstance_formula_typeList, IXMLInstance_formula_type, 'instance_formula') as IXMLInstance_formula_typeList;
+  FNewparam := CreateFilter(TXMLKinematics_newparam_typeList, TXMLKinematics_newparam_type, IXMLKinematics_newparam_type) as IXMLKinematics_newparam_typeList;
+  FInstance_joint := CreateFilter(TXMLInstance_joint_typeList, TXMLInstance_joint_type, IXMLInstance_joint_type) as IXMLInstance_joint_typeList;
+  FJoint := CreateFilter(TXMLJoint_typeList, TXMLJoint_type, IXMLJoint_type) as IXMLJoint_typeList;
+  FLink := CreateFilter(TXMLLink_typeList, TXMLLink_type, IXMLLink_type) as IXMLLink_typeList;
+  FFormula := CreateFilter(TXMLFormula_typeList, TXMLFormula_type, IXMLFormula_type) as IXMLFormula_typeList;
+  FInstance_formula := CreateFilter(TXMLInstance_formula_typeList, TXMLInstance_formula_type, IXMLInstance_formula_type) as IXMLInstance_formula_typeList;
   inherited;
 end;
 
@@ -74642,11 +74642,11 @@ begin
   FClassesTree.Add('attachment_full', TXMLLink_type_attachment_full);
   FClassesTree.Add('attachment_start', TXMLLink_type_attachment_start);
   FClassesTree.Add('attachment_end', TXMLLink_type_attachment_end);
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
-  FAttachment_full := CreateCollection(TXMLLink_type_attachment_fullList, IXMLLink_type_attachment_full, 'attachment_full') as IXMLLink_type_attachment_fullList;
-  FAttachment_start := CreateCollection(TXMLLink_type_attachment_startList, IXMLLink_type_attachment_start, 'attachment_start') as IXMLLink_type_attachment_startList;
-  FAttachment_end := CreateCollection(TXMLLink_type_attachment_endList, IXMLLink_type_attachment_end, 'attachment_end') as IXMLLink_type_attachment_endList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
+  FAttachment_full := CreateFilter(TXMLLink_type_attachment_fullList, TXMLLink_type_attachment_full, IXMLLink_type_attachment_full) as IXMLLink_type_attachment_fullList;
+  FAttachment_start := CreateFilter(TXMLLink_type_attachment_startList, TXMLLink_type_attachment_start, IXMLLink_type_attachment_start) as IXMLLink_type_attachment_startList;
+  FAttachment_end := CreateFilter(TXMLLink_type_attachment_endList, TXMLLink_type_attachment_end, IXMLLink_type_attachment_end) as IXMLLink_type_attachment_endList;
   inherited;
 end;
 
@@ -74719,8 +74719,8 @@ begin
   FClassesTree.Add('rotate', TXMLRotate_type);
   FClassesTree.Add('translate', TXMLTranslate_type);
   FClassesTree.Add('link', TXMLLink_type);
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
   inherited;
 end;
 
@@ -74772,8 +74772,8 @@ procedure TXMLLink_type_attachment_start.DoRegisterChildClasses;
 begin
   FClassesTree.Add('rotate', TXMLRotate_type);
   FClassesTree.Add('translate', TXMLTranslate_type);
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
   inherited;
 end;
 
@@ -74820,8 +74820,8 @@ procedure TXMLLink_type_attachment_end.DoRegisterChildClasses;
 begin
   FClassesTree.Add('rotate', TXMLRotate_type);
   FClassesTree.Add('translate', TXMLTranslate_type);
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
   inherited;
 end;
 
@@ -74870,8 +74870,8 @@ begin
   FClassesTree.Add('target', TXMLCommon_float_or_param_type);
   FClassesTree.Add('technique_common', TXMLFormula_technique_type);
   FClassesTree.Add('technique', TXMLTechnique_type);
-  FNewparam := CreateCollection(TXMLFormula_newparam_typeList, IXMLFormula_newparam_type, 'newparam') as IXMLFormula_newparam_typeList;
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
+  FNewparam := CreateFilter(TXMLFormula_newparam_typeList, TXMLFormula_newparam_type, IXMLFormula_newparam_type) as IXMLFormula_newparam_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
   inherited;
 end;
 
@@ -119040,7 +119040,7 @@ procedure TXMLPiecewisetype.DoRegisterChildClasses;
 begin
   FClassesTree.Add('piece', TXMLPiecetype);
   FClassesTree.Add('otherwise', TXMLOtherwisetype);
-  FPiece := CreateCollection(TXMLPiecetypeList, IXMLPiecetype, 'piece') as IXMLPiecetypeList;
+  FPiece := CreateFilter(TXMLPiecetypeList, TXMLPiecetype, IXMLPiecetype) as IXMLPiecetypeList;
   inherited;
 end;
 
@@ -124598,8 +124598,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('articulated_system', TXMLArticulated_system_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FArticulated_system := CreateCollection(TXMLArticulated_system_typeList, IXMLArticulated_system_type, 'articulated_system') as IXMLArticulated_system_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FArticulated_system := CreateFilter(TXMLArticulated_system_typeList, TXMLArticulated_system_type, IXMLArticulated_system_type) as IXMLArticulated_system_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -124663,7 +124663,7 @@ begin
   FClassesTree.Add('kinematics', TXMLKinematics_type);
   FClassesTree.Add('motion', TXMLMotion_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -124732,9 +124732,9 @@ begin
   FClassesTree.Add('technique_common', TXMLKinematics_technique_type);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInstance_kinematics_model := CreateCollection(TXMLInstance_kinematics_model_typeList, IXMLInstance_kinematics_model_type, 'instance_kinematics_model') as IXMLInstance_kinematics_model_typeList;
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInstance_kinematics_model := CreateFilter(TXMLInstance_kinematics_model_typeList, TXMLInstance_kinematics_model_type, IXMLInstance_kinematics_model_type) as IXMLInstance_kinematics_model_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -124766,10 +124766,10 @@ begin
   FClassesTree.Add('newparam', TXMLKinematics_newparam_type);
   FClassesTree.Add('setparam', TXMLKinematics_setparam_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FBind := CreateCollection(TXMLKinematics_bind_typeList, IXMLKinematics_bind_type, 'bind') as IXMLKinematics_bind_typeList;
-  FNewparam := CreateCollection(TXMLKinematics_newparam_typeList, IXMLKinematics_newparam_type, 'newparam') as IXMLKinematics_newparam_typeList;
-  FSetparam := CreateCollection(TXMLKinematics_setparam_typeList, IXMLKinematics_setparam_type, 'setparam') as IXMLKinematics_setparam_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FBind := CreateFilter(TXMLKinematics_bind_typeList, TXMLKinematics_bind_type, IXMLKinematics_bind_type) as IXMLKinematics_bind_typeList;
+  FNewparam := CreateFilter(TXMLKinematics_newparam_typeList, TXMLKinematics_newparam_type, IXMLKinematics_newparam_type) as IXMLKinematics_newparam_typeList;
+  FSetparam := CreateFilter(TXMLKinematics_setparam_typeList, TXMLKinematics_setparam_type, IXMLKinematics_setparam_type) as IXMLKinematics_setparam_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -125021,7 +125021,7 @@ begin
   FClassesTree.Add('frame_tip', TXMLKinematics_frame_type);
   FClassesTree.Add('frame_tcp', TXMLKinematics_frame_type);
   FClassesTree.Add('frame_object', TXMLKinematics_frame_type);
-  FAxis_info := CreateCollection(TXMLKinematics_axis_info_typeList, IXMLKinematics_axis_info_type, 'axis_info') as IXMLKinematics_axis_info_typeList;
+  FAxis_info := CreateFilter(TXMLKinematics_axis_info_typeList, TXMLKinematics_axis_info_type, IXMLKinematics_axis_info_type) as IXMLKinematics_axis_info_typeList;
   inherited;
 end;
 
@@ -125061,10 +125061,10 @@ begin
   FClassesTree.Add('limits', TXMLKinematics_limits_type);
   FClassesTree.Add('formula', TXMLFormula_type);
   FClassesTree.Add('instance_formula', TXMLInstance_formula_type);
-  FNewparam := CreateCollection(TXMLKinematics_newparam_typeList, IXMLKinematics_newparam_type, 'newparam') as IXMLKinematics_newparam_typeList;
-  FIndex := CreateCollection(TXMLKinematics_index_typeList, IXMLKinematics_index_type, 'index') as IXMLKinematics_index_typeList;
-  FFormula := CreateCollection(TXMLFormula_typeList, IXMLFormula_type, 'formula') as IXMLFormula_typeList;
-  FInstance_formula := CreateCollection(TXMLInstance_formula_typeList, IXMLInstance_formula_type, 'instance_formula') as IXMLInstance_formula_typeList;
+  FNewparam := CreateFilter(TXMLKinematics_newparam_typeList, TXMLKinematics_newparam_type, IXMLKinematics_newparam_type) as IXMLKinematics_newparam_typeList;
+  FIndex := CreateFilter(TXMLKinematics_index_typeList, TXMLKinematics_index_type, IXMLKinematics_index_type) as IXMLKinematics_index_typeList;
+  FFormula := CreateFilter(TXMLFormula_typeList, TXMLFormula_type, IXMLFormula_type) as IXMLFormula_typeList;
+  FInstance_formula := CreateFilter(TXMLInstance_formula_typeList, TXMLInstance_formula_type, IXMLInstance_formula_type) as IXMLInstance_formula_typeList;
   inherited;
 end;
 
@@ -125250,8 +125250,8 @@ procedure TXMLKinematics_frame_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('translate', TXMLTranslate_type);
   FClassesTree.Add('rotate', TXMLRotate_type);
-  FTranslate := CreateCollection(TXMLTranslate_typeList, IXMLTranslate_type, 'translate') as IXMLTranslate_typeList;
-  FRotate := CreateCollection(TXMLRotate_typeList, IXMLRotate_type, 'rotate') as IXMLRotate_typeList;
+  FTranslate := CreateFilter(TXMLTranslate_typeList, TXMLTranslate_type, IXMLTranslate_type) as IXMLTranslate_typeList;
+  FRotate := CreateFilter(TXMLRotate_typeList, TXMLRotate_type, IXMLRotate_type) as IXMLRotate_typeList;
   inherited;
 end;
 
@@ -125283,8 +125283,8 @@ begin
   FClassesTree.Add('technique_common', TXMLMotion_technique_type);
   FClassesTree.Add('technique', TXMLTechnique_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FTechnique := CreateCollection(TXMLTechnique_typeList, IXMLTechnique_type, 'technique') as IXMLTechnique_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FTechnique := CreateFilter(TXMLTechnique_typeList, TXMLTechnique_type, IXMLTechnique_type) as IXMLTechnique_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -125316,10 +125316,10 @@ begin
   FClassesTree.Add('setparam', TXMLKinematics_setparam_type);
   FClassesTree.Add('newparam', TXMLKinematics_newparam_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FBind := CreateCollection(TXMLKinematics_bind_typeList, IXMLKinematics_bind_type, 'bind') as IXMLKinematics_bind_typeList;
-  FSetparam := CreateCollection(TXMLKinematics_setparam_typeList, IXMLKinematics_setparam_type, 'setparam') as IXMLKinematics_setparam_typeList;
-  FNewparam := CreateCollection(TXMLKinematics_newparam_typeList, IXMLKinematics_newparam_type, 'newparam') as IXMLKinematics_newparam_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FBind := CreateFilter(TXMLKinematics_bind_typeList, TXMLKinematics_bind_type, IXMLKinematics_bind_type) as IXMLKinematics_bind_typeList;
+  FSetparam := CreateFilter(TXMLKinematics_setparam_typeList, TXMLKinematics_setparam_type, IXMLKinematics_setparam_type) as IXMLKinematics_setparam_typeList;
+  FNewparam := CreateFilter(TXMLKinematics_newparam_typeList, TXMLKinematics_newparam_type, IXMLKinematics_newparam_type) as IXMLKinematics_newparam_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -125396,7 +125396,7 @@ procedure TXMLMotion_technique_type.DoRegisterChildClasses;
 begin
   FClassesTree.Add('axis_info', TXMLMotion_axis_info_type);
   FClassesTree.Add('effector_info', TXMLMotion_effector_info_type);
-  FAxis_info := CreateCollection(TXMLMotion_axis_info_typeList, IXMLMotion_axis_info_type, 'axis_info') as IXMLMotion_axis_info_typeList;
+  FAxis_info := CreateFilter(TXMLMotion_axis_info_typeList, TXMLMotion_axis_info_type, IXMLMotion_axis_info_type) as IXMLMotion_axis_info_typeList;
   inherited;
 end;
 
@@ -125421,9 +125421,9 @@ begin
   FClassesTree.Add('acceleration', TXMLCommon_float_or_param_type);
   FClassesTree.Add('deceleration', TXMLCommon_float_or_param_type);
   FClassesTree.Add('jerk', TXMLCommon_float_or_param_type);
-  FBind := CreateCollection(TXMLKinematics_bind_typeList, IXMLKinematics_bind_type, 'bind') as IXMLKinematics_bind_typeList;
-  FNewparam := CreateCollection(TXMLKinematics_newparam_typeList, IXMLKinematics_newparam_type, 'newparam') as IXMLKinematics_newparam_typeList;
-  FSetparam := CreateCollection(TXMLKinematics_setparam_typeList, IXMLKinematics_setparam_type, 'setparam') as IXMLKinematics_setparam_typeList;
+  FBind := CreateFilter(TXMLKinematics_bind_typeList, TXMLKinematics_bind_type, IXMLKinematics_bind_type) as IXMLKinematics_bind_typeList;
+  FNewparam := CreateFilter(TXMLKinematics_newparam_typeList, TXMLKinematics_newparam_type, IXMLKinematics_newparam_type) as IXMLKinematics_newparam_typeList;
+  FSetparam := CreateFilter(TXMLKinematics_setparam_typeList, TXMLKinematics_setparam_type, IXMLKinematics_setparam_type) as IXMLKinematics_setparam_typeList;
   inherited;
 end;
 
@@ -125520,9 +125520,9 @@ begin
   FClassesTree.Add('acceleration', TXMLCommon_float2_or_param_type);
   FClassesTree.Add('deceleration', TXMLCommon_float2_or_param_type);
   FClassesTree.Add('jerk', TXMLCommon_float2_or_param_type);
-  FBind := CreateCollection(TXMLKinematics_bind_typeList, IXMLKinematics_bind_type, 'bind') as IXMLKinematics_bind_typeList;
-  FNewparam := CreateCollection(TXMLKinematics_newparam_typeList, IXMLKinematics_newparam_type, 'newparam') as IXMLKinematics_newparam_typeList;
-  FSetparam := CreateCollection(TXMLKinematics_setparam_typeList, IXMLKinematics_setparam_type, 'setparam') as IXMLKinematics_setparam_typeList;
+  FBind := CreateFilter(TXMLKinematics_bind_typeList, TXMLKinematics_bind_type, IXMLKinematics_bind_type) as IXMLKinematics_bind_typeList;
+  FNewparam := CreateFilter(TXMLKinematics_newparam_typeList, TXMLKinematics_newparam_type, IXMLKinematics_newparam_type) as IXMLKinematics_newparam_typeList;
+  FSetparam := CreateFilter(TXMLKinematics_setparam_typeList, TXMLKinematics_setparam_type, IXMLKinematics_setparam_type) as IXMLKinematics_setparam_typeList;
   inherited;
 end;
 
@@ -125611,8 +125611,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('kinematics_scene', TXMLKinematics_scene_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FKinematics_scene := CreateCollection(TXMLKinematics_scene_typeList, IXMLKinematics_scene_type, 'kinematics_scene') as IXMLKinematics_scene_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FKinematics_scene := CreateFilter(TXMLKinematics_scene_typeList, TXMLKinematics_scene_type, IXMLKinematics_scene_type) as IXMLKinematics_scene_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -125676,9 +125676,9 @@ begin
   FClassesTree.Add('instance_kinematics_model', TXMLInstance_kinematics_model_type);
   FClassesTree.Add('instance_articulated_system', TXMLInstance_articulated_system_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInstance_kinematics_model := CreateCollection(TXMLInstance_kinematics_model_typeList, IXMLInstance_kinematics_model_type, 'instance_kinematics_model') as IXMLInstance_kinematics_model_typeList;
-  FInstance_articulated_system := CreateCollection(TXMLInstance_articulated_system_typeList, IXMLInstance_articulated_system_type, 'instance_articulated_system') as IXMLInstance_articulated_system_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInstance_kinematics_model := CreateFilter(TXMLInstance_kinematics_model_typeList, TXMLInstance_kinematics_model_type, IXMLInstance_kinematics_model_type) as IXMLInstance_kinematics_model_typeList;
+  FInstance_articulated_system := CreateFilter(TXMLInstance_articulated_system_typeList, TXMLInstance_articulated_system_type, IXMLInstance_articulated_system_type) as IXMLInstance_articulated_system_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -125746,8 +125746,8 @@ begin
   FClassesTree.Add('asset', TXMLAsset_type);
   FClassesTree.Add('formula', TXMLFormula_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FFormula := CreateCollection(TXMLFormula_typeList, IXMLFormula_type, 'formula') as IXMLFormula_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FFormula := CreateFilter(TXMLFormula_typeList, TXMLFormula_type, IXMLFormula_type) as IXMLFormula_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -125811,9 +125811,9 @@ begin
   FClassesTree.Add('instance_visual_scene', TXMLInstance_with_extra_type);
   FClassesTree.Add('instance_kinematics_scene', TXMLInstance_kinematics_scene_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FInstance_physics_scene := CreateCollection(TXMLInstance_with_extra_typeList, IXMLInstance_with_extra_type, 'instance_physics_scene') as IXMLInstance_with_extra_typeList;
-  FInstance_kinematics_scene := CreateCollection(TXMLInstance_kinematics_scene_typeList, IXMLInstance_kinematics_scene_type, 'instance_kinematics_scene') as IXMLInstance_kinematics_scene_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FInstance_physics_scene := CreateFilter(TXMLInstance_with_extra_typeList, TXMLInstance_with_extra_type, IXMLInstance_with_extra_type) as IXMLInstance_with_extra_typeList;
+  FInstance_kinematics_scene := CreateFilter(TXMLInstance_kinematics_scene_typeList, TXMLInstance_kinematics_scene_type, IXMLInstance_kinematics_scene_type) as IXMLInstance_kinematics_scene_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 
@@ -125847,11 +125847,11 @@ begin
   FClassesTree.Add('bind_kinematics_model', TXMLBind_kinematics_model_type);
   FClassesTree.Add('bind_joint_axis', TXMLBind_joint_axis_type);
   FClassesTree.Add('extra', TXMLExtra_type);
-  FNewparam := CreateCollection(TXMLKinematics_newparam_typeList, IXMLKinematics_newparam_type, 'newparam') as IXMLKinematics_newparam_typeList;
-  FSetparam := CreateCollection(TXMLKinematics_setparam_typeList, IXMLKinematics_setparam_type, 'setparam') as IXMLKinematics_setparam_typeList;
-  FBind_kinematics_model := CreateCollection(TXMLBind_kinematics_model_typeList, IXMLBind_kinematics_model_type, 'bind_kinematics_model') as IXMLBind_kinematics_model_typeList;
-  FBind_joint_axis := CreateCollection(TXMLBind_joint_axis_typeList, IXMLBind_joint_axis_type, 'bind_joint_axis') as IXMLBind_joint_axis_typeList;
-  FExtra := CreateCollection(TXMLExtra_typeList, IXMLExtra_type, 'extra') as IXMLExtra_typeList;
+  FNewparam := CreateFilter(TXMLKinematics_newparam_typeList, TXMLKinematics_newparam_type, IXMLKinematics_newparam_type) as IXMLKinematics_newparam_typeList;
+  FSetparam := CreateFilter(TXMLKinematics_setparam_typeList, TXMLKinematics_setparam_type, IXMLKinematics_setparam_type) as IXMLKinematics_setparam_typeList;
+  FBind_kinematics_model := CreateFilter(TXMLBind_kinematics_model_typeList, TXMLBind_kinematics_model_type, IXMLBind_kinematics_model_type) as IXMLBind_kinematics_model_typeList;
+  FBind_joint_axis := CreateFilter(TXMLBind_joint_axis_typeList, TXMLBind_joint_axis_type, IXMLBind_joint_axis_type) as IXMLBind_joint_axis_typeList;
+  FExtra := CreateFilter(TXMLExtra_typeList, TXMLExtra_type, IXMLExtra_type) as IXMLExtra_typeList;
   inherited;
 end;
 

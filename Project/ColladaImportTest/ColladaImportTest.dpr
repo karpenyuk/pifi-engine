@@ -2,8 +2,7 @@ program ColladaImportTest;
 
 uses
   Forms,
-  uMainUnit in 'uMainUnit.pas' {Form5},
-  uFileFormatDAE in '..\..\Source\uFileFormatDAE.pas';
+  uMainUnit in 'uMainUnit.pas' {Form5};
 
 {$R *.res}
 

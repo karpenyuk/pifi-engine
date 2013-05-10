@@ -23,6 +23,7 @@ uses
   uLists;
 
 type
+
   TDAEVertexSource = record
     Id: String;
     Data: TSingleDynArray;
@@ -81,6 +82,7 @@ class function FileFormatDAE.LoadAndCreateVertexObject(const aFileName: string)
 var
   LVO: TVertexObject;
   LCOLLADA: IXMLCOLLADA;
+  LGeometries: IXMLLibrary_geometries_type;
   LGeometry: IXMLGeometry_type;
   LMeshType: IXMLMesh_type;
   LAccessor: IXMLAccessor_type;
@@ -111,7 +113,8 @@ begin
     LCOLLADA := TXMLCOLLADA.Load(aFileName) as IXMLCOLLADA;
     if (LCOLLADA.Library_geometries.Count > 0) then
     begin
-      LGeometry := LCOLLADA.Library_geometries[0].Geometry[0];
+      LGeometries := LCOLLADA.Library_geometries[0];
+      LGeometry :=  LGeometries.Geometry[0];
       LMeshType := LGeometry.Mesh;
 
       SetLength(LSources, LMeshType.Source.Count);
@@ -188,7 +191,7 @@ begin
             attr.SetAttribSemantic(LSemantics[k].AttribType);
             attr.Buffer.Allocate(List.Count * List.ItemSize,
               List.GetItemAddr(0));
-            attr.Buffer.SetDataHandler(List);
+            attr.Buffer.SetDataHandler(List, True);
             LVO.AddAttrib(attr);
           end;
       end;
