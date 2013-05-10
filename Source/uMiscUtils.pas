@@ -121,6 +121,7 @@ function TrimLeft( const aStr: String ): String;
 function StrScan( const aStr: PWideChar; aChar: WideChar ): PWideChar;
 
 function CheckPath(Path: string): string;
+function LowerCase(const Str: string): string;
 
 procedure CLog( const aMsg: String );
 

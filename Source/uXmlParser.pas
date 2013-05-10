@@ -74,7 +74,7 @@ type
 
   IXML = interface
     ['{B5D59B72-CC8D-4126-AEB3-A7897DDF492C}']
-    procedure DoBeforeCreate;
+    procedure DoRegisterChildClasses;
     function GetCount: LongInt;
     procedure SetTag(const aValue: WideString);
     function GetTag: WideString;
@@ -128,8 +128,8 @@ type
 
   TXML = class(TInterfacedObject, IXML)
   protected
-    class var ClassesTree: TXMLClassesTree;
-    class function FindClass(const aClassName: AnsiString): TXMLClass;
+    FClassesTree: TXMLClassesTree;
+    function FindClass(const aClassName: AnsiString): TXMLClass;
   private
     FNodes: IXMLList;
     FTag: WideString;
@@ -147,7 +147,7 @@ type
     procedure SetContent(const aValue: TXMLVariant);
     procedure SetNodes(const aList: IXMLList);
   public
-    procedure DoBeforeCreate; virtual;
+    procedure DoRegisterChildClasses; virtual;
     constructor Create(const Text: WideString; BeginPos: LongInt);
     destructor Destroy; override;
     class function Load(const FileName: string): IXML;
@@ -170,6 +170,7 @@ type
     function GetCount: Integer;
     function GetNode(const Name: WideString): IXML;
   protected
+    destructor Destroy; override;
     function Add(const Node: IXML): Integer;
     procedure Clear;
     function Delete(const Index: Integer): Integer; overload;
@@ -205,7 +206,6 @@ type
   private
     FList: IXMLList;
     FItemInterface: TGuid;
-    FTag: WideString;
   protected
     function GetCount: Integer;
     function GetNode(Index: Integer): IXML;
@@ -216,7 +216,7 @@ type
     property Nodes[Index: Integer]: IXML read GetNode; default;
     property ItemInterface: TGuid read FItemInterface write FItemInterface;
     property Tag: WideString read FTag write FTag;
-    function AddItem(Index: Integer): IXML; virtual;
+//    function AddItem(Index: Integer): IXML; virtual;
     property List: IXMLList read GetList;
   end;
 
@@ -271,7 +271,7 @@ begin
             if ReadValue then
           begin
             FParams[ParamIdx].Value :=
-              Trim(Copy(Text, IndexBegin, i - IndexBegin));
+              Trim(Copy(Text, IndexBegin + 1, i - IndexBegin - 2));
             Flag := F_BEGIN;
             ReadValue := False;
             ParamIdx := -1;
@@ -282,7 +282,7 @@ begin
     end;
   if ParamIdx <> -1 then
       FParams[ParamIdx].Value :=
-      Trim(Copy(Text, IndexBegin, Length(Text) - IndexBegin + 1));
+      Trim(Copy(Text, IndexBegin + 1, Length(Text) - IndexBegin - 1));
   FCount := Length(FParams);
 end;
 
@@ -376,7 +376,9 @@ var
   XMLClass: TXMLClass;
 begin
   FNodes := TXMLList.Create;
-  DoBeforeCreate;
+  FClassesTree := TXMLClassesTree.CreateClassesTree;
+  DoRegisterChildClasses;
+
   TextFlag := False;
   Flag := F_BEGIN;
   BeginIndex := BeginPos;
@@ -465,7 +467,6 @@ begin
                         line := Copy(line, 1, k-1);
                       end;
                     XMLClass := FindClass(AnsiString(line));
-                    WriteLn(FTag, ' - ', line, ': ', XMLClass.ClassName);
                     FNodes.Add(XMLClass.Create(Text, i));
                     if FNodes.Last.DataLen = 0 then
                         break;
@@ -491,6 +492,8 @@ begin
   end;
   if FParams = nil then
       FParams := TXMLParams.Create('');
+  if Length(FTag) = 0 then
+    FTag := ClassName;
 end;
 
 function TXML.CreateCollection(const CollectionClass: TXMLCollectionClass;
@@ -505,18 +508,22 @@ end;
 
 destructor TXML.Destroy;
 begin
-  FNodes.Clear;
+  WriteLn(CLassName);
+  while FNodes.Count > 0 do
+    FNodes.Delete(0);
   Params.Free;
+  FClassesTree.Free;
+  inherited;
 end;
 
-procedure TXML.DoBeforeCreate;
+procedure TXML.DoRegisterChildClasses;
 begin
 end;
 
-class function TXML.FindClass(const aClassName: AnsiString): TXMLClass;
+function TXML.FindClass(const aClassName: AnsiString): TXMLClass;
 begin
-  if Assigned(ClassesTree) then
-    if ClassesTree.Find(aClassName, Result) then
+  if Assigned(FClassesTree) then
+    if FClassesTree.Find(aClassName, Result) then
       exit;
   Result := TXML;
 end;
@@ -584,6 +591,7 @@ end;
 
 constructor TXMLList.Create;
 begin
+  inherited;
   FList := TInterfaceList.Create;
 end;
 
@@ -597,6 +605,12 @@ begin
   else
    { No error when named nodes doesn't exist }
     Result := -1;
+end;
+
+destructor TXMLList.Destroy;
+begin
+  FList.Clear;
+  inherited;
 end;
 
 function TXMLList.Delete(const Index: Integer): Integer;
@@ -683,15 +697,15 @@ end;
 
 {$REGION 'TXMLCollection'}
 
-function TXMLCollection.AddItem(Index: Integer): IXML;
-var
-  NewXML: TXML;
-begin
-  NewXML := TXML.Create('', 1);
-  Result := NewXML;
-  if Index > -1 then
-
-end;
+//function TXMLCollection.AddItem(Index: Integer): IXML;
+//var
+//  NewXML: TXML;
+//begin
+//  NewXML := TXML.Create('', 1);
+//  Result := NewXML;
+//  if Index > -1 then
+//
+//end;
 
 function TXMLCollection.GetCount: Integer;
 var
@@ -706,7 +720,10 @@ end;
 
 function TXMLCollection.GetList: IXMLList;
 begin
-  Result := FList;
+  if Assigned(FList) then
+    Result := FList
+  else
+    Result := FNodes;
 end;
 
 function TXMLCollection.GetNode(Index: Integer): IXML;
@@ -944,11 +961,5 @@ constructor TXMLClassesTree.CreateClassesTree;
 begin
   Create(CompareAnsiStrings, nil);
 end;
-
-initialization
-
-finalization
-
-  TXML.ClassesTree.Free;
 
 end.

@@ -12,13 +12,27 @@ uses
   Controls,
   Forms,
   Dialogs,
-  Types;
+  Types,
+  uGLViewer,
+  uBaseRenders,
+  uBaseTypes,
+  uBaseGL;
 
 type
   TForm5 = class(TForm)
-    procedure FormCreate(Sender: TObject);
+    GLViewer1: TGLViewer;
+    procedure GLViewer1CanResize(Sender: TObject; var NewWidth,
+      NewHeight: Integer; var Resize: Boolean);
+    procedure GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,
+      Y: Integer);
+    procedure GLViewer1Render(Sender: TObject);
+    procedure GLViewer1ContextReady(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
+    MX, MY: Integer;
   public
     { Public declarations }
   end;
@@ -31,123 +45,106 @@ implementation
 {$R *.dfm}
 
 uses
-    uXmlParser, uDAESchema, uMiscUtils, uRenderResource, uBaseTypes;
+  XML.XMLDoc,
+  uFileFormatDAE,
+  uRenderResource,
+  uVMath,
+  dglOpenGL;
 
-type
-  TDAEVertexSource = record
-    Id: String;
-    Data: TSingleDynArray;
-    FType: TValueType;
-    FComponents: TValueComponent;
-  end;
-  TDAEVertexSourceDynArray = array of TDAEVertexSource;
+var
+  Mesh: TVertexObject;
+  Render: TBaseRender;
+  Shader1: TGLSLShaderProgram;
+  cameraPos: TVector;
+  Model, View, Proj: TMatrix;
 
-  TSourceSemantic = record
-    FAttribType: TAttribType;
-    FSource: TDAEVertexSource;
-    FOffset: Integer;
-  end;
-  TSourceSemanticDynArray = array of TSourceSemantic;
+  Drawer: TGLVertexObject;
 
-  function GetSemantic(const Input: IXMLInput_local_offset_typeList;
-    const ASources: TDAEVertexSourceDynArray): TSourceSemanticDynArray;
-  var
-    j: Integer;
-    function FindSource(ASourceName: String): TDAEVertexSource;
-    var
-      i: Integer;
-    begin
-      for i := 0 to High(ASources) do
-      begin
-        if (ASourceName = '#' + ASources[i].Id) or
-           (ASourceName = ASources[i].Id) then
-          exit(ASources[i]);
-      end;
-      Result := ASources[0]; // if not found Result POSITION attribute
-    end;
+procedure TForm5.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  glFinish;
+  GLViewer1.OnRender := nil;
+  GLViewer1.Context.Deactivate;
+  Mesh.Destroy;
+  Shader1.Destroy;
+  Drawer.Destroy;
+end;
 
-  begin
-    SetLength(Result, Input.Count);
-    for j := 0 to Input.Count - 1 do
-    begin
-      Result[j].FOffset := Input[j].Offset;
-      Result[j].FSource := FindSource(Input[j].Source);
-      if Input[j].Semantic = 'VERTEX' then
-        Result[j].FAttribType := TAttribType.atVertex
-      else if Input[j].Semantic = 'NORMAL' then
-        Result[j].FAttribType := TAttribType.atNormal
-      else if Input[j].Semantic = 'VCOLOR' then
-        Result[j].FAttribType := TAttribType.atColor
-      else if Input[j].Semantic = 'TEXCOORD' then
-        Result[j].FAttribType := TAttribType.atTexCoord0;
-    end;
-  end;
+procedure TForm5.GLViewer1CanResize(Sender: TObject; var NewWidth,
+  NewHeight: Integer; var Resize: Boolean);
+begin
+  Proj := TMatrix.PerspectiveMatrix(60, NewWidth / NewHeight, 0.1, 100);
+end;
 
-procedure TForm5.FormCreate(Sender: TObject);
+procedure TForm5.GLViewer1ContextReady(Sender: TObject);
 var
   path: string;
-  LDOC: IXML;
-  LCOLLADA: IXMLCOLLADA;
-  LGeometry: IXMLGeometry_type;
-  LMeshType: IXMLMesh_type;
-  LSource: IXMLSource_type;
-  LSources: TDAEVertexSourceDynArray;
-  LIndices: TIntegerDynArray;
-  LSemantics: TSourceSemanticDynArray;
-  LSubMesh: IXMLTriangles_type;
-  attr: TAttribBuffer;
-  I, J, T: Integer;
-
-  function GetId(const AName: String):String;
-  var
-    n :Integer;
-  begin
-    result := AName;
-    for n := 0 to LMeshType.Vertices.Input.Count - 1 do
-       if LMeshType.Vertices.Input[n].Source = '#'+ AName then
-           result := LMeshType.Vertices.Id;
-  end;
-
+  ver: TApiVersion;
 begin
-  {$IFDEF MSWindows}
+  ver.GAPI := avGL;
+  ver.Version := 420;
+  Render := vRegisteredRenders.GetCompatibleRender(ver);
+
+{$IFDEF MSWindows}
   path := '..\..\Source\Media\'; { :-\ }
-  {$ENDIF}
-  {$IFDEF Linux}
+{$ENDIF}
+{$IFDEF Linux}
   path := '../../Source/Media/'; { :-/ }
-  {$ENDIF}
+{$ENDIF}
+  Mesh := FileFormatDAE.LoadAndCreateVertexObject(path + 'bunny.dae');
 
-  LCOLLADA := TXMLCOLLADA.Load(path + 'bunny.dae') as IXMLCOLLADA;
-  if (LCOLLADA.Library_geometries.Count > 0) then
+  Shader1 := TGLSLShaderProgram.Create;
+
+  Shader1.AttachShaderFromFile(stVertex, path+'ColorShader3D.Vert');
+  Shader1.AttachShaderFromFile(stFragment, path+'ColorShader.Frag');
+
+  Shader1.LinkShader;
+  if Shader1.Error then
   begin
-    LGeometry := LCOLLADA.Library_geometries[0].Geometry[I];
-    LMeshType := LGeometry.Mesh;
-
-    SetLength(LSources, LMeshType.Source.Count);
-    for I := 0 to LMeshType.Source.Count - 1 do
-    begin
-      LSource := LMeshType.Source[I];
-      LSources[i].Id := GetId(LSource.Id);
-      LSources[i].Data := FloatStringsToSingleDynArray(LSource.Float_array.Content.Value);
-      case LSource.Technique_common.Accessor.Count of
-        1: LSources[i].FComponents := 1;
-        2: LSources[i].FComponents := 2;
-        3: LSources[i].FComponents := 3;
-        4: LSources[i].FComponents := 4;
-        else Assert(False);
-      end;
-      for J := 0 to LSource.Technique_common.Accessor.Count - 1 do
-        Assert(LSource.Technique_common.Accessor.Param[J].Type_ = 'float');
-      LSources[i].FType := vtFloat;
-    end;
-
-    if LMeshType.Triangles.Count > 0 then
-    begin
-      LIndices := IntStringsToIntegerDynArray(LMeshType.Triangles[0].P.Content.Value);
-      LSemantics := GetSemantic(LMeshType.Triangles[0].Input, LSources);
-
-    end;
-
+    showmessage(Shader1.Log);
+    Halt(0);
   end;
+
+  Proj := TMatrix.PerspectiveMatrix(60, GLViewer1.Width / GLViewer1.Height,
+    0.1, 100);
+  cameraPos := TVector.Make(0, 0, 5);
+  View := TMatrix.LookAtMatrix(cameraPos, VecNull, vecY);
+  Model := TMatrix.ScaleMatrix(TVector.Make(12, 12, 12));
+
+  Drawer := TGLVertexObject.CreateFrom(Mesh);
+  Drawer.Shader := Shader1;
+end;
+
+procedure TForm5.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  MX := X;
+  MY := Y;
+end;
+
+procedure TForm5.GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  if Shift = [ssLeft] then
+  begin
+    cameraPos.RotateAround(VecNull, vecY, MY - Y, MX - X);
+    View := TMatrix.LookAtMatrix(cameraPos, VecNull, vecY);
+  end;
+  MX := X;
+  MY := Y;
+end;
+
+procedure TForm5.GLViewer1Render(Sender: TObject);
+var
+  MVP: TMatrix;
+begin
+  GLViewer1.Context.ClearDevice;
+
+  MVP := Model * View * Proj;
+  Shader1.Apply;
+  Shader1.SetUniform('MVP', MVP.Matrix4);
+  Drawer.RenderVO();
+  Shader1.UnApply;
 end;
 
 end.
