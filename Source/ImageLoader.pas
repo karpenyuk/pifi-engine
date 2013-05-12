@@ -1,4 +1,4 @@
-{: ImageLoader- Предназначен для загрузки текстур в формате bmp, tga, jpg и dds.}
+﻿{: ImageLoader- Предназначен для загрузки текстур в формате bmp, tga, jpg и dds.}
 
 unit ImageLoader;
 
@@ -405,7 +405,9 @@ end;
 function LoadSynopseJpeg(Filename: String; var cFormat,iFormat,dType,pSize : Cardinal;
   var Width, Height: integer): pointer;
 var
-   // Img: PJpegDecode;
+  {$IFNDEF FPC}
+    Img: PJpegDecode;
+  {$ENDIF}
     i: integer;
     ps,pd: Pinteger;
     p: pointer;
