@@ -215,7 +215,7 @@ var
 begin
   Result := Str;
   for i := 1 to Length(Str) do
-    if AnsiChar(Result[i]) in ['A'..'Z', 'А'..'Я'] then
+    if AnsiChar(Result[i]) in ['A'..'Z'] then
       Result[i] := Chr(Ord(Result[i]) + 32);
 end;
 
