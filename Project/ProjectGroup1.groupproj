@@ -18,7 +18,10 @@
 			<Projects Include="FreetypeTest\FreetypeTest.dproj">
 				<Dependencies/>
 			</Projects>
-			<Projects Include="NitificationTest\NotifyTest.dproj">
+			<Projects Include="NotificationTest\NotifyTest.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="ColladaImportTest\ColladaImportTest.dproj">
 				<Dependencies/>
 			</Projects>
 		</ItemGroup>
@@ -83,14 +86,23 @@
 		<Target Name="NotifyTest:Make">
 			<MSBuild Projects="NotificationTest\NotifyTest.dproj" Targets="Make"/>
 		</Target>
+		<Target Name="ColladaImportTest">
+			<MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj"/>
+		</Target>
+		<Target Name="ColladaImportTest:Clean">
+			<MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="ColladaImportTest:Make">
+			<MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj" Targets="Make"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="xProject;ComputeShaderProj;GeometryShaders;RBTreeTest;FreetypeTest;NotifyTest"/>
+			<CallTarget Targets="xProject;ComputeShaderProj;GeometryShaders;RBTreeTest;FreetypeTest;NotifyTest;ColladaImportTest"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="xProject:Clean;ComputeShaderProj:Clean;GeometryShaders:Clean;RBTreeTest:Clean;FreetypeTest:Clean;NotifyTest:Clean"/>
+			<CallTarget Targets="xProject:Clean;ComputeShaderProj:Clean;GeometryShaders:Clean;RBTreeTest:Clean;FreetypeTest:Clean;NotifyTest:Clean;ColladaImportTest:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="xProject:Make;ComputeShaderProj:Make;GeometryShaders:Make;RBTreeTest:Make;FreetypeTest:Make;NotifyTest:Make"/>
+			<CallTarget Targets="xProject:Make;ComputeShaderProj:Make;GeometryShaders:Make;RBTreeTest:Make;FreetypeTest:Make;NotifyTest:Make;ColladaImportTest:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>
