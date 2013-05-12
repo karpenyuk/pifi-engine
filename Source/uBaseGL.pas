@@ -302,6 +302,8 @@ Type
     procedure Apply;
     procedure UnApply;
 
+    procedure SetUniform(const Name: ansistring; const Value: array of TVector);
+      overload;
     procedure SetUniform(const Name: ansistring; const Value: single;
       Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: vec2;
@@ -1398,6 +1400,13 @@ procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
 begin
   glUniformMatrix4fv(GetUniformLocation(FShaderId, name), Count,
     transpose, @Value);
+end;
+
+procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
+  const Value: array of TVector);
+begin
+  glUniform4fv(GetUniformLocation(FShaderId, name), Length(Value),
+    PGLFloat(Value[0].GetAddr));
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
