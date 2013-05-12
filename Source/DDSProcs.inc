@@ -243,18 +243,20 @@ end;
 
 function ReservCompMem(bs: integer; var desc: TImageDesc): integer;
 var i,s: integer;
-    mw,mh,ms,offset: integer;
+    mw,mh,md,ms,offset: integer;
 begin
   with desc do begin
-    mw:=width; mh:=height;
+    mw:=width; mh:=height; md:=max(1, desc.Depth);
     offset:=0; s:=0;
     for i:=0 to Levels-1 do begin
-      if mw=0 then mw:=1; if mh=0 then mh:=1;
-      ms:=trunc(max(1, mw / 4) * max(1, mh / 4)*bs); s:=s+ms;
+      if mw=0 then mw:=1; if mh=0 then mh:=1; if md=0 then md:=1;
+      ms:=trunc(max(1, mw / 4) * max(1, mh / 4)*bs)*md; s:=s+ms;
       LODS[i].Offset:=offset; offset := offset + ms;
       LODS[i].Width:=mw; LODS[i].Height:=mh;
-      LODS[i].Size:=ms; LODS[i].Depth:=1;
+      LODS[i].Size:=ms; LODS[i].Depth:=md;
       mw:=mw shr 1; mh:=mh shr 1;
+      if not desc.TextureArray then
+        md:=md shr 1;
     end; result:=s;
     getmem(Data,s); DataSize:=s;
   end;
@@ -287,19 +289,22 @@ end;
 
 function ReservUncompMem(bpp: byte; var desc: TImageDesc): integer;
 var i,s: integer;
-    mw,mh,ms,offset: integer;
+    mw,mh,md,ms,offset: integer;
     b: byte;
 begin
   with desc do begin
-    mw:=width; mh:=height;
+    mw:=width; mh:=height; md:=max(1, depth);
     offset:=0; s:=0; b:=(bpp); i:=0;
     repeat
-      if mw=0 then mw:=1; if mh=0 then mh:=1;
-      ms:=mw*mh*b; s:=s+ms;
+      if mw=0 then mw:=1; if mh=0 then mh:=1;  if md=0 then md:=1;
+      ms:=mw*mh*md*b; s:=s+ms;
       LODS[i].Offset:=offset; offset := offset + ms;
-      LODS[i].Width:=mw; LODS[i].Height:=mh;
+      LODS[i].Width:=mw; LODS[i].Height:=mh; LODS[i].Height:=md;
       LODS[i].Size:=ms; LODS[i].Depth:=1;
-      mw:=mw shr 1; mh:=mh shr 1; inc(i);
+      mw:=mw shr 1; mh:=mh shr 1;
+      if not TextureArray then
+        md:=md shr 1;
+      inc(i);
     until (i=Levels) or (mw+mh=0);
     if desc.CubeMap then getmem(Data,s*6)
     //else if desc.TextureArray then getmem(Data,s*Depth)
@@ -406,5 +411,9 @@ function DDSLoadFromFile(FileName: string): TImageDesc;
 var Stream: TFileStream;
 begin
   Stream:=TFileStream.Create(FileName,fmOpenRead);
-  result:=DDSLoadFromStream(Stream);
+  try
+    result:=DDSLoadFromStream(Stream);
+  finally
+    Stream.Destroy;
+  end;
 end;
