@@ -1,0 +1,449 @@
+﻿#version 420
+
+//--------------------------------------------------------------------------------------
+// Returns the dot product between the viewing vector and the patch edge
+//--------------------------------------------------------------------------------------
+float GetEdgeDotProduct ( 
+                        vec3 f3EdgeNormal0,   // Normalized normal of the first control point of the given patch edge 
+                        vec3 f3EdgeNormal1,   // Normalized normal of the second control point of the given patch edge 
+                        vec3 f3ViewVector     // Normalized viewing vector
+                        )
+{
+    vec3 f3EdgeNormal = normalize( ( f3EdgeNormal0 + f3EdgeNormal1 ) * 0.5 );
+    
+    float fEdgeDotProduct = dot( f3EdgeNormal, f3ViewVector );
+
+    return fEdgeDotProduct;
+}
+
+
+//--------------------------------------------------------------------------------------
+// Returns the screen space position from the given world space patch control point
+//--------------------------------------------------------------------------------------
+vec2 GetScreenSpacePosition   ( 
+                                vec3 f3Position,              // World space position of patch control point
+                                mat4 f4x4ViewProjection,    // View x Projection matrix
+                                float fScreenWidth,             // Screen width
+                                float fScreenHeight             // Screen height
+                                )
+{
+    vec4 f4ProjectedPosition = f4x4ViewProjection * vec4( f3Position, 1.0 );
+    
+    vec2 f2ScreenPosition = f4ProjectedPosition.xy / f4ProjectedPosition.ww;
+    
+    f2ScreenPosition = ( f2ScreenPosition + 1.0 ) * 0.5 * vec2( fScreenWidth, -fScreenHeight );
+
+    return f2ScreenPosition;
+}
+
+
+//--------------------------------------------------------------------------------------
+// Returns the distance of a given point from a given plane
+//--------------------------------------------------------------------------------------
+float DistanceFromPlane ( 
+                        vec3 f3Position,      // World space position of the patch control point
+                        vec4 f4PlaneEquation  // Plane equation of a frustum plane
+                        )
+{
+    float fDistance = dot( vec4( f3Position, 1.0 ), f4PlaneEquation );
+    
+    return fDistance;
+}
+
+
+//--------------------------------------------------------------------------------------
+// Returns a distance adaptive tessellation scale factor (0.0 -> 1.0) 
+//--------------------------------------------------------------------------------------
+float GetDistanceAdaptiveScaleFactor(    
+                                    vec3 f3Eye,           // Position of the camera/eye
+                                    vec3 f3EdgePosition0, // Position of the first control point of the given patch edge
+                                    vec3 f3EdgePosition1, // Position of the second control point of the given patch edge
+                                    float fMinDistance,     // Minimum distance that maximum tessellation factors should be applied at
+                                    float fRange            // Range beyond the minimum distance where tessellation will scale down to the minimum scaling factor    
+                                    )
+{
+    vec3 f3MidPoint = ( f3EdgePosition0 + f3EdgePosition1 ) * 0.5;
+
+    float fDistance = distance( f3MidPoint, f3Eye ) - fMinDistance;
+        
+    float fScale = 1.0 - clamp( fDistance / fRange, 0.0, 1.0 );
+
+    return fScale;
+}
+
+
+//--------------------------------------------------------------------------------------
+// Returns the orientation adaptive tessellation factor (0.0 -> 1.0)
+//--------------------------------------------------------------------------------------
+float GetOrientationAdaptiveScaleFactor ( 
+                                        float fEdgeDotProduct,      // Dot product of edge normal with view vector
+                                        float fSilhouetteEpsilon    // Epsilon to determine the range of values considered to be silhoutte
+                                        )
+{
+    float fScale = 1.0 - abs( fEdgeDotProduct );
+        
+    fScale = clamp( ( fScale - fSilhouetteEpsilon ) / ( 1.0 - fSilhouetteEpsilon ), 0.0, 1.0 );
+
+    return fScale;
+}
+
+
+//--------------------------------------------------------------------------------------
+// Returns the screen resolution adaptive tessellation scale factor (0.0 -> 1.0)
+//--------------------------------------------------------------------------------------
+float GetScreenResolutionAdaptiveScaleFactor( 
+                                            float fCurrentWidth,    // Current render window width 
+                                            float fCurrentHeight,   // Current render window height 
+                                            float fMaxWidth,        // Width considered to be max
+                                            float fMaxHeight        // Height considered to be max
+                                            )
+{
+    float fMaxArea = fMaxWidth * fMaxHeight;
+    
+    float fCurrentArea = fCurrentWidth * fCurrentHeight;
+
+    float fScale = clamp( fCurrentArea / fMaxArea , 0.0, 1.0);
+
+    return fScale;
+}
+
+
+//--------------------------------------------------------------------------------------
+// Returns the screen space adaptive tessellation scale factor (0.0 -> 1.0)
+//--------------------------------------------------------------------------------------
+float GetScreenSpaceAdaptiveScaleFactor (
+                                        vec2 f2EdgeScreenPosition0,   // Screen coordinate of the first patch edge control point
+                                        vec2 f2EdgeScreenPosition1,   // Screen coordinate of the second patch edge control point    
+                                        float fMaxEdgeTessFactor,       // Maximum edge tessellation factor                            
+                                        float fTargetEdgePrimitiveSize  // Desired primitive edge size in pixels
+                                        )
+{
+    float fEdgeScreenLength = distance( f2EdgeScreenPosition0, f2EdgeScreenPosition1 );
+
+    float fTargetTessFactor = fEdgeScreenLength / fTargetEdgePrimitiveSize;
+
+    fTargetTessFactor /= fMaxEdgeTessFactor;
+    
+    float fScale = clamp( fTargetTessFactor, 0.0, 1.0 );
+    
+    return fScale;
+}
+
+
+//--------------------------------------------------------------------------------------
+// Returns back face culling test result (true / false)
+//--------------------------------------------------------------------------------------
+bool BackFaceCull    ( 
+                    float fEdgeDotProduct0, // Dot product of edge 0 normal with view vector
+                    float fEdgeDotProduct1, // Dot product of edge 1 normal with view vector
+                    float fEdgeDotProduct2, // Dot product of edge 2 normal with view vector
+                    float fBackFaceEpsilon  // Epsilon to determine cut off value for what is considered back facing
+                    )
+{
+    vec3 f3BackFaceCull;
+    
+    f3BackFaceCull.x = ( fEdgeDotProduct0 > -fBackFaceEpsilon ) ? ( 0.0 ) : ( 1.0 );
+    f3BackFaceCull.y = ( fEdgeDotProduct1 > -fBackFaceEpsilon ) ? ( 0.0 ) : ( 1.0 );
+    f3BackFaceCull.z = ( fEdgeDotProduct2 > -fBackFaceEpsilon ) ? ( 0.0 ) : ( 1.0 );
+    
+    return all( equal(f3BackFaceCull, vec3(0.0)) );
+}
+
+
+//--------------------------------------------------------------------------------------
+// Returns view frustum Culling test result (true / false)
+//--------------------------------------------------------------------------------------
+bool ViewFrustumCull(
+                    vec3 f3EdgePosition0,         // World space position of patch control point 0
+                    vec3 f3EdgePosition1,         // World space position of patch control point 1
+                    vec3 f3EdgePosition2,         // World space position of patch control point 2
+                    vec4 f4ViewFrustumPlanes[4],  // 4 plane equations (left, right, top, bottom)
+                    float fCullEpsilon              // Epsilon to determine the distance outside the view frustum is still considered inside
+                    )
+{    
+    vec4 f4PlaneTest;
+    float fPlaneTest;
+    
+    // Left clip plane
+    f4PlaneTest.x = ( ( DistanceFromPlane( f3EdgePosition0, f4ViewFrustumPlanes[0]) > -fCullEpsilon ) ? 1.0 : 0.0 ) +
+                    ( ( DistanceFromPlane( f3EdgePosition1, f4ViewFrustumPlanes[0]) > -fCullEpsilon ) ? 1.0 : 0.0 ) +
+                    ( ( DistanceFromPlane( f3EdgePosition2, f4ViewFrustumPlanes[0]) > -fCullEpsilon ) ? 1.0 : 0.0 );
+    // Right clip plane
+    f4PlaneTest.y = ( ( DistanceFromPlane( f3EdgePosition0, f4ViewFrustumPlanes[1]) > -fCullEpsilon ) ? 1.0 : 0.0 ) +
+                    ( ( DistanceFromPlane( f3EdgePosition1, f4ViewFrustumPlanes[1]) > -fCullEpsilon ) ? 1.0 : 0.0 ) +
+                    ( ( DistanceFromPlane( f3EdgePosition2, f4ViewFrustumPlanes[1]) > -fCullEpsilon ) ? 1.0 : 0.0 );
+    // Top clip plane
+    f4PlaneTest.z = ( ( DistanceFromPlane( f3EdgePosition0, f4ViewFrustumPlanes[2]) > -fCullEpsilon ) ? 1.0 : 0.0 ) +
+                    ( ( DistanceFromPlane( f3EdgePosition1, f4ViewFrustumPlanes[2]) > -fCullEpsilon ) ? 1.0 : 0.0 ) +
+                    ( ( DistanceFromPlane( f3EdgePosition2, f4ViewFrustumPlanes[2]) > -fCullEpsilon ) ? 1.0 : 0.0 );
+    // Bottom clip plane
+    f4PlaneTest.w = ( ( DistanceFromPlane( f3EdgePosition0, f4ViewFrustumPlanes[3]) > -fCullEpsilon ) ? 1.0 : 0.0 ) +
+                    ( ( DistanceFromPlane( f3EdgePosition1, f4ViewFrustumPlanes[3]) > -fCullEpsilon ) ? 1.0 : 0.0 ) +
+                    ( ( DistanceFromPlane( f3EdgePosition2, f4ViewFrustumPlanes[3]) > -fCullEpsilon ) ? 1.0 : 0.0 );
+        
+    // Triangle has to pass all 4 plane tests to be visible
+    return !(all( equal(f4PlaneTest, vec4(0.0)) ));
+}
+
+#define MAX_DECALS 50
+#define MIN_PRIM_SIZE 16.0
+#define BACKFACE_EPSILON 0.25
+
+in vec3 vWorldPos[];
+in vec3 vTexCoord[];
+in vec3 vNormal[];
+
+layout(vertices = 3) out;
+out vec3 tWorldPos[];
+out vec3 tTexCoord[];
+out vec3 tNormal[];
+
+uniform mat4 ViewProjection;           // ViewProjection mat4
+uniform float TessellationFactor;  
+uniform bool DisplacementAdaptive = true;
+uniform bool ScreenSpaceAdaptive = false;
+uniform bool backFaceCulling = false;
+uniform vec2 ScreenSize;
+uniform vec3 EyePosition;
+uniform vec4 DecalPositionSize[MAX_DECALS];   // position and size of this decal
+
+void main(void)
+{
+    // Copy inputs to outputs
+    int id = gl_InvocationID;
+    tWorldPos[id] = vWorldPos[id];
+    tTexCoord[id] = vTexCoord[id];
+    tNormal[id] = vNormal[id];
+
+    // Assign tessellation factors
+    // unpack the tessellation factor constant vector
+    float tessellationFactor = TessellationFactor.x;
+    float tessellationFactor0 = tessellationFactor;
+    float tessellationFactor1 = tessellationFactor;
+    float tessellationFactor2 = tessellationFactor;
+    
+    // Get the triangle vertices passed into the hull shader
+    // The vertex ordering needs to be consistant with the edge order.
+    // In this case 0 is for the first edge, 1 for the second, 2 for the third.
+    vec3 vPos0 = vWorldPos[1];
+    vec3 vPos1 = vWorldPos[2];
+    vec3 vPos2 = vWorldPos[0];
+    vec3 vEdge0 = vPos1 - vPos0;
+    vec3 vEdge2 = vPos2 - vPos0;
+    
+    if (backFaceCulling)
+    {
+        // calculate the triangle face normal with a cross product of the edges
+        vec3 vFaceNormal = normalize( cross(vEdge2,vEdge0) );
+        vec3 vView = normalize( vPos0 - EyePosition.xyz );
+        
+        // A negative dot product means facing away from view direction
+        // Compare with a small negative number so that displacements near
+        // the edge are still rendered, since they may still be visible.
+        if ( BackFaceCull( dot( vView, vFaceNormal), -1.0, -1.0, BACKFACE_EPSILON ) )
+        {
+            // back facing
+            // Cull the triangle by setting the tessellation factors to 0.
+            gl_TessLevelOuter[0] = 0.0;
+            gl_TessLevelOuter[1] = 0.0;
+            gl_TessLevelOuter[2] = 0.0;
+            gl_TessLevelInner[0] = 0.0;
+            return; // exit early since this patch won't be rendered
+        }
+    }
+    
+    // Screen Space Adaptive Tessellation
+    if (ScreenSpaceAdaptive)
+    {
+        vec2 vScreenPos0 = GetScreenSpacePosition( vPos0, ViewProjection, ScreenSize.x, ScreenSize.y );
+        vec2 vScreenPos1 = GetScreenSpacePosition( vPos1, ViewProjection, ScreenSize.x, ScreenSize.y );
+        vec2 vScreenPos2 = GetScreenSpacePosition( vPos2, ViewProjection, ScreenSize.x, ScreenSize.y );
+        float scale;
+        scale = GetScreenSpaceAdaptiveScaleFactor(vScreenPos0, vScreenPos1, TessellationFactor.x, MIN_PRIM_SIZE);
+        tessellationFactor0 = TessellationFactor.x * scale;
+        scale = GetScreenSpaceAdaptiveScaleFactor(vScreenPos1, vScreenPos2, TessellationFactor.x, MIN_PRIM_SIZE);
+        tessellationFactor1 = TessellationFactor.x * scale;
+        scale = GetScreenSpaceAdaptiveScaleFactor(vScreenPos2, vScreenPos0, TessellationFactor.x, MIN_PRIM_SIZE);
+        tessellationFactor2 = TessellationFactor.x * scale;
+        tessellationFactor = max(tessellationFactor0, max(tessellationFactor1, tessellationFactor2));
+    }
+
+    if (!DisplacementAdaptive)
+    {
+        // For non-adaptive tessellation, just use a global tessellation factor
+        gl_TessLevelOuter[0] = tessellationFactor0;
+        gl_TessLevelOuter[1] = tessellationFactor1;
+        gl_TessLevelOuter[2] = tessellationFactor2;
+        gl_TessLevelInner[0] = tessellationFactor;
+        return; //exit early since all edges will have the same tessellation factor
+    }
+    
+    // Displacement Adaptive Tessellation
+    // The adaptive algroithm uses a distance to the mesh intersection to determine if tessellation
+    // is needed. If the distance to the intersection is greater than the decal radius, then
+    // render the patch but don't use tessellation (set tessellation factor to 1).
+    
+    // default tessellation factors
+    gl_TessLevelOuter[0] = 1.0;
+    gl_TessLevelOuter[1] = 1.0;
+    gl_TessLevelOuter[2] = 1.0;
+    gl_TessLevelInner[0] = 1.0;
+            
+    // The distance calculation is based on the vector formula for the distance from a point to a line.
+    // Given a line from point A to point B, and a point in space P, the perpendicular distance to the
+    // line is found by projecting the vector from A to P onto the line A to B, or more accurately onto 
+    // the vector formed by the line from A to B. A right triangle can be constructed by taking the line
+    // from P to A as the hypotenuse, the projection of the hypotenuse onto the line AB as the second edge,
+    // and the perpendicular line from the point P to the line AB as the third edge. The distance from the
+    // point to the line is the distance of this third edge. The pythagorean theorm gives us the distance.
+    // We can use the squared distance to avoid taking epensive square roots. Therefore,
+    // 
+    // distanceSquared = (squared length of PA) - (squared length of projection of PA onto AB)
+    
+    // pre-calculate some edges and squared magnitude of edges for later use
+    float magSquaredEdge0 = (vEdge0.x * vEdge0.x) + (vEdge0.y * vEdge0.y) + (vEdge0.z * vEdge0.z);
+    vec3 vEdge1 = vPos2 - vPos1;
+    float magSquaredEdge1 = (vEdge1.x * vEdge1.x) + (vEdge1.y * vEdge1.y) + (vEdge1.z * vEdge1.z);
+    vEdge2 = -vEdge2; // reverse direction
+    float magSquaredEdge2 = (vEdge2.x * vEdge2.x) + (vEdge2.y * vEdge2.y) + (vEdge2.z * vEdge2.z);
+    vec3 vEdgeA = vEdge0;
+    vec3 vEdgeB = -vEdge2;
+    float dotAA = dot(vEdgeA, vEdgeA);
+    float dotAB = dot(vEdgeA, vEdgeB);
+    float dotBB = dot(vEdgeB, vEdgeB);
+    float invDenom = 1.0 / (dotAA * dotBB - dotAB * dotAB);
+    vec3 vPlaneNormal = normalize( cross(vEdgeA, vEdgeB) );
+    
+    // Iterate over all of the decals to see if any are close enough to one of the 3 edges to tessellate
+    for (int i = 0; i < MAX_DECALS; i++)
+    {
+        if (vNormal[i].x == 0.0 && vNormal[i].y == 0.0 && vNormal[i].z == 0.0)
+            break;    // the rest of the list is empty
+            
+        float distanceSquared;
+        bool edgeTessellated = false;
+        vec3 vProjected;
+        float magSquaredProj;
+        
+        vec3 vHitLocation;
+        vHitLocation.x = DecalPositionSize[i].x;
+        vHitLocation.y = DecalPositionSize[i].y;
+        vHitLocation.z = DecalPositionSize[i].z;
+        
+        float decalRadius = DecalPositionSize[i].w;
+        float decalRadiusSquared = decalRadius * decalRadius;
+        
+        // Create vectors from the hit location to all 3 vertices, then compute the squared distance (i.e. magnitude)
+        vec3 vHitEdge0 = vHitLocation - vPos0;
+        float magSquaredHitEdge0 = (vHitEdge0.x * vHitEdge0.x) + (vHitEdge0.y * vHitEdge0.y) 
+            + (vHitEdge0.z * vHitEdge0.z);
+        vec3 vHitEdge1 = vHitLocation - vPos1;
+        float magSquaredHitEdge1 = (vHitEdge1.x * vHitEdge1.x) + (vHitEdge1.y * vHitEdge1.y) 
+            + (vHitEdge1.z * vHitEdge1.z);
+        vec3 vHitEdge2 = vHitLocation - vPos2;
+        float magSquaredHitEdge2 = (vHitEdge2.x * vHitEdge2.x) + (vHitEdge2.y * vHitEdge2.y) 
+            + (vHitEdge2.z * vHitEdge2.z);
+            
+        
+        // Edge 0
+        // Check if the distance of the hit location to the edge endpoints is within the radius
+        if ((magSquaredHitEdge0 <= decalRadiusSquared) || (magSquaredHitEdge1 <= decalRadiusSquared))
+        {
+            gl_TessLevelOuter[0] = tessellationFactor0;
+            edgeTessellated = true;
+        }
+        else
+        {
+            // If the distance from the hit location either of the endpoints is greater than the radius,
+            // then part of the edge may still be within the a radius distance from the hit location. To
+            // determine this we need to calculate the distance from the hit location to the edge.
+            vProjected = (dot(vHitEdge0, vEdge0)/magSquaredEdge0) * vEdge0;        // create one edge of the right triangle
+            // calculate the squared length of the edge
+            magSquaredProj = (vProjected.x * vProjected.x) + (vProjected.y * vProjected.y)
+                + (vProjected.z * vProjected.z);
+                
+            // Use the Pythagorean theorm to find the squared distance.
+            distanceSquared = magSquaredHitEdge0 - magSquaredProj;
+            
+            // See if the distance sqared is less than or equal to the radius squared. Also
+            // check to see if the the perpendicular distance is within the line segment. This
+            // is done by testing the direction of the projection with the edge direction (negative
+            // means it's on the line in the opposite direction. Also if the lenght of the projection
+            // is greater than the edge, then the distance is measured to a point beyond the segment
+            // in either case we don't want to tessellate.
+            if ((distanceSquared <= decalRadiusSquared) && (dot(vProjected,vEdge0) >= 0)
+                && (magSquaredProj <= magSquaredEdge0))
+            {
+                gl_TessLevelOuter[0] = tessellationFactor0;
+                edgeTessellated = true;
+            }
+        }
+
+        // Edge 1
+        // Same as Edge 0 - see comments above ...
+        if ((magSquaredHitEdge1 <= decalRadiusSquared) || (magSquaredHitEdge2 <= decalRadiusSquared))
+        {
+            gl_TessLevelOuter[1] = tessellationFactor1;
+            edgeTessellated = true;
+        }
+        else
+        {
+            vProjected = (dot(vHitEdge1, vEdge1)/magSquaredEdge1) * vEdge1;
+            magSquaredProj = (vProjected.x * vProjected.x) + (vProjected.y * vProjected.y)
+                + (vProjected.z * vProjected.z);
+            distanceSquared = magSquaredHitEdge1 - magSquaredProj;
+            if ((distanceSquared <= decalRadiusSquared) && (dot(vProjected,vEdge1) >= 0)
+                && (magSquaredProj <= magSquaredEdge1))
+            {
+                gl_TessLevelOuter[1] = tessellationFactor1;
+                edgeTessellated = true;
+            }
+        }
+        
+        // Edge 2
+        // Same as Edge 0 - see comments above ...
+        if ((magSquaredHitEdge2 <= decalRadiusSquared) || (magSquaredHitEdge0 <= decalRadiusSquared))
+        {
+            gl_TessLevelOuter[2] = tessellationFactor2;
+            edgeTessellated = true;
+        }
+        else
+        {
+            vProjected = (dot(vHitEdge2, vEdge2)/magSquaredEdge2) * vEdge2;
+            magSquaredProj = (vProjected.x * vProjected.x) + (vProjected.y * vProjected.y)
+                + (vProjected.z * vProjected.z);
+            distanceSquared = magSquaredHitEdge2 - magSquaredProj;
+            if ((distanceSquared <= decalRadiusSquared) && (dot(vProjected,vEdge2) >= 0)
+                && (magSquaredProj <= magSquaredEdge2))
+            {
+                gl_TessLevelOuter[2] = tessellationFactor2;
+                edgeTessellated = true;
+            }
+        }
+            
+        // Inside
+        //        There are 2 reasons to enable tessellation for the inside. One
+        // reason is if any of the edges of the patch need tessellation. The
+        // other reason is if the hit location is on the triangle, but the
+        // radius is too small to touch any of the edges.
+        //        First check to see if the distance from the hit location
+        // to the plane formed by the triangle is within the decal radius.
+        // Use the dot product to find the distance between a point and a plane
+        float distanceToPlane = abs (dot(vPlaneNormal, vHitEdge0));
+        
+        // If the distance to the triangle plane is within the decal radius,
+        // check to see if the intersection point is inside the triangle
+        if (distanceToPlane <= decalRadius)
+        {
+            float dotAHit = dot(vEdgeA, vHitEdge0);
+            float dotBHit = dot(vEdgeB, vHitEdge0);
+            // Calculate barycentric coordinates to determine if the point is in the triangle
+            float u = (dotBB * dotAHit - dotAB * dotBHit) * invDenom;
+            float v = (dotAA * dotBHit - dotAB * dotAHit) * invDenom;
+            if ( ((u > 0) && (v > 0) && ((u + v) < 1)) || edgeTessellated )
+            {
+                gl_TessLevelInner[0] = tessellationFactor;
+            }
+        }
+    }
+}

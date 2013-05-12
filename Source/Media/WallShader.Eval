@@ -1,0 +1,124 @@
+﻿#version 420
+
+layout(triangles, equal_spacing, cw) in;
+
+uniform mat4 ViewProjection;
+uniform vec3 LightPosition;
+uniform vec2 DisplacementScaleBias;    // Scale and bias of displacement
+
+#define MAX_DECALS 50
+
+uniform vec4  DecalNormal[MAX_DECALS];              // tangent space normal
+uniform vec4  DecalBinormal[MAX_DECALS];            // tangent space binormal
+uniform vec4  DecalTangent[MAX_DECALS];             // tangent space tangent
+uniform vec4  DecalPositionSize[MAX_DECALS];   // position and size of this decal
+
+layout(binding=3) uniform sampler2D DisplacementMap;        // Displacement map for the rendered object
+
+in vec3 tWorldPos[];
+in vec3 tTexCoord[];
+in vec3 tNormal[];
+
+out vec3 fTexCoord;
+out vec2 fDecalTexCoord;
+out vec3 fWorldNormal;
+out vec3 fWorldLightDir;
+out vec3 fTextureLightDir;
+out float fIsDecal;
+
+void main(void)
+{
+    // Interpolate world space position with barycentric coordinates
+    vec3 WorldPos = 
+	gl_TessCoord.x * tWorldPos[0] + 
+	gl_TessCoord.y * tWorldPos[1] + 
+	gl_TessCoord.z * tWorldPos[2];
+    
+    // Interpolate texture coordinates with barycentric coordinates
+    fTexCoord = 
+	gl_TessCoord.x * tTexCoord[0] + 
+	gl_TessCoord.y * tTexCoord[1] + 
+	gl_TessCoord.z * tTexCoord[2];
+                      
+     // Interpolate normal with barycentric coordinates
+    fWorldNormal = 
+	gl_TessCoord.x * tNormal[0] + 
+	gl_TessCoord.y * tNormal[1] + 
+	gl_TessCoord.z * tNormal[2];
+   
+    // Default normal map tex coord and light vector
+    fIsDecal = 0.0; 
+    fWorldLightDir = LightPosition - WorldPos;
+    fTextureLightDir = fWorldLightDir;
+    
+    // See if this vertex is affected by a damage decal
+    for (int i = 0; i < MAX_DECALS; i++)
+    {
+        if (all( equal (DecalNormal[i].xyz, vec3(0.0) )))
+          break;    // the rest of the list is empty
+
+        vec3 vHitLocation;
+        vHitLocation.x = DecalPositionSize[i].x;
+        vHitLocation.y = DecalPositionSize[i].y;
+        vHitLocation.z = DecalPositionSize[i].z;
+        
+        float decalRadius = DecalPositionSize[i].w;
+        
+        float distanceToHit = distance(WorldPos, vHitLocation.xyz);
+        
+        // check if the vertex is within the decal radius
+        if (distanceToHit <= decalRadius)
+        {
+            // rotate the decal tangent space to the vertex normal orientation
+            vec3 vTangent = DecalTangent[i].xyz;
+            vec3 vBinormal = DecalBinormal[i].xyz;
+            vec3 vNormal = normalize(fWorldNormal);
+            // find the vector that is closest to being orthogonal to the vertex normal
+            if ( abs(dot(vNormal, vTangent)) < abs(dot(vNormal, vBinormal)) )
+            {
+                vBinormal = normalize(cross(vNormal, vTangent));
+                // not necessary to normalize since binormal and normal are orthoganal and unit length
+                vTangent = cross(vBinormal, vNormal);
+            }
+            else
+            {
+                vTangent = normalize(cross(vNormal, vBinormal));
+                // not necessary to normalize since tangent and normal are orthoganal and unit length
+                vBinormal = cross(vTangent, vNormal);
+            }            
+            // tangent space vec4 for lighting
+            mat3 mWorldToTangent = mat3( vTangent, vBinormal, vNormal );
+            // tangent space vec4 for displacement mapping
+            mat3 mWorldToTangentDM = mat3( DecalTangent[i].xyz, DecalBinormal[i].xyz, DecalNormal[i].xyz );
+            
+            // Transform the position into decal tangent space to get the
+            // displacement map texture coordinate.
+            vec3 fWorldPosTrans = WorldPos - vHitLocation.xyz;
+            vec3 vDMTexCoord = fWorldPosTrans * mWorldToTangentDM;
+            vDMTexCoord /= decalRadius * 2; // scale coord between -0.5 and 0.5
+            vDMTexCoord += 0.5; // translate to center (coords between 0 and 1)
+            fIsDecal = 1.0; // project texcoord onto the x,y plane
+
+            // sample the displacement map for the magnitude of displacement
+            float fDisplacement = texture(DisplacementMap, vDMTexCoord.xy).r;
+            fDisplacement = fDisplacement * DisplacementScaleBias.x + DisplacementScaleBias.y;
+            vec3 vDirection = -DecalNormal[i].xyz; // hit direction is opposite of tangent space normal
+            
+            //translate the position
+            WorldPos += vDirection * fDisplacement;
+            
+            // Create the light vector
+            fWorldLightDir = LightPosition - WorldPos;
+            
+            // transform the light vector into tangent space
+            fTextureLightDir = fWorldLightDir * mWorldToTangent;
+            
+            // Use the same texcoord for the normal map as the displacement map.
+            // The z value = 1 will indicate to the pixel shader to use the decal normal map for lighting.
+            fDecalTexCoord = vDMTexCoord.xy; 
+            break;
+        }
+    }
+
+    gl_Position = ViewProjection * vec4( WorldPos.xyz, 1.0 ); 
+}
