@@ -35,7 +35,7 @@ Type
   Mat4 = array[0..3] of Vec4;
 
 
-
+  PVector = ^TVector;
   //
   // TVector
   //
@@ -131,6 +131,9 @@ Type
     function DistanceSqr( aPoint: TVector ): Float;
     function Dot( aVector: TVector ): Float;                             inline;
     function PointProject( aPos,aDir: TVector ): Float;
+    // Given an input vector, creates an orthonormal basis which can be used as a
+    // tangent space
+    procedure CreateOrthonormalBasis(out aNormal, aTangent, aBinormal: TVector);
     class function Null: TVector; static;
     function IsNull: Boolean;
 
@@ -1216,6 +1219,69 @@ begin
 
 end;
 
+
+
+procedure TVector.CreateOrthonormalBasis(out aNormal, aTangent,
+  aBinormal: TVector);
+var
+  vAbsN, vTemp, vN: TVector;
+begin
+  vAbsN := self.Abs;
+
+  // the normal is a vector in the opposite direction of v
+  vN := self.Negate;
+
+  if vAbsN.X > vAbsN.Y then
+  begin
+    if vAbsN.X > vAbsN.Z then
+    begin
+      // x is the dominant axis
+      vTemp.X := 0;
+      if vN.X > 0.0 then
+          vTemp.Y := 1.0
+      else
+          vTemp.Y := -1.0;
+      vTemp.Z := 0;
+    end
+    else
+    begin
+      // z is the dominant axis
+      vTemp.X := 0;
+      if vN.Z > 0.0 then
+          vTemp.Y := 1.0
+      else
+          vTemp.Y := -1.0;
+      vTemp.Z := 0;
+    end;
+  end
+  else
+  begin
+    if vAbsN.Y > vAbsN.Z then
+    begin
+      // y is the dominant axis
+      vTemp.X := 0;
+      vTemp.Y := 0;
+      if vN.Y > 0.0 then
+          vTemp.Z := 1.0
+      else
+          vTemp.Z := -1.0;
+    end
+    else
+    begin
+      // z is the dominant axis
+      vTemp.X := 0;
+      if vN.Z > 0.0 then
+          vTemp.Y := 1.0
+      else
+          vTemp.Y := -1.0;
+      vTemp.Z := 0;
+    end
+  end;
+
+  aNormal := vN;
+  aBinormal := vTemp.Cross(vN);
+  aTangent := vN.Cross(aBinormal);
+end;
 
 //
 // TVector.Cross
@@ -2412,7 +2478,3 @@ begin
 end;
 
 end.
-
-
-
-
