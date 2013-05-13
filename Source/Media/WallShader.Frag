@@ -18,9 +18,9 @@ void main()
   vec3 L;
   vec3 N;
 
-  if (fIsDecal)
+  if (fIsDecal > 0.99)
   {
-    N = normalize(texture(DecalNormalMap, fDecalTexCoord).xyz * vec3(2.0) - vec3(1.0));
+    N = normalize(texture(DecalNormalMap, fDecalTexCoord).xyz*vec3(2.0) - vec3(1.0));
     L = normalize(fTextureLightDir);
   }
   else

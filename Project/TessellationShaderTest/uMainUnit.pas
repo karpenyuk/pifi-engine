@@ -4,17 +4,18 @@ interface
 
 uses
   Classes, Graphics,
-  Controls, Forms, Dialogs, uGLViewer;
+  Controls, Forms, Dialogs, uGLViewer, Vcl.ExtCtrls;
 
 const
-  DECAL_RADIUS_SCALE = 0.25;
-  DECAL_RADIUS = 1.0;
+  DECAL_RADIUS_SCALE = 1.0;
+  DECAL_RADIUS = 0.5;
   MAX_DECALS = 50;
-  DISPLACE_NORMAL_DIRECTION = true;
+  DISPLACE_NORMAL_DIRECTION = false;
 
 type
   TForm1 = class(TForm)
     GLViewer1: TGLViewer;
+    Timer1: TTimer;
     procedure GLViewer1ContextReady(Sender: TObject);
     procedure GLViewer1CanResize(Sender: TObject; var NewWidth,
       NewHeight: Integer; var Resize: Boolean);
@@ -25,6 +26,7 @@ type
     procedure GLViewer1Render(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure Timer1Timer(Sender: TObject);
   private
     { Private declarations }
   public
@@ -74,7 +76,7 @@ var
 function BuildWall: TVertexObject;
 var
   I, Index: Integer;
-  v: Vec3;
+  v1, v2, v3, dp1, dp2: TVector;
   p, tc, n: TVec3List;
   attr: TAttribBuffer;
 begin
@@ -86,10 +88,10 @@ begin
   for I := 0 to High(WALLVERTICES) do
   begin
     p.Add(WALLVERTICES[I].pos);
-    v := WALLVERTICES[I].tc;
-    v[0] := v[0] * 2;
-    v[1] := v[1] * 2;
-    tc.Add(v);
+    v1.Vec3 := WALLVERTICES[I].tc;
+    v1[0] := v1[0] * 2;
+    v1[1] := v1[1] * 2;
+    tc.Add(v1.Vec3);
     n.Add(WALLVERTICES[I].norm);
   end;
 
@@ -113,8 +115,23 @@ begin
   Index := 0;
   for I := 0 to High(WALLVERTICES) div 4 do
   begin
-    Result.AddTriangle(Index, Index + 1, Index + 2);
-    Result.AddTriangle(Index + 2, Index + 3, Index + 1);
+    v1.Vec3 := p[Index];
+    v2.Vec3 := p[Index+1];
+    v3.Vec3 := p[Index+2];
+    dp1 := v2 - v1;
+    dp2 := v3 - v1;
+    v1 := dp1.Cross(dp2).Normalize;
+    v2.Vec3 := n[Index];
+    if v1 = v2 then
+    begin
+      Result.AddTriangle(Index, Index + 2, Index + 1);
+      Result.AddTriangle(Index + 2, Index + 3, Index + 1);
+    end
+    else
+    begin
+      Result.AddTriangle(Index, Index + 1, Index + 2);
+      Result.AddTriangle(Index + 3, Index + 2, Index + 1);
+    end;
     Inc(Index, 4);
   end;
   Result.FaceType := ftPatches;
@@ -131,8 +148,13 @@ var
   vHitDirection, vNormal, vTangent, vBinormal: TVector;
   I: Integer;
 begin
-  Origin := TVector.Make(1, 1, -2, 1);
-  Direct := TVector.Make(0, 0, 1);
+  Origin := Extents.eMax - Extents.eMin;
+  Origin := Origin * TVector.MakeTmp(TVecTemp.vtRandom);
+  Origin := Origin + Extents.eMin;
+  Origin.W := 1;
+  Direct := TVector.MakeTmp(TVecTemp.vtRndBox);
+  Direct.Y := Direct.Y * 0.25;
+  Direct.SetNormalize;
 
   InvModel := TMatrix.TranslationMatrix(Extents.eMid);//Model.Invert;
   MSOrigin := InvModel.Transform(Origin);
@@ -293,9 +315,9 @@ begin
   glGenTextures(1, @DisplaceTexId);
   glBindTexture(GL_TEXTURE_2D, DisplaceTexId);
   glTextureParameterfEXT(DisplaceTexId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-    GL_CLAMP_TO_EDGE);
+    GL_REPEAT);
   glTextureParameterfEXT(DisplaceTexId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-    GL_CLAMP_TO_EDGE);
+    GL_REPEAT);
   glTextureParameterfEXT(DisplaceTexId, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
     GL_LINEAR);
   glTextureParameterfEXT(DisplaceTexId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
@@ -310,14 +332,14 @@ begin
   glGenTextures(1, @NormalTexId);
   glBindTexture(GL_TEXTURE_2D, NormalTexId);
   glTextureParameterfEXT(
-    WallTexId,
-    GL_TEXTURE_2D_ARRAY,
+    NormalTexId,
+    GL_TEXTURE_2D,
     GL_GENERATE_MIPMAP_SGIS,
     GL_TRUE);
   glTextureParameterfEXT(NormalTexId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-    GL_CLAMP_TO_EDGE);
+    GL_REPEAT);
   glTextureParameterfEXT(NormalTexId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-    GL_CLAMP_TO_EDGE);
+    GL_REPEAT);
   glTextureParameterfEXT(NormalTexId, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
     GL_LINEAR);
   glTextureParameterfEXT(NormalTexId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
@@ -343,7 +365,7 @@ begin
 
   Proj := TMatrix.PerspectiveMatrix(60, GLViewer1.Width / GLViewer1.Height,
     0.1, 100);
-  cameraPos := TVector.Make(0, 0, 6);
+  cameraPos := TVector.Make(0, 0, -6);
   View := TMatrix.LookAtMatrix(cameraPos, VecNull, vecY);
   Model := TMatrix.TranslationMatrix(Extents.eMid.Negate);
 
@@ -389,9 +411,9 @@ begin
   Shader1.SetUniform('EyePosition', cameraPos.Vec3);
   Shader1.SetUniform('ScreenSize', TVector.Make(GLViewer1.Width,
     GLViewer1.Height).Vec2);
-  Shader1.SetUniform('TessellationFactor', 3.0);
-  Shader1.SetUniform('DisplacementScaleBias', TVector.Make(-0.3848734,
-    0.1968906).Vec2);
+  Shader1.SetUniform('TessellationFactor', 16.0);
+  Shader1.SetUniform('DisplacementScaleBias', TVector.Make(-0.1,
+    0.15).Vec2); //-0.3848734, 0.1968906
 
   if upadateDamage then
   begin
@@ -414,6 +436,11 @@ begin
   glPatchParameteri(GL_PATCH_VERTICES, 3);
   Drawer.RenderVO();
   Shader1.UnApply;
+end;
+
+procedure TForm1.Timer1Timer(Sender: TObject);
+begin
+  MakeDamage;
 end;
 
 end.

@@ -22,13 +22,18 @@ object Form1: TForm1
     Height = 479
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
+    Context.DepthBits = 24
+    Context.StencilBits = 8
+    Context.AALevel = 0
     Align = alClient
     OnCanResize = GLViewer1CanResize
     OnMouseDown = GLViewer1MouseDown
     OnMouseMove = GLViewer1MouseMove
-    ExplicitLeft = 144
-    ExplicitTop = 72
-    ExplicitWidth = 329
-    ExplicitHeight = 329
+  end
+  object Timer1: TTimer
+    Interval = 100
+    OnTimer = Timer1Timer
+    Left = 24
+    Top = 24
   end
 end

@@ -202,7 +202,7 @@ uniform mat4 ViewProjection;           // ViewProjection mat4
 uniform float TessellationFactor;  
 uniform bool DisplacementAdaptive = true;
 uniform bool ScreenSpaceAdaptive = false;
-uniform bool backFaceCulling = false;
+uniform bool backFaceCulling = true;
 uniform vec2 ScreenSize;
 uniform vec3 EyePosition;
 uniform vec4 DecalPositionSize[MAX_DECALS];   // position and size of this decal
@@ -210,10 +210,9 @@ uniform vec4 DecalPositionSize[MAX_DECALS];   // position and size of this decal
 void main(void)
 {
     // Copy inputs to outputs
-    int id = gl_InvocationID;
-    tWorldPos[id] = vWorldPos[id];
-    tTexCoord[id] = vTexCoord[id];
-    tNormal[id] = vNormal[id];
+    tWorldPos[gl_InvocationID] = vWorldPos[gl_InvocationID];
+    tTexCoord[gl_InvocationID] = vTexCoord[gl_InvocationID];
+    tNormal[gl_InvocationID] = vNormal[gl_InvocationID];
 
     // Assign tessellation factors
     // unpack the tessellation factor constant vector
@@ -235,7 +234,7 @@ void main(void)
     {
         // calculate the triangle face normal with a cross product of the edges
         vec3 vFaceNormal = normalize( cross(vEdge2,vEdge0) );
-        vec3 vView = normalize( vPos0 - EyePosition.xyz );
+        vec3 vView = normalize( vPos0 - EyePosition );
         
         // A negative dot product means facing away from view direction
         // Compare with a small negative number so that displacements near

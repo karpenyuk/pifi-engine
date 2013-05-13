@@ -50,6 +50,7 @@ void main(void)
     fIsDecal = 0.0; 
     fWorldLightDir = LightPosition - WorldPos;
     fTextureLightDir = fWorldLightDir;
+    fDecalTexCoord = vec2(0.0);
     
     // See if this vertex is affected by a damage decal
     for (int i = 0; i < MAX_DECALS; i++)
@@ -94,7 +95,7 @@ void main(void)
             // Transform the position into decal tangent space to get the
             // displacement map texture coordinate.
             vec3 fWorldPosTrans = WorldPos - vHitLocation.xyz;
-            vec3 vDMTexCoord = fWorldPosTrans * mWorldToTangentDM;
+            vec3 vDMTexCoord =  mWorldToTangentDM * fWorldPosTrans;
             vDMTexCoord /= decalRadius * 2; // scale coord between -0.5 and 0.5
             vDMTexCoord += 0.5; // translate to center (coords between 0 and 1)
             fIsDecal = 1.0; // project texcoord onto the x,y plane
@@ -102,16 +103,17 @@ void main(void)
             // sample the displacement map for the magnitude of displacement
             float fDisplacement = texture(DisplacementMap, vDMTexCoord.xy).r;
             fDisplacement = fDisplacement * DisplacementScaleBias.x + DisplacementScaleBias.y;
-            vec3 vDirection = -DecalNormal[i].xyz; // hit direction is opposite of tangent space normal
+            vec3 vDirection = -DecalNormal[i].xyz * fDisplacement; // hit direction is opposite of tangent space normal
             
             //translate the position
-            WorldPos += vDirection * fDisplacement;
+            WorldPos += vDirection;
+	    fTexCoord += vDirection;
             
             // Create the light vector
             fWorldLightDir = LightPosition - WorldPos;
             
             // transform the light vector into tangent space
-            fTextureLightDir = fWorldLightDir * mWorldToTangent;
+            fTextureLightDir = mWorldToTangent * fWorldLightDir;
             
             // Use the same texcoord for the normal map as the displacement map.
             // The z value = 1 will indicate to the pixel shader to use the decal normal map for lighting.
