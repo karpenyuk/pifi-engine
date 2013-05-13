@@ -258,6 +258,9 @@ Type
       const APlaneNormal: TVector): TMatrix; static;
     class function OrthoMatrix(Left, Right, Bottom, Top,
       ZNear, ZFar: Float): TMatrix; static;
+    function UnProject(aWindowVector: TVector;
+      const aViewport: TVector;
+      out anObjectVector: TVector): Boolean;
     function GetAddr: PMat4;
     procedure Swap( var aMatrix: TMatrix );
 
@@ -1806,13 +1809,16 @@ end;
 // TMatrix.SetAdjoint
 //
 procedure TMatrix.SetAdjoint;
+var
+  M: Mat4;
 begin
 
-  F[0] := Vector( Minor( 0,0 ), -Minor( 1,0 ), Minor( 2,0 ), -Minor( 3,0 ));
-  F[1] := Vector( -Minor( 0,1 ), Minor( 1,1 ), -Minor( 2,1 ), Minor( 3,1 ));
-  F[2] := Vector( Minor( 0,2 ), -Minor( 1,2 ), Minor( 2,2 ), -Minor( 3,2 ));
-  F[3] := Vector( -Minor( 0,3 ), Minor( 1,3 ), -Minor( 2,3 ), Minor( 3,3 ));
+  M[0] := Vector(  Minor( 0,0 ), -Minor( 0,1 ),  Minor( 0,2 ), -Minor( 0,3 ));
+  M[1] := Vector( -Minor( 1,0 ),  Minor( 1,1 ), -Minor( 1,2 ),  Minor( 1,3 ));
+  M[2] := Vector(  Minor( 2,0 ), -Minor( 2,1 ),  Minor( 2,2 ), -Minor( 2,3 ));
+  M[3] := Vector( -Minor( 3,0 ),  Minor( 3,1 ), -Minor( 3,2 ),  Minor( 3,3 ));
 
+  F := M;
 end;
 
 
@@ -2180,6 +2186,31 @@ begin
   Result.SetF(3,1, (Bottom + Top) / (Bottom - Top));
   Result.SetF(3,2, (ZNear + ZFar) / (ZNear - ZFar));
   Result.SetF(3,3, 1);
+end;
+
+function TMatrix.UnProject(
+  aWindowVector: TVector;
+  const aViewport: TVector;
+  out anObjectVector: TVector): Boolean;
+var
+  invViewProjMatrix: TMatrix;
+begin
+  invViewProjMatrix := Invert;
+  aWindowVector[3] := 1.0;
+  // Map x and y from window coordinates
+  aWindowVector[0] := (aWindowVector[0] - aViewport[0]) / aViewport[2];
+  aWindowVector[1] := (aWindowVector[1] - aViewport[1]) / aViewport[3];
+  // Map to range -1 to 1
+  aWindowVector[0] := aWindowVector[0] * 2 - 1;
+  aWindowVector[1] := aWindowVector[1] * 2 - 1;
+  aWindowVector[2] := aWindowVector[2] * 2 - 1;
+  anObjectVector := invViewProjMatrix.Transform(aWindowVector);
+  if anObjectVector[3] = 0.0 then
+    Exit(False);
+  anObjectVector[0] := anObjectVector[0] / anObjectVector[3];
+  anObjectVector[1] := anObjectVector[1] / anObjectVector[3];
+  anObjectVector[2] := anObjectVector[2] / anObjectVector[3];
+  Result := True;
 end;
 
 { TFrustum }
