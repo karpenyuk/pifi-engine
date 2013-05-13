@@ -15,7 +15,6 @@ const
 type
   TForm1 = class(TForm)
     GLViewer1: TGLViewer;
-    Timer1: TTimer;
     procedure GLViewer1ContextReady(Sender: TObject);
     procedure GLViewer1CanResize(Sender: TObject; var NewWidth,
       NewHeight: Integer; var Resize: Boolean);
@@ -26,7 +25,6 @@ type
     procedure GLViewer1Render(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure Timer1Timer(Sender: TObject);
   private
     { Private declarations }
   public
@@ -138,9 +136,8 @@ begin
   Extents := Result.Extents;
 end;
 
-procedure MakeDamage;
+procedure MakeDamage(Origin, Direct: TVector);
 var
-  Origin, Direct: TVector;
   InvModel: TMatrix;
   MSOrigin, MSDirect: TVector;
   Intersection, Normal, decalLocation, vIntToDecal: TVector;
@@ -148,15 +145,10 @@ var
   vHitDirection, vNormal, vTangent, vBinormal: TVector;
   I: Integer;
 begin
-  Origin := Extents.eMax - Extents.eMin;
-  Origin := Origin * TVector.MakeTmp(TVecTemp.vtRandom);
-  Origin := Origin + Extents.eMin;
   Origin.W := 1;
-  Direct := TVector.MakeTmp(TVecTemp.vtRndBox);
-  Direct.Y := Direct.Y * 0.25;
   Direct.SetNormalize;
 
-  InvModel := TMatrix.TranslationMatrix(Extents.eMid);//Model.Invert;
+  InvModel := Model.Invert;
   MSOrigin := InvModel.Transform(Origin);
   MSDirect := InvModel.Transform(Direct);
 
@@ -374,15 +366,24 @@ begin
 
   glDisable(GL_CULL_FACE);
 //  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-  MakeDamage;
 end;
 
 procedure TForm1.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
+var
+  VP: TMatrix;
+  ScreenPos, ViewPort, WorldPos: TVector;
 begin
   MX := X;
   MY := Y;
+  if Shift = [ssRight] then
+  begin
+    VP := View * Proj;
+    ScreenPos.SetVector(MX, GLViewer1.Height - MY);
+    ViewPort.SetVector(0, 0, GLViewer1.Width, GLViewer1.Height);
+    if VP.UnProject(ScreenPos, ViewPort, WorldPos) then
+      MakeDamage(cameraPos, WorldPos - cameraPos);
+  end;
 end;
 
 procedure TForm1.GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -412,8 +413,7 @@ begin
   Shader1.SetUniform('ScreenSize', TVector.Make(GLViewer1.Width,
     GLViewer1.Height).Vec2);
   Shader1.SetUniform('TessellationFactor', 16.0);
-  Shader1.SetUniform('DisplacementScaleBias', TVector.Make(-0.1,
-    0.15).Vec2); //-0.3848734, 0.1968906
+  Shader1.SetUniform('DisplacementScaleBias', TVector.Make(-0.2, 0.3).Vec2);
 
   if upadateDamage then
   begin
@@ -436,11 +436,6 @@ begin
   glPatchParameteri(GL_PATCH_VERTICES, 3);
   Drawer.RenderVO();
   Shader1.UnApply;
-end;
-
-procedure TForm1.Timer1Timer(Sender: TObject);
-begin
-  MakeDamage;
 end;
 
 end.
