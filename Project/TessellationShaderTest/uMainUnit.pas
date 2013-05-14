@@ -4,7 +4,7 @@ interface
 
 uses
   Classes, Graphics,
-  Controls, Forms, Dialogs, uGLViewer, Vcl.ExtCtrls;
+  Controls, Forms, Dialogs, uGLViewer,{$IFDEF FPC}ExtCtrls{$ELSE}Vcl.ExtCtrls{$ENDIF};
 
 const
   DECAL_RADIUS_SCALE = 1.0;
