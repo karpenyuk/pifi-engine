@@ -1,9 +1,15 @@
 unit uMainUnit;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
+  {$IFDEF MSWINDOWS}
   Windows,
+  {$ENDIF}
   Messages,
   SysUtils,
   Variants,

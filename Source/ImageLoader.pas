@@ -9,7 +9,9 @@ unit ImageLoader;
 interface
 
 uses
-  Windows, Graphics, Classes,{$IFNDEF FPC} JPEG,{$ENDIF} SysUtils,{$IFNDEF FPC} jpegdec,{$ENDIF} uMiscUtils, uBaseTypes;
+  {$IFDEF FPC}LCLType,LCLIntf,{$ENDIF}
+  {$IFDEF MSWINDOWS}Windows,{$ENDIF} Graphics, Classes,{$IFNDEF FPC} JPEG,{$ENDIF} SysUtils,
+  {$IFNDEF FPC} jpegdec,{$ENDIF} uMiscUtils, uBaseTypes;
 
 function LoadImage(Filename: String): TImageDesc;
 procedure SaveTGAImage(FileName: string; Data: pointer; Width,Height: integer;
@@ -101,6 +103,7 @@ end;
 {  Load BMP textures                                               }
 {------------------------------------------------------------------}
 function LoadBMPTexture(Filename: String; var Format : Cardinal; var Width, Height: integer) : pointer;
+{$IFNDEF FPC}
 var
   FileHeader: BITMAPFILEHEADER;
   InfoHeader: BITMAPINFOHEADER;
@@ -115,6 +118,7 @@ var
   p: PByteArray;
   sLength: integer;
   fLength,temp: integer;
+  {$ENDIF}
 begin
   {$IFNDEF FPC}
   result :=nil;
@@ -532,4 +536,4 @@ initialization
 
 finalization
 
-end.
+end.

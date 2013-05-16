@@ -1,13 +1,24 @@
 program ColladaImportTest;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
-  Forms,
+  {$IFDEF FPC}
+  {$IFDEF UNIX}
+  cthreads,
+  {$ENDIF}
+  Forms,Interfaces,
+  {$ELSE}
+  Vcl.Forms,
+  {$ENDIF}
   uMainUnit in 'uMainUnit.pas' {Form5};
 
-{$R *.res}
-
 begin
+  {$IFNDEF FPC}
   ReportMemoryLeaksOnShutdown := True;
+  {$ENDIF}
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TForm5, Form5);
