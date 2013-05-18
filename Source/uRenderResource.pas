@@ -19,7 +19,7 @@ interface
 
 uses
   SysUtils, Classes, uLists, uVMath, uMiscUtils, uBaseTypes, uBaseClasses,
-  uGenericsRBTree, uPersistentClasses, uDataAccess;
+  uGenericsRBTree, uPersistentClasses, uDataAccess, uImageFormats;
 
 const
   cDiffuseColor: vec4 = (0.8, 0.8, 0.8, 1);
@@ -285,10 +285,26 @@ Type
     property SamplerHash: integer read getSamplerHash;
   end;
 
+  TImageSampler = class(TBaseRenderResource)
+  private
+    FImageDescriptor: TImageDesc;
+    FBitmaps: array of PByte;
+    //Hide default constructor
+    constructor Create; override;
+  public
+    constructor CreateBitmap(aBPP: byte; aWidth, aHeight: integer);
+    constructor CreateBitmapArray(aBPP: byte; aWidth, aHeight, aDepth: integer);
+    constructor CreateCubeMap(aBPP: byte; aWidth, aHeight: integer);
+
+    procedure SetImageFormat(aBaseFormat: TBaseImageFormat; aIntensityBits: byte); overload;
+    procedure SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits, aGBits: byte); overload;
+    procedure SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits, aGBits, aBBits: byte); overload;
+    procedure SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits, aGBits, aBBits, aABits: byte); overload;
+
+  end;
+
   TTexture = class(TBaseRenderResource)
   private
-    FOwner: TObject;
-
     FImageDescriptor: PImageDesc;
     FReady: boolean;
     FName: string;
@@ -331,8 +347,6 @@ Type
   public
 
     constructor CreateOwned(aOwner: TObject = nil);
-
-    property Owner: TObject read FOwner;
 
     property ImageDescriptor: PImageDesc read getImgDescr;
     property Updates: TTextureUpdates read FUpdates write FUpdates;
@@ -1181,7 +1195,7 @@ constructor TTexture.CreateOwned(aOwner: TObject);
 begin
   Create;
   FTexMatrixChanged := false;
-  FOwner := aOwner;
+  Owner := aOwner;
 end;
 
 function TTexture.getGenMipMaps: boolean;
@@ -2706,6 +2720,77 @@ begin
   until StartIndex >= FCount;
 
   FCount := PackedCount;
+end;
+
+{ TImageSampler }
+
+constructor TImageSampler.Create;
+begin
+  inherited;
+end;
+
+constructor TImageSampler.CreateBitmap(aBPP: byte; aWidth, aHeight: integer);
+begin
+  setlength(FBitmaps, 1);
+  getmem(FBitmaps[0], (aBPP div 8) * aWidth * aHeight);
+  FImageDescriptor.Width:=aWidth;
+  FImageDescriptor.Height:=aHeight;
+  FImageDescriptor.Depth:=1;
+  FImageDescriptor.TextureArray:=false;
+  FImageDescriptor.CubeMap:=false;
+end;
+
+constructor TImageSampler.CreateBitmapArray(aBPP: byte; aWidth, aHeight,
+  aDepth: integer);
+var i: integer;
+begin
+  setlength(FBitmaps, aDepth);
+  for i := 0 to aDepth - 1 do
+    getmem(FBitmaps[i], (aBPP div 8) * aWidth * aHeight);
+  FImageDescriptor.Width:=aWidth;
+  FImageDescriptor.Height:=aHeight;
+  FImageDescriptor.Depth:=aDepth;
+  FImageDescriptor.TextureArray:=true;
+end;
+
+constructor TImageSampler.CreateCubeMap(aBPP: byte; aWidth, aHeight: integer);
+var i: integer;
+begin
+  setlength(FBitmaps, 6);
+  for i := 0 to 5 do
+    getmem(FBitmaps[i], (aBPP div 8) * aWidth * aHeight);
+  FImageDescriptor.Width:=aWidth;
+  FImageDescriptor.Height:=aHeight;
+  FImageDescriptor.Depth:=1;
+  FImageDescriptor.CubeMap:=true;
+end;
+
+procedure TImageSampler.SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits,
+  aGBits: byte);
+var pf: TImagePixelFormat;
+begin
+  assert(aBaseFormat in [bfRG], 'Base format does not match Bits format');
+
+//  pf = (pfUByte, pfByte, pfUShort, pfShort, pfUInt, pfInt, pfFloat);
+
+end;
+
+procedure TImageSampler.SetImageFormat(aBaseFormat: TBaseImageFormat;
+  aIntensityBits: byte);
+begin
+  assert(aBaseFormat in [bfRed], 'Base format does not match Bits format');
+end;
+
+procedure TImageSampler.SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits,
+  aGBits, aBBits, aABits: byte);
+begin
+  assert(aBaseFormat in [bfRGBA, bfBGRA], 'Base format does not match Bits format');
+end;
+
+procedure TImageSampler.SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits,
+  aGBits, aBBits: byte);
+begin
+  assert(aBaseFormat in [bfRGB, bfBGR], 'Base format does not match Bits format');
 end;
 
 initialization

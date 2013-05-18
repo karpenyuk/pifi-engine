@@ -7,7 +7,7 @@
 interface
 
 uses Classes, uPersistentClasses, uLists, uVMath, uMiscUtils, {ImageLoader,}
-  uBaseTypes, uBaseClasses, uRenderResource, dglOpenGL;
+  uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, dglOpenGL;
 
 Type
 
