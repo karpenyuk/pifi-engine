@@ -75,9 +75,12 @@ type
     class function ArcCos( aTheta: Float ): Float; static;
     class function DegToRad( aDegrees: Float ): Float; static;
 
-    class function Min(a,b: Float): Float; static;
-    class function Max(a,b: Float): Float; static;
+    class function Min(a,b: Float): Float; overload; static;
+    class function Max(a,b: Float): Float; overload; static;
+    class function Min(a,b: Int): Int; overload; static;
+    class function Max(a,b: Int): Int; overload; static;
 
+    class function IsPowerOfTwo(a: Integer): Boolean; static;
   end;
 
 
@@ -121,6 +124,20 @@ begin
 
 end;
 
+
+class function TMath.IsPowerOfTwo(a: Integer): Boolean;
+var
+  n: integer;
+begin
+  n := 0;
+  while (a > 0) do
+  begin
+    if a and 1 = 1 then
+      Inc(n);
+    a := a shr 1;
+  end;
+  result := (n = 1);
+end;
 
 //
 // TMath.Swap
@@ -205,15 +222,28 @@ begin
 
 end;
 
-
 class function TMath.Max(a, b: Float): Float;
 begin
-  if a>b then result:=a else result:=b;
+  if a > b then Result := a
+  else Result := b;
 end;
 
 class function TMath.Min(a, b: Float): Float;
 begin
-  if a<b then result:=a else result:=b;
+  if a < b then Result := a
+  else Result := b;
+end;
+
+class function TMath.Max(a, b: Int): Int;
+begin
+  if a > b then Result := a
+  else Result := b;
+end;
+
+class function TMath.Min(a, b: Int): Int;
+begin
+  if a < b then Result := a
+  else Result := b;
 end;
 
 //

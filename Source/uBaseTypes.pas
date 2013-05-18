@@ -116,6 +116,7 @@ Type
     Compressed: boolean;
     CubeMap: boolean;
     TextureArray: boolean;
+    procedure Free;
   end;
   PImageDesc = ^TImageDesc;
 
@@ -244,5 +245,13 @@ const
   NM_ObjectDestroyed = 10201;
 
 implementation
+
+procedure TImageDesc.Free;begin
+  if Assigned(Data) then
+  begin
+    FreeMem(Data);
+    Data := nil;
+  end;
+end;
 
 end.
