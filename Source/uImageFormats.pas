@@ -21,22 +21,39 @@ Type
   TS3TCCompressedFormats = (cfRGB_DXT1, cfSRGB_DXT1, cfRGBA_DXT1,
     cfSRGBA_DXT1, cfRGBA_DXT3, cfSRGBA_DXT3, cfRGBA_DXT5, cfSRGBA_DXT5);
 
-  TImageFormatSelector = class
+  TAbstractPixelFormatSelector<T> = class
+    class function CreateInt8(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
+    class function CreateInt16(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
+    class function CreateInt32(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
+    class function CreateUInt8(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
+    class function CreateUInt16(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
+    class function CreateUInt32(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
+    class function CreateFloat16(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
+    class function CreateFloat32(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
+
+    class function CreateCompressed(aPixelFormat: TS3TCCompressedFormats): T; virtual; abstract;
+
+    class function CreateDepthStencil(aDepthBit: byte; aStencil: boolean = false): T; virtual; abstract;
+
+    class function CreateSpecial(aPixelFormat: TImageSpecialFormat): T; virtual; abstract;
+  end;
+
+  TImageFormatSelector = class (TAbstractPixelFormatSelector<cardinal>)
   public
-    class function CreateInt8(aPixelFormat: TBaseImageFormat): cardinal;
-    class function CreateInt16(aPixelFormat: TBaseImageFormat): cardinal;
-    class function CreateInt32(aPixelFormat: TBaseImageFormat): cardinal;
-    class function CreateUInt8(aPixelFormat: TBaseImageFormat): cardinal;
-    class function CreateUInt16(aPixelFormat: TBaseImageFormat): cardinal;
-    class function CreateUInt32(aPixelFormat: TBaseImageFormat): cardinal;
-    class function CreateFloat16(aPixelFormat: TBaseImageFormat): cardinal;
-    class function CreateFloat32(aPixelFormat: TBaseImageFormat): cardinal;
+    class function CreateInt8(aPixelFormat: TBaseImageFormat): cardinal; override;
+    class function CreateInt16(aPixelFormat: TBaseImageFormat): cardinal; override;
+    class function CreateInt32(aPixelFormat: TBaseImageFormat): cardinal; override;
+    class function CreateUInt8(aPixelFormat: TBaseImageFormat): cardinal; override;
+    class function CreateUInt16(aPixelFormat: TBaseImageFormat): cardinal; override;
+    class function CreateUInt32(aPixelFormat: TBaseImageFormat): cardinal; override;
+    class function CreateFloat16(aPixelFormat: TBaseImageFormat): cardinal; override;
+    class function CreateFloat32(aPixelFormat: TBaseImageFormat): cardinal; override;
 
-    class function CreateCompressed(aPixelFormat: TS3TCCompressedFormats): cardinal;
+    class function CreateCompressed(aPixelFormat: TS3TCCompressedFormats): cardinal; override;
 
-    class function CreateDepthStencil(aDepthBit: byte; aStencil: boolean = false): cardinal;
+    class function CreateDepthStencil(aDepthBit: byte; aStencil: boolean = false): cardinal; override;
 
-    class function CreateSpecial(aPixelFormat: TImageSpecialFormat): cardinal;
+    class function CreateSpecial(aPixelFormat: TImageSpecialFormat): cardinal; override;
 
   end;
 
