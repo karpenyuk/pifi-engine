@@ -34,7 +34,8 @@ type
   public
 
     // Clamp = max( aMin, min( aMax, aValue ))
-    class function Clamp( aValue,aMin,aMax: Float ): Float; static;
+    class function Clamp( aValue,aMin,aMax: Float ): Float; overload; static;
+    class function Clamp( aValue,aMin,aMax: Int ): Int; overload; static;
 
     // Delta = ( aCurr - aStart ) / ( aStop - aStart )
     class function Delta( aStart,aStop,aCurr: Float ): Float; static;
@@ -66,6 +67,7 @@ type
     class procedure Swap( var aVar1,aVar2: Float ); static;
 
     class function Abs( aValue: Float ): Float; static;
+    class function Ceil(aValue: Float): Int; static;
 
     class procedure SinCos( aTheta: Float;
       out aSVar,aCVar: Float ); overload; static;
@@ -95,15 +97,36 @@ begin
 end;
 
 //
+// TMath.Ceil
+//
+class function TMath.Ceil(aValue: Float): Int;
+begin
+  Result := Integer(Trunc(aValue));
+  if Frac(aValue) > 0 then
+    Inc(Result);
+end;
+
+//
 // TMath.Clamp
 //
 class function TMath.Clamp( aValue,aMin,aMax: Float ): Float;
 begin
+  if aValue < aMin then
+    Result := aMin
+  else if aValue > aMax then
+    Result := aMax
+  else
+    Result := aValue;
+end;
 
-  if aValue < aMin then result := aMin
-    else if aValue > aMax then result := aMax
-      else result := aValue;
-
+class function TMath.Clamp(aValue, aMin, aMax: Int): Int;
+begin
+  if aValue < aMin then
+    Result := aMin
+  else if aValue > aMax then
+    Result := aMax
+  else
+    Result := aValue;
 end;
 
 //
