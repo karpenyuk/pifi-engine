@@ -4,7 +4,7 @@ interface
 
 uses
   Classes,
-  uImageAnalysis,
+  uImageAnalysisClasses,
   uBaseTypes;
 
 { .$IFDEF PACKED_EXEMPLAR_RG }
@@ -15,7 +15,7 @@ type
 
   TSynthesizer = class
   private
-    FAnalyzer: TAnalyzer;
+    FAnalysisData: TAnalysisData;
     FWidth, FHeight: integer;
     FSynthesized: array of TIVec2Array2D;
     FWriteBuffer: TIVec2Array2D;
@@ -63,7 +63,7 @@ type
     procedure SetCorrectionSubpassesCount(const Value: integer);
 
   public
-    constructor Create(aAnalyzer: TAnalyzer);
+    constructor Create(anAnalysisData: TAnalysisData);
     destructor Destroy; override;
 
     // Runs synthesis.
@@ -90,7 +90,7 @@ type
     property JitterPeriodY: integer read FJitterPeriodY write FJitterPeriodY;
     // Controls whether coherent candidates are favored; 1.0 has no effect, 0.1 has strong effect, 0.0 is invalid.
     property Kappa: single read FKappa write FKappa;
-    property Analyzer: TAnalyzer read FAnalyzer;
+    property AnalysisData: TAnalysisData read FAnalysisData;
     // Number of threads to be used for the correction step
     property MaxCPUThreads: integer read FMaxCPUThreads write SetMaxCPUThreads;
   end;
@@ -115,10 +115,10 @@ uses
   uMath,
   Math;
 
-constructor TSynthesizer.Create(aAnalyzer: TAnalyzer);
+constructor TSynthesizer.Create(anAnalysisData: TAnalysisData);
 begin
-  Assert(Assigned(aAnalyzer));
-  FAnalyzer := aAnalyzer;
+  Assert(Assigned(anAnalysisData));
+  FAnalysisData := anAnalysisData;
   FEdgePolicy := epWrap;
   FEdgePolicyFunc := TIVec2Array2D.WrapAccess;
   FWidth := 256;
@@ -158,15 +158,15 @@ var
 begin
   Stop;
 
-  if FAnalyzer.Toroidality then
+  if FAnalysisData.Toroidality then
     FEdgePolicyFunc := TIVec2Array2D.WrapAccess
   else
     FEdgePolicyFunc := TIVec2Array2D.MirrorAccess;
 
   // initialize from coarsest level to finest obtain desired resolution at finest level
-  SetLength(FSynthesized, FAnalyzer.LevelCount);
-  nx := TMath.Ceil(FWidth / FAnalyzer.Exemplar.Width);
-  ny := TMath.Ceil(FHeight / FAnalyzer.Exemplar.Height);
+  SetLength(FSynthesized, FAnalysisData.LevelsAmount);
+  nx := TMath.Ceil(FWidth / FAnalysisData.Exemplar.Width);
+  ny := TMath.Ceil(FHeight / FAnalysisData.Exemplar.Height);
   for l := High(FSynthesized) downto 0 do
   begin
     FSynthesized[l] := TIVec2Array2D.Create(nx, ny);
@@ -179,8 +179,8 @@ begin
   Assert(FProcessedLevel > 0);
 
   // fill coarsest level with exemplar center coordinates (in abscence of jitter, produces tiling of the exemplar)
-  V[0] := FAnalyzer.Exemplar.Width div 2;
-  V[1] := FAnalyzer.Exemplar.Height div 2;
+  V[0] := FAnalysisData.Exemplar.Width div 2;
+  V[1] := FAnalysisData.Exemplar.Height div 2;
   FSynthesized[FProcessedLevel].Clear(V);
   Dec(FProcessedLevel);
   FPhase := 0;
@@ -236,7 +236,7 @@ begin
       if FProcessedLevel >= Length(FSynthesized) - 3 then
         strength := 0
       else
-        strength := FJitterStrength * FProcessedLevel / FAnalyzer.LevelCount;
+        strength := FJitterStrength * FProcessedLevel / FAnalysisData.LevelsAmount;
       // apply jitter
       Jitter(strength, FSynthesized[FProcessedLevel]);
       Inc(FPhase);
@@ -295,16 +295,16 @@ begin
       V := DownLevel.At[pj, pi];
       UpLevel.At[pj * 2 + 0, pi * 2 + 0] := V;
       // (1, 0)
-      detV[0] := UpLevel.WrapAccess(V[0] + spacing, FAnalyzer.Exemplar.Width);
+      detV[0] := UpLevel.WrapAccess(V[0] + spacing, FAnalysisData.Exemplar.Width);
       detV[1] := V[1];
       UpLevel.At[pj * 2 + 1, pi * 2 + 0] := detV;
       // (0, 1)
       detV[0] := V[0];
-      detV[1] := UpLevel.WrapAccess(V[1] + spacing, FAnalyzer.Exemplar.Height);
+      detV[1] := UpLevel.WrapAccess(V[1] + spacing, FAnalysisData.Exemplar.Height);
       UpLevel.At[pj * 2 + 1, pi * 2 + 1] := detV;
       // (1, 1)
-      detV[0] := UpLevel.WrapAccess(V[0] + spacing, FAnalyzer.Exemplar.Width);
-      detV[1] := UpLevel.WrapAccess(V[1] + spacing, FAnalyzer.Exemplar.Height);
+      detV[0] := UpLevel.WrapAccess(V[0] + spacing, FAnalysisData.Exemplar.Width);
+      detV[1] := UpLevel.WrapAccess(V[1] + spacing, FAnalysisData.Exemplar.Height);
       UpLevel.At[pj * 2 + 0, pi * 2 + 1] := detV;
     end;
 end;
@@ -332,8 +332,8 @@ begin
   begin
     // maintain tiling periodicity by quantizing each jitter coordinate
     spacing := 1 shl FProcessedLevel;
-    kx := FAnalyzer.Exemplar.Width / FJitterPeriodX;
-    ky := FAnalyzer.Exemplar.Height / FJitterPeriodY;
+    kx := FAnalysisData.Exemplar.Width / FJitterPeriodX;
+    ky := FAnalysisData.Exemplar.Height / FJitterPeriodY;
     dx := 0.5;
     dy := dx;
     if kx < spacing then
@@ -426,8 +426,7 @@ begin
       // project it to 6D vector
       for nj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         for ni := 0 to 5 do
-          syN_V6D[ni] := syN_V6D[ni] + FAnalyzer.NeighbPCAmatrix[FProcessedLevel]
-            [nj, ni] * syN[nj];
+          syN_V6D[ni] := syN_V6D[ni] + FAnalysisData.Levels[FProcessedLevel].NeihgbPCAMatrix[nj, ni] * syN[nj];
       /// Find best matching candidate
       minDis := 1E30;
       best := Source.At[j, i];
@@ -439,11 +438,11 @@ begin
           // n is a coordinate in exemplar stack
           n := Source.At[j + nj, i + ni];
           // delta must be multiplied by stack level offset
-          ms := FAnalyzer.KNearests.At[n[0], n[1], FProcessedLevel];
+          ms := FAnalysisData.KNearests.At[n[0], n[1], FProcessedLevel];
 
           c[0] := ms[0][0] - nj * spacing;
           c[1] := ms[0][1] - ni * spacing;
-          exN_V6D := FAnalyzer.Neighborhoods.As6DAt[c[0], c[1], FProcessedLevel];
+          exN_V6D := FAnalysisData.Neighborhoods.As6DAt[c[0], c[1], FProcessedLevel];
           // compare
           Dis := 0;
           for nk := 0 to 5 do
@@ -461,7 +460,7 @@ begin
           begin
             c[0] := ms[k][0] - nj * spacing;
             c[1] := ms[k][1] - ni * spacing;
-            exN_V6D := FAnalyzer.Neighborhoods.As6DAt[c[0], c[1], FProcessedLevel];
+            exN_V6D := FAnalysisData.Neighborhoods.As6DAt[c[0], c[1], FProcessedLevel];
             // compare
             Dis := 0;
             for nk := 0 to 5 do
@@ -477,7 +476,7 @@ begin
 
       // self as last -- VERY IMPORTANT to ensure identity in coherent patches --
       n := Source.At[j, i];
-      exN_V6D := FAnalyzer.Neighborhoods.As6DAt[n[0], n[1], FProcessedLevel];
+      exN_V6D := FAnalysisData.Neighborhoods.As6DAt[n[0], n[1], FProcessedLevel];
       Dis := 0;
       for nk := 0 to 5 do
         Dis := Dis + sqr(exN_V6D[nk] - syN_V6D[nk]);
@@ -495,7 +494,7 @@ function TSynthesizer.GatherNeighborhood(j: integer; i: integer; step: integer)
 var
   img: TIVec2Array2D;
   l, At: integer;
-  stackImage: TImageDesc;
+  stackImage: PImageDesc;
   ni, nj, di, dj, x, y: integer;
   s: IVec2;
   p: PByte;
@@ -504,8 +503,8 @@ begin
   img := FSynthesized[step];
   Assert((img.Width > 0) and (img.Height > 0));
   l := FProcessedLevel - step;
-  Assert((l >= 0) and (l < FAnalyzer.LevelCount));
-  stackImage := FAnalyzer.GaussianStackLevel[l];
+  Assert((l >= 0) and (l < FAnalysisData.LevelsAmount));
+  stackImage := FAnalysisData.Images[l];
   for ni := 0 to NEIGHBOUR_DIM - 1 do
     for nj := 0 to NEIGHBOUR_DIM - 1 do
     begin
@@ -527,14 +526,14 @@ end;
 
 function TSynthesizer.GetSynthImage(aLevel: integer): TImageDesc;
 var
-  src: TImageDesc;
+  src: PImageDesc;
   crd: TIVec2Array2D;
   i, j: integer;
   xy: IVec2;
   pb_Src, pb_Dst: PByte;
 begin
   // Create color version of the synthesis result (which contains coordinates only)
-  src := FAnalyzer.GaussianStackLevel[aLevel];
+  src := FAnalysisData.Images[aLevel];
   crd := FSynthesized[aLevel];
   FillChar(result, SizeOf(TImageDesc), $00);
   result.Width := crd.Width;
@@ -595,9 +594,9 @@ begin
     begin
       xy := img.At[j, i];
       p[0] := floor(256 * TIVec2Array2D.WrapAccess(xy[0],
-        FAnalyzer.Exemplar.Width) / FAnalyzer.Exemplar.Width);
+        FAnalysisData.Exemplar.Width) / FAnalysisData.Exemplar.Width);
       p[1] := floor(256 * TIVec2Array2D.WrapAccess(xy[1],
-        FAnalyzer.Exemplar.Height) / FAnalyzer.Exemplar.Height);
+        FAnalysisData.Exemplar.Height) / FAnalysisData.Exemplar.Height);
       Inc(p, result.ElementSize);
     end;
   end;
