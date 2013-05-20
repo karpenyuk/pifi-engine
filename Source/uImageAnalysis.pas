@@ -5,11 +5,21 @@ interface
 uses
   Classes, uBaseTypes, uVMath;
 
+{.$IFDEF PACKED_EXEMPLAR_RG}
+
 const
   NEIGHBOUR_DIM = 5;
   NEIGHBOUR_SIZE_2COLOR = 2 * NEIGHBOUR_DIM * NEIGHBOUR_DIM;
   NEIGHBOUR_SIZE_3COLOR = 3 * NEIGHBOUR_DIM * NEIGHBOUR_DIM;
   SIMILAR_NEIGHBOUR_SIZE = 8;
+
+const
+  GL_RG = $8227;
+  GL_RGB = $1907;
+  GL_RGBA = $1908;
+  GL_RG8 = $822B;
+  GL_RGB8 = $8051;
+  GL_UNSIGNED_BYTE = $1401;
 
 type
   TEdgePolicy = (epWrap, epClamp, epMirror);
@@ -34,14 +44,15 @@ type
     procedure SetItem(x, y: integer; const aValue: IVec2);
     procedure SetWidthAccessPolisy(ap: TEdgePolicy);
     procedure SetHeightAccessPolisy(ap: TEdgePolicy);
-    class function WrapAccess(c, size: integer): integer;
-    class function ClampAccess(c, size: integer): integer;
-    class function MirrorAccess(c, size: integer): integer;
   public
     constructor Create(w, h: integer);
 
     procedure Clear(const aClearValue: IVec2);
     procedure Assign(source: TIVec2Array2D);
+
+    class function WrapAccess(c, size: integer): integer;
+    class function ClampAccess(c, size: integer): integer;
+    class function MirrorAccess(c, size: integer): integer;
 
     property Width: integer read FWidth;
     property Height: integer read FHeight;
@@ -138,18 +149,20 @@ type
 
   TImageStack = class
   private
-    function GetLevel(level: integer): TFloatImage;
-  protected
-    FLevels: array of TFloatImage;
+    FFloatImages: array of TFloatImage;
     FImages: array of TImageDesc;
+    FProjectedImages: array of TImageDesc;
     function GetLevelsAmount: integer;
-    function GetImage(alevel: integer): TImageDesc;
+    function GetImage(alevel: integer): PImageDesc;
+    function GetLevel(level: integer): TFloatImage;
+    function GetPackedImage(alevel: integer): PImageDesc;
   public
     constructor Create(aPyramid: TImagePyramid);
     destructor Destroy; override;
 
-    property level[level: integer]: TFloatImage read GetLevel;
-    property Image[level: integer]: TImageDesc read GetImage;
+    property FloatImages[level: integer]: TFloatImage read GetLevel;
+    property Images[level: integer]: PImageDesc read GetImage;
+    property PackedImages[level: integer]: PImageDesc read GetPackedImage;
     property LevelsAmount: integer read GetLevelsAmount;
   end;
 
@@ -173,16 +186,13 @@ type
     // Threads
     FThreads: array of TAnalyzerThread;
     FMaxCPUThreads: integer;
-    // ! analyzes one exemplar stack level
-    procedure AnalyzeStackLevel(l: integer);
-    // ! gathers all neighborhoods of the exemplar stack level
+    // Gathers all neighborhoods of the exemplar stack level
     procedure GatherNeighborhoods(alevel: TAnalyzerThread);
-    // ! gathers neighborhood at i,j in the stack level
+    // Gathers neighborhood at i,j in the stack level
     function GatherNeighborhood(i, j: integer; alevel: TAnalyzerThread)
       : TNeighborhood3c;
     procedure ProjectStackLevelTo2D(alevel: TAnalyzerThread);
     procedure SetToroidality(flag: boolean);
-    // return analysis compliteness
     function GetDone: boolean;
     procedure SetExemplar(const aDesc: TImageDesc);
     function GetStackLevel(alevel: integer): TImageDesc;
@@ -191,7 +201,7 @@ type
     function GetNeighbPCAmatrix(alevel: integer): TNeighbPCAmatrix;
     function GetColorScale(alevel: integer): Vec2;
     function GetColorOffset(alevel: integer): Vec2;
-    function GetNumLevels: integer;
+    function GetLevelCount: integer;
   public
     constructor Create;
     destructor Destroy; override;
@@ -202,6 +212,8 @@ type
     procedure Stop;
     property Done: boolean read GetDone;
 
+    // Analyzes one exemplar stack level
+    procedure AnalyzeStackLevel(aLevel: integer);
     // Returns the neighborhood at j,i in the stack level l.
     // This is using pre-gathered neighborhoods.
     // It is meant to be called after analysis, during synthesis.
@@ -217,7 +229,7 @@ type
       read GetNeighbPCAmatrix;
     property ColorScale[level: integer]: Vec2 read GetColorScale;
     property ColorOffset[level: integer]: Vec2 read GetColorOffset;
-    property NumLevels: integer read GetNumLevels;
+    property LevelCount: integer read GetLevelCount;
     property Toroidality: boolean read FToroidal write SetToroidality;
     property MaxCPUThreads: integer read FMaxCPUThreads write SetMaxCPUThreads;
   end;
@@ -226,8 +238,8 @@ type
   private
     FAnalyzer: TAnalyzer;
     FLevel: integer;
-    FExemplar: TImageDesc;
-    FPCAexemplar: TImageDesc;
+    FExemplar: PImageDesc;
+    FPCAexemplar: PImageDesc;
     FColorScale: Vec2;
     FColorOffset: Vec2;
     FColorPCAMatrix: TColorPCAMatrix;
@@ -240,8 +252,8 @@ type
     constructor CreateOwned(aOwner: TAnalyzer; alevel: integer);
     procedure Execute; override;
 
-    property Exemplar: TImageDesc read FExemplar;
-    property PCAexemplar: TImageDesc read FPCAexemplar;
+    property Exemplar: PImageDesc read FExemplar;
+    property PCAexemplar: PImageDesc read FPCAexemplar;
     property ColorScale: Vec2 read FColorScale write FColorScale;
     property ColorOffset: Vec2 read FColorOffset write FColorOffset;
     property ColorPCAmatrix: TColorPCAMatrix read FColorPCAMatrix;
@@ -255,16 +267,9 @@ type
 implementation
 
 uses
-  uMath, uMathPCA, Math, uNeighborSearching, uMiscUtils {,dglOpenGL};
+  uMath, uMathPCA, Math, uNeighborSearching, uMiscUtils;
 
 const
-  GL_RG = $8227;
-  GL_RGB = $1907;
-  GL_RGBA = $1908;
-  GL_RG8 = $822B;
-  GL_RGB8 = $8051;
-  GL_UNSIGNED_BYTE = $1401;
-
   INV255 = 1.0 / 255.0;
   ZERO_PIXEL: TFloatPixel = (r: 0; g: 0; b: 0);
 
@@ -340,7 +345,7 @@ procedure TIVec2Array2D.Assign(source: TIVec2Array2D);
 begin
   FWidth := source.FWidth;
   FHeight := source.FHeight;
-  FData := Copy(source.FData, Length(source.FData));
+  FData := Copy(source.FData, 0, Length(source.FData));
 end;
 
 procedure TIVec2Array2D.SetWidthAccessPolisy(ap: TEdgePolicy);
@@ -424,75 +429,75 @@ end;
 
 procedure TNeighborhoods.ProjectTo6D(alevel: integer;
   const CPCA: TColorPCAMatrix;
-  var NPCA: TNeighbPCAmatrix); {
-  var
-  x: TReal2DArray;
-  Dispersion: TReal1DArray;
-  PCA: TReal2DArray;
+  var NPCA: TNeighbPCAmatrix);
+var
+  x: TDouble2DArray;
+  Dispersion: TDouble1DArray;
+  PCA: TDouble2DArray;
   Info: integer;
   i, j, mi, mj, row: integer;
   V6D: TVector6f;
   Neighb: TNeighborhood3c;
-  clr: single; }
+  clr: single;
 begin
-  { Assert(level < FLevels);
-    SetLength(x, FWidth * FHeight, NeighbSize2c);
-    row := 0;
-    // fill array for principal component analysis
-    // and simultaneously project neighborhoods color to 2D
-    for i := 0 to FHeight - 1 do
+  Assert(alevel < FLevels);
+  SetLength(x, FWidth * FHeight, NEIGHBOUR_SIZE_2COLOR);
+  row := 0;
+  // fill array for principal component analysis
+  // and simultaneously project neighborhoods color to 2D
+  for i := 0 to FHeight - 1 do
     for j := 0 to FWidth - 1 do
     begin
-    Neighb := GetNeighb(j, i, level);
-    for mj := 0 to NeighbSize2c div 2 - 1 do
-    begin
-    x[row][mj * 2 + 0] := CPCA[0, 0] * Neighb[mj * 3 + 0];
-    x[row][mj * 2 + 0] := x[row][mj * 2 + 0] + CPCA[1, 0] *
-    Neighb[mj * 3 + 1];
-    x[row][mj * 2 + 0] := x[row][mj * 2 + 0] + CPCA[2, 0] *
-    Neighb[mj * 3 + 2];
-    x[row][mj * 2 + 1] := CPCA[0, 1] * Neighb[mj * 3 + 0];
-    x[row][mj * 2 + 1] := x[row][mj * 2 + 1] + CPCA[1, 1] *
-    Neighb[mj * 3 + 1];
-    x[row][mj * 2 + 1] := x[row][mj * 2 + 1] + CPCA[2, 1] *
-    Neighb[mj * 3 + 2];
+      Neighb := GetNeighb(j, i, aLevel);
+      for mj := 0 to NEIGHBOUR_SIZE_2COLOR div 2 - 1 do
+      begin
+        x[row][mj * 2 + 0] := CPCA[0, 0] * Neighb[mj * 3 + 0];
+        x[row][mj * 2 + 0] := x[row][mj * 2 + 0] + CPCA[1, 0] *
+          Neighb[mj * 3 + 1];
+        x[row][mj * 2 + 0] := x[row][mj * 2 + 0] + CPCA[2, 0] *
+          Neighb[mj * 3 + 2];
+        x[row][mj * 2 + 1] := CPCA[0, 1] * Neighb[mj * 3 + 0];
+        x[row][mj * 2 + 1] := x[row][mj * 2 + 1] + CPCA[1, 1] *
+          Neighb[mj * 3 + 1];
+        x[row][mj * 2 + 1] := x[row][mj * 2 + 1] + CPCA[2, 1] *
+          Neighb[mj * 3 + 2];
+      end;
+      Inc(row);
     end;
-    Inc(row);
-    end;
-    // run principal component analysis
-    PCABuildBasis(x, FWidth * FHeight, 2 * NeighbSize3c div 3, Info,
-    Dispersion, PCA);
-    // store only 6 basis
-    if Info = 1 then
+  // run principal component analysis
+  PrincipalComponentsAnalysis.BuildBasis(x, FWidth * FHeight,
+    2 * NEIGHBOUR_SIZE_3COLOR div 3, Info, Dispersion, PCA);
+  // store only 6 basis
+  if Info = 1 then
     for i := 0 to 5 do
-    for j := 0 to NeighbSize2c - 1 do
-    NPCA[j, i] := PCA[j, i];
+      for j := 0 to NEIGHBOUR_SIZE_2COLOR - 1 do
+        NPCA[j, i] := PCA[j, i];
 
-    // store lower dimension vector to 2D array
-    for i := 0 to FHeight - 1 do
+  // store lower dimension vector to 2D array
+  for i := 0 to FHeight - 1 do
     for j := 0 to FWidth - 1 do
     begin
-    Neighb := GetNeighb(j, i, level);
-    V6D[0] := 0;
-    V6D[1] := 0;
-    V6D[2] := 0;
-    V6D[3] := 0;
-    V6D[4] := 0;
-    V6D[5] := 0;
-    for mi := 0 to 5 do
-    for mj := 0 to NeighbSize2c div 2 - 1 do
-    begin
-    clr := CPCA[0, 0] * Neighb[3 * mj + 0] + CPCA[1, 0] *
-    Neighb[3 * mj + 1] + CPCA[2, 0] * Neighb[3 * mj + 2];
-    V6D[mi] := V6D[mi] + NPCA[2 * mj + 0, mi] * clr;
+      Neighb := GetNeighb(j, i, aLevel);
+      V6D[0] := 0;
+      V6D[1] := 0;
+      V6D[2] := 0;
+      V6D[3] := 0;
+      V6D[4] := 0;
+      V6D[5] := 0;
+      for mi := 0 to 5 do
+        for mj := 0 to NEIGHBOUR_SIZE_2COLOR div 2 - 1 do
+        begin
+          clr := CPCA[0, 0] * Neighb[3 * mj + 0] + CPCA[1, 0] *
+            Neighb[3 * mj + 1] + CPCA[2, 0] * Neighb[3 * mj + 2];
+          V6D[mi] := V6D[mi] + NPCA[2 * mj + 0, mi] * clr;
 
-    clr := CPCA[0, 1] * Neighb[3 * mj + 0] + CPCA[1, 1] *
-    Neighb[3 * mj + 1] + CPCA[2, 1] * Neighb[3 * mj + 2];
-    V6D[mi] := V6D[mi] + NPCA[2 * mj + 1, mi] * clr;
+          clr := CPCA[0, 1] * Neighb[3 * mj + 0] + CPCA[1, 1] *
+            Neighb[3 * mj + 1] + CPCA[2, 1] * Neighb[3 * mj + 2];
+          V6D[mi] := V6D[mi] + NPCA[2 * mj + 1, mi] * clr;
+        end;
+
+      SetNeighb6D(j, i, aLevel, V6D);
     end;
-
-    SetNeighb6D(j, i, level, V6D);
-    end; }
 end;
 
 {$ENDREGION}
@@ -808,7 +813,6 @@ begin
   tmp.Free;
 end;
 {$ENDREGION}
-
 {$REGION 'TImageStack'}
 
 
@@ -817,16 +821,17 @@ var
   l, i, j: integer;
   fi, fj: single;
 begin
-  SetLength(FLevels, aPyramid.LevelsAmount);
+  SetLength(FFloatImages, aPyramid.LevelsAmount);
   SetLength(FImages, aPyramid.LevelsAmount);
+  SetLength(FProjectedImages, aPyramid.LevelsAmount);
   for l := 0 to aPyramid.LevelsAmount - 1 do begin
-    FLevels[l] := TFloatImage.Create(aPyramid.level[0].Width,
+    FFloatImages[l] := TFloatImage.Create(aPyramid.level[0].Width,
       aPyramid.level[0].Height);
-    for i := 0 to FLevels[l].Height - 1 do
-      for j := 0 to FLevels[l].Width - 1 do begin
-        fj := (j + 0.5) / FLevels[l].Width;
-        fi := (i + 0.5) / FLevels[l].Height;
-        FLevels[l].Pixel[j, i] := aPyramid.level[l].BilinearWrap(fj, fi);
+    for i := 0 to FFloatImages[l].Height - 1 do
+      for j := 0 to FFloatImages[l].Width - 1 do begin
+        fj := (j + 0.5) / FFloatImages[l].Width;
+        fi := (i + 0.5) / FFloatImages[l].Height;
+        FFloatImages[l].Pixel[j, i] := aPyramid.level[l].BilinearWrap(fj, fi);
       end;
   end;
 end;
@@ -835,36 +840,41 @@ destructor TImageStack.Destroy;
 var
   l: integer;
 begin
-  for l := 0 to High(FLevels) do
+  for l := 0 to High(FFloatImages) do
   begin
-    FLevels[l].Destroy;
+    FFloatImages[l].Destroy;
     FImages[l].Free;
+    FProjectedImages[l].Free;
   end;
 end;
 
 function TImageStack.GetLevel(level: integer): TFloatImage;
 begin
-  result := FLevels[level];
+  Result := FFloatImages[level];
 end;
 
 function TImageStack.GetLevelsAmount: integer;
 begin
-  result := Length(FLevels);
+  Result := Length(FFloatImages);
 end;
 
-function TImageStack.GetImage(alevel: integer): TImageDesc;
+function TImageStack.GetPackedImage(alevel: integer): PImageDesc;
+begin
+  Result := @FProjectedImages[alevel];
+end;
+
+function TImageStack.GetImage(alevel: integer): PImageDesc;
 begin
   if FImages[alevel].Data = nil then
-      FImages[alevel] := FLevels[alevel].GetImage;
-  result := FImages[alevel];
+      FImages[alevel] := FFloatImages[alevel].GetImage;
+  result := @FImages[alevel];
 end;
 
 {$ENDREGION}
-
 {$REGION 'TAnalyzer'}
 
 
-procedure TAnalyzer.AnalyzeStackLevel(l: integer);
+procedure TAnalyzer.AnalyzeStackLevel(aLevel: integer);
 var
   i, j, k, n: integer;
   ANNPoints: TANNpointArray;
@@ -885,7 +895,7 @@ begin
   for i := 0 to FNeighborhoods.Height - 1 do
     for j := 0 to FNeighborhoods.Width - 1 do
     begin
-      neigh := FNeighborhoods.At[j, i, l];
+      neigh := FNeighborhoods.At[j, i, aLevel];
       SetLength(ANNPoints[k], NEIGHBOUR_SIZE_3COLOR);
       for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
           ANNPoints[k][n] := neigh[n]; // singe -> double
@@ -897,7 +907,7 @@ begin
   for i := 0 to FNeighborhoods.Height - 1 do
     for j := 0 to FNeighborhoods.Width - 1 do
     begin
-      neigh := FNeighborhoods.At[j, i, l];
+      neigh := FNeighborhoods.At[j, i, aLevel];
       SetLength(queryPt, NEIGHBOUR_SIZE_3COLOR);
       for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
           queryPt[n] := neigh[n];
@@ -911,7 +921,7 @@ begin
         KNearest[n][0] := Idx mod FNeighborhoods.Width;
         KNearest[n][1] := Idx div FNeighborhoods.Width;
       end;
-      FkNearests.At[j, i, l] := KNearest;
+      FkNearests.At[j, i, aLevel] := KNearest;
     end;
 
   kdTree.Free;
@@ -1004,7 +1014,7 @@ begin
   result := FThreads[alevel].FNeihgbPCAMatrix;
 end;
 
-function TAnalyzer.GetNumLevels: integer;
+function TAnalyzer.GetLevelCount: integer;
 begin
   if Assigned(FStack) then
       result := FStack.LevelsAmount
@@ -1015,13 +1025,13 @@ end;
 function TAnalyzer.GetPCAStackLevel(alevel: integer): TImageDesc;
 begin
   if alevel < FStack.LevelsAmount then
-      result := FStack.GetImage(alevel);
+      result := FStack.PackedImages[alevel]^;
 end;
 
 function TAnalyzer.GetStackLevel(alevel: integer): TImageDesc;
 begin
   if alevel < FStack.LevelsAmount then
-      result := FStack.GetImage(alevel);
+      result := FStack.Images[alevel]^;
 end;
 
 procedure TAnalyzer.Process;
@@ -1132,17 +1142,24 @@ begin
       clr[0] := 1;
     if clr[1] = 0 then
       clr[1] := 1;
+    alevel.ColorScale := clr;
 
     with alevel do
     begin
-      FillChar(FPCAexemplar, SizeOf(TImageDesc), $00);
+      FillChar(FPCAexemplar^, SizeOf(TImageDesc), $00);
       FPCAexemplar.Width := Exemplar.Width;
       FPCAexemplar.Height := Exemplar.Height;
+{$IFDEF PACKED_EXEMPLAR_RG}
       FPCAexemplar.InternalFormat := GL_RG8;
       FPCAexemplar.ColorFormat := GL_RG;
-      FPCAexemplar.DataType := GL_UNSIGNED_BYTE;
       FPCAexemplar.ElementSize := 2;
-      FPCAexemplar.DataSize := Exemplar.Width * Exemplar.Height * 2;
+{$ELSE}
+      FPCAexemplar.InternalFormat := GL_RGB8;
+      FPCAexemplar.ColorFormat := GL_RGB;
+      FPCAexemplar.ElementSize := 3;
+{$ENDIF}
+      FPCAexemplar.DataType := GL_UNSIGNED_BYTE;
+      FPCAexemplar.DataSize := Exemplar.Width * Exemplar.Height * FPCAexemplar.ElementSize;
       GetMem(FPCAexemplar.Data, FPCAexemplar.DataSize);
     end;
 
@@ -1201,10 +1218,10 @@ end;
 procedure TAnalyzer.Start;
 var
   pyramid: TImagePyramid;
-  img: TImageDesc;
+  img: PImageDesc;
   l: integer;
 begin
-  Assert(Assigned(FExemplar.Data));
+  Assert(Assigned(FExemplar.Data), 'TAnalyzer: Assign ');
   // delete previous result
   Stop;
   FkNearests.Free;
@@ -1218,7 +1235,7 @@ begin
   FStack := TImageStack.Create(pyramid);
 
   // Allocate neighborhoods
-  img := FStack.Image[0];
+  img := FStack.Images[0];
   FkNearests := TMostSimilars.Create(img.Width, img.Height,
     FStack.LevelsAmount);
   FNeighborhoods := TNeighborhoods.Create(img.Width, img.Height,
@@ -1250,7 +1267,6 @@ begin
 end;
 
 {$ENDREGION}
-
 {$REGION 'TAnalyzerThread'}
 
 
@@ -1259,7 +1275,8 @@ begin
   inherited Create(true);
   FAnalyzer := aOwner;
   FLevel := alevel;
-  FExemplar := aOwner.FStack.GetImage(FLevel);
+  FExemplar := aOwner.FStack.Images[FLevel];
+  FPCAExemplar := aOwner.FStack.PackedImages[FLevel];
 end;
 
 procedure TAnalyzerThread.Execute;
