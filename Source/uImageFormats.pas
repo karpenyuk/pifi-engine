@@ -2,6 +2,8 @@ unit uImageFormats;
 
 interface
 
+uses uMiscUtils;
+
 Type
 
   TBaseImageFormat = (bfRed, bfRG, bfRGB, bfBGR, bfRGBA, bfBGRA, bfDepth,
@@ -36,6 +38,17 @@ Type
     class function CreateDepthStencil(aDepthBit: byte; aStencil: boolean = false): T; virtual; abstract;
 
     class function CreateSpecial(aPixelFormat: TImageSpecialFormat): T; virtual; abstract;
+
+    class function GetMemSize(aPixelFormat: TS3TCCompressedFormats;
+      aWidth: integer; aHeight: integer = 1; aDepth: integer = 1): cardinal; overload;
+    class function GetMemSize(aPixelFormat: TImagePixelFormat;
+      aWidth: integer; aHeight: integer = 1; aDepth: integer = 1): cardinal; overload;
+    class function GetMemSize(aPixelFormat: TDepthStencilFormat;
+      aWidth: integer; aHeight: integer = 1; aDepth: integer = 1): cardinal; overload;
+
+    class function GetPixelSize(aPixelFormat: TImagePixelFormat): cardinal; overload;
+    class function GetPixelSize(aPixelFormat: TDepthStencilFormat): cardinal; overload;
+    class function GetPixelSize(aPixelFormat: TS3TCCompressedFormats): cardinal; overload;
   end;
 
   TImageFormatSelector = class (TAbstractPixelFormatSelector<cardinal>)
@@ -100,6 +113,13 @@ Type
     class procedure SetCompressedFormat(var aFormat: cardinal; aValue: TS3TCCompressedFormats);
   end;
 
+const
+  CBasePixelSize: array[TImagePixelFormat] of byte =
+    (1,1,2,2,4,4,2,4,1,2,2,2,4,4,4,2,1,2,2,4,4,4,4,4,4,4,4);
+  CDepthStencilSize: array[TDepthStencilFormat] of byte =
+    (2,3,4,4,1,4,5);
+  CCompressedPixelSize: array[TS3TCCompressedFormats] of byte =
+    (8,8,8,8,16,16,16,16);
 
 implementation
 
@@ -503,6 +523,51 @@ begin
   aFormat := (aFormat and $FFFFFF1F) + 224;
   temp := cardinal(aValue) shl 10;
   aFormat := (aFormat and $FFFFE3FF) + temp;
+end;
+
+{ TAbstractPixelFormatSelector<T> }
+
+class function TAbstractPixelFormatSelector<T>.GetMemSize(
+  aPixelFormat: TS3TCCompressedFormats; aWidth, aHeight,
+  aDepth: integer): cardinal;
+var mw, mh, md, bs: integer;
+begin
+  mw := max(1,aWidth); mh := max(1,aHeight); md := max(1, aDepth);
+  bs := CCompressedPixelSize[aPixelFormat];
+  result := trunc(max(1, mw / 4) * max(1, mh / 4)*bs)*md;
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetPixelSize(
+  aPixelFormat: TImagePixelFormat): cardinal;
+begin
+  result := CBasePixelSize[aPixelFormat];
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetMemSize(
+  aPixelFormat: TImagePixelFormat; aWidth, aHeight, aDepth: integer): cardinal;
+begin
+  result := max(1,aWidth) * max(1,aHeight) * max(1, aDepth) *
+    CBasePixelSize[aPixelFormat];
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetMemSize(
+  aPixelFormat: TDepthStencilFormat; aWidth, aHeight,
+  aDepth: integer): cardinal;
+begin
+  result := max(1,aWidth) * max(1,aHeight) * max(1, aDepth) *
+    CDepthStencilSize[aPixelFormat];
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetPixelSize(
+  aPixelFormat: TS3TCCompressedFormats): cardinal;
+begin
+  result := CCompressedPixelSize[aPixelFormat];
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetPixelSize(
+  aPixelFormat: TDepthStencilFormat): cardinal;
+begin
+  result := CDepthStencilSize[aPixelFormat];
 end;
 
 end.
