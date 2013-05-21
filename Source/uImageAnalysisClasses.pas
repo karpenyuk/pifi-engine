@@ -39,6 +39,7 @@ type
 
 const
   ZERO_PIXEL: TFloatPixel = (r: 0; g: 0; b: 0);
+  ZERO_VECTOR6D: TVector6f = (0, 0, 0, 0, 0, 0);
 
 type
 
@@ -82,6 +83,10 @@ type
     procedure SetNeighb6D(x, y, z: integer; const ANeighborhood: TVector6f);
   public
     constructor Create(w, h, l: integer);
+
+    procedure Save(aStream: TStream);
+    procedure Load(aStream: TStream);
+
     property Width: integer read FWidth;
     property Height: integer read FHeight;
     property At[x, y, z: integer]: TNeighborhood3c read GetNeighb
@@ -99,6 +104,10 @@ type
       const AMostSimilar: TMostSimilar);
   public
     constructor Create(w, h, l: integer);
+
+    procedure Save(aStream: TStream);
+    procedure Load(aStream: TStream);
+
     property Width: integer read FWidth;
     property Height: integer read FHeight;
     property Levels: integer read FLevels;
@@ -119,6 +128,9 @@ type
     function GetImage: TImageDesc;
     procedure Clear(cR, cG, cB: single);
     function BilinearWrap(u, v: single): TFloatPixel;
+
+    procedure Save(aStream: TStream);
+    procedure Load(aStream: TStream);
 
     property Width: integer read FWidth;
     property Height: integer read FHeight;
@@ -333,6 +345,18 @@ begin
   result := FData[x + y * FWidth + z * FWidth * FHeight];
 end;
 
+procedure TNeighborhoods.Save(aStream: TStream);
+begin
+  aStream.Write(FWidth, SizeOf(Integer));
+  aStream.Write(FHeight, SizeOf(Integer));
+  aStream.Write(FLevels, SizeOf(Integer));
+  if Length(FData) > 0 then
+  begin
+    aStream.Write(FData[0], Length(FData)*SizeOf(TNeighborhood3c));
+    aStream.Write(FProjData[0], Length(FProjData)*SizeOf(TVector6f));
+  end;
+end;
+
 procedure TNeighborhoods.SetNeighb(x: integer; y: integer; z: integer;
   const ANeighborhood: TNeighborhood3c);
 begin
@@ -347,6 +371,20 @@ begin
   x := TIVec2Array2D.WrapAccess(x, FWidth);
   y := TIVec2Array2D.WrapAccess(y, FHeight);
   result := FProjData[x + y * FWidth + z * FWidth * FHeight]
+end;
+
+procedure TNeighborhoods.Load(aStream: TStream);
+begin
+  aStream.Read(FWidth, SizeOf(Integer));
+  aStream.Read(FHeight, SizeOf(Integer));
+  aStream.Read(FLevels, SizeOf(Integer));
+  SetLength(FData, FWidth*FHeight*FLevels);
+  SetLength(FProjData, FWidth*FHeight*FLevels);
+  if Length(FData) > 0 then
+  begin
+    aStream.Read(FData[0], Length(FData)*SizeOf(TNeighborhood3c));
+    aStream.Read(FProjData[0], Length(FProjData)*SizeOf(TVector6f));
+  end;
 end;
 
 procedure TNeighborhoods.SetNeighb6D(x: integer; y: integer; z: integer;
@@ -379,6 +417,25 @@ begin
   x := TIVec2Array2D.WrapAccess(x, FWidth);
   y := TIVec2Array2D.WrapAccess(y, FHeight);
   result := FData[x + y * FWidth + z * FWidth * FHeight];
+end;
+
+procedure TMostSimilars.Load(aStream: TStream);
+begin
+  aStream.Read(FWidth, SizeOf(Integer));
+  aStream.Read(FHeight, SizeOf(Integer));
+  aStream.Read(FLevels, SizeOf(Integer));
+  SetLength(FData, FWidth*FHeight*FLevels);
+  if Length(FData) > 0 then
+    aStream.Read(FData[0], Length(FData)*SizeOf(TMostSimilar));
+end;
+
+procedure TMostSimilars.Save(aStream: TStream);
+begin
+  aStream.Write(FWidth, SizeOf(Integer));
+  aStream.Write(FHeight, SizeOf(Integer));
+  aStream.Write(FLevels, SizeOf(Integer));
+  if Length(FData) > 0 then
+    aStream.Write(FData[0], Length(FData)*SizeOf(TMostSimilar));
 end;
 
 procedure TMostSimilars.SetMostSimilar(x, y, z: integer;
@@ -477,11 +534,28 @@ begin
       result := ZERO_PIXEL;
 end;
 
+procedure TFloatImage.Load(aStream: TStream);
+begin
+  aStream.Read(FWidth, SizeOf(Integer));
+  aStream.Read(FHeight, SizeOf(Integer));
+  SetLength(FData, FWidth*FHeight);
+  if Length(FData) > 0 then
+    aStream.Read(FData[0], Length(FData)*SizeOf(TFloatPixel));
+end;
+
 procedure TFloatImage.PutPixel(x: integer; y: integer;
   const aValue: TFloatPixel);
 begin
   if (x >= 0) and (x < FWidth) and (y >= 0) and (y < FHeight) then
       FData[x + y * FWidth] := aValue;
+end;
+
+procedure TFloatImage.Save(aStream: TStream);
+begin
+  aStream.Write(FWidth, SizeOf(Integer));
+  aStream.Write(FHeight, SizeOf(Integer));
+  if Length(FData) > 0 then
+    aStream.Write(FData[0], Length(FData)*SizeOf(TFloatPixel));
 end;
 
 function TFloatImage.BilinearWrap(u, v: single): TFloatPixel;
@@ -744,17 +818,77 @@ begin
 end;
 
 procedure TAnalysisData.LoadFromFile(const aFileName: string);
+var
+  stream: TFileStream;
+  I: integer;
 begin
+  Clear;
+  stream := TFileStream.Create(aFileName, 0);
+  try
+    stream.Read(i, SizeOf(integer));
+    Assert(i = 0); // Check version
 
+    FExemplar.Load(stream);
+    stream.Read(i, SizeOf(integer));
+    SetLength(FLevels, i);
+    for i := 0 to High(FLevels) do
+    with FLevels[i] do
+    begin
+      LevelId := i;
+      FloatImage := TFloatImage.Create(0, 0);
+      FloatImage.Load(stream);
+      Image.Load(stream);
+      ProjectedImage.Load(stream);
+      stream.Read(ColorScale, SizeOf(TVector));
+      stream.Read(ColorOffset, SizeOf(TVector));
+      stream.Read(ColorPCAMatrix, SizeOf(TColorPCAMatrix));
+      stream.Read(NeihgbPCAMatrix, SizeOf(TNeighbPCAmatrix));
+      kNearest.Load(stream);
+      Neighborhoods.Load(stream);
+      stream.Read(NeighbScale, SizeOf(TVector6f));
+      stream.Read(NeighbOffset, SizeOf(TVector6f));
+    end;
+    stream.Read(FToroidality, SizeOf(Boolean));
+    FkNearests := TMostSimilars.Create(0, 0, 0);
+    FkNearests.Load(stream);
+    FNeighborhoods := TNeighborhoods.Create(0, 0, 0);
+    FNeighborhoods.Load(stream);
+  finally
+    stream.Free;
+  end;
 end;
 
 procedure TAnalysisData.SaveToFile(const aFileName: string);
 var
   stream: TFileStream;
+  I: integer;
 begin
   stream := TFileStream.Create(aFileName, fmCreate);
   try
+    i := 0; // Version
+    stream.Write(i, SizeOf(integer));
 
+    FExemplar.Save(stream);
+    i := Length(FLevels);
+    stream.Write(i, SizeOf(integer));
+    for i := 0 to High(FLevels) do
+    with FLevels[i] do
+    begin
+      FloatImage.Save(stream);
+      Image.Save(stream);
+      ProjectedImage.Save(stream);
+      stream.Write(ColorScale, SizeOf(TVector));
+      stream.Write(ColorOffset, SizeOf(TVector));
+      stream.Write(ColorPCAMatrix, SizeOf(TColorPCAMatrix));
+      stream.Write(NeihgbPCAMatrix, SizeOf(TNeighbPCAmatrix));
+      kNearest.Save(stream);
+      Neighborhoods.Save(stream);
+      stream.Write(NeighbScale, SizeOf(TVector6f));
+      stream.Write(NeighbOffset, SizeOf(TVector6f));
+    end;
+    stream.Write(FToroidality, SizeOf(Boolean));
+    FkNearests.Save(stream);
+    FNeighborhoods.Save(stream);
   finally
     stream.Free;
   end;

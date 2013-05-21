@@ -3,9 +3,12 @@ unit uImageAnalysis;
 interface
 
 uses
-  Classes, uBaseTypes, uVMath, uImageAnalysisClasses;
+  Classes,
+  uBaseTypes,
+  uVMath,
+  uImageAnalysisClasses;
 
-{.$IFDEF PACKED_EXEMPLAR_RG}
+{ .$IFDEF PACKED_EXEMPLAR_RG }
 
 type
 
@@ -26,9 +29,8 @@ type
     procedure ProjectStackLevelTo2D(alevel: PAnalyzedLevel);
     // Using principal component analysis (PCA)
     // projecting pixel neighborhoods into a lower-dimensional space (6D vector)
-    procedure ProjectNeighbTo6D(aLevel: integer;
-      const aColorPCA: TColorPCAMatrix;
-      out aNeighbPCA: TNeighbPCAmatrix);
+    procedure ProjectNeighbTo6D(alevel: integer;
+      const aColorPCA: TColorPCAMatrix; out aNeighbPCA: TNeighbPCAmatrix);
     procedure SetToroidality(flag: boolean);
     function GetDone: boolean;
     function GetLevelCount: integer;
@@ -44,10 +46,10 @@ type
     property Done: boolean read GetDone;
 
     // Analyzes one exemplar stack level
-    procedure AnalyzeStackLevel(aLevel: integer);
+    procedure AnalyzeStackLevel(alevel: integer);
     // Analisys data storage
     property AnalysisData: TAnalysisData read FAnalysisData;
-     // True if the exemplar is toroidaly repeated
+    // True if the exemplar is toroidaly repeated
     property Toroidality: boolean read GetToroidality write SetToroidality;
     // Maximum number of CPU's thread used during analisys
     property MaxCPUThreads: integer read FMaxCPUThreads write SetMaxCPUThreads;
@@ -65,12 +67,15 @@ type
 implementation
 
 uses
-  uMath, uMathPCA, Math, uNeighborSearching, uMiscUtils;
+  uMath,
+  uMathPCA,
+  Math,
+  uNeighborSearching,
+  uMiscUtils;
 
 {$REGION 'TAnalyzer'}
 
-
-procedure TAnalyzer.AnalyzeStackLevel(aLevel: integer);
+procedure TAnalyzer.AnalyzeStackLevel(alevel: integer);
 var
   w, h, i, j, k, n: integer;
   ANNPoints: TANNpointArray;
@@ -93,10 +98,10 @@ begin
   for i := 0 to h - 1 do
     for j := 0 to w - 1 do
     begin
-      neigh := FAnalysisData.Neighborhoods.At[j, i, aLevel];
+      neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
       SetLength(ANNPoints[k], NEIGHBOUR_SIZE_3COLOR);
       for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
-          ANNPoints[k][n] := neigh[n]; // singe -> double
+        ANNPoints[k][n] := neigh[n]; // singe -> double
       Inc(k);
     end;
   // build search structure
@@ -105,10 +110,10 @@ begin
   for i := 0 to h - 1 do
     for j := 0 to w - 1 do
     begin
-      neigh := FAnalysisData.Neighborhoods.At[j, i, aLevel];
+      neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
       SetLength(queryPt, NEIGHBOUR_SIZE_3COLOR);
       for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
-          queryPt[n] := neigh[n];
+        queryPt[n] := neigh[n];
       // search for similar neighborhood in reference
       kdTree.annkSearch(queryPt, SIMILAR_NEIGHBOUR_SIZE, nnIdx, dists, 0.001);
 
@@ -119,7 +124,7 @@ begin
         KNearest[n][0] := Idx mod w;
         KNearest[n][1] := Idx div w;
       end;
-      FAnalysisData.kNearests.At[j, i, aLevel] := KNearest;
+      FAnalysisData.kNearests.At[j, i, alevel] := KNearest;
     end;
 
   kdTree.Free;
@@ -163,14 +168,9 @@ begin
       y := FAccessFunc(j + di * spacing, h);
       p := FAnalysisData.Exemplar.Data;
       Inc(p, (x + y * w) * e);
-      result[At] := INV255 * p^;
-      Inc(p);
-      Inc(At);
-      result[At] := INV255 * p^;
-      Inc(p);
-      Inc(At);
-      result[At] := INV255 * p^;
-      Inc(At);
+      result[At+0] := INV255 * p[0];
+      result[At+1] := INV255 * p[1];
+      result[At+2] := INV255 * p[2];
     end;
 end;
 
@@ -180,7 +180,7 @@ var
 begin
   for i := 0 to FAnalysisData.Exemplar.Height - 1 do
     for j := 0 to FAnalysisData.Exemplar.Width - 1 do
-        FAnalysisData.Neighborhoods.At[j, i, alevel.LevelId] :=
+      FAnalysisData.Neighborhoods.At[j, i, alevel.LevelId] :=
         GatherNeighborhood(j, i, alevel);
 end;
 
@@ -190,20 +190,20 @@ var
 begin
   result := true;
   for l := 0 to High(FThreads) do
-      result := result and FThreads[l].Finished;
+    result := result and FThreads[l].Finished;
 end;
 
 function TAnalyzer.GetLevelCount: integer;
 begin
   if Assigned(FAnalysisData) then
-      result := FAnalysisData.LevelsAmount
+    result := FAnalysisData.LevelsAmount
   else
-      result := 0;
+    result := 0;
 end;
 
 function TAnalyzer.GetToroidality: boolean;
 begin
-  Result := FAnalysisData.Toroidality;
+  result := FAnalysisData.Toroidality;
 end;
 
 procedure TAnalyzer.Process;
@@ -213,7 +213,7 @@ begin
   w := 0;
   for i := 0 to High(FThreads) do
     if not(FThreads[i].Suspended or FThreads[i].Finished) then
-        Inc(w);
+      Inc(w);
 
   if w < FMaxCPUThreads then
     for i := 0 to High(FThreads) do
@@ -224,13 +224,58 @@ begin
         Inc(w);
       end;
       if w >= FMaxCPUThreads then
-          Exit;
+        Exit;
     end;
 end;
 
 procedure TAnalyzer.ProjectNeighbTo6D(alevel: integer;
-  const aColorPCA: TColorPCAMatrix;
-  out aNeighbPCA: TNeighbPCAmatrix);
+  const aColorPCA: TColorPCAMatrix; out aNeighbPCA: TNeighbPCAmatrix);
+var
+  x: TDouble2DArray;
+  Dispersion: TDouble1DArray;
+  PCA: TDouble2DArray;
+  Info: integer;
+  h, w, i, j, mi, mj, row: integer;
+  V6D: TVector6f;
+  Neighb: TNeighborhood3c;
+begin
+  w := FAnalysisData.Neighborhoods.Width;
+  h := FAnalysisData.Neighborhoods.Height;
+  SetLength(x, w * h, NEIGHBOUR_SIZE_3COLOR);
+  row := 0;
+  for i := 0 to h - 1 do
+    for j := 0 to w - 1 do
+    begin
+      Neighb := FAnalysisData.Neighborhoods[j, i, alevel];
+      for mj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
+        x[row][mj] := Neighb[mj];
+      Inc(row);
+    end;
+
+  PrincipalComponentsAnalysis.BuildBasis(x, w * h, 75, Info, Dispersion, PCA);
+  // store only 6 basis
+  if Info = 1 then
+    for i := 0 to 5 do
+      for j := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
+        aNeighbPCA[j, i] := PCA[j, i];
+
+  // set lower dimension vector
+  for i := 0 to h - 1 do
+    for j := 0 to w - 1 do
+    begin
+      Neighb := FAnalysisData.Neighborhoods[j, i, alevel];
+      V6D := ZERO_VECTOR6D;
+      for mi := 0 to 5 do
+        for mj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
+          V6D[mi] := V6D[mi] + aColorPCA[mj, mi] * Neighb[mj];
+
+      FAnalysisData.Neighborhoods.As6DAt[j, i, alevel] := V6D;
+    end;
+end;
+
+{
+procedure TAnalyzer.ProjectNeighbTo6D(alevel: integer;
+  const aColorPCA: TColorPCAMatrix; out aNeighbPCA: TNeighbPCAmatrix);
 var
   w, h: integer;
   x: TDouble2DArray;
@@ -268,25 +313,20 @@ begin
       Inc(row);
     end;
   // run principal component analysis
-  PrincipalComponentsAnalysis.BuildBasis(x,
-    w * h, 2 * NEIGHBOUR_SIZE_3COLOR div 3, Info, Dispersion, PCA);
+  PrincipalComponentsAnalysis.BuildBasis(x, w * h,
+    2 * NEIGHBOUR_SIZE_3COLOR div 3, Info, Dispersion, PCA);
   // store only 6 basis
   if Info = 1 then
     for i := 0 to 5 do
       for j := 0 to NEIGHBOUR_SIZE_2COLOR - 1 do
-          aNeighbPCA[j, i] := PCA[j, i];
+        aNeighbPCA[j, i] := PCA[j, i];
 
   // store lower dimension vector to 2D array
   for i := 0 to h - 1 do
-    for j := 0 to w- 1 do
+    for j := 0 to w - 1 do
     begin
       Neighb := FAnalysisData.Neighborhoods[j, i, alevel];
-      V6D[0] := 0;
-      V6D[1] := 0;
-      V6D[2] := 0;
-      V6D[3] := 0;
-      V6D[4] := 0;
-      V6D[5] := 0;
+      V6D := ZERO_VECTOR6D;
       for mi := 0 to 5 do
         for mj := 0 to NEIGHBOUR_SIZE_2COLOR div 2 - 1 do
         begin
@@ -301,7 +341,7 @@ begin
 
       FAnalysisData.Neighborhoods.As6DAt[j, i, alevel] := V6D;
     end;
-end;
+end;   }
 
 procedure TAnalyzer.ProjectStackLevelTo2D(alevel: PAnalyzedLevel);
 var
@@ -342,9 +382,9 @@ begin
   if Info = 1 then
     for i := 0 to 1 do
       for j := 0 to 2 do
-          alevel.ColorPCAMatrix[j, i] := PCA[j, i];
+        alevel.ColorPCAMatrix[j, i] := PCA[j, i];
 
-  GetMem(C2, w*h*SizeOf(TVector));
+  GetMem(C2, w * h * SizeOf(TVector));
   minValue := TVector.Make(1E30, 1E30);
   maxValue := minValue.Negate;
   clr := TVector.Null;
@@ -358,15 +398,11 @@ begin
       Inc(p, i * w * esize);
       for j := 0 to w - 1 do
       begin
-        clr.X :=
-          alevel.ColorPCAmatrix[0, 0] * p[0] +
-          alevel.ColorPCAmatrix[1, 0] * p[1] +
-          alevel.ColorPCAmatrix[2, 0] * p[2];
+        clr.x := alevel.ColorPCAMatrix[0, 0] * p[0] + alevel.ColorPCAMatrix
+          [1, 0] * p[1] + alevel.ColorPCAMatrix[2, 0] * p[2];
 
-        clr.Y :=
-          alevel.ColorPCAmatrix[0, 1] * p[0] +
-          alevel.ColorPCAmatrix[1, 1] * p[1] +
-          alevel.ColorPCAmatrix[2, 1] * p[2];
+        clr.y := alevel.ColorPCAMatrix[0, 1] * p[0] + alevel.ColorPCAMatrix
+          [1, 1] * p[1] + alevel.ColorPCAMatrix[2, 1] * p[2];
 
         maxValue := TVector.MaxVector(maxValue, clr);
         minValue := TVector.MinVector(minValue, clr);
@@ -379,8 +415,10 @@ begin
 
     alevel.ColorOffset := minValue;
     clr := maxValue - minValue;
-    if clr.X = 0 then clr.X := 1;
-    if clr.Y = 0 then clr.Y := 1;
+    if clr.x = 0 then
+      clr.x := 1;
+    if clr.y = 0 then
+      clr.y := 1;
     alevel.ColorScale := clr;
 
     with alevel^ do
@@ -412,8 +450,8 @@ begin
       for j := 0 to w - 1 do
       begin
         clr := iterC2^;
-        p[0] := Floor(255 * (clr.X - minValue.X) / alevel.ColorScale.X);
-        p[1] := Floor(255 * (clr.Y - minValue.Y) / alevel.ColorScale.Y);
+        p[0] := Floor(255 * (clr.x - minValue.x) / alevel.ColorScale.x);
+        p[1] := Floor(255 * (clr.y - minValue.y) / alevel.ColorScale.y);
         Inc(p, esize);
         Inc(iterC2);
       end;
@@ -435,9 +473,9 @@ begin
   begin
     FAnalysisData.Toroidality := flag;
     if flag then
-        FAccessFunc := TIVec2Array2D.WrapAccess
+      FAccessFunc := TIVec2Array2D.WrapAccess
     else
-        FAccessFunc := TIVec2Array2D.MirrorAccess;
+      FAccessFunc := TIVec2Array2D.MirrorAccess;
   end;
 end;
 
@@ -450,7 +488,8 @@ begin
   // delete previous result
   Stop;
   // first create an image pyramid
-  pyramid := TImagePyramid.Create(FAnalysisData.Exemplar.Width, FAnalysisData.Exemplar.Height);
+  pyramid := TImagePyramid.Create(FAnalysisData.Exemplar.Width,
+    FAnalysisData.Exemplar.Height);
   pyramid.AssignFromImage(FAnalysisData.Exemplar^, 0);
   pyramid.GeneratePyramid;
   // then compute the exemplar stack from the pyramid
@@ -460,7 +499,7 @@ begin
   SetLength(FThreads, FAnalysisData.LevelsAmount);
 
   for l := 0 to FAnalysisData.LevelsAmount - 1 do
-      FThreads[l] := TAnalyzerThread.CreateOwned(Self, FAnalysisData.Levels[l]);
+    FThreads[l] := TAnalyzerThread.CreateOwned(Self, FAnalysisData.Levels[l]);
   pyramid.Free;
 end;
 
@@ -473,11 +512,11 @@ begin
   repeat
     wait := true;
     for i := 0 to High(FThreads) do
-        wait := wait and FThreads[i].Finished;
+      wait := wait and FThreads[i].Finished;
   until wait;
 
   for i := 0 to High(FThreads) do
-      FThreads[i].Destroy;
+    FThreads[i].Destroy;
   SetLength(FThreads, 0);
 
   FAnalysisData.Clear;
@@ -486,8 +525,8 @@ end;
 {$ENDREGION}
 {$REGION 'TAnalyzerThread'}
 
-
-constructor TAnalyzerThread.CreateOwned(aOwner: TAnalyzer; alevel: PAnalyzedLevel);
+constructor TAnalyzerThread.CreateOwned(aOwner: TAnalyzer;
+  alevel: PAnalyzedLevel);
 begin
   inherited Create(true);
   FAnalyzer := aOwner;
@@ -501,9 +540,7 @@ begin
   // Gather neighborhoods and store them for use during analysis and synthesis
   FAnalyzer.GatherNeighborhoods(FData);
   // Compute lower-dimension neighborhoods
-  FAnalyzer.ProjectNeighbTo6D(
-    FData.LevelId,
-    FData.ColorPCAMatrix,
+  FAnalyzer.ProjectNeighbTo6D(FData.LevelId, FData.ColorPCAMatrix,
     FData.NeihgbPCAMatrix);
   // Analyze stack level - search most similar neighborhoods
   FAnalyzer.AnalyzeStackLevel(FData.LevelId);

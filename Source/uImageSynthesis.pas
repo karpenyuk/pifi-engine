@@ -46,8 +46,7 @@ type
 
     // CorrectionSubpass processes pixels in an interleaved pattern aligned with ci,cj
     // TSynthesizerThread are created, each calling CorrectionSubpassInRegion
-    procedure CorrectionSubpass(subPass: integer;
-      const aIndices: TIVec2Array2D);
+    procedure CorrectionSubpass(subPass: integer; aIndices: TIVec2Array2D);
     // CorrectionSubpassInRegion processes pixels of a sub-region of the synthesized image
     procedure CorrectionSubpassInRegion(subPass, rx, ry, rw, rh: integer);
 
@@ -61,7 +60,7 @@ type
     function GetSynthImage(aLevel: integer): TImageDesc;
     function GetPatchesImage(aLevel: integer): TImageDesc;
     procedure SetCorrectionSubpassesCount(const Value: integer);
-
+    procedure DestroyThread;
   public
     constructor Create(anAnalysisData: TAnalysisData);
     destructor Destroy; override;
@@ -123,7 +122,7 @@ begin
   FEdgePolicyFunc := TIVec2Array2D.WrapAccess;
   FWidth := 256;
   FHeight := 256;
-  FCorrectionSubpassesCount := 8;
+  FCorrectionSubpassesCount := 2;
   FJitterStrength := 0;
   FJitterPeriodX := 0; // zero for non periodic jitter
   FJitterPeriodY := 0;
@@ -136,6 +135,15 @@ begin
   Stop;
   FWriteBuffer.Free;
   inherited;
+end;
+
+procedure TSynthesizer.DestroyThread;
+var
+  t: integer;
+begin
+  for t := 0 to High(FThreads) do
+    FThreads[t].Destroy;
+  SetLength(FThreads, 0);
 end;
 
 procedure TSynthesizer.SetCorrectionSubpassesCount(const Value: integer);
@@ -198,9 +206,7 @@ begin
       wait := wait and FThreads[i].Finished;
   until wait;
 
-  for i := 0 to High(FThreads) do
-    FThreads[i].Destroy;
-  SetLength(FThreads, 0);
+  DestroyThread;
 
   for i := 0 to High(FSynthesized) do
     FSynthesized[i].Free;
@@ -212,11 +218,12 @@ var
   strength: single;
   t: integer;
   nextPass: boolean;
+  tmp: TIVec2Array2D;
 begin
   // Done if finest level has been reached.
   // This happens when the number of perfromed synthesis steps
   // equals the exemplar level at which synthesis started.
-  nextPass := FProcessedLevel > 0;
+  nextPass := FProcessedLevel > -1;
   // Performs a synthesis step, producing the result at the next level.
   // The new result is added to fSynthesized
   if nextPass then
@@ -236,20 +243,36 @@ begin
       if FProcessedLevel >= Length(FSynthesized) - 3 then
         strength := 0
       else
-        strength := FJitterStrength * FProcessedLevel / FAnalysisData.LevelsAmount;
+        strength := FJitterStrength * FProcessedLevel /
+          FAnalysisData.LevelsAmount;
       // apply jitter
       Jitter(strength, FSynthesized[FProcessedLevel]);
       Inc(FPhase);
     end
-    else if (FPhase >= 2) and (FPhase < 2 + FCorrectionSubpassesCount) then
+    else if (FPhase >= 2) and (FPhase < 2 + 4 * FCorrectionSubpassesCount) then
     begin
       /// 3. correct
       nextPass := true;
       // cheking threads to next subPass
       for t := 0 to High(FThreads) do
         nextPass := nextPass and FThreads[t].Finished;
+
       if nextPass then
       begin
+        DestroyThread;
+        if FPhase > 2 then
+        begin
+          // Swap read buffer and write buffer
+          tmp := FSynthesized[FProcessedLevel];
+          FSynthesized[FProcessedLevel] := FWriteBuffer;
+          FWriteBuffer := tmp;
+          FWriteBuffer.Assign(FSynthesized[FProcessedLevel]);
+        end
+        else if not Assigned(FWriteBuffer) then
+          FWriteBuffer := TIVec2Array2D.Create(
+            FSynthesized[FProcessedLevel].Width,
+            FSynthesized[FProcessedLevel].Height);
+
         CorrectionSubpass(FPhase - 2, FSynthesized[FProcessedLevel]);
         Inc(FPhase);
       end;
@@ -262,12 +285,14 @@ begin
         nextPass := nextPass and FThreads[t].Finished;
       if nextPass then
       begin
-        for t := 0 to High(FThreads) do
-          FThreads[t].Destroy;
-        SetLength(FThreads, 0);
-        FSynthesized[FProcessedLevel].Destroy;
-        FSynthesized[FProcessedLevel] := FWriteBuffer;
-        FWriteBuffer := nil;
+        DestroyThread;
+
+        if Assigned(FWriteBuffer) then
+        begin
+          tmp := FSynthesized[FProcessedLevel];
+          FSynthesized[FProcessedLevel] := FWriteBuffer;
+          FWriteBuffer := tmp;
+        end;
         // store result of final subpass
         Dec(FProcessedLevel);
         FPhase := 0; // Next level
@@ -295,17 +320,21 @@ begin
       V := DownLevel.At[pj, pi];
       UpLevel.At[pj * 2 + 0, pi * 2 + 0] := V;
       // (1, 0)
-      detV[0] := UpLevel.WrapAccess(V[0] + spacing, FAnalysisData.Exemplar.Width);
+      detV[0] := UpLevel.WrapAccess(V[0] + spacing,
+        FAnalysisData.Exemplar.Width);
       detV[1] := V[1];
       UpLevel.At[pj * 2 + 1, pi * 2 + 0] := detV;
       // (0, 1)
       detV[0] := V[0];
-      detV[1] := UpLevel.WrapAccess(V[1] + spacing, FAnalysisData.Exemplar.Height);
-      UpLevel.At[pj * 2 + 1, pi * 2 + 1] := detV;
-      // (1, 1)
-      detV[0] := UpLevel.WrapAccess(V[0] + spacing, FAnalysisData.Exemplar.Width);
-      detV[1] := UpLevel.WrapAccess(V[1] + spacing, FAnalysisData.Exemplar.Height);
+      detV[1] := UpLevel.WrapAccess(V[1] + spacing,
+        FAnalysisData.Exemplar.Height);
       UpLevel.At[pj * 2 + 0, pi * 2 + 1] := detV;
+      // (1, 1)
+      detV[0] := UpLevel.WrapAccess(V[0] + spacing,
+        FAnalysisData.Exemplar.Width);
+      detV[1] := UpLevel.WrapAccess(V[1] + spacing,
+        FAnalysisData.Exemplar.Height);
+      UpLevel.At[pj * 2 + 1, pi * 2 + 1] := detV;
     end;
 end;
 
@@ -359,24 +388,21 @@ begin
 end;
 
 procedure TSynthesizer.CorrectionSubpass(subPass: integer;
-  const aIndices: TIVec2Array2D);
+  aIndices: TIVec2Array2D);
 var
   t, next: integer;
   h: integer;
   thread: TSynthesizerThread;
 begin
-  if Assigned(FWriteBuffer) then
-    FWriteBuffer.Destroy;
-  FWriteBuffer := TIVec2Array2D.Create(aIndices.Width, aIndices.Height);
-  FWriteBuffer.Assign(aIndices);
   h := TMath.Ceil(aIndices.Height / FMaxCPUThreads);
-  SetLength(FThreads, TMath.Min(TMath.Ceil(aIndices.Height / h), FMaxCPUThreads));
+  SetLength(FThreads, TMath.Min(TMath.Ceil(aIndices.Height / h),
+    FMaxCPUThreads));
   next := 0;
   // Run threads
   for t := 0 to High(FThreads) do
   begin
     thread := TSynthesizerThread.CreateOwned(Self);
-    thread.subPass := subPass;
+    thread.subPass := subPass and 3;
     thread.RegionLeft := 0;
     thread.RegionTop := next;
     thread.RegionWidth := aIndices.Width;
@@ -390,14 +416,14 @@ end;
 procedure TSynthesizer.CorrectionSubpassInRegion(subPass: integer; rx: integer;
   ry: integer; rw: integer; rh: integer);
 const
-  step: array [0 .. 7] of IVec2 = ((0, 0), (1, 0), (0, 1), (1, 1), (0, 0),
-    (1, 0), (0, 1), (1, 1));
+  step: array [0 .. 3] of IVec2 = ((0, 0), (1, 0), (0, 1), (1, 1));
 var
   Source: TIVec2Array2D;
   spacing, i, j, k, ni, nj, ci, cj, nk: integer;
   ms: TMostSimilar;
   n, c, best: IVec2;
   syN: TNeighborhood3c;
+  NM: TNeighbPCAmatrix;
   syN_V6D, exN_V6D: TVector6f;
   minDis, Dis: single;
 begin
@@ -417,16 +443,12 @@ begin
         continue;
       /// Gather current neighborhood in synthesized texture
       syN := GatherNeighborhood(j, i, FProcessedLevel);
-      syN_V6D[0] := 0;
-      syN_V6D[1] := 0;
-      syN_V6D[2] := 0;
-      syN_V6D[3] := 0;
-      syN_V6D[4] := 0;
-      syN_V6D[5] := 0;
+      syN_V6D := ZERO_VECTOR6D;
+      NM := FAnalysisData.Levels[FProcessedLevel].NeihgbPCAMatrix;
       // project it to 6D vector
       for nj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         for ni := 0 to 5 do
-          syN_V6D[ni] := syN_V6D[ni] + FAnalysisData.Levels[FProcessedLevel].NeihgbPCAMatrix[nj, ni] * syN[nj];
+          syN_V6D[ni] := syN_V6D[ni] + NM[nj, ni] * syN[nj];
       /// Find best matching candidate
       minDis := 1E30;
       best := Source.At[j, i];
@@ -442,7 +464,8 @@ begin
 
           c[0] := ms[0][0] - nj * spacing;
           c[1] := ms[0][1] - ni * spacing;
-          exN_V6D := FAnalysisData.Neighborhoods.As6DAt[c[0], c[1], FProcessedLevel];
+          exN_V6D := FAnalysisData.Neighborhoods.As6DAt[c[0], c[1],
+            FProcessedLevel];
           // compare
           Dis := 0;
           for nk := 0 to 5 do
@@ -460,7 +483,8 @@ begin
           begin
             c[0] := ms[k][0] - nj * spacing;
             c[1] := ms[k][1] - ni * spacing;
-            exN_V6D := FAnalysisData.Neighborhoods.As6DAt[c[0], c[1], FProcessedLevel];
+            exN_V6D := FAnalysisData.Neighborhoods.As6DAt[c[0], c[1],
+              FProcessedLevel];
             // compare
             Dis := 0;
             for nk := 0 to 5 do
@@ -476,7 +500,8 @@ begin
 
       // self as last -- VERY IMPORTANT to ensure identity in coherent patches --
       n := Source.At[j, i];
-      exN_V6D := FAnalysisData.Neighborhoods.As6DAt[n[0], n[1], FProcessedLevel];
+      exN_V6D := FAnalysisData.Neighborhoods.As6DAt[n[0], n[1],
+        FProcessedLevel];
       Dis := 0;
       for nk := 0 to 5 do
         Dis := Dis + sqr(exN_V6D[nk] - syN_V6D[nk]);
@@ -493,18 +518,16 @@ function TSynthesizer.GatherNeighborhood(j: integer; i: integer; step: integer)
   : TNeighborhood3c;
 var
   img: TIVec2Array2D;
-  l, At: integer;
-  stackImage: PImageDesc;
+  fimg: TFloatImage;
+  fp: TFloatPixel;
+  At: integer;
   ni, nj, di, dj, x, y: integer;
   s: IVec2;
-  p: PByte;
 begin
   // Gather a neighborhood in the current synthesis result
   img := FSynthesized[step];
-  Assert((img.Width > 0) and (img.Height > 0));
-  l := FProcessedLevel - step;
-  Assert((l >= 0) and (l < FAnalysisData.LevelsAmount));
-  stackImage := FAnalysisData.Images[l];
+  fimg := FAnalysisData.FloatImages[step];
+  At := 0;
   for ni := 0 to NEIGHBOUR_DIM - 1 do
     for nj := 0 to NEIGHBOUR_DIM - 1 do
     begin
@@ -513,14 +536,13 @@ begin
       x := j + dj;
       y := i + di;
       s := img.At[x, y]; // S[p]  (coordinate in exemplar stack)
-      x := FEdgePolicyFunc(s[0], stackImage.Width);
-      y := FEdgePolicyFunc(s[1], stackImage.Height);
-      p := stackImage.Data;
-      Inc(p, (x + y * stackImage.Width) * stackImage.ElementSize);
-      At := 3 * (nj + ni * NEIGHBOUR_DIM);
-      result[At + 0] := p[0]; // E[S[p]] (RGB color)
-      result[At + 1] := p[1];
-      result[At + 2] := p[2];
+      x := FEdgePolicyFunc(s[0], fimg.Width);
+      y := FEdgePolicyFunc(s[1], fimg.Height);
+      fp := fimg.Pixel[x, y];
+      result[At + 0] := fp.r; // E[S[p]] (RGB color)
+      result[At + 1] := fp.g;
+      result[At + 2] := fp.b;
+      Inc(At, 3);
     end;
 end;
 
@@ -593,7 +615,8 @@ begin
     for j := 0 to img.Width - 1 do
     begin
       xy := img.At[j, i];
-      p[0] := floor(256 * TIVec2Array2D.WrapAccess(xy[0],
+      p[0] := 0;
+      p[2] := floor(256 * TIVec2Array2D.WrapAccess(xy[0],
         FAnalysisData.Exemplar.Width) / FAnalysisData.Exemplar.Width);
       p[1] := floor(256 * TIVec2Array2D.WrapAccess(xy[1],
         FAnalysisData.Exemplar.Height) / FAnalysisData.Exemplar.Height);
@@ -606,7 +629,7 @@ function TSynthesizer.GetDone: boolean;
 var
   l: integer;
 begin
-  if FProcessedLevel > 0 then
+  if FProcessedLevel > -1 then
     Exit(False);
 
   result := true;

@@ -6,7 +6,7 @@
 
 interface
 
-uses uVMath;
+uses Classes, uVMath;
 
 Type
 {$IFNDEF FPC}
@@ -116,6 +116,9 @@ Type
     Compressed: boolean;
     CubeMap: boolean;
     TextureArray: boolean;
+
+    procedure Save(aStream: TStream);
+    procedure Load(aStream: TStream);
     procedure Free;
   end;
   PImageDesc = ^TImageDesc;
@@ -251,6 +254,55 @@ procedure TImageDesc.Free;begin
   begin
     FreeMem(Data);
     Data := nil;
+  end;
+end;
+
+procedure TImageDesc.Save(aStream: TStream);
+var
+  i: integer;
+begin
+  i := 0; // Version
+  aStream.Write(i, SizeOf(integer));
+  aStream.Write(InternalFormat, SizeOf(cardinal));
+  aStream.Write(ColorFormat, SizeOf(cardinal));
+  aStream.Write(DataType, SizeOf(cardinal));
+  aStream.Write(ElementSize, SizeOf(integer));
+  aStream.Write(DataSize, SizeOf(integer));
+  aStream.Write(ReservedMem, SizeOf(integer));
+  aStream.Write(Width, SizeOf(integer));
+  aStream.Write(Height, SizeOf(integer));
+  aStream.Write(Depth, SizeOf(integer));
+  aStream.Write(Levels, SizeOf(integer));
+  aStream.Write(LODS, SizeOf(LODS));
+  aStream.Write(Compressed, SizeOf(boolean));
+  aStream.Write(CubeMap, SizeOf(boolean));
+  aStream.Write(TextureArray, SizeOf(boolean));
+  if Assigned(Data) and (DataSize > 0) then
+    aStream.Write(PByte(Data)^, DataSize);
+end;
+
+procedure TImageDesc.Load(aStream: TStream);var  i: integer;begin
+  Free;
+  aStream.Read(i, SizeOf(integer));
+  Assert(i = 0); // Check version
+  aStream.Read(InternalFormat, SizeOf(cardinal));
+  aStream.Read(ColorFormat, SizeOf(cardinal));
+  aStream.Read(DataType, SizeOf(cardinal));
+  aStream.Read(ElementSize, SizeOf(integer));
+  aStream.Read(DataSize, SizeOf(integer));
+  aStream.Read(ReservedMem, SizeOf(integer));
+  aStream.Read(Width, SizeOf(integer));
+  aStream.Read(Height, SizeOf(integer));
+  aStream.Read(Depth, SizeOf(integer));
+  aStream.Read(Levels, SizeOf(integer));
+  aStream.Read(LODS, SizeOf(LODS));
+  aStream.Read(Compressed, SizeOf(boolean));
+  aStream.Read(CubeMap, SizeOf(boolean));
+  aStream.Read(TextureArray, SizeOf(boolean));
+  if DataSize > 0 then
+  begin
+    GetMem(Data, DataSize);
+    aStream.Read(PByte(Data)^, DataSize);
   end;
 end;
 
