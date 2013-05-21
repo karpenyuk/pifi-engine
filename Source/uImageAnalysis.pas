@@ -36,7 +36,7 @@ type
     function GetLevelCount: integer;
     function GetToroidality: boolean;
   public
-    constructor Create;
+    constructor Create(anAnalysisData: TAnalysisData);
     destructor Destroy; override;
 
     // Runs analysis
@@ -130,17 +130,17 @@ begin
   kdTree.Free;
 end;
 
-constructor TAnalyzer.Create;
+constructor TAnalyzer.Create(anAnalysisData: TAnalysisData);
 begin
+  Assert(Assigned(anAnalysisData));
+  FAnalysisData := anAnalysisData;
   FAccessFunc := TIVec2Array2D.WrapAccess;
   FMaxCPUThreads := 2;
-  FAnalysisData := TAnalysisData.Create;
 end;
 
 destructor TAnalyzer.Destroy;
 begin
   Stop;
-  FAnalysisData.Free;
   inherited;
 end;
 
@@ -171,6 +171,7 @@ begin
       result[At+0] := INV255 * p[0];
       result[At+1] := INV255 * p[1];
       result[At+2] := INV255 * p[2];
+      Inc(At, 3);
     end;
 end;
 
@@ -227,7 +228,7 @@ begin
         Exit;
     end;
 end;
-
+{
 procedure TAnalyzer.ProjectNeighbTo6D(alevel: integer;
   const aColorPCA: TColorPCAMatrix; out aNeighbPCA: TNeighbPCAmatrix);
 var
@@ -272,8 +273,8 @@ begin
       FAnalysisData.Neighborhoods.As6DAt[j, i, alevel] := V6D;
     end;
 end;
+}
 
-{
 procedure TAnalyzer.ProjectNeighbTo6D(alevel: integer;
   const aColorPCA: TColorPCAMatrix; out aNeighbPCA: TNeighbPCAmatrix);
 var
@@ -314,7 +315,7 @@ begin
     end;
   // run principal component analysis
   PrincipalComponentsAnalysis.BuildBasis(x, w * h,
-    2 * NEIGHBOUR_SIZE_3COLOR div 3, Info, Dispersion, PCA);
+    NEIGHBOUR_SIZE_2COLOR, Info, Dispersion, PCA);
   // store only 6 basis
   if Info = 1 then
     for i := 0 to 5 do
@@ -341,7 +342,7 @@ begin
 
       FAnalysisData.Neighborhoods.As6DAt[j, i, alevel] := V6D;
     end;
-end;   }
+end;
 
 procedure TAnalyzer.ProjectStackLevelTo2D(alevel: PAnalyzedLevel);
 var
@@ -487,6 +488,7 @@ begin
   Assert(Assigned(FAnalysisData.Exemplar.Data), 'TAnalyzer: Assign ');
   // delete previous result
   Stop;
+  FAnalysisData.Clear;
   // first create an image pyramid
   pyramid := TImagePyramid.Create(FAnalysisData.Exemplar.Width,
     FAnalysisData.Exemplar.Height);
@@ -518,8 +520,6 @@ begin
   for i := 0 to High(FThreads) do
     FThreads[i].Destroy;
   SetLength(FThreads, 0);
-
-  FAnalysisData.Clear;
 end;
 
 {$ENDREGION}

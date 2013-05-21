@@ -53,7 +53,7 @@ type
     // Helper methods
 
     // Gather a neighborhood in the current synthesis result
-    function GatherNeighborhood(j, i, step: integer): TNeighborhood3c;
+    function GatherNeighborhood(j, i, step: integer): TNeighborhood2c;
     function GetLevelCount: integer;
     function GetDone: boolean;
     procedure SetMaxCPUThreads(const Value: integer);
@@ -266,13 +266,13 @@ begin
           tmp := FSynthesized[FProcessedLevel];
           FSynthesized[FProcessedLevel] := FWriteBuffer;
           FWriteBuffer := tmp;
-          FWriteBuffer.Assign(FSynthesized[FProcessedLevel]);
         end
         else if not Assigned(FWriteBuffer) then
           FWriteBuffer := TIVec2Array2D.Create(
             FSynthesized[FProcessedLevel].Width,
             FSynthesized[FProcessedLevel].Height);
 
+        FWriteBuffer.Assign(FSynthesized[FProcessedLevel]);
         CorrectionSubpass(FPhase - 2, FSynthesized[FProcessedLevel]);
         Inc(FPhase);
       end;
@@ -422,7 +422,7 @@ var
   spacing, i, j, k, ni, nj, ci, cj, nk: integer;
   ms: TMostSimilar;
   n, c, best: IVec2;
-  syN: TNeighborhood3c;
+  syN: TNeighborhood2c;
   NM: TNeighbPCAmatrix;
   syN_V6D, exN_V6D: TVector6f;
   minDis, Dis: single;
@@ -446,7 +446,7 @@ begin
       syN_V6D := ZERO_VECTOR6D;
       NM := FAnalysisData.Levels[FProcessedLevel].NeihgbPCAMatrix;
       // project it to 6D vector
-      for nj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
+      for nj := 0 to NEIGHBOUR_SIZE_2COLOR - 1 do
         for ni := 0 to 5 do
           syN_V6D[ni] := syN_V6D[ni] + NM[nj, ni] * syN[nj];
       /// Find best matching candidate
@@ -455,13 +455,14 @@ begin
       /// Gather candidates
       // for each neighbor around the pixel (9 of them, including center)
       for ni := -1 to 1 do
+      begin
         for nj := -1 to 1 do
         begin
           // n is a coordinate in exemplar stack
           n := Source.At[j + nj, i + ni];
-          // delta must be multiplied by stack level offset
-          ms := FAnalysisData.KNearests.At[n[0], n[1], FProcessedLevel];
 
+          ms := FAnalysisData.KNearests.At[n[0], n[1], FProcessedLevel];
+          // delta must be multiplied by stack level offset
           c[0] := ms[0][0] - nj * spacing;
           c[1] := ms[0][1] - ni * spacing;
           exN_V6D := FAnalysisData.Neighborhoods.As6DAt[c[0], c[1],
@@ -496,9 +497,10 @@ begin
               best := c;
             end;
           end; // for k
-        end; // for ninj
+        end; // for nj
+      end; // for ni
 
-      // self as last -- VERY IMPORTANT to ensure identity in coherent patches --
+      // self as last -- VERY IMPORTANT to ensure identity in coherent patches
       n := Source.At[j, i];
       exN_V6D := FAnalysisData.Neighborhoods.As6DAt[n[0], n[1],
         FProcessedLevel];
@@ -515,18 +517,18 @@ begin
 end;
 
 function TSynthesizer.GatherNeighborhood(j: integer; i: integer; step: integer)
-  : TNeighborhood3c;
+  : TNeighborhood2c;
 var
   img: TIVec2Array2D;
-  fimg: TFloatImage;
-  fp: TFloatPixel;
+  projimg: TImageDesc;
+  p: PByte;
   At: integer;
   ni, nj, di, dj, x, y: integer;
   s: IVec2;
 begin
   // Gather a neighborhood in the current synthesis result
   img := FSynthesized[step];
-  fimg := FAnalysisData.FloatImages[step];
+  projimg := FAnalysisData.Levels[step].ProjectedImage;
   At := 0;
   for ni := 0 to NEIGHBOUR_DIM - 1 do
     for nj := 0 to NEIGHBOUR_DIM - 1 do
@@ -536,13 +538,13 @@ begin
       x := j + dj;
       y := i + di;
       s := img.At[x, y]; // S[p]  (coordinate in exemplar stack)
-      x := FEdgePolicyFunc(s[0], fimg.Width);
-      y := FEdgePolicyFunc(s[1], fimg.Height);
-      fp := fimg.Pixel[x, y];
-      result[At + 0] := fp.r; // E[S[p]] (RGB color)
-      result[At + 1] := fp.g;
-      result[At + 2] := fp.b;
-      Inc(At, 3);
+      x := FEdgePolicyFunc(s[0], projimg.Width);
+      y := FEdgePolicyFunc(s[1], projimg.Height);
+      p := projimg.Data;
+      Inc(p, (x + y * projimg.Width) * projimg.ElementSize);
+      Result[At + 0] := INV255 * p[0]; // Ep[S[p]] (RG color)
+      Result[At + 1] := INV255 * p[1];
+      Inc(At, 2);
     end;
 end;
 
