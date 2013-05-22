@@ -22,10 +22,7 @@ type
     FMaxCPUThreads: integer;
     procedure SetMaxCPUThreads(const Value: integer);
     // Gathers all neighborhoods of the exemplar stack level
-    procedure GatherNeighborhoods(alevel: PAnalyzedLevel);
-    // Gathers neighborhood at i,j in the stack level
-    function GatherNeighborhood(i, j: integer; alevel: PAnalyzedLevel)
-      : TNeighborhood3c;
+    procedure GatherNeighborhoods(alevel: integer);
     procedure ProjectStackLevelTo2D(alevel: PAnalyzedLevel);
     // Using principal component analysis (PCA)
     // projecting pixel neighborhoods into a lower-dimensional space (6D vector)
@@ -144,45 +141,14 @@ begin
   inherited;
 end;
 
-function TAnalyzer.GatherNeighborhood(i, j: integer; alevel: PAnalyzedLevel)
-  : TNeighborhood3c;
-var
-  w, h, e, x, y, dj, di, nj, ni, spacing: integer;
-  At: integer;
-  p: PByte;
-begin
-  // Gather a neighborhood within the stack. Note that contrary to neighborhoods
-  // in a regular image, neighbors are not next to each others in the stack but
-  // separated by a level-dependent offset.
-  spacing := 1 shl alevel.LevelId;
-  w := FAnalysisData.Exemplar.Width;
-  h := FAnalysisData.Exemplar.Height;
-  e := FAnalysisData.Exemplar.ElementSize;
-  At := 0;
-  for ni := 0 to NEIGHBOUR_DIM - 1 do
-    for nj := 0 to NEIGHBOUR_DIM - 1 do
-    begin
-      dj := nj - NEIGHBOUR_DIM div 2;
-      di := ni - NEIGHBOUR_DIM div 2;
-      x := FAccessFunc(i + dj * spacing, w);
-      y := FAccessFunc(j + di * spacing, h);
-      p := FAnalysisData.Exemplar.Data;
-      Inc(p, (x + y * w) * e);
-      result[At+0] := INV255 * p[0];
-      result[At+1] := INV255 * p[1];
-      result[At+2] := INV255 * p[2];
-      Inc(At, 3);
-    end;
-end;
-
-procedure TAnalyzer.GatherNeighborhoods(alevel: PAnalyzedLevel);
+procedure TAnalyzer.GatherNeighborhoods(alevel: integer);
 var
   i, j: integer;
 begin
   for i := 0 to FAnalysisData.Exemplar.Height - 1 do
     for j := 0 to FAnalysisData.Exemplar.Width - 1 do
-      FAnalysisData.Neighborhoods.At[j, i, alevel.LevelId] :=
-        GatherNeighborhood(j, i, alevel);
+      FAnalysisData.Neighborhoods.At[j, i, alevel] :=
+        FAnalysisData.GatherNeighborhood(j, i, alevel);
 end;
 
 function TAnalyzer.GetDone: boolean;
@@ -239,7 +205,7 @@ var
   Dispersion: TDouble1DArray;
   PCA: TDouble2DArray;
   Info: integer;
-  h, w, i, j, k, mi, mj, row: integer;
+  h, w, i, j, k, mi, mj, row, esize: integer;
   V6D, minValue, maxValue: TVector6f;
   Neighb: TNeighborhood3c;
   p1, p2: PByte;
@@ -294,10 +260,14 @@ begin
   // scale neighbors to byte size
   FAnalysisData.Levels[alevel].NeighbOffset := minValue;
   for k := 0 to 5 do
+  begin
     maxValue[k] := maxValue[k] - minValue[k];
+    if maxValue[k] = 0 then
+      maxValue[k] := 1;
+  end;
   FAnalysisData.Levels[alevel].NeighbScale := maxValue;
 
-  with FAnalysisData.Levels[alevel] do
+  with FAnalysisData.Levels[alevel]^ do
   begin
     // part 1
     FillChar(Neighborhoods[0], SizeOf(TImageDesc), $00);
@@ -333,7 +303,7 @@ begin
     begin
       V6D := FAnalysisData.Neighborhoods.As6DAt[j, i, alevel];
       for k := 0 to 5 do
-        V6D[k] := V6D[k] * maxValue[k] + minValue[k];
+        V6D[k] := (V6D[k] - minValue[k]) / maxValue[k];
       p1[0] := floor(255 * V6D[0]);
       p1[1] := floor(255 * V6D[1]);
       p1[2] := floor(255 * V6D[2]);
@@ -345,77 +315,6 @@ begin
     end;
   end;
 end;
-
-{
-procedure TAnalyzer.ProjectNeighbTo6D(alevel: integer;
-  const aColorPCA: TColorPCAMatrix; out aNeighbPCA: TNeighbPCAmatrix);
-var
-  w, h: integer;
-  x: TDouble2DArray;
-  Dispersion: TDouble1DArray;
-  PCA: TDouble2DArray;
-  Info: integer;
-  i, j, mi, mj, row: integer;
-  V6D: TVector6f;
-  Neighb: TNeighborhood3c;
-  clr: single;
-begin
-  w := FAnalysisData.Neighborhoods.Width;
-  h := FAnalysisData.Neighborhoods.Height;
-  SetLength(x, w * h, NEIGHBOUR_SIZE_2COLOR);
-  row := 0;
-  // fill array for principal component analysis
-  // and simultaneously project neighborhoods color to 2D
-  for i := 0 to h - 1 do
-    for j := 0 to w - 1 do
-    begin
-      Neighb := FAnalysisData.Neighborhoods[j, i, alevel];
-      for mj := 0 to NEIGHBOUR_SIZE_2COLOR div 2 - 1 do
-      begin
-        x[row][mj * 2 + 0] := aColorPCA[0, 0] * Neighb[mj * 3 + 0];
-        x[row][mj * 2 + 0] := x[row][mj * 2 + 0] + aColorPCA[1, 0] *
-          Neighb[mj * 3 + 1];
-        x[row][mj * 2 + 0] := x[row][mj * 2 + 0] + aColorPCA[2, 0] *
-          Neighb[mj * 3 + 2];
-        x[row][mj * 2 + 1] := aColorPCA[0, 1] * Neighb[mj * 3 + 0];
-        x[row][mj * 2 + 1] := x[row][mj * 2 + 1] + aColorPCA[1, 1] *
-          Neighb[mj * 3 + 1];
-        x[row][mj * 2 + 1] := x[row][mj * 2 + 1] + aColorPCA[2, 1] *
-          Neighb[mj * 3 + 2];
-      end;
-      Inc(row);
-    end;
-  // run principal component analysis
-  PrincipalComponentsAnalysis.BuildBasis(x, w * h,
-    NEIGHBOUR_SIZE_2COLOR, Info, Dispersion, PCA);
-  // store only 6 basis
-  if Info = 1 then
-    for i := 0 to 5 do
-      for j := 0 to NEIGHBOUR_SIZE_2COLOR - 1 do
-        aNeighbPCA[j, i] := PCA[j, i];
-
-  // store lower dimension vector to 2D array
-  for i := 0 to h - 1 do
-    for j := 0 to w - 1 do
-    begin
-      Neighb := FAnalysisData.Neighborhoods[j, i, alevel];
-      V6D := ZERO_VECTOR6D;
-      for mi := 0 to 5 do
-        for mj := 0 to NEIGHBOUR_SIZE_2COLOR div 2 - 1 do
-        begin
-          clr := aColorPCA[0, 0] * Neighb[3 * mj + 0] + aColorPCA[1, 0] *
-            Neighb[3 * mj + 1] + aColorPCA[2, 0] * Neighb[3 * mj + 2];
-          V6D[mi] := V6D[mi] + aNeighbPCA[2 * mj + 0, mi] * clr;
-
-          clr := aColorPCA[0, 1] * Neighb[3 * mj + 0] + aColorPCA[1, 1] *
-            Neighb[3 * mj + 1] + aColorPCA[2, 1] * Neighb[3 * mj + 2];
-          V6D[mi] := V6D[mi] + aNeighbPCA[2 * mj + 1, mi] * clr;
-        end;
-
-      FAnalysisData.Neighborhoods.As6DAt[j, i, alevel] := V6D;
-    end;
-end;
-}
 
 procedure TAnalyzer.ProjectStackLevelTo2D(alevel: PAnalyzedLevel);
 var
@@ -611,7 +510,7 @@ begin
   // Project 3D color exemplar stack level to 2D color
   FAnalyzer.ProjectStackLevelTo2D(FData);
   // Gather neighborhoods and store them for use during analysis and synthesis
-  FAnalyzer.GatherNeighborhoods(FData);
+  FAnalyzer.GatherNeighborhoods(FData.LevelId);
   // Compute lower-dimension neighborhoods
   FAnalyzer.ProjectNeighbTo6D(FData.LevelId, FData.NeihgbPCAMatrix);
   // Analyze stack level - search most similar neighborhoods

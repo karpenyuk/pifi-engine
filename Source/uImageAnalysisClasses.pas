@@ -88,7 +88,7 @@ type
     procedure Save(aStream: TStream);
     procedure Load(aStream: TStream);
 
-    function Dump(aLevel: integer; aProjected: Boolean): TImageDesc;
+    function Dump(aLevel: integer): TImageDesc;
 
     property Width: integer read FWidth;
     property Height: integer read FHeight;
@@ -165,7 +165,7 @@ type
 
   TAnalyzedLevel = record
     LevelId: integer;
-    FloatImage: TFloatImage;
+    FloatImage: TFloatImage; // For analisys purpose, not in saved data
     Image: TImageDesc;
     ProjectedImage: TImageDesc;
     ColorScale: TVector;
@@ -198,6 +198,8 @@ type
     procedure SaveToFile(const aFileName: string);
     procedure LoadFromFile(const aFileName: string);
     procedure Clear;
+    // Gathers neighborhood at i,j in the stack level
+    function GatherNeighborhood(x, y, z: integer): TNeighborhood3c;
     procedure CreateImageStack(aPyramid: TImagePyramid);
     procedure SetExemplar(const Value: TImageDesc);
     property Exemplar: PImageDesc read GetExemplar;
@@ -341,7 +343,7 @@ begin
   SetLength(FProjData, size);
 end;
 
-function TNeighborhoods.Dump(aLevel: integer; aProjected: Boolean): TImageDesc;
+function TNeighborhoods.Dump(aLevel: integer): TImageDesc;
 var
   i, j, k, mi, mj, x, y: integer;
   p: PByte;
@@ -350,71 +352,36 @@ var
 begin
   FillChar(result, SizeOf(TImageDesc), $00);
 
-  if aProjected then
-  begin
-    result.Width := FWidth * 3 - 1;
-    result.Height := FHeight * 2 - 1;
-    result.InternalFormat := GL_RGBA8;
-    result.ColorFormat := GL_RGBA;
-    result.DataType := GL_UNSIGNED_BYTE;
-    result.ElementSize := 4;
-    result.DataSize := result.Width * result.Height * result.ElementSize;
-    GetMem(result.Data, result.DataSize);
-    p := result.Data;
-    FillChar(P^, result.DataSize, $00);
+  result.Width := FWidth * (NEIGHBOUR_DIM + 1) - 1;
+  result.Height := FHeight * (NEIGHBOUR_DIM + 1) - 1;
+  result.InternalFormat := GL_RGBA8;
+  result.ColorFormat := GL_RGBA;
+  result.DataType := GL_UNSIGNED_BYTE;
+  result.ElementSize := 4;
+  result.DataSize := result.Width * result.Height * result.ElementSize;
+  GetMem(result.Data, result.DataSize);
+  p := result.Data;
+  FillChar(p^, result.DataSize, $00);
 
-    for I := 0 to FHeight - 1 do
-    begin
-      for J := 0 to FWidth - 1 do
-      begin
-        v6 := As6DAt[J, I, aLevel];
-        x := J*3;
-        y := i*2;
-        Inc(p, (x + y * result.Width) * result.ElementSize);
-        p[0] := floor(255 * v6[0]);
-        p[1] := floor(255 * v6[1]);
-        p[2] := floor(255 * v6[2]);
-        p[3] := $FF;
-        p[4] := floor(255 * v6[3]);
-        p[5] := floor(255 * v6[4]);
-        p[6] := floor(255 * v6[5]);
-        p[7] := $FF;
-      end;
-    end;
-  end
-  else
+  for i := 0 to FHeight - 1 do
   begin
-    result.Width := FWidth * (NEIGHBOUR_DIM + 1) - 1;
-    result.Height := FHeight * (NEIGHBOUR_DIM + 1) - 1;
-    result.InternalFormat := GL_RGBA8;
-    result.ColorFormat := GL_RGBA;
-    result.DataType := GL_UNSIGNED_BYTE;
-    result.ElementSize := 4;
-    result.DataSize := result.Width * result.Height * result.ElementSize;
-    GetMem(result.Data, result.DataSize);
-    p := result.Data;
-    FillChar(P^, result.DataSize, $00);
-
-    for I := 0 to FHeight - 1 do
+    for j := 0 to FWidth - 1 do
     begin
-      for J := 0 to FWidth - 1 do
-      begin
-        n := At[J, I, aLevel];
-        k := 0;
-        for mi := 0 to NEIGHBOUR_DIM - 1 do
-          for mj := 0 to NEIGHBOUR_DIM - 1 do
-          begin
-            x := j * (NEIGHBOUR_DIM + 1) + mj;
-            y := i * (NEIGHBOUR_DIM + 1) + mi;
-            p := result.Data;
-            Inc(p, (x + y * result.Width) * result.ElementSize);
-            p[0] := floor(255 * n[k]);
-            p[1] := floor(255 * n[k+1]);
-            p[2] := floor(255 * n[k+2]);
-            p[3] := $FF;
-            Inc(k, 3);
-          end;
-      end;
+      n := At[j, i, aLevel];
+      k := 0;
+      for mi := 0 to NEIGHBOUR_DIM - 1 do
+        for mj := 0 to NEIGHBOUR_DIM - 1 do
+        begin
+          x := j * (NEIGHBOUR_DIM + 1) + mj;
+          y := i * (NEIGHBOUR_DIM + 1) + mi;
+          p := result.Data;
+          Inc(p, (x + y * result.Width) * result.ElementSize);
+          p[0] := floor(255 * n[k]);
+          p[1] := floor(255 * n[k + 1]);
+          p[2] := floor(255 * n[k + 2]);
+          p[3] := $FF;
+          Inc(k, 3);
+        end;
     end;
   end;
 end;
@@ -432,11 +399,8 @@ begin
   aStream.Write(FWidth, SizeOf(Integer));
   aStream.Write(FHeight, SizeOf(Integer));
   aStream.Write(FLevels, SizeOf(Integer));
-  if Length(FData) > 0 then
-  begin
-    aStream.Write(FData[0], Length(FData)*SizeOf(TNeighborhood3c));
+  if Length(FProjData) > 0 then
     aStream.Write(FProjData[0], Length(FProjData)*SizeOf(TVector6f));
-  end;
 end;
 
 procedure TNeighborhoods.SetNeighb(x: integer; y: integer; z: integer;
@@ -462,11 +426,8 @@ begin
   aStream.Read(FLevels, SizeOf(Integer));
   SetLength(FData, FWidth*FHeight*FLevels);
   SetLength(FProjData, FWidth*FHeight*FLevels);
-  if Length(FData) > 0 then
-  begin
-    aStream.Read(FData[0], Length(FData)*SizeOf(TNeighborhood3c));
+  if Length(FProjData) > 0 then
     aStream.Read(FProjData[0], Length(FProjData)*SizeOf(TVector6f));
-  end;
 end;
 
 procedure TNeighborhoods.SetNeighb6D(x: integer; y: integer; z: integer;
@@ -871,6 +832,7 @@ begin
           fi := (i + 0.5) / h;
           FloatImage.Pixel[j, i] := aPyramid.level[l].BilinearWrap(fj, fi);
         end;
+      Image := FloatImage.GetImage;
     end;
   FkNearests := TMostSimilars.Create(w, h, aPyramid.LevelsAmount);
   FNeighborhoods := TNeighborhoods.Create(w, h, aPyramid.LevelsAmount);
@@ -887,7 +849,8 @@ begin
       Image.Free;
       ProjectedImage.Free;
       kNearest.Free;
-      Neighborhoods.Free;
+      Neighborhoods[0].Free;
+      Neighborhoods[1].Free;
     end;
   SetLength(FLevels, 0);
   FkNearests.Free;
@@ -903,6 +866,41 @@ end;
 function TAnalysisData.GetLevel(alevel: integer): PAnalyzedLevel;
 begin
   result := @FLevels[alevel];
+end;
+
+function TAnalysisData.GatherNeighborhood(x, y, z: integer): TNeighborhood3c;
+var
+  w, h, e, i, j, dj, di, nj, ni, spacing: integer;
+  At: integer;
+  p: PByte;
+  wraping: TEdgePolicyFunc;
+begin
+  if FToroidality then
+    wraping := TIVec2Array2D.WrapAccess
+  else
+    wraping := TIVec2Array2D.MirrorAccess;
+  // Gather a neighborhood within the stack. Note that contrary to neighborhoods
+  // in a regular image, neighbors are not next to each others in the stack but
+  // separated by a level-dependent offset.
+  spacing := 1 shl z;
+  w := FExemplar.Width;
+  h := FExemplar.Height;
+  e := FExemplar.ElementSize;
+  At := 0;
+  for ni := 0 to NEIGHBOUR_DIM - 1 do
+    for nj := 0 to NEIGHBOUR_DIM - 1 do
+    begin
+      dj := nj - NEIGHBOUR_DIM div 2;
+      di := ni - NEIGHBOUR_DIM div 2;
+      i := wraping(x + dj * spacing, w);
+      j := wraping(y + di * spacing, h);
+      p := Exemplar.Data;
+      Inc(p, (i + j * w) * e);
+      result[At+0] := INV255 * p[0];
+      result[At+1] := INV255 * p[1];
+      result[At+2] := INV255 * p[2];
+      Inc(At, 3);
+    end;
 end;
 
 function TAnalysisData.GetExemplar: PImageDesc;
@@ -924,6 +922,9 @@ procedure TAnalysisData.LoadFromFile(const aFileName: string);
 var
   stream: TFileStream;
   I: integer;
+{$IFDEF DEBUG}
+  J, L: integer;
+{$ENDIF}
 begin
   Clear;
   stream := TFileStream.Create(aFileName, 0);
@@ -939,7 +940,6 @@ begin
     begin
       LevelId := i;
       FloatImage := TFloatImage.Create(0, 0);
-      FloatImage.Load(stream);
       Image.Load(stream);
       ProjectedImage.Load(stream);
       stream.Read(ColorScale, SizeOf(TVector));
@@ -947,7 +947,8 @@ begin
       stream.Read(ColorPCAMatrix, SizeOf(TColorPCAMatrix));
       stream.Read(NeihgbPCAMatrix, SizeOf(TNeighbPCAmatrix));
       kNearest.Load(stream);
-      Neighborhoods.Load(stream);
+      Neighborhoods[0].Load(stream);
+      Neighborhoods[1].Load(stream);
       stream.Read(NeighbScale, SizeOf(TVector6f));
       stream.Read(NeighbOffset, SizeOf(TVector6f));
     end;
@@ -959,6 +960,14 @@ begin
   finally
     stream.Free;
   end;
+
+{$IFDEF DEBUG}
+  for L := 0 to High(FLevels) do
+    for i := 0 to Exemplar.Height - 1 do
+      for j := 0 to Exemplar.Width - 1 do
+        Neighborhoods.At[j, i, L] :=
+          GatherNeighborhood(j, i, L);
+{$ENDIF}
 end;
 
 procedure TAnalysisData.SaveToFile(const aFileName: string);
@@ -977,7 +986,6 @@ begin
     for i := 0 to High(FLevels) do
     with FLevels[i] do
     begin
-      FloatImage.Save(stream);
       Image.Save(stream);
       ProjectedImage.Save(stream);
       stream.Write(ColorScale, SizeOf(TVector));
@@ -985,7 +993,8 @@ begin
       stream.Write(ColorPCAMatrix, SizeOf(TColorPCAMatrix));
       stream.Write(NeihgbPCAMatrix, SizeOf(TNeighbPCAmatrix));
       kNearest.Save(stream);
-      Neighborhoods.Save(stream);
+      Neighborhoods[0].Save(stream);
+      Neighborhoods[1].Save(stream);
       stream.Write(NeighbScale, SizeOf(TVector6f));
       stream.Write(NeighbOffset, SizeOf(TVector6f));
     end;
@@ -1014,8 +1023,6 @@ end;
 
 function TAnalysisData.GetImage(alevel: integer): PImageDesc;
 begin
-  if FLevels[alevel].Image.Data = nil then
-      FLevels[alevel].Image := FLevels[alevel].FloatImage.GetImage;
   result := @FLevels[alevel].Image;
 end;
 

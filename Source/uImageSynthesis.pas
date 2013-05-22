@@ -523,15 +523,13 @@ function TSynthesizer.GatherNeighborhood(j: integer; i: integer; step: integer)
   : TNeighborhood3c;
 var
   img: TIVec2Array2D;
-  floatimg: TFloatImage;
-  floatpixel: TFloatPixel;
+  p: PByte;
   At: integer;
   ni, nj, di, dj, x, y: integer;
   s: IVec2;
 begin
   // Gather a neighborhood in the current synthesis result
   img := FSynthesized[step];
-  floatimg := FAnalysisData.FloatImages[step];
   At := 0;
   for ni := 0 to NEIGHBOUR_DIM - 1 do
     for nj := 0 to NEIGHBOUR_DIM - 1 do
@@ -541,10 +539,12 @@ begin
       x := j + dj;
       y := i + di;
       s := img.At[x, y]; // S[p]  (coordinate in exemplar stack)
-      floatpixel := floatimg.Pixel[s[0], s[1]];
-      Result[At + 0] := floatpixel.r; // Ep[S[p]] (RGB color)
-      Result[At + 1] := floatpixel.g;
-      Result[At + 2] := floatpixel.b;
+      p := FAnalysisData.Exemplar.Data;
+      Inc(p, (s[0] + s[1] * FAnalysisData.Exemplar.Width) *
+        FAnalysisData.Exemplar.ElementSize);
+      Result[At + 0] := INV255 * p[0]; // E[S[p]] (RGB color)
+      Result[At + 1] := INV255 * p[1];
+      Result[At + 2] := INV255 * p[2];
       Inc(At, 3);
     end;
 end;
