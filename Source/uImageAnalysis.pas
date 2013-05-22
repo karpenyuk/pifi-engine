@@ -30,7 +30,7 @@ type
     // Using principal component analysis (PCA)
     // projecting pixel neighborhoods into a lower-dimensional space (6D vector)
     procedure ProjectNeighbTo6D(alevel: integer;
-      const aColorPCA: TColorPCAMatrix; out aNeighbPCA: TNeighbPCAmatrix);
+      out aNeighbPCA: TNeighbPCAmatrix);
     procedure SetToroidality(flag: boolean);
     function GetDone: boolean;
     function GetLevelCount: integer;
@@ -228,20 +228,26 @@ begin
         Exit;
     end;
 end;
-{
+
 procedure TAnalyzer.ProjectNeighbTo6D(alevel: integer;
-  const aColorPCA: TColorPCAMatrix; out aNeighbPCA: TNeighbPCAmatrix);
+  out aNeighbPCA: TNeighbPCAmatrix);
+const
+  MAX6D: TVector6f = (1E30, 1E30, 1E30, 1E30, 1E30, 1E30);
+  MIN6D: TVector6f = (-1E30, -1E30, -1E30, -1E30, -1E30, -1E30);
 var
   x: TDouble2DArray;
   Dispersion: TDouble1DArray;
   PCA: TDouble2DArray;
   Info: integer;
-  h, w, i, j, mi, mj, row: integer;
-  V6D: TVector6f;
+  h, w, i, j, k, mi, mj, row: integer;
+  V6D, minValue, maxValue: TVector6f;
   Neighb: TNeighborhood3c;
+  p1, p2: PByte;
 begin
   w := FAnalysisData.Neighborhoods.Width;
   h := FAnalysisData.Neighborhoods.Height;
+
+  // fill array for principal component analysis
   SetLength(x, w * h, NEIGHBOUR_SIZE_3COLOR);
   row := 0;
   for i := 0 to h - 1 do
@@ -253,28 +259,94 @@ begin
       Inc(row);
     end;
 
-  PrincipalComponentsAnalysis.BuildBasis(x, w * h, 75, Info, Dispersion, PCA);
+  // run principal component analysis
+  PrincipalComponentsAnalysis.BuildBasis(x, w * h, NEIGHBOUR_SIZE_3COLOR,
+    Info, Dispersion, PCA);
+
   // store only 6 basis
   if Info = 1 then
     for i := 0 to 5 do
       for j := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         aNeighbPCA[j, i] := PCA[j, i];
 
+  minValue := MAX6D;
+  maxValue := MIN6D;
   // set lower dimension vector
   for i := 0 to h - 1 do
     for j := 0 to w - 1 do
     begin
       Neighb := FAnalysisData.Neighborhoods[j, i, alevel];
       V6D := ZERO_VECTOR6D;
-      for mi := 0 to 5 do
-        for mj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
-          V6D[mi] := V6D[mi] + aColorPCA[mj, mi] * Neighb[mj];
-
+      for mj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
+        for mi := 0 to 5 do
+          V6D[mi] := V6D[mi] + aNeighbPCA[mj, mi] * Neighb[mj];
       FAnalysisData.Neighborhoods.As6DAt[j, i, alevel] := V6D;
-    end;
-end;
-}
 
+      for k := 0 to 5 do
+      begin
+        if V6D[k] > maxValue[k] then
+          maxValue[k] := V6D[k];
+        if V6D[k] < minValue[k] then
+          minValue[k] := V6D[k];
+      end;
+    end;
+
+  // scale neighbors to byte size
+  FAnalysisData.Levels[alevel].NeighbOffset := minValue;
+  for k := 0 to 5 do
+    maxValue[k] := maxValue[k] - minValue[k];
+  FAnalysisData.Levels[alevel].NeighbScale := maxValue;
+
+  with FAnalysisData.Levels[alevel] do
+  begin
+    // part 1
+    FillChar(Neighborhoods[0], SizeOf(TImageDesc), $00);
+    Neighborhoods[0].Width := w;
+    Neighborhoods[0].Height := h;
+    Neighborhoods[0].InternalFormat := GL_RGBA8;
+    Neighborhoods[0].ColorFormat := GL_RGBA;
+    Neighborhoods[0].ElementSize := 4;
+    Neighborhoods[0].DataType := GL_UNSIGNED_BYTE;
+    esize := Neighborhoods[0].ElementSize;
+    Neighborhoods[0].DataSize := w * h * esize;
+    GetMem(Neighborhoods[0].Data, Neighborhoods[0].DataSize);
+    // part 2
+    FillChar(Neighborhoods[1], SizeOf(TImageDesc), $00);
+    Neighborhoods[1].Width := w;
+    Neighborhoods[1].Height := h;
+    Neighborhoods[1].InternalFormat := GL_RGBA8;
+    Neighborhoods[1].ColorFormat := GL_RGBA;
+    Neighborhoods[1].ElementSize := 4;
+    Neighborhoods[1].DataType := GL_UNSIGNED_BYTE;
+    esize := Neighborhoods[1].ElementSize;
+    Neighborhoods[1].DataSize := w * h * esize;
+    GetMem(Neighborhoods[1].Data, Neighborhoods[1].DataSize);
+  end;
+
+  for i := 0 to h - 1 do
+  begin
+    p1 := FAnalysisData.Levels[alevel].Neighborhoods[0].Data;
+    p2 := FAnalysisData.Levels[alevel].Neighborhoods[1].Data;
+    Inc(p1, i * w * 4);
+    Inc(p2, i * w * 4);
+    for j := 0 to w - 1 do
+    begin
+      V6D := FAnalysisData.Neighborhoods.As6DAt[j, i, alevel];
+      for k := 0 to 5 do
+        V6D[k] := V6D[k] * maxValue[k] + minValue[k];
+      p1[0] := floor(255 * V6D[0]);
+      p1[1] := floor(255 * V6D[1]);
+      p1[2] := floor(255 * V6D[2]);
+      p1[2] := $FF;
+      p2[0] := floor(255 * V6D[3]);
+      p2[1] := floor(255 * V6D[4]);
+      p2[2] := floor(255 * V6D[5]);
+      p2[2] := $FF;
+    end;
+  end;
+end;
+
+{
 procedure TAnalyzer.ProjectNeighbTo6D(alevel: integer;
   const aColorPCA: TColorPCAMatrix; out aNeighbPCA: TNeighbPCAmatrix);
 var
@@ -343,6 +415,7 @@ begin
       FAnalysisData.Neighborhoods.As6DAt[j, i, alevel] := V6D;
     end;
 end;
+}
 
 procedure TAnalyzer.ProjectStackLevelTo2D(alevel: PAnalyzedLevel);
 var
@@ -540,8 +613,7 @@ begin
   // Gather neighborhoods and store them for use during analysis and synthesis
   FAnalyzer.GatherNeighborhoods(FData);
   // Compute lower-dimension neighborhoods
-  FAnalyzer.ProjectNeighbTo6D(FData.LevelId, FData.ColorPCAMatrix,
-    FData.NeihgbPCAMatrix);
+  FAnalyzer.ProjectNeighbTo6D(FData.LevelId, FData.NeihgbPCAMatrix);
   // Analyze stack level - search most similar neighborhoods
   FAnalyzer.AnalyzeStackLevel(FData.LevelId);
 end;

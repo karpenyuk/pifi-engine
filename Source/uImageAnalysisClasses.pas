@@ -18,6 +18,7 @@ const
   GL_RGBA = $1908;
   GL_RG8 = $822B;
   GL_RGB8 = $8051;
+  GL_RGBA8 = $8058;
   GL_UNSIGNED_BYTE = $1401;
 
 type
@@ -31,7 +32,7 @@ type
   TVector6f = array [0 .. 5] of single;
 
   TColorPCAMatrix = array [0 .. 2, 0 .. 1] of single;
-  TNeighbPCAmatrix = array [0 .. NEIGHBOUR_SIZE_2COLOR - 1, 0 .. 5] of single;
+  TNeighbPCAmatrix = array [0 .. NEIGHBOUR_SIZE_3COLOR - 1, 0 .. 5] of single;
 
   TFloatPixel = record
     r, g, b: single;
@@ -87,6 +88,8 @@ type
     procedure Save(aStream: TStream);
     procedure Load(aStream: TStream);
 
+    function Dump(aLevel: integer; aProjected: Boolean): TImageDesc;
+
     property Width: integer read FWidth;
     property Height: integer read FHeight;
     property At[x, y, z: integer]: TNeighborhood3c read GetNeighb
@@ -107,6 +110,7 @@ type
 
     procedure Save(aStream: TStream);
     procedure Load(aStream: TStream);
+    function Dump(aLevel: integer): TStringList;
 
     property Width: integer read FWidth;
     property Height: integer read FHeight;
@@ -169,7 +173,7 @@ type
     ColorPCAMatrix: TColorPCAMatrix;
     NeihgbPCAMatrix: TNeighbPCAmatrix;
     kNearest: TImageDesc;
-    Neighborhoods: TImageDesc;
+    Neighborhoods: array[0..1] of TImageDesc;
     NeighbScale: TVector6f;
     NeighbOffset: TVector6f;
   end;
@@ -213,7 +217,7 @@ type
 implementation
 
 uses
-  Math, uMath;
+  Math, uMath, uMiscUtils;
 
 {$REGION 'TIVec2Array2D'}
 
@@ -337,6 +341,84 @@ begin
   SetLength(FProjData, size);
 end;
 
+function TNeighborhoods.Dump(aLevel: integer; aProjected: Boolean): TImageDesc;
+var
+  i, j, k, mi, mj, x, y: integer;
+  p: PByte;
+  n: TNeighborhood3c;
+  v6: TVector6f;
+begin
+  FillChar(result, SizeOf(TImageDesc), $00);
+
+  if aProjected then
+  begin
+    result.Width := FWidth * 3 - 1;
+    result.Height := FHeight * 2 - 1;
+    result.InternalFormat := GL_RGBA8;
+    result.ColorFormat := GL_RGBA;
+    result.DataType := GL_UNSIGNED_BYTE;
+    result.ElementSize := 4;
+    result.DataSize := result.Width * result.Height * result.ElementSize;
+    GetMem(result.Data, result.DataSize);
+    p := result.Data;
+    FillChar(P^, result.DataSize, $00);
+
+    for I := 0 to FHeight - 1 do
+    begin
+      for J := 0 to FWidth - 1 do
+      begin
+        v6 := As6DAt[J, I, aLevel];
+        x := J*3;
+        y := i*2;
+        Inc(p, (x + y * result.Width) * result.ElementSize);
+        p[0] := floor(255 * v6[0]);
+        p[1] := floor(255 * v6[1]);
+        p[2] := floor(255 * v6[2]);
+        p[3] := $FF;
+        p[4] := floor(255 * v6[3]);
+        p[5] := floor(255 * v6[4]);
+        p[6] := floor(255 * v6[5]);
+        p[7] := $FF;
+      end;
+    end;
+  end
+  else
+  begin
+    result.Width := FWidth * (NEIGHBOUR_DIM + 1) - 1;
+    result.Height := FHeight * (NEIGHBOUR_DIM + 1) - 1;
+    result.InternalFormat := GL_RGBA8;
+    result.ColorFormat := GL_RGBA;
+    result.DataType := GL_UNSIGNED_BYTE;
+    result.ElementSize := 4;
+    result.DataSize := result.Width * result.Height * result.ElementSize;
+    GetMem(result.Data, result.DataSize);
+    p := result.Data;
+    FillChar(P^, result.DataSize, $00);
+
+    for I := 0 to FHeight - 1 do
+    begin
+      for J := 0 to FWidth - 1 do
+      begin
+        n := At[J, I, aLevel];
+        k := 0;
+        for mi := 0 to NEIGHBOUR_DIM - 1 do
+          for mj := 0 to NEIGHBOUR_DIM - 1 do
+          begin
+            x := j * (NEIGHBOUR_DIM + 1) + mj;
+            y := i * (NEIGHBOUR_DIM + 1) + mi;
+            p := result.Data;
+            Inc(p, (x + y * result.Width) * result.ElementSize);
+            p[0] := floor(255 * n[k]);
+            p[1] := floor(255 * n[k+1]);
+            p[2] := floor(255 * n[k+2]);
+            p[3] := $FF;
+            Inc(k, 3);
+          end;
+      end;
+    end;
+  end;
+end;
+
 function TNeighborhoods.GetNeighb(x: integer; y: integer; z: integer)
   : TNeighborhood3c;
 begin
@@ -409,6 +491,27 @@ begin
 
   size := w * h * l;
   SetLength(FData, size);
+end;
+
+function TMostSimilars.Dump(aLevel: integer): TStringList;
+var
+  i, j, k: integer;
+  line: string;
+  sim: TMostSimilar;
+begin
+  Result := TStringList.Create;
+  for i := 0 to FHeight - 1 do
+  begin
+    line := ' y:' + IntToStr(i) + ' ';
+    for j := 0 to FWidth - 1 do
+    begin
+      sim := At[j, i, aLevel];
+      line := line + ' x:' + IntToStr(j) + ' ';
+      for k := 0 to SIMILAR_NEIGHBOUR_SIZE - 1 do
+        line := line + '(' + IntToStr(sim[k][0]) + ';' + IntToStr(sim[k][1]) +  ')';
+    end;
+    Result.Add(line);
+  end;
 end;
 
 function TMostSimilars.GetMostSimilar(x: integer; y: integer; z: integer)

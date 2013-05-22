@@ -53,7 +53,7 @@ type
     // Helper methods
 
     // Gather a neighborhood in the current synthesis result
-    function GatherNeighborhood(j, i, step: integer): TNeighborhood2c;
+    function GatherNeighborhood(j, i, step: integer): TNeighborhood3c;
     function GetLevelCount: integer;
     function GetDone: boolean;
     procedure SetMaxCPUThreads(const Value: integer);
@@ -344,6 +344,9 @@ var
   kx, ky, dx, dy: single;
   V: IVec2;
 begin
+  if strength = 0.0 then
+    Exit;
+
   if FJitterPeriodX + FJitterPeriodY = 0 then
   begin
     // Perturbs synthesized coordinates
@@ -422,7 +425,7 @@ var
   spacing, i, j, k, ni, nj, ci, cj, nk: integer;
   ms: TMostSimilar;
   n, c, best: IVec2;
-  syN: TNeighborhood2c;
+  syN: TNeighborhood3c;
   NM: TNeighbPCAmatrix;
   syN_V6D, exN_V6D: TVector6f;
   minDis, Dis: single;
@@ -446,7 +449,7 @@ begin
       syN_V6D := ZERO_VECTOR6D;
       NM := FAnalysisData.Levels[FProcessedLevel].NeihgbPCAMatrix;
       // project it to 6D vector
-      for nj := 0 to NEIGHBOUR_SIZE_2COLOR - 1 do
+      for nj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         for ni := 0 to 5 do
           syN_V6D[ni] := syN_V6D[ni] + NM[nj, ni] * syN[nj];
       /// Find best matching candidate
@@ -517,18 +520,18 @@ begin
 end;
 
 function TSynthesizer.GatherNeighborhood(j: integer; i: integer; step: integer)
-  : TNeighborhood2c;
+  : TNeighborhood3c;
 var
   img: TIVec2Array2D;
-  projimg: TImageDesc;
-  p: PByte;
+  floatimg: TFloatImage;
+  floatpixel: TFloatPixel;
   At: integer;
   ni, nj, di, dj, x, y: integer;
   s: IVec2;
 begin
   // Gather a neighborhood in the current synthesis result
   img := FSynthesized[step];
-  projimg := FAnalysisData.Levels[step].ProjectedImage;
+  floatimg := FAnalysisData.FloatImages[step];
   At := 0;
   for ni := 0 to NEIGHBOUR_DIM - 1 do
     for nj := 0 to NEIGHBOUR_DIM - 1 do
@@ -538,13 +541,11 @@ begin
       x := j + dj;
       y := i + di;
       s := img.At[x, y]; // S[p]  (coordinate in exemplar stack)
-      x := FEdgePolicyFunc(s[0], projimg.Width);
-      y := FEdgePolicyFunc(s[1], projimg.Height);
-      p := projimg.Data;
-      Inc(p, (x + y * projimg.Width) * projimg.ElementSize);
-      Result[At + 0] := INV255 * p[0]; // Ep[S[p]] (RG color)
-      Result[At + 1] := INV255 * p[1];
-      Inc(At, 2);
+      floatpixel := floatimg.Pixel[s[0], s[1]];
+      Result[At + 0] := floatpixel.r; // Ep[S[p]] (RGB color)
+      Result[At + 1] := floatpixel.g;
+      Result[At + 2] := floatpixel.b;
+      Inc(At, 3);
     end;
 end;
 
