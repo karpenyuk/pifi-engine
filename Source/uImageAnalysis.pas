@@ -37,7 +37,7 @@ type
     // Runs analysis
     procedure Start;
     procedure Process;
-    procedure Stop;
+    function Stop: Boolean;
     property Done: boolean read GetDone;
 
     // Analyzes one exemplar stack level
@@ -179,26 +179,28 @@ procedure TAnalyzer.Process;
 var
   i, w: integer;
 begin
-  w := 0;
-  for i := 0 to High(FThreads) do
-    if not(FThreads[i].Suspended or FThreads[i].Finished) then
-      Inc(w);
-
-  if w < FMaxCPUThreads then
+  if FMaxCPUThreads > 0 then
+  begin
+    w := 0;
     for i := 0 to High(FThreads) do
-    begin
-      if FThreads[i].Suspended then
+      if not(FThreads[i].Suspended or FThreads[i].Finished) then
+          Inc(w);
+
+    if w < FMaxCPUThreads then
+      for i := 0 to High(FThreads) do
       begin
-        FThreads[i].Start;
-        Inc(w);
+        if FThreads[i].Suspended then
+        begin
+          FThreads[i].Start;
+          Inc(w);
+        end;
+        if w >= FMaxCPUThreads then
+            Exit;
       end;
-      if w >= FMaxCPUThreads then
-        Exit;
-    end;
+  end;
 end;
 
-procedure TAnalyzer.ProjectNeighbTo6D(alevel: integer;
-  out aNeighbPCA: TNeighbPCAmatrix);
+procedure TAnalyzer.ProjectNeighbTo6D(alevel: integer);
 const
   MAX6D: TVector6f = (1E30, 1E30, 1E30, 1E30, 1E30, 1E30);
   MIN6D: TVector6f = (-1E30, -1E30, -1E30, -1E30, -1E30, -1E30);
@@ -466,27 +468,39 @@ begin
   pyramid.GeneratePyramid;
   // then compute the exemplar stack from the pyramid
   FAnalysisData.CreateImageStack(pyramid);
-
-  // Allocate neighborhoods
-  SetLength(FThreads, FAnalysisData.LevelsAmount);
-
-  for l := 0 to FAnalysisData.LevelsAmount - 1 do
-    FThreads[l] := TAnalyzerThread.CreateOwned(Self, FAnalysisData.Levels[l]);
   pyramid.Free;
+
+  if FMaxCPUThreads > 0 then
+  begin
+    SetLength(FThreads, FAnalysisData.LevelsAmount);
+    for l := 0 to FAnalysisData.LevelsAmount - 1 do
+        FThreads[l] := TAnalyzerThread.CreateOwned(Self,
+        FAnalysisData.Levels[l]);
+  end
+  else
+    for l := 0 to FAnalysisData.LevelsAmount - 1 do
+    begin
+      ProjectStackLevelTo2D(FAnalysisData.Levels[l]);
+      // Gather neighborhoods and store them for use during analysis and synthesis
+      GatherNeighborhoods(l);
+      // Compute lower-dimension neighborhoods
+      ProjectNeighbTo6D(l);
+      // Analyze stack level - search most similar neighborhoods
+      AnalyzeStackLevel(l);
+    end;
 end;
 
-procedure TAnalyzer.Stop;
+function TAnalyzer.Stop: Boolean;
 var
   i: integer;
-  wait: boolean;
 begin
   // wait until threads finished
-  repeat
-    wait := true;
-    for i := 0 to High(FThreads) do
-      wait := wait and FThreads[i].Finished;
-  until wait;
+  Result := true;
+  for i := 0 to High(FThreads) do
+    Result := Result and (FThreads[i].Finished or FThreads[i].Suspended);
 
+  if Result then
+  begin
   for i := 0 to High(FThreads) do
     FThreads[i].Destroy;
   SetLength(FThreads, 0);
