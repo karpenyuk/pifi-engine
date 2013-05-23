@@ -187,6 +187,7 @@ type
     FToroidality: boolean;
     FkNearests: TMostSimilars;
     FNeighborhoods: TNeighborhoods;
+    FValid: Boolean;
     function GetLevelsAmount: integer;
     function GetImage(alevel: integer): PImageDesc;
     function GetFloatImage(level: integer): TFloatImage;
@@ -214,6 +215,8 @@ type
 
     property LevelsAmount: integer read GetLevelsAmount;
     property Toroidality: Boolean read FToroidality write FToroidality;
+    // Flag to check data validation
+    property IsValid: Boolean read FValid write FValid;
   end;
 
 implementation
@@ -855,6 +858,7 @@ begin
   SetLength(FLevels, 0);
   FreeAndNil(FkNearests);
   FreeAndNil(FNeighborhoods);
+  FValid := False;
 end;
 
 destructor TAnalysisData.Destroy;
@@ -931,6 +935,8 @@ begin
   try
     stream.Read(i, SizeOf(integer));
     Assert(i = 0); // Check version
+    if i > 0 then
+      Exit;
 
     FExemplar.Load(stream);
     stream.Read(i, SizeOf(integer));
@@ -968,6 +974,8 @@ begin
         Neighborhoods.At[j, i, L] :=
           GatherNeighborhood(j, i, L);
 {$ENDIF}
+
+  FValid := True;
 end;
 
 procedure TAnalysisData.SaveToFile(const aFileName: string);
@@ -1012,6 +1020,7 @@ begin
   Assert((Value.ColorFormat = GL_RGB) or (Value.ColorFormat = GL_RGBA));
   Assert(Value.DataType = GL_UNSIGNED_BYTE);
 
+  FExemplar.Free;
   FExemplar := Value;
   if Value.DataSize > 0 then
   with FExemplar do
@@ -1019,6 +1028,7 @@ begin
     GetMem(Data, DataSize);
     Move(PByte(Value.Data)^, PByte(Data)^, DataSize);
   end;
+  FValid := False;
 end;
 
 function TAnalysisData.GetImage(alevel: integer): PImageDesc;
