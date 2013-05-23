@@ -25,9 +25,9 @@ object MainForm: TMainForm
     object Label8: TLabel
       Left = 14
       Top = 367
-      Width = 78
+      Width = 71
       Height = 13
-      Caption = 'Model'#39's texture:'
+      Caption = 'Image preview'
     end
     object Memo1: TMemo
       Left = 8
@@ -41,6 +41,8 @@ object MainForm: TMainForm
       Font.Name = 'Tahoma'
       Font.Style = [fsBold]
       ParentFont = False
+      ReadOnly = True
+      ScrollBars = ssVertical
       TabOrder = 0
     end
     object PageControl1: TPageControl
@@ -490,10 +492,27 @@ object MainForm: TMainForm
           Height = 22
           EditorEnabled = False
           MaxValue = 32
-          MinValue = 1
+          MinValue = 0
           TabOrder = 2
           Value = 2
-          OnChange = SpinEdit2Change
+        end
+        object Button4: TButton
+          Left = 3
+          Top = 274
+          Width = 46
+          Height = 16
+          Caption = 'Save'
+          TabOrder = 3
+          OnClick = Button4Click
+        end
+        object Button5: TButton
+          Left = 157
+          Top = 274
+          Width = 46
+          Height = 16
+          Caption = 'Load'
+          TabOrder = 4
+          OnClick = Button5Click
         end
       end
       object TabSheet2: TTabSheet
@@ -564,7 +583,6 @@ object MainForm: TMainForm
           MinValue = 0
           TabOrder = 1
           Value = 2
-          OnChange = SpinEdit2Change
         end
         object Edit2: TEdit
           Left = 3
@@ -816,7 +834,6 @@ object MainForm: TMainForm
           Height = 18
           Caption = 'Save'
           TabOrder = 10
-          OnClick = Button3Click
         end
       end
     end
@@ -825,12 +842,11 @@ object MainForm: TMainForm
       Top = 386
       Width = 200
       Height = 21
-      ItemIndex = 0
       TabOrder = 2
       Text = 'exemplar'
       OnChange = ComboBox1Change
       Items.Strings = (
-        'exemplar'
+        'Exemplar'
         'CPU synthesis result'
         'CPU result patches'
         'GPU synthesis result'
@@ -844,9 +860,7 @@ object MainForm: TMainForm
     Height = 592
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
-    Context.DepthBits = 24
-    Context.StencilBits = 8
-    Context.AALevel = 0
+    VSync = True
     Align = alClient
     OnCanResize = GLViewer1CanResize
   end
@@ -854,5 +868,17 @@ object MainForm: TMainForm
     DefaultExt = 'bmp'
     Left = 40
     Top = 24
+  end
+  object OpenDataDialog: TOpenDialog
+    DefaultExt = 'iad'
+    Filter = 'Image analysis data (*.iad)|*.iad'
+    Left = 40
+    Top = 88
+  end
+  object SaveDataDialog: TSaveDialog
+    DefaultExt = 'iad'
+    Filter = 'Image analysis data (*.iad)|*.iad'
+    Left = 40
+    Top = 144
   end
 end

@@ -69,18 +69,20 @@ type
     ComboBox1: TComboBox;
     OpenPictureDialog: TOpenPictureDialog;
     GLViewer1: TGLViewer;
+    OpenDataDialog: TOpenDialog;
+    SaveDataDialog: TSaveDialog;
+    Button4: TButton;
+    Button5: TButton;
     procedure TrackBar9Change(Sender: TObject);
     procedure ComboBox2Change(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
     procedure PageControl1Change(Sender: TObject);
     procedure ComboBox1Change(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
     procedure Edit4Change(Sender: TObject);
     procedure CheckBox4Click(Sender: TObject);
     procedure CheckBox3Click(Sender: TObject);
     procedure Edit3Change(Sender: TObject);
     procedure Edit2Change(Sender: TObject);
-    procedure SpinEdit2Change(Sender: TObject);
     procedure Edit1Change(Sender: TObject);
     procedure Image1DblClick(Sender: TObject);
     procedure Button2Click(Sender: TObject);
@@ -94,6 +96,8 @@ type
     procedure GLViewer1CanResize(Sender: TObject; var NewWidth,
       NewHeight: Integer; var Resize: Boolean);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure Button4Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
   public
     AnalysisData: TAnalysisData;
     Analyzer: TAnalyzer;
@@ -120,8 +124,6 @@ uses
 
 var
   AppDir: string;
-  mx, my: integer;
-  KeyDeltaTime: Double;
 
   TexWidth: integer = 512;
   TexHeight: integer = 512;
@@ -142,6 +144,8 @@ var
   Render: TBaseRender;
   ExemplarTextureId: LongInt;
   Proj: TMatrix;
+
+  TextureChaged: Boolean = false;
 
 function _GetTime: Double;
 var
@@ -215,27 +219,46 @@ end;
 procedure TMainForm.Button1Click(Sender: TObject);
 var
   t: Double;
+  n: integer;
 begin
   if Button1.Tag = 0 then
   begin
     Button1.Tag := 1;
-    Button1.Caption := 'Break analysis';
+    Button1.Caption := 'Stop analysis';
     Button2.Enabled := false;
 
+    Analyzer.MaxCPUThreads := SpinEdit1.Value;
+    Memo1.Lines.Add('Analysis started');
     t := _GetTime;
     Analyzer.Start;
+    n := 0;
     while not Analyzer.Done do
     begin
       Analyzer.Process;
-      Sleep(1);
+      Sleep(100);
+      n := (n+1) and 7;
+      if n = 0 then
+        Memo1.Lines.Text := Memo1.Lines.Text + '>';
       Application.ProcessMessages;
     end;
+    if not AnalysisData.IsValid then
+      Exit;
     t := _GetTime - t;
     Memo1.Lines.Add('End analysis');
     Memo1.Lines.Add(Format('Expanded time %.2f msec', [1000 * t]));
   end
   else if Button1.Tag = 1 then
-    Analyzer.Stop;
+  begin
+    Button1.Enabled := False;
+    while not Analyzer.Stop do
+    begin
+      Sleep(100);
+      Memo1.Lines.Text := Memo1.Lines.Text + 'X';
+      Application.ProcessMessages;
+    end;
+    Memo1.Lines.Add('Analysis stoped');
+    Button1.Enabled := True;
+  end;
 
   Button1.Tag := 0;
   Button1.Caption := 'Analyse';
@@ -245,82 +268,122 @@ end;
 // CPU synthesis process
 procedure TMainForm.Button2Click(Sender: TObject);
 begin
-  Button1.Enabled := false;
-  Button2.Enabled := false;
+  if AnalysisData.IsValid then
+  begin
+    Button1.Enabled := false;
+    Button2.Enabled := false;
 
-  // with Synthesizer do begin
-  // Analyzer := tsAnalyzer;
-  // Width := TexWidth;
-  // Height := TexHeight;
-  // JitterStrength := Jitter;
-  // Kappa := tsKappa;
-  // NumThreads := ThreadsNumber[1];
-  // end;
-  //
-  // try
-  // Synthesizer.Init;
-  // if CheckBox4.Checked then begin
-  // Synthesizer.JitterPeriodX := PeriodX;
-  // Synthesizer.JitterPeriodY := PeriodY;
-  // end
-  // else begin
-  // Synthesizer.JitterPeriodX := 0;
-  // Synthesizer.JitterPeriodY := 0;
-  // end;
-  // Memo1.Lines.Add('Start synthesis');
-  // dir := PWideChar(AppDir+'\'+tsAnalyzer.Name);
-  // SetCurrentDirectory(dir);
-  // t:=StartPrecisionTimer;
-  // while not Synthesizer.Process do begin
-  // Sleep(1);
-  // GLCube1.Turn(1);
-  // Application.ProcessMessages;
-  // end;
-  //
-  // finally
-  // exp:=StopPrecisionTimer(t)*1000;
-  // Memo1.Lines.Add('End synthesis');
-  // Memo1.Lines.Add(Format('Expanded time %.2f msec', [exp]));
-  // // Autosave
-  // if CheckBox1.Checked then begin
-  // bmp := TBitmap.Create;
-  // dir := PWideChar(AppDir+'\'+tsAnalyzer.Name);
-  // CreateDirectory(dir, @attr);
-  // SetCurrentDirectory(dir);
-  // for n := 1 to Synthesizer.NumLevels - 1 do begin
-  // bmp32 := Synthesizer.SynthesisResult(n);
-  // bmp32.AssignToBitmap(bmp);
-  // bmp.SaveToFile(Format('%s synth%d.bmp', [tsAnalyzer.Name, n]));
-  // bmp32.Free;
-  // bmp32 := Synthesizer.ResultPatches(n);
-  // bmp32.AssignToBitmap(bmp);
-  // bmp.SaveToFile(Format('%s coords%d.bmp', [tsAnalyzer.Name, n]));
-  // bmp32.Free;
-  // end;
-  // bmp.Free;
-  // end;
-  // with GLMater.LibMaterialByName('CPU synthesis result') do begin
-  // bmp32 := Synthesizer.SynthesisResult(Synthesizer.NumLevels-1);
-  // Material.Texture.Image.Assign(bmp32);
-  // bmp32.Free;
-  // end;
-  // with GLMater.LibMaterialByName('CPU result patches') do begin
-  // bmp32 := Synthesizer.ResultPatches(Synthesizer.NumLevels-1);
-  // Material.Texture.Image.Assign(bmp32);
-  // bmp32.Free;
-  // end;
-  //
-  // ComboBox1.ItemIndex := 1;
-  // ComboBox1Change(Sender);
-  //
-  // end;
+    // with Synthesizer do begin
+    // Analyzer := tsAnalyzer;
+    // Width := TexWidth;
+    // Height := TexHeight;
+    // JitterStrength := Jitter;
+    // Kappa := tsKappa;
+    // NumThreads := ThreadsNumber[1];
+    // end;
+    //
+    // try
+    // Synthesizer.Init;
+    // if CheckBox4.Checked then begin
+    // Synthesizer.JitterPeriodX := PeriodX;
+    // Synthesizer.JitterPeriodY := PeriodY;
+    // end
+    // else begin
+    // Synthesizer.JitterPeriodX := 0;
+    // Synthesizer.JitterPeriodY := 0;
+    // end;
+    // Memo1.Lines.Add('Start synthesis');
+    // dir := PWideChar(AppDir+'\'+tsAnalyzer.Name);
+    // SetCurrentDirectory(dir);
+    // t:=StartPrecisionTimer;
+    // while not Synthesizer.Process do begin
+    // Sleep(1);
+    // GLCube1.Turn(1);
+    // Application.ProcessMessages;
+    // end;
+    //
+    // finally
+    // exp:=StopPrecisionTimer(t)*1000;
+    // Memo1.Lines.Add('End synthesis');
+    // Memo1.Lines.Add(Format('Expanded time %.2f msec', [exp]));
+    // // Autosave
+    // if CheckBox1.Checked then begin
+    // bmp := TBitmap.Create;
+    // dir := PWideChar(AppDir+'\'+tsAnalyzer.Name);
+    // CreateDirectory(dir, @attr);
+    // SetCurrentDirectory(dir);
+    // for n := 1 to Synthesizer.NumLevels - 1 do begin
+    // bmp32 := Synthesizer.SynthesisResult(n);
+    // bmp32.AssignToBitmap(bmp);
+    // bmp.SaveToFile(Format('%s synth%d.bmp', [tsAnalyzer.Name, n]));
+    // bmp32.Free;
+    // bmp32 := Synthesizer.ResultPatches(n);
+    // bmp32.AssignToBitmap(bmp);
+    // bmp.SaveToFile(Format('%s coords%d.bmp', [tsAnalyzer.Name, n]));
+    // bmp32.Free;
+    // end;
+    // bmp.Free;
+    // end;
+    // with GLMater.LibMaterialByName('CPU synthesis result') do begin
+    // bmp32 := Synthesizer.SynthesisResult(Synthesizer.NumLevels-1);
+    // Material.Texture.Image.Assign(bmp32);
+    // bmp32.Free;
+    // end;
+    // with GLMater.LibMaterialByName('CPU result patches') do begin
+    // bmp32 := Synthesizer.ResultPatches(Synthesizer.NumLevels-1);
+    // Material.Texture.Image.Assign(bmp32);
+    // bmp32.Free;
+    // end;
+    //
+    // ComboBox1.ItemIndex := 1;
+    // ComboBox1Change(Sender);
+    //
+    // end;
 
-  Button1.Enabled := true;
-  Button2.Enabled := true;
+    Button1.Enabled := true;
+    Button2.Enabled := true;
+  end
+  else
+    Memo1.Lines.Add('Unable to synthesize. Run analysis first.');
 end;
 
-procedure TMainForm.Button3Click(Sender: TObject);
+procedure TMainForm.Button4Click(Sender: TObject);
 begin
+  if AnalysisData.IsValid then
+  begin
+    if SaveDataDialog.Execute then
+    begin
+      AnalysisData.SaveToFile(SaveDataDialog.FileName);
+      Memo1.Lines.Add('Analysis data saved.');
+    end;
+  end
+  else
+    Memo1.Lines.Add('Unable to save. Run analysis first.');
+end;
+
+procedure TMainForm.Button5Click(Sender: TObject);
+var
+  x, y: integer;
+  p: PByte;
+  c: Graphics.TColor;
+begin
+  if OpenDataDialog.Execute then
+  begin
+    AnalysisData.LoadFromFile(OpenDataDialog.FileName);
+    p := PByte(AnalysisData.Exemplar.Data);
+    Image1.Picture.Bitmap.Width := AnalysisData.Exemplar.Width;
+    Image1.Picture.Bitmap.Height := AnalysisData.Exemplar.Height;
+    for y := 0 to Image1.Picture.Height - 1 do
+      for x := 0 to Image1.Picture.Width - 1 do
+      begin
+        c := p[0];
+        c := c or (p[1] shl 8);
+        c := c or (p[2] shl 16);
+        Image1.Picture.Bitmap.Canvas.Pixels[x, y] := c;
+        Inc(p, 4);
+      end;
+    Memo1.Lines.Add('Analysis data loaded.');
+  end;
 end;
 
 // Toroidal control
@@ -471,18 +534,6 @@ begin
     TEdit(Sender).Color := clRed;
 end;
 
-// Threads number correct input
-procedure TMainForm.SpinEdit2Change(Sender: TObject);
-begin
-  if TSpinEdit(Sender).Value > 0 then
-  begin
-    TSpinEdit(Sender).Color := clWindow;
-    ThreadsNumber[TSpinEdit(Sender).Tag] := TSpinEdit(Sender).Value;
-  end
-  else
-    TSpinEdit(Sender).Color := clRed;
-end;
-
 // Jitter control
 procedure TMainForm.TrackBar1Change(Sender: TObject);
 var
@@ -515,6 +566,7 @@ begin
     img.Free;
     Memo1.Lines.Add(Format('Image %dx%d was loaded', [Image1.Picture.Width,
       Image1.Picture.Height]));
+    TextureChaged := true;
     ComboBox1.ItemIndex := 0;
     ComboBox1Change(Sender);
   end;
@@ -623,8 +675,8 @@ begin
   glTextureParameterfEXT(ExemplarTextureId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
     GL_LINEAR_MIPMAP_LINEAR);
   with AnalysisData.Exemplar^ do
-  glTextureImage2DEXT(ExemplarTextureId, GL_TEXTURE_2D, 0, InternalFormat,
-    Width, Height, 0, ColorFormat, DataType, Data);
+      glTextureImage2DEXT(ExemplarTextureId, GL_TEXTURE_2D, 0, InternalFormat,
+      Width, Height, 0, ColorFormat, DataType, Data);
 
   SQ_VO := CreatePlane(2, 2);
   SQ_Drawer := TGLVertexObject.CreateFrom(SQ_VO);
@@ -637,6 +689,15 @@ var
 begin
   glDisable(GL_CULL_FACE);
   glDisable(GL_DEPTH_TEST);
+
+  if TextureChaged then
+  begin
+    glBindTexture(GL_TEXTURE_2D, ExemplarTextureId);
+    with AnalysisData.Exemplar^ do
+        glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat,
+        Width, Height, 0, ColorFormat, DataType, Data);
+    TextureChaged := False;
+  end;
 
   ratio := TVector.Make(GLViewer1.Width / Image1.Picture.Width,
     GLViewer1.Height / Image1.Picture.Height);
