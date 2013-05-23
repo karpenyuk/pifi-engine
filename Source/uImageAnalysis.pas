@@ -20,14 +20,12 @@ type
     FAnalysisData: TAnalysisData;
     FThreads: array of TAnalyzerThread;
     FMaxCPUThreads: integer;
-    procedure SetMaxCPUThreads(const Value: integer);
     // Gathers all neighborhoods of the exemplar stack level
     procedure GatherNeighborhoods(alevel: integer);
     procedure ProjectStackLevelTo2D(alevel: PAnalyzedLevel);
     // Using principal component analysis (PCA)
     // projecting pixel neighborhoods into a lower-dimensional space (6D vector)
-    procedure ProjectNeighbTo6D(alevel: integer;
-      out aNeighbPCA: TNeighbPCAmatrix);
+    procedure ProjectNeighbTo6D(alevel: integer);
     procedure SetToroidality(flag: boolean);
     function GetDone: boolean;
     function GetLevelCount: integer;
@@ -49,7 +47,7 @@ type
     // True if the exemplar is toroidaly repeated
     property Toroidality: boolean read GetToroidality write SetToroidality;
     // Maximum number of CPU's thread used during analisys
-    property MaxCPUThreads: integer read FMaxCPUThreads write SetMaxCPUThreads;
+    property MaxCPUThreads: integer read FMaxCPUThreads write FMaxCPUThreads;
   end;
 
   TAnalyzerThread = class(TThread)
@@ -156,8 +154,12 @@ var
   l: integer;
 begin
   result := true;
-  for l := 0 to High(FThreads) do
-    result := result and FThreads[l].Finished;
+  if Length(FThreads) > 0 then
+  begin
+    for l := 0 to High(FThreads) do
+      result := result and FThreads[l].Finished;
+    FAnalysisData.IsValid := Result;
+  end;
 end;
 
 function TAnalyzer.GetLevelCount: integer;
@@ -233,7 +235,8 @@ begin
   if Info = 1 then
     for i := 0 to 5 do
       for j := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
-        aNeighbPCA[j, i] := PCA[j, i];
+        with FAnalysisData.Levels[alevel]^ do
+            NeihgbPCAMatrix[j, i] := PCA[j, i];
 
   minValue := MAX6D;
   maxValue := MIN6D;
@@ -245,7 +248,8 @@ begin
       V6D := ZERO_VECTOR6D;
       for mj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         for mi := 0 to 5 do
-          V6D[mi] := V6D[mi] + aNeighbPCA[mj, mi] * Neighb[mj];
+          with FAnalysisData.Levels[alevel]^ do
+              V6D[mi] := V6D[mi] + NeihgbPCAMatrix[mj, mi] * Neighb[mj];
       FAnalysisData.Neighborhoods.As6DAt[j, i, alevel] := V6D;
 
       for k := 0 to 5 do
@@ -434,12 +438,6 @@ begin
   end;
 end;
 
-procedure TAnalyzer.SetMaxCPUThreads(const Value: integer);
-begin
-  Assert(Value > 0);
-  FMaxCPUThreads := Value;
-end;
-
 procedure TAnalyzer.SetToroidality(flag: boolean);
 begin
   if flag <> FAnalysisData.Toroidality then
@@ -494,6 +492,9 @@ begin
   SetLength(FThreads, 0);
 end;
 
+  FAnalysisData.IsValid := False;
+end;
+
 {$ENDREGION}
 {$REGION 'TAnalyzerThread'}
 
@@ -512,7 +513,7 @@ begin
   // Gather neighborhoods and store them for use during analysis and synthesis
   FAnalyzer.GatherNeighborhoods(FData.LevelId);
   // Compute lower-dimension neighborhoods
-  FAnalyzer.ProjectNeighbTo6D(FData.LevelId, FData.NeihgbPCAMatrix);
+  FAnalyzer.ProjectNeighbTo6D(FData.LevelId);
   // Analyze stack level - search most similar neighborhoods
   FAnalyzer.AnalyzeStackLevel(FData.LevelId);
 end;
