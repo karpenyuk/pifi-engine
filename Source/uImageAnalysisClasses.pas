@@ -853,8 +853,8 @@ begin
       Neighborhoods[1].Free;
     end;
   SetLength(FLevels, 0);
-  FkNearests.Free;
-  FNeighborhoods.Free;
+  FreeAndNil(FkNearests);
+  FreeAndNil(FNeighborhoods);
 end;
 
 destructor TAnalysisData.Destroy;

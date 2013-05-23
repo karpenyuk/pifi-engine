@@ -10,6 +10,8 @@ object MainForm: TMainForm
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  OnClose = FormClose
+  OnCreate = FormCreate
   OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
@@ -482,12 +484,13 @@ object MainForm: TMainForm
           OnClick = Button1Click
         end
         object SpinEdit1: TSpinEdit
-          Left = 3
-          Top = 268
-          Width = 200
+          Left = 103
+          Top = 246
+          Width = 42
           Height = 22
-          MaxValue = 0
-          MinValue = 0
+          EditorEnabled = False
+          MaxValue = 32
+          MinValue = 1
           TabOrder = 2
           Value = 2
           OnChange = SpinEdit2Change
@@ -553,9 +556,9 @@ object MainForm: TMainForm
         end
         object SpinEdit2: TSpinEdit
           Tag = 1
-          Left = 3
-          Top = 268
-          Width = 200
+          Left = 103
+          Top = 246
+          Width = 66
           Height = 22
           MaxValue = 0
           MinValue = 0
@@ -839,11 +842,13 @@ object MainForm: TMainForm
     Top = 0
     Width = 472
     Height = 592
+    OnRender = GLViewer1Render
+    OnContextReady = GLViewer1ContextReady
+    Context.DepthBits = 24
+    Context.StencilBits = 8
+    Context.AALevel = 0
     Align = alClient
-    ExplicitLeft = 24
-    ExplicitTop = 16
-    ExplicitWidth = 425
-    ExplicitHeight = 529
+    OnCanResize = GLViewer1CanResize
   end
   object OpenPictureDialog: TOpenPictureDialog
     DefaultExt = 'bmp'
