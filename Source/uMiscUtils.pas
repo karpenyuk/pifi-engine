@@ -139,6 +139,8 @@ procedure QueryPerformanceCounter(var val: Int64);
    counter is available. }
 function QueryPerformanceFrequency(var val: Int64): Boolean;
 
+procedure Sleep(milliseconds: Cardinal);{$IFDEF MSWINDOWS} stdcall; {$ENDIF}
+
 implementation
 
 {$IFDEF FPC}
@@ -1070,6 +1072,10 @@ begin
   Result := True;
 end;
 {$ENDIF}
+
+{$IFDEF MSWINDOWS}
+procedure Sleep; external 'kernel32.dll' name 'Sleep'; stdcall;
+{$ENDIF MSWINDOWS}
 
 initialization
 {$IFDEF FPC}
