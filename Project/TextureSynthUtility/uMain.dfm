@@ -2,7 +2,7 @@ object MainForm: TMainForm
   Left = 0
   Top = 0
   ClientHeight = 592
-  ClientWidth = 692
+  ClientWidth = 803
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -16,7 +16,7 @@ object MainForm: TMainForm
   PixelsPerInch = 96
   TextHeight = 13
   object MainPanel: TPanel
-    Left = 472
+    Left = 583
     Top = 0
     Width = 220
     Height = 592
@@ -476,43 +476,49 @@ object MainForm: TMainForm
           TabOrder = 0
           OnClick = CheckBox3Click
         end
-        object Button1: TButton
-          Left = 3
-          Top = 296
-          Width = 200
-          Height = 26
-          Caption = 'Analyse'
+        object AnalyzeButton: TButton
+          Left = 58
+          Top = 274
+          Width = 93
+          Height = 24
+          Caption = 'Analyze'
           TabOrder = 1
-          OnClick = Button1Click
+          OnClick = AnalyzeButtonClick
         end
         object SpinEdit1: TSpinEdit
           Left = 103
           Top = 246
           Width = 42
           Height = 22
-          EditorEnabled = False
           MaxValue = 32
           MinValue = 0
           TabOrder = 2
           Value = 2
         end
-        object Button4: TButton
-          Left = 3
-          Top = 274
-          Width = 46
-          Height = 16
-          Caption = 'Save'
-          TabOrder = 3
-          OnClick = Button4Click
-        end
-        object Button5: TButton
+        object SaveDataButton: TButton
           Left = 157
           Top = 274
           Width = 46
-          Height = 16
+          Height = 24
+          Caption = 'Save'
+          TabOrder = 3
+          OnClick = SaveDataButtonClick
+        end
+        object LoadDataButton: TButton
+          Left = 6
+          Top = 274
+          Width = 46
+          Height = 24
           Caption = 'Load'
           TabOrder = 4
-          OnClick = Button5Click
+          OnClick = LoadDataButtonClick
+        end
+        object AnalysisProgressBar: TProgressBar
+          Left = 6
+          Top = 304
+          Width = 197
+          Height = 18
+          TabOrder = 5
         end
       end
       object TabSheet2: TTabSheet
@@ -642,14 +648,21 @@ object MainForm: TMainForm
           State = cbChecked
           TabOrder = 7
         end
-        object Button2: TButton
-          Left = 5
-          Top = 296
-          Width = 198
-          Height = 26
-          Caption = 'Synthesize by CPU'
+        object SynthesizeButton: TButton
+          Left = 58
+          Top = 274
+          Width = 93
+          Height = 24
+          Caption = 'Synthesize'
           TabOrder = 8
-          OnClick = Button2Click
+          OnClick = SynthesizeButtonClick
+        end
+        object SynthProgressBar: TProgressBar
+          Left = 6
+          Top = 304
+          Width = 197
+          Height = 18
+          TabOrder = 9
         end
       end
       object TabSheet3: TTabSheet
@@ -842,8 +855,9 @@ object MainForm: TMainForm
       Top = 386
       Width = 200
       Height = 21
+      ItemIndex = 0
       TabOrder = 2
-      Text = 'exemplar'
+      Text = 'Exemplar'
       OnChange = ComboBox1Change
       Items.Strings = (
         'Exemplar'
@@ -856,11 +870,13 @@ object MainForm: TMainForm
   object GLViewer1: TGLViewer
     Left = 0
     Top = 0
-    Width = 472
+    Width = 583
     Height = 592
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
-    VSync = True
+    Context.DepthBits = 24
+    Context.StencilBits = 8
+    Context.AALevel = 0
     Align = alClient
     OnCanResize = GLViewer1CanResize
   end

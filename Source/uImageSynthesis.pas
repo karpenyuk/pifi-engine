@@ -4,10 +4,11 @@ interface
 
 uses
   Classes,
+  SyncObjs,
   uImageAnalysisClasses,
   uBaseTypes;
 
-{ .$IFDEF PACKED_EXEMPLAR_RG }
+{$DEFINE PACKED_EXEMPLAR_RG}
 
 type
 
@@ -30,11 +31,12 @@ type
 
     // Threads
     FThreads: array of TSynthesizerThread;
+    FLock: TCriticalSection;
     FMaxCPUThreads: integer;
+    FTotalCycles: integer;
 
     // Phase of synthesizer's work
     FPhase: integer;
-
     FCorrectionSubpassesCount: integer;
 
     // Upsamples previous level synthesis result
@@ -61,6 +63,7 @@ type
     function GetPatchesImage(aLevel: integer): TImageDesc;
     procedure SetCorrectionSubpassesCount(const Value: integer);
     procedure DestroyThread;
+    function GetProgress: Single;
   public
     constructor Create(anAnalysisData: TAnalysisData);
     destructor Destroy; override;
@@ -69,7 +72,7 @@ type
     procedure Start;
     procedure Process;
     procedure Stop;
-    property Done: boolean read GetDone;
+    property Progress: Single read GetProgress;
 
     property CorrectionSubpassesCount: integer read FCorrectionSubpassesCount
       write SetCorrectionSubpassesCount;
@@ -128,12 +131,15 @@ begin
   FJitterPeriodY := 0;
   FKappa := 1.0;
   FMaxCPUThreads := 4;
+  FTotalCycles := 1;
+  FLock := TCriticalSection.Create;
 end;
 
 destructor TSynthesizer.Destroy;
 begin
   Stop;
   FWriteBuffer.Free;
+  FLock.Destroy;
   inherited;
 end;
 
@@ -175,9 +181,13 @@ begin
   SetLength(FSynthesized, FAnalysisData.LevelsAmount);
   nx := TMath.Ceil(FWidth / FAnalysisData.Exemplar.Width);
   ny := TMath.Ceil(FHeight / FAnalysisData.Exemplar.Height);
+  FTotalCycles := 0;
   for l := High(FSynthesized) downto 0 do
   begin
     FSynthesized[l] := TIVec2Array2D.Create(nx, ny);
+    if l > 0 then
+      FTotalCycles := FTotalCycles + nx * ny *
+        (2 + 4 * FCorrectionSubpassesCount);
     nx := 2 * nx;
     ny := 2 * ny;
   end;
@@ -266,6 +276,7 @@ begin
           tmp := FSynthesized[FProcessedLevel];
           FSynthesized[FProcessedLevel] := FWriteBuffer;
           FWriteBuffer := tmp;
+          FSynthesized[FProcessedLevel].CycleCounter := tmp.CycleCounter;
         end
         else if not Assigned(FWriteBuffer) then
           FWriteBuffer := TIVec2Array2D.Create(
@@ -292,6 +303,7 @@ begin
           tmp := FSynthesized[FProcessedLevel];
           FSynthesized[FProcessedLevel] := FWriteBuffer;
           FWriteBuffer := tmp;
+          FSynthesized[FProcessedLevel].CycleCounter := tmp.CycleCounter;
         end;
         // store result of final subpass
         Dec(FProcessedLevel);
@@ -336,6 +348,7 @@ begin
         FAnalysisData.Exemplar.Height);
       UpLevel.At[pj * 2 + 1, pi * 2 + 1] := detV;
     end;
+  UpLevel.CycleCounter := UpLevel.CycleCounter + UpLevel.Width * UpLevel.Height;
 end;
 
 procedure TSynthesizer.Jitter(strength: single; const aIndices: TIVec2Array2D);
@@ -344,6 +357,8 @@ var
   kx, ky, dx, dy: single;
   V: IVec2;
 begin
+  aIndices.CycleCounter := aIndices.CycleCounter + aIndices.Width * aIndices.Height;
+
   if strength = 0.0 then
     Exit;
 
@@ -401,18 +416,24 @@ begin
   SetLength(FThreads, TMath.Min(TMath.Ceil(aIndices.Height / h),
     FMaxCPUThreads));
   next := 0;
-  // Run threads
-  for t := 0 to High(FThreads) do
+  if Length(FThreads) > 0 then
   begin
-    thread := TSynthesizerThread.CreateOwned(Self);
-    thread.subPass := subPass and 3;
-    thread.RegionLeft := 0;
-    thread.RegionTop := next;
-    thread.RegionWidth := aIndices.Width;
-    thread.RegionHeight := TMath.Clamp(aIndices.Height - next, 0, h);
-    thread.Start;
-    next := next + h;
-    FThreads[t] := thread;
+    // Run threads
+    for t := 0 to High(FThreads) do
+    begin
+      thread := TSynthesizerThread.CreateOwned(Self);
+      thread.subPass := subPass and 3;
+      thread.RegionLeft := 0;
+      thread.RegionTop := next;
+      thread.RegionWidth := aIndices.Width;
+      thread.RegionHeight := TMath.Clamp(aIndices.Height - next, 0, h);
+      thread.Start;
+      next := next + h;
+      FThreads[t] := thread;
+    end;
+  end
+  else begin
+    CorrectionSubpassInRegion(subPass, 0, 0, aIndices.Width, aIndices.Height);
   end;
 end;
 
@@ -439,11 +460,13 @@ begin
   spacing := 1 shl FProcessedLevel;
   // apply neighborhood matching to region
   for i := ry to ry + rh - 1 do
+  begin
     for j := rx to rx + rw - 1 do
     begin
       // only process one pixel in 4 (sub-pass mechanism)
       if ((i and 1) <> ci) or ((j and 1) <> cj) then
         continue;
+
       /// Gather current neighborhood in synthesized texture
       syN := GatherNeighborhood(j, i, FProcessedLevel);
       syN_V6D := ZERO_VECTOR6D;
@@ -516,7 +539,13 @@ begin
         best := n;
       // replace in output
       FWriteBuffer.At[j, i] := best;
-    end; // for ij
+    end; // for j
+
+    // Atomic counter
+    FLock.Enter;
+    Source.CycleCounter := Source.CycleCounter + rw;
+    FLock.Leave;
+  end; // for i
 end;
 
 function TSynthesizer.GatherNeighborhood(j: integer; i: integer; step: integer)
@@ -566,6 +595,7 @@ begin
   result.InternalFormat := GL_RGB8;
   result.ColorFormat := GL_RGB;
   result.ElementSize := 3;
+  result.DataType := GL_UNSIGNED_BYTE;
   result.DataSize := result.Width * result.Height * result.ElementSize;
   GetMem(result.Data, result.DataSize);
 
@@ -608,6 +638,7 @@ begin
   result.ColorFormat := GL_RGB;
   result.ElementSize := 3;
 {$ENDIF}
+  result.DataType := GL_UNSIGNED_BYTE;
   result.DataSize := img.Width * img.Height * result.ElementSize;
   GetMem(result.Data, result.DataSize);
 
@@ -618,14 +649,31 @@ begin
     for j := 0 to img.Width - 1 do
     begin
       xy := img.At[j, i];
+{$IFDEF PACKED_EXEMPLAR_RG}
+      p[0] := floor(256 * TIVec2Array2D.WrapAccess(xy[0],
+        FAnalysisData.Exemplar.Width) / FAnalysisData.Exemplar.Width);
+      p[1] := floor(256 * TIVec2Array2D.WrapAccess(xy[1],
+        FAnalysisData.Exemplar.Height) / FAnalysisData.Exemplar.Height);
+{$ELSE}
       p[0] := 0;
       p[2] := floor(256 * TIVec2Array2D.WrapAccess(xy[0],
         FAnalysisData.Exemplar.Width) / FAnalysisData.Exemplar.Width);
       p[1] := floor(256 * TIVec2Array2D.WrapAccess(xy[1],
         FAnalysisData.Exemplar.Height) / FAnalysisData.Exemplar.Height);
+{$ENDIF}
       Inc(p, result.ElementSize);
     end;
   end;
+end;
+
+function TSynthesizer.GetProgress: Single;
+var
+  l: integer;
+begin
+  Result := 0;
+  for l := 0 to High(FSynthesized) do
+    result := result + FSynthesized[l].CycleCounter;
+  result := result / FTotalCycles;
 end;
 
 function TSynthesizer.GetDone: boolean;

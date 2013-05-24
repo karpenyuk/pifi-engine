@@ -50,6 +50,8 @@ type
     FWidth, FHeight: integer;
     FWidthAccess, FHeightAccess: TEdgePolicy;
     FWidthAccessFunc, FHeightAccessFunc: TEdgePolicyFunc;
+    FCycleCounter: integer;
+
     function GetItem(x, y: integer): IVec2;
     procedure SetItem(x, y: integer; const aValue: IVec2);
     procedure SetWidthAccessPolisy(ap: TEdgePolicy);
@@ -71,6 +73,8 @@ type
     property HeightAccessPolisy: TEdgePolicy read FHeightAccess
       write SetHeightAccessPolisy;
     property At[x, y: integer]: IVec2 read GetItem write SetItem; default;
+    // For progressing computing
+    property CycleCounter: integer read FCycleCounter write FCycleCounter;
   end;
 
   TNeighborhoods = class
@@ -176,6 +180,7 @@ type
     Neighborhoods: array[0..1] of TImageDesc;
     NeighbScale: TVector6f;
     NeighbOffset: TVector6f;
+    CycleCounter: integer;
   end;
   PAnalyzedLevel = ^TAnalyzedLevel;
 
@@ -297,6 +302,7 @@ begin
   FWidth := source.FWidth;
   FHeight := source.FHeight;
   FData := Copy(source.FData, 0, Length(source.FData));
+  FCycleCounter := source.FCycleCounter;
 end;
 
 procedure TIVec2Array2D.SetWidthAccessPolisy(ap: TEdgePolicy);

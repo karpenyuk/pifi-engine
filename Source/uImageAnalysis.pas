@@ -15,6 +15,8 @@ type
   TAnalyzerThread = class;
 
   TAnalyzer = class
+  private
+    function GetProgress: Single;
   protected
     FAccessFunc: TEdgePolicyFunc;
     FAnalysisData: TAnalysisData;
@@ -22,7 +24,7 @@ type
     FMaxCPUThreads: integer;
     // Gathers all neighborhoods of the exemplar stack level
     procedure GatherNeighborhoods(alevel: integer);
-    procedure ProjectStackLevelTo2D(alevel: PAnalyzedLevel);
+    procedure ProjectStackLevelTo2D(aLevel: integer);
     // Using principal component analysis (PCA)
     // projecting pixel neighborhoods into a lower-dimensional space (6D vector)
     procedure ProjectNeighbTo6D(alevel: integer);
@@ -38,7 +40,7 @@ type
     procedure Start;
     procedure Process;
     function Stop: Boolean;
-    property Done: boolean read GetDone;
+    property Progress: Single read GetProgress;
 
     // Analyzes one exemplar stack level
     procedure AnalyzeStackLevel(alevel: integer);
@@ -54,9 +56,12 @@ type
   private
     FAnalyzer: TAnalyzer;
     FData: PAnalyzedLevel;
+    FTatalCycle: integer;
+    function GetProgress: Single;
   protected
     constructor CreateOwned(aOwner: TAnalyzer; alevel: PAnalyzedLevel);
     procedure Execute; override;
+    property Progress: Single read GetProgress;
   end;
 
 implementation
@@ -72,6 +77,7 @@ uses
 
 procedure TAnalyzer.AnalyzeStackLevel(alevel: integer);
 var
+  Level: PAnalyzedLevel;
   w, h, i, j, k, n: integer;
   ANNPoints: TANNpointArray;
   queryPt: TANNpoint; // query point
@@ -82,6 +88,7 @@ var
   neigh: TNeighborhood3c;
   KNearest: TMostSimilar;
 begin
+  Level := FAnalysisData.Levels[aLevel];
   w := FAnalysisData.Neighborhoods.Width;
   h := FAnalysisData.Neighborhoods.Height;
   // build ANN structure
@@ -98,6 +105,7 @@ begin
       for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         ANNPoints[k][n] := neigh[n]; // singe -> double
       Inc(k);
+      Inc(Level.CycleCounter);
     end;
   // build search structure
   kdTree := TANNkd_tree.CreateFromPointArray(ANNPoints, NEIGHBOUR_SIZE_3COLOR);
@@ -120,6 +128,8 @@ begin
         KNearest[n][1] := Idx div w;
       end;
       FAnalysisData.kNearests.At[j, i, alevel] := KNearest;
+
+      Inc(Level.CycleCounter);
     end;
 
   kdTree.Free;
@@ -141,12 +151,17 @@ end;
 
 procedure TAnalyzer.GatherNeighborhoods(alevel: integer);
 var
+  Level : PAnalyzedLevel;
   i, j: integer;
 begin
+  Level := FAnalysisData.Levels[aLevel];
   for i := 0 to FAnalysisData.Exemplar.Height - 1 do
     for j := 0 to FAnalysisData.Exemplar.Width - 1 do
+    begin
       FAnalysisData.Neighborhoods.At[j, i, alevel] :=
         FAnalysisData.GatherNeighborhood(j, i, alevel);
+      Inc(Level.CycleCounter);
+    end;
 end;
 
 function TAnalyzer.GetDone: boolean;
@@ -168,6 +183,21 @@ begin
     result := FAnalysisData.LevelsAmount
   else
     result := 0;
+end;
+
+function TAnalyzer.GetProgress: Single;
+var
+  t: integer;
+begin
+  Result := 0;
+  for t := 0 to High(FThreads) do
+    result := result + FThreads[t].Progress;
+
+  if Length(FThreads) > 0 then
+    Result := Result / Length(FThreads);
+
+  if Result >= 1.0 then
+    FAnalysisData.IsValid := True;
 end;
 
 function TAnalyzer.GetToroidality: boolean;
@@ -205,6 +235,7 @@ const
   MAX6D: TVector6f = (1E30, 1E30, 1E30, 1E30, 1E30, 1E30);
   MIN6D: TVector6f = (-1E30, -1E30, -1E30, -1E30, -1E30, -1E30);
 var
+  Level: PAnalyzedLevel;
   x: TDouble2DArray;
   Dispersion: TDouble1DArray;
   PCA: TDouble2DArray;
@@ -214,6 +245,7 @@ var
   Neighb: TNeighborhood3c;
   p1, p2: PByte;
 begin
+  Level := FAnalysisData.Levels[aLevel];
   w := FAnalysisData.Neighborhoods.Width;
   h := FAnalysisData.Neighborhoods.Height;
 
@@ -227,6 +259,8 @@ begin
       for mj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         x[row][mj] := Neighb[mj];
       Inc(row);
+
+      Inc(Level.CycleCounter);
     end;
 
   // run principal component analysis
@@ -261,6 +295,8 @@ begin
         if V6D[k] < minValue[k] then
           minValue[k] := V6D[k];
       end;
+
+      Inc(Level.CycleCounter);
     end;
 
   // scale neighbors to byte size
@@ -318,12 +354,15 @@ begin
       p2[1] := floor(255 * V6D[4]);
       p2[2] := floor(255 * V6D[5]);
       p2[2] := $FF;
+
+      Inc(Level.CycleCounter);
     end;
   end;
 end;
 
-procedure TAnalyzer.ProjectStackLevelTo2D(alevel: PAnalyzedLevel);
+procedure TAnalyzer.ProjectStackLevelTo2D(aLevel: integer);
 var
+  Level: PAnalyzedLevel;
   x: TDouble2DArray;
   p: PByte;
   Dispersion: TDouble1DArray;
@@ -334,6 +373,7 @@ var
   C2, iterC2: PVector;
   minValue, maxValue: TVector;
 begin
+  Level := FAnalysisData.Levels[aLevel];
   w := FAnalysisData.Exemplar.Width;
   h := FAnalysisData.Exemplar.Height;
   esize := FAnalysisData.Exemplar.ElementSize;
@@ -351,6 +391,8 @@ begin
       x[row][2] := INV255 * p[2];
       Inc(row);
       Inc(p, esize);
+
+      Inc(Level.CycleCounter);
     end;
   end;
 
@@ -361,7 +403,7 @@ begin
   if Info = 1 then
     for i := 0 to 1 do
       for j := 0 to 2 do
-        alevel.ColorPCAMatrix[j, i] := PCA[j, i];
+        Level.ColorPCAMatrix[j, i] := PCA[j, i];
 
   GetMem(C2, w * h * SizeOf(TVector));
   minValue := TVector.Make(1E30, 1E30);
@@ -377,11 +419,11 @@ begin
       Inc(p, i * w * esize);
       for j := 0 to w - 1 do
       begin
-        clr.x := alevel.ColorPCAMatrix[0, 0] * p[0] + alevel.ColorPCAMatrix
-          [1, 0] * p[1] + alevel.ColorPCAMatrix[2, 0] * p[2];
+        clr.x := Level.ColorPCAMatrix[0, 0] * p[0] + Level.ColorPCAMatrix
+          [1, 0] * p[1] + Level.ColorPCAMatrix[2, 0] * p[2];
 
-        clr.y := alevel.ColorPCAMatrix[0, 1] * p[0] + alevel.ColorPCAMatrix
-          [1, 1] * p[1] + alevel.ColorPCAMatrix[2, 1] * p[2];
+        clr.y := Level.ColorPCAMatrix[0, 1] * p[0] + Level.ColorPCAMatrix
+          [1, 1] * p[1] + Level.ColorPCAMatrix[2, 1] * p[2];
 
         maxValue := TVector.MaxVector(maxValue, clr);
         minValue := TVector.MinVector(minValue, clr);
@@ -389,18 +431,20 @@ begin
         iterC2^ := clr;
         Inc(iterC2);
         Inc(p, esize);
+
+        Inc(Level.CycleCounter);
       end;
     end;
 
-    alevel.ColorOffset := minValue;
+    Level.ColorOffset := minValue;
     clr := maxValue - minValue;
     if clr.x = 0 then
       clr.x := 1;
     if clr.y = 0 then
       clr.y := 1;
-    alevel.ColorScale := clr;
+    Level.ColorScale := clr;
 
-    with alevel^ do
+    with Level^ do
     begin
       FillChar(ProjectedImage, SizeOf(TImageDesc), $00);
       ProjectedImage.Width := w;
@@ -424,15 +468,17 @@ begin
     iterC2 := C2;
     for i := 0 to h - 1 do
     begin
-      p := alevel.ProjectedImage.Data;
+      p := Level.ProjectedImage.Data;
       Inc(p, i * w * esize);
       for j := 0 to w - 1 do
       begin
         clr := iterC2^;
-        p[0] := Floor(255 * (clr.x - minValue.x) / alevel.ColorScale.x);
-        p[1] := Floor(255 * (clr.y - minValue.y) / alevel.ColorScale.y);
+        p[0] := Floor(255 * (clr.x - minValue.x) / Level.ColorScale.x);
+        p[1] := Floor(255 * (clr.y - minValue.y) / Level.ColorScale.y);
         Inc(p, esize);
         Inc(iterC2);
+
+        Inc(Level.CycleCounter);
       end;
     end;
   finally
@@ -478,9 +524,10 @@ begin
         FAnalysisData.Levels[l]);
   end
   else
+  begin
     for l := 0 to FAnalysisData.LevelsAmount - 1 do
     begin
-      ProjectStackLevelTo2D(FAnalysisData.Levels[l]);
+      ProjectStackLevelTo2D(l);
       // Gather neighborhoods and store them for use during analysis and synthesis
       GatherNeighborhoods(l);
       // Compute lower-dimension neighborhoods
@@ -488,6 +535,8 @@ begin
       // Analyze stack level - search most similar neighborhoods
       AnalyzeStackLevel(l);
     end;
+    FAnalysisData.IsValid := True;
+  end;
 end;
 
 function TAnalyzer.Stop: Boolean;
@@ -518,12 +567,14 @@ begin
   inherited Create(true);
   FAnalyzer := aOwner;
   FData := alevel;
+  FTatalCycle := 5 * FData.FloatImage.Width * FData.FloatImage.Height + 4 *
+    aOwner.FAnalysisData.Exemplar.Width * aOwner.FAnalysisData.Exemplar.Height;
 end;
 
 procedure TAnalyzerThread.Execute;
 begin
   // Project 3D color exemplar stack level to 2D color
-  FAnalyzer.ProjectStackLevelTo2D(FData);
+  FAnalyzer.ProjectStackLevelTo2D(FData.LevelId);
   // Gather neighborhoods and store them for use during analysis and synthesis
   FAnalyzer.GatherNeighborhoods(FData.LevelId);
   // Compute lower-dimension neighborhoods
@@ -531,6 +582,12 @@ begin
   // Analyze stack level - search most similar neighborhoods
   FAnalyzer.AnalyzeStackLevel(FData.LevelId);
 end;
+
+function TAnalyzerThread.GetProgress: Single;
+begin
+  Result := FData.CycleCounter / FTatalCycle;
+end;
+
 {$ENDREGION}
 
 end.
