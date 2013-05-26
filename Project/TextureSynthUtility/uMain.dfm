@@ -461,20 +461,16 @@ object MainForm: TMainForm
         object Label9: TLabel
           Left = 3
           Top = 249
-          Width = 94
+          Width = 64
           Height = 13
-          Caption = 'Number of threads:'
+          Caption = 'CPU threads:'
         end
-        object CheckBox3: TCheckBox
-          Left = 3
-          Top = 225
-          Width = 163
-          Height = 17
-          Caption = 'Exemplar is toroidal image'
-          Checked = True
-          State = cbChecked
-          TabOrder = 0
-          OnClick = CheckBox3Click
+        object Label15: TLabel
+          Left = 7
+          Top = 228
+          Width = 59
+          Height = 13
+          Caption = 'Image tiling:'
         end
         object AnalyzeButton: TButton
           Left = 58
@@ -482,17 +478,17 @@ object MainForm: TMainForm
           Width = 93
           Height = 24
           Caption = 'Analyze'
-          TabOrder = 1
+          TabOrder = 0
           OnClick = AnalyzeButtonClick
         end
         object SpinEdit1: TSpinEdit
-          Left = 103
+          Left = 73
           Top = 246
           Width = 42
           Height = 22
           MaxValue = 32
           MinValue = 0
-          TabOrder = 2
+          TabOrder = 1
           Value = 2
         end
         object SaveDataButton: TButton
@@ -501,7 +497,7 @@ object MainForm: TMainForm
           Width = 46
           Height = 24
           Caption = 'Save'
-          TabOrder = 3
+          TabOrder = 2
           OnClick = SaveDataButtonClick
         end
         object LoadDataButton: TButton
@@ -510,7 +506,7 @@ object MainForm: TMainForm
           Width = 46
           Height = 24
           Caption = 'Load'
-          TabOrder = 4
+          TabOrder = 3
           OnClick = LoadDataButtonClick
         end
         object AnalysisProgressBar: TProgressBar
@@ -518,7 +514,20 @@ object MainForm: TMainForm
           Top = 304
           Width = 197
           Height = 18
+          TabOrder = 4
+        end
+        object TilingComboBox: TComboBox
+          Left = 72
+          Top = 225
+          Width = 131
+          Height = 21
           TabOrder = 5
+          Text = 'Repeated'
+          Items.Strings = (
+            'Non repeated'
+            'Repeated'
+            'Non repeated double'
+            'Repeated double')
         end
       end
       object TabSheet2: TTabSheet
@@ -534,9 +543,9 @@ object MainForm: TMainForm
         object Label3: TLabel
           Left = 3
           Top = 249
-          Width = 94
+          Width = 64
           Height = 13
-          Caption = 'Number of threads:'
+          Caption = 'CPU threads:'
         end
         object Label4: TLabel
           Left = 3
@@ -638,23 +647,13 @@ object MainForm: TMainForm
           Text = '1.0'
           OnChange = Edit3Change
         end
-        object CheckBox1: TCheckBox
-          Left = 3
-          Top = 226
-          Width = 171
-          Height = 17
-          Caption = 'Autosave result after synthesis'
-          Checked = True
-          State = cbChecked
-          TabOrder = 7
-        end
         object SynthesizeButton: TButton
           Left = 58
           Top = 274
           Width = 93
           Height = 24
           Caption = 'Synthesize'
-          TabOrder = 8
+          TabOrder = 7
           OnClick = SynthesizeButtonClick
         end
         object SynthProgressBar: TProgressBar
@@ -662,7 +661,7 @@ object MainForm: TMainForm
           Top = 304
           Width = 197
           Height = 18
-          TabOrder = 9
+          TabOrder = 8
         end
       end
       object TabSheet3: TTabSheet
@@ -874,9 +873,6 @@ object MainForm: TMainForm
     Height = 592
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
-    Context.DepthBits = 24
-    Context.StencilBits = 8
-    Context.AALevel = 0
     Align = alClient
     OnCanResize = GLViewer1CanResize
   end

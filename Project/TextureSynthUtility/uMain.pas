@@ -29,7 +29,6 @@ type
     Label2: TLabel;
     Image1: TImage;
     Label9: TLabel;
-    CheckBox3: TCheckBox;
     AnalyzeButton: TButton;
     SpinEdit1: TSpinEdit;
     TabSheet2: TTabSheet;
@@ -46,7 +45,6 @@ type
     Edit4: TEdit;
     Edit5: TEdit;
     Edit3: TEdit;
-    CheckBox1: TCheckBox;
     SynthesizeButton: TButton;
     TabSheet3: TTabSheet;
     Label10: TLabel;
@@ -75,6 +73,8 @@ type
     LoadDataButton: TButton;
     AnalysisProgressBar: TProgressBar;
     SynthProgressBar: TProgressBar;
+    TilingComboBox: TComboBox;
+    Label15: TLabel;
     procedure TrackBar9Change(Sender: TObject);
     procedure ComboBox2Change(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
@@ -173,7 +173,6 @@ end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 var
-  img: TImageDesc;
   x, y, e: integer;
   p: PByte;
   c: Graphics.TColor;
@@ -224,22 +223,27 @@ procedure TMainForm.AnalyzeButtonClick(Sender: TObject);
 var
   p: Single;
   t: Double;
-  n: integer;
 begin
   AnalyzeButton.Enabled := false;
   SynthesizeButton.Enabled := false;
 
   Analyzer.MaxCPUThreads := SpinEdit1.Value;
+  case TilingComboBox.ItemIndex of
+    0: AnalysisData.EdgePolicy := epNonRepeat;
+    1: AnalysisData.EdgePolicy := epRepeat;
+    2: AnalysisData.EdgePolicy := epNonRepeatDbl;
+    3: AnalysisData.EdgePolicy := epRepeatDbl;
+  end;
+
   Memo1.Lines.Add('Analysis started');
   t := _GetTime;
   Analyzer.Start;
-  n := 0;
   p := 0;
   AnalysisProgressBar.Position := 0;
   while p < 1 do
   begin
     Analyzer.Process;
-    Sleep(100);
+    Sleep(10);
     p := Analyzer.Progress;
     AnalysisProgressBar.Position := Round(100 * p);
     Application.ProcessMessages;
@@ -286,7 +290,7 @@ begin
     while p < 1 do
     begin
       Synthesizer.Process;
-      Sleep(100);
+      Sleep(10);
       p := Synthesizer.Progress;
       SynthProgressBar.Position := Round(100 * p);
       Application.ProcessMessages;
@@ -346,6 +350,14 @@ begin
       end;
     Image1.Picture.Assign(bmp);
     bmp.Free;
+
+    case AnalysisData.EdgePolicy of
+      epNonRepeat: TilingComboBox.ItemIndex := 0;
+      epRepeat: TilingComboBox.ItemIndex := 1;
+      epNonRepeatDbl: TilingComboBox.ItemIndex := 2;
+      epRepeatDbl: TilingComboBox.ItemIndex := 3;
+    end;
+
     Memo1.Lines.Add('Analysis data loaded.');
     AnalysisProgressBar.Position := 100;
     TextureChaged[0] := True;
@@ -502,8 +514,7 @@ end;
 
 // Jitter control
 procedure TMainForm.TrackBar1Change(Sender: TObject);
-var
-  L: integer;
+//var  L: integer;
 begin
   // L := TTrackBar(Sender).Tag;
   // if L < GPUSynthesizer.NumLevels then begin
@@ -558,8 +569,7 @@ end;
 
 procedure TMainForm.GLCadencerProgress(Sender: TObject;
   const deltaTime, newTime: Double);
-var
-  L: integer;
+//var L: integer;
 begin
   { KeyDeltaTime := KeyDeltaTime + deltaTime;
     if KeyDeltaTime > 0.1 then begin
@@ -746,7 +756,11 @@ begin
         h := PatchesImage.Height;
       end
   else
+  begin
+    w := GLViewer1.Width;
+    h := GLViewer1.Height;
     glBindTexture(GL_TEXTURE_2D, 0);
+  end;
   end;
 
   ratio := TVector.Make(GLViewer1.Width / w, GLViewer1.Height / h);

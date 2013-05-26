@@ -71,12 +71,11 @@
 			<DCC_RemoteDebug>true</DCC_RemoteDebug>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+			<DCC_RangeChecking>true</DCC_RangeChecking>
+			<DCC_MapFile>3</DCC_MapFile>
 			<DCC_Optimize>true</DCC_Optimize>
 			<Icon_MainIcon>..\Common.ico</Icon_MainIcon>
-			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<DCC_RangeChecking>true</DCC_RangeChecking>
-			<DCC_IOChecking>false</DCC_IOChecking>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<DCC_ExeOutput>.\</DCC_ExeOutput>
 			<DCC_RemoteDebug>false</DCC_RemoteDebug>
