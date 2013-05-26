@@ -7,6 +7,7 @@ uses
 
 const
   NEIGHBOUR_DIM = 5;
+  HALF_NEIGHBOUR_DIM = 5 div 2;
   NEIGHBOUR_SIZE_2COLOR = 2 * NEIGHBOUR_DIM * NEIGHBOUR_DIM;
   NEIGHBOUR_SIZE_3COLOR = 3 * NEIGHBOUR_DIM * NEIGHBOUR_DIM;
   SIMILAR_NEIGHBOUR_SIZE = 8;
@@ -16,14 +17,31 @@ const
   GL_RG = $8227;
   GL_RGB = $1907;
   GL_RGBA = $1908;
+  GL_BGR = $80E0;
+  GL_BGRA = $80E1;
   GL_RG8 = $822B;
   GL_RGB8 = $8051;
   GL_RGBA8 = $8058;
   GL_UNSIGNED_BYTE = $1401;
 
 type
-  TEdgePolicy = (epWrap, epClamp, epMirror);
-  TEdgePolicyFunc = function(aCoord, aSize: integer): integer of object;
+  TEdgePolicy = (
+    epNonRepeat,
+    epRepeat,
+    epNonRepeatDbl,
+    epRepeatDbl);
+
+  TEdgePolicyFunc = function(aCoord, aSize: integer; aLoc: integer = 0): integer of object;
+  EdgePolicyFor = class
+    class function GetFunc(aPolicy: TEdgePolicy): TEdgePolicyFunc;
+    class function GetFuncN(aPolicy: TEdgePolicy): TEdgePolicyFunc;
+    class function RepeatedImage(c, size: integer; aLoc: integer = 0): integer;
+    class function NonRepeatedImage(c, size: integer; aLoc: integer = 0): integer;
+    class function MirrorRepeatedImage(c, size: integer; aLoc: integer = 0): integer;
+    class function RepeatedDblImage(c, size: integer; aLoc: integer = 0): integer;
+    class function NonRepeatedDblImage(c, size: integer; aLoc: integer = 0): integer;
+    class function MirrorRepeatedDblImage(c, size: integer; aLoc: integer = 0): integer;
+  end;
 
   IVec2 = array [0 .. 1] of integer;
   TNeighborhood2c = array [0 .. NEIGHBOUR_SIZE_2COLOR - 1] of single;
@@ -48,30 +66,26 @@ type
   private
     FData: array of IVec2;
     FWidth, FHeight: integer;
-    FWidthAccess, FHeightAccess: TEdgePolicy;
+    FWidthPolicy, FHeightPolicy: TEdgePolicy;
     FWidthAccessFunc, FHeightAccessFunc: TEdgePolicyFunc;
     FCycleCounter: integer;
 
     function GetItem(x, y: integer): IVec2;
     procedure SetItem(x, y: integer; const aValue: IVec2);
-    procedure SetWidthAccessPolisy(ap: TEdgePolicy);
-    procedure SetHeightAccessPolisy(ap: TEdgePolicy);
+    procedure SetWidthEdgePolisy(ap: TEdgePolicy);
+    procedure SetHeightEdgePolisy(ap: TEdgePolicy);
   public
     constructor Create(w, h: integer);
 
     procedure Clear(const aClearValue: IVec2);
     procedure Assign(source: TIVec2Array2D);
 
-    class function WrapAccess(c, size: integer): integer;
-    class function ClampAccess(c, size: integer): integer;
-    class function MirrorAccess(c, size: integer): integer;
-
     property Width: integer read FWidth;
     property Height: integer read FHeight;
-    property WidthAccessPolisy: TEdgePolicy read FWidthAccess
-      write SetWidthAccessPolisy;
-    property HeightAccessPolisy: TEdgePolicy read FHeightAccess
-      write SetHeightAccessPolisy;
+    property WidthEdgePolisy: TEdgePolicy read FWidthPolicy
+      write SetWidthEdgePolisy;
+    property HeightEdgePolisy: TEdgePolicy read FHeightPolicy
+      write SetHeightEdgePolisy;
     property At[x, y: integer]: IVec2 read GetItem write SetItem; default;
     // For progressing computing
     property CycleCounter: integer read FCycleCounter write FCycleCounter;
@@ -189,16 +203,20 @@ type
     // Exemplar image
     FExemplar: TImageDesc;
     FLevels: array of TAnalyzedLevel;
-    FToroidality: boolean;
     FkNearests: TMostSimilars;
     FNeighborhoods: TNeighborhoods;
+    FEdgePolicy: TEdgePolicy;
+    FEdgeFunc: TEdgePolicyFunc;
+    FNEdgeFunc: TEdgePolicyFunc;
     FValid: Boolean;
     function GetLevelsAmount: integer;
     function GetImage(alevel: integer): PImageDesc;
     function GetFloatImage(level: integer): TFloatImage;
     function GetLevel(alevel: integer): PAnalyzedLevel;
     function GetExemplar: PImageDesc;
+    procedure SetEdgePolicy(const Value: TEdgePolicy);
   public
+    constructor Create;
     destructor Destroy; override;
 
     procedure SaveToFile(const aFileName: string);
@@ -219,7 +237,7 @@ type
     property kNearests: TMostSimilars read FkNearests;
 
     property LevelsAmount: integer read GetLevelsAmount;
-    property Toroidality: Boolean read FToroidality write FToroidality;
+    property EdgePolicy: TEdgePolicy read FEdgePolicy write SetEdgePolicy;
     // Flag to check data validation
     property IsValid: Boolean read FValid write FValid;
   end;
@@ -229,27 +247,87 @@ implementation
 uses
   Math, uMath, uMiscUtils;
 
-{$REGION 'TIVec2Array2D'}
 
+{$REGION 'EdgePolicyFor'}
 
-class function TIVec2Array2D.WrapAccess(c, size: integer): integer;
+class function EdgePolicyFor.RepeatedDblImage(c, size, aLoc: integer): integer;
+var
+  halfsize, q: integer;
+begin
+  halfsize := size div 2;
+  q := halfsize * (aLoc div halfsize);
+  result := q + RepeatedImage(c - q, halfsize);
+end;
+
+class function EdgePolicyFor.RepeatedImage(c, size: integer;
+  aLoc: integer): integer;
 begin
   result := c mod size;
   if result < 0 then
-      result := result + size;
+    result := result + size;
 end;
 
-class function TIVec2Array2D.ClampAccess(c, size: integer): integer;
+class function EdgePolicyFor.NonRepeatedDblImage(c, size,
+  aLoc: integer): integer;
+var
+  halfsize, q: integer;
+begin
+  halfsize := size div 2;
+  q := halfsize * (aLoc div halfsize);
+  result := q + NonRepeatedImage(c - q, halfsize);
+end;
+
+class function EdgePolicyFor.NonRepeatedImage(c, size: integer;
+  aLoc: integer): integer;
 begin
   if c < 0 then
-      result := 0
+    result := 0
   else if c >= size then
-      result := size - 1
+    result := size - 1
   else
-      result := c;
+    result := c;
 end;
 
-class function TIVec2Array2D.MirrorAccess(c, size: integer): integer;
+class function EdgePolicyFor.GetFunc(aPolicy: TEdgePolicy): TEdgePolicyFunc;
+begin
+  case aPolicy of
+    epRepeat:
+      result := RepeatedImage;
+    epNonRepeat:
+      result := NonRepeatedImage;
+    epNonRepeatDbl:
+      result := NonRepeatedDblImage;
+    epRepeatDbl:
+      result := RepeatedDblImage;
+  end;
+end;
+
+class function EdgePolicyFor.GetFuncN(aPolicy: TEdgePolicy): TEdgePolicyFunc;
+begin
+  case aPolicy of
+    epRepeat:
+      result := RepeatedImage;
+    epNonRepeat:
+      result := MirrorRepeatedImage;
+    epRepeatDbl:
+      result := RepeatedDblImage;
+    epNonRepeatDbl:
+      result := MirrorRepeatedDblImage;
+  end;
+end;
+
+class function EdgePolicyFor.MirrorRepeatedDblImage(c, size,
+  aLoc: integer): integer;
+var
+  halfsize, q: integer;
+begin
+  halfsize := size div 2;
+  q := halfsize * (aLoc div halfsize);
+  result := q + MirrorRepeatedImage(c - q, halfsize);
+end;
+
+class function EdgePolicyFor.MirrorRepeatedImage(c, size: integer;
+  aLoc: integer): integer;
 var
   m: integer;
 begin
@@ -264,12 +342,15 @@ begin
       result := size - result - 1;
 end;
 
+{$ENDREGION}
+{$REGION 'TIVec2Array2D'}
+
 constructor TIVec2Array2D.Create(w: integer; h: integer);
 begin
-  FWidthAccess := epWrap;
-  FHeightAccess := epWrap;
-  FWidthAccessFunc := WrapAccess;
-  FHeightAccessFunc := WrapAccess;
+  FWidthPolicy := epRepeat;
+  FHeightPolicy := epRepeat;
+  FWidthAccessFunc := EdgePolicyFor.RepeatedImage;
+  FHeightAccessFunc := EdgePolicyFor.RepeatedImage;
   FWidth := w;
   FHeight := h;
   SetLength(FData, w * h);
@@ -301,39 +382,29 @@ procedure TIVec2Array2D.Assign(source: TIVec2Array2D);
 begin
   FWidth := source.FWidth;
   FHeight := source.FHeight;
+  FWidthPolicy := source.FWidthPolicy;
+  FHeightPolicy := source.FHeightPolicy;
+  FWidthAccessFunc := source.FWidthAccessFunc;
+  FHeightAccessFunc := source.FHeightAccessFunc;
   FData := Copy(source.FData, 0, Length(source.FData));
   FCycleCounter := source.FCycleCounter;
 end;
 
-procedure TIVec2Array2D.SetWidthAccessPolisy(ap: TEdgePolicy);
+procedure TIVec2Array2D.SetWidthEdgePolisy(ap: TEdgePolicy);
 begin
-  if ap <> FWidthAccess then
+  if ap <> FWidthPolicy then
   begin
-    FWidthAccess := ap;
-    case FWidthAccess of
-      epWrap:
-        FWidthAccessFunc := WrapAccess;
-      epClamp:
-        FWidthAccessFunc := ClampAccess;
-      epMirror:
-        FWidthAccessFunc := MirrorAccess;
-    end;
+    FWidthPolicy := ap;
+    FWidthAccessFunc := EdgePolicyFor.GetFunc(ap);
   end;
 end;
 
-procedure TIVec2Array2D.SetHeightAccessPolisy(ap: TEdgePolicy);
+procedure TIVec2Array2D.SetHeightEdgePolisy(ap: TEdgePolicy);
 begin
-  if ap <> FHeightAccess then
+  if ap <> FHeightPolicy then
   begin
-    FHeightAccess := ap;
-    case FHeightAccess of
-      epWrap:
-        FHeightAccessFunc := WrapAccess;
-      epClamp:
-        FHeightAccessFunc := ClampAccess;
-      epMirror:
-        FHeightAccessFunc := MirrorAccess;
-    end;
+    FHeightPolicy := ap;
+    FHeightAccessFunc := EdgePolicyFor.GetFunc(ap);
   end;
 end;
 {$ENDREGION}
@@ -357,7 +428,6 @@ var
   i, j, k, mi, mj, x, y: integer;
   p: PByte;
   n: TNeighborhood3c;
-  v6: TVector6f;
 begin
   FillChar(result, SizeOf(TImageDesc), $00);
 
@@ -385,9 +455,9 @@ begin
           y := i * (NEIGHBOUR_DIM + 1) + mi;
           p := result.Data;
           Inc(p, (x + y * result.Width) * result.ElementSize);
-          p[0] := floor(255 * n[k]);
-          p[1] := floor(255 * n[k + 1]);
-          p[2] := floor(255 * n[k + 2]);
+          p[0] := floor(n[k]);
+          p[1] := floor(n[k + 1]);
+          p[2] := floor(n[k + 2]);
           p[3] := $FF;
           Inc(k, 3);
         end;
@@ -398,8 +468,8 @@ end;
 function TNeighborhoods.GetNeighb(x: integer; y: integer; z: integer)
   : TNeighborhood3c;
 begin
-  x := TIVec2Array2D.WrapAccess(x, FWidth);
-  y := TIVec2Array2D.WrapAccess(y, FHeight);
+  x := EdgePolicyFor.RepeatedImage(x, FWidth);
+  y := EdgePolicyFor.RepeatedImage(y, FHeight);
   result := FData[x + y * FWidth + z * FWidth * FHeight];
 end;
 
@@ -415,16 +485,16 @@ end;
 procedure TNeighborhoods.SetNeighb(x: integer; y: integer; z: integer;
   const ANeighborhood: TNeighborhood3c);
 begin
-  x := TIVec2Array2D.WrapAccess(x, FWidth);
-  y := TIVec2Array2D.WrapAccess(y, FHeight);
+  x := EdgePolicyFor.RepeatedImage(x, FWidth);
+  y := EdgePolicyFor.RepeatedImage(y, FHeight);
   FData[x + y * FWidth + z * FWidth * FHeight] := ANeighborhood;
 end;
 
 function TNeighborhoods.GetNeighb6D(x: integer; y: integer; z: integer)
   : TVector6f;
 begin
-  x := TIVec2Array2D.WrapAccess(x, FWidth);
-  y := TIVec2Array2D.WrapAccess(y, FHeight);
+  x := EdgePolicyFor.RepeatedImage(x, FWidth);
+  y := EdgePolicyFor.RepeatedImage(y, FHeight);
   result := FProjData[x + y * FWidth + z * FWidth * FHeight]
 end;
 
@@ -442,8 +512,8 @@ end;
 procedure TNeighborhoods.SetNeighb6D(x: integer; y: integer; z: integer;
   const ANeighborhood: TVector6f);
 begin
-  x := TIVec2Array2D.WrapAccess(x, FWidth);
-  y := TIVec2Array2D.WrapAccess(y, FHeight);
+  x := EdgePolicyFor.RepeatedImage(x, FWidth);
+  y := EdgePolicyFor.RepeatedImage(y, FHeight);
   FProjData[x + y * FWidth + z * FWidth * FHeight] := ANeighborhood;
 end;
 
@@ -487,8 +557,8 @@ end;
 function TMostSimilars.GetMostSimilar(x: integer; y: integer; z: integer)
   : TMostSimilar;
 begin
-  x := TIVec2Array2D.WrapAccess(x, FWidth);
-  y := TIVec2Array2D.WrapAccess(y, FHeight);
+  x := EdgePolicyFor.RepeatedImage(x, FWidth);
+  y := EdgePolicyFor.RepeatedImage(y, FHeight);
   result := FData[x + y * FWidth + z * FWidth * FHeight];
 end;
 
@@ -514,8 +584,8 @@ end;
 procedure TMostSimilars.SetMostSimilar(x, y, z: integer;
   const AMostSimilar: TMostSimilar);
 begin
-  x := TIVec2Array2D.WrapAccess(x, FWidth);
-  y := TIVec2Array2D.WrapAccess(y, FHeight);
+  x := EdgePolicyFor.RepeatedImage(x, FWidth);
+  y := EdgePolicyFor.RepeatedImage(y, FHeight);
   FData[x + y * FWidth + z * FWidth * FHeight] := AMostSimilar;
 end;
 
@@ -532,28 +602,41 @@ end;
 
 procedure TFloatImage.AssignFromImage(const aDesc: TImageDesc);
 var
-  i: integer;
+  i, r, b: integer;
   step: integer;
   p: PByte;
 begin
   Assert(aDesc.Data <> nil);
-  Assert((aDesc.ColorFormat = GL_RGB) or (aDesc.ColorFormat = GL_RGBA));
+  Assert((aDesc.ColorFormat = GL_RGB) or (aDesc.ColorFormat = GL_RGBA)
+    or (aDesc.ColorFormat = GL_BGR) or (aDesc.ColorFormat = GL_BGRA));
   Assert(aDesc.DataType = GL_UNSIGNED_BYTE);
 
   FWidth := aDesc.Width;
   FHeight := aDesc.Height;
   SetLength(FData, FWidth * FHeight);
-  if aDesc.ColorFormat = GL_RGB then
-      step := 3
-  else
-      step := 4;
+  r := 0;
+  b := 2;
+  step := 3;
+  case aDesc.ColorFormat of
+    GL_RGBA: step := 4;
+    GL_BGR: begin
+        r := 2;
+        b := 0;
+      end;
+    GL_BGRA:
+      begin
+        r := 2;
+        b := 0;
+        step := 4;
+      end;
+  end;
   p := aDesc.Data;
 
   for i := 0 to High(FData) do
   begin
-    FData[i].r := INV255 * p[0];
-    FData[i].g := INV255 * p[1];
-    FData[i].b := INV255 * p[2];
+    FData[i].r := p[r];
+    FData[i].g := p[1];
+    FData[i].b := p[b];
     Inc(p, step);
   end;
 end;
@@ -577,12 +660,10 @@ begin
 
   for i := 0 to High(FData) do
   begin
-    p^ := Floor(255 * FData[i].r);
-    Inc(p);
-    p^ := Floor(255 * FData[i].g);
-    Inc(p);
-    p^ := Floor(255 * FData[i].b);
-    Inc(p);
+    p[0] := Floor(FData[i].r);
+    p[1] := Floor(FData[i].g);
+    p[2] := Floor(FData[i].b);
+    Inc(p, 3);
   end;
 end;
 
@@ -650,10 +731,10 @@ begin
   i1 := i0 + 1;
 
   // apply access policy
-  j0 := TIVec2Array2D.WrapAccess(j0, FWidth);
-  j1 := TIVec2Array2D.WrapAccess(j1, FWidth);
-  i0 := TIVec2Array2D.WrapAccess(i0, FHeight);
-  i1 := TIVec2Array2D.WrapAccess(i1, FHeight);
+  j0 := EdgePolicyFor.RepeatedImage(j0, FWidth);
+  j1 := EdgePolicyFor.RepeatedImage(j1, FWidth);
+  i0 := EdgePolicyFor.RepeatedImage(i0, FHeight);
+  i1 := EdgePolicyFor.RepeatedImage(i1, FHeight);
 
   // compute interpolation fractions
   fj := (j - Floor(j));
@@ -820,6 +901,13 @@ end;
 {$REGION 'TAnalysisData'}
 
 
+constructor TAnalysisData.Create;
+begin
+  FEdgePolicy := epRepeat;
+  FEdgeFunc := EdgePolicyFor.RepeatedImage;
+  FNEdgeFunc := EdgePolicyFor.RepeatedImage;
+end;
+
 procedure TAnalysisData.CreateImageStack(aPyramid: TImagePyramid);
 var
   l, i, j, w, h: integer;
@@ -880,35 +968,30 @@ end;
 
 function TAnalysisData.GatherNeighborhood(x, y, z: integer): TNeighborhood3c;
 var
-  w, h, e, i, j, dj, di, nj, ni, spacing: integer;
+  img: PImageDesc;
+  w, h, e, i, j, nj, ni, spacing: integer;
   At: integer;
   p: PByte;
-  wraping: TEdgePolicyFunc;
 begin
-  if FToroidality then
-    wraping := TIVec2Array2D.WrapAccess
-  else
-    wraping := TIVec2Array2D.MirrorAccess;
   // Gather a neighborhood within the stack. Note that contrary to neighborhoods
   // in a regular image, neighbors are not next to each others in the stack but
   // separated by a level-dependent offset.
+  img := GetImage(z);
   spacing := 1 shl z;
-  w := FExemplar.Width;
-  h := FExemplar.Height;
-  e := FExemplar.ElementSize;
+  w := img.Width;
+  h := img.Height;
+  e := img.ElementSize;
   At := 0;
-  for ni := 0 to NEIGHBOUR_DIM - 1 do
-    for nj := 0 to NEIGHBOUR_DIM - 1 do
+  for ni := -HALF_NEIGHBOUR_DIM to HALF_NEIGHBOUR_DIM do
+    for nj := -HALF_NEIGHBOUR_DIM to HALF_NEIGHBOUR_DIM do
     begin
-      dj := nj - NEIGHBOUR_DIM div 2;
-      di := ni - NEIGHBOUR_DIM div 2;
-      i := wraping(x + dj * spacing, w);
-      j := wraping(y + di * spacing, h);
-      p := Exemplar.Data;
-      Inc(p, (i + j * w) * e);
-      result[At+0] := INV255 * p[0];
-      result[At+1] := INV255 * p[1];
-      result[At+2] := INV255 * p[2];
+      j := FNEdgeFunc(x + nj * spacing, w);
+      i := FNEdgeFunc(y + ni * spacing, h);
+      p := img.Data;
+      Inc(p, (j + i * w) * e);
+      result[At + 0] := p[0];
+      result[At + 1] := p[1];
+      result[At + 2] := p[2];
       Inc(At, 3);
     end;
 end;
@@ -964,7 +1047,8 @@ begin
       stream.Read(NeighbScale, SizeOf(TVector6f));
       stream.Read(NeighbOffset, SizeOf(TVector6f));
     end;
-    stream.Read(FToroidality, SizeOf(Boolean));
+    stream.Read(I, SizeOf(integer));
+    SetEdgePolicy(TEdgePolicy(I));
     FkNearests := TMostSimilars.Create(0, 0, 0);
     FkNearests.Load(stream);
     FNeighborhoods := TNeighborhoods.Create(0, 0, 0);
@@ -1012,7 +1096,8 @@ begin
       stream.Write(NeighbScale, SizeOf(TVector6f));
       stream.Write(NeighbOffset, SizeOf(TVector6f));
     end;
-    stream.Write(FToroidality, SizeOf(Boolean));
+    I := integer(FEdgePolicy);
+    stream.Write(I, SizeOf(integer));
     FkNearests.Save(stream);
     FNeighborhoods.Save(stream);
   finally
@@ -1020,10 +1105,22 @@ begin
   end;
 end;
 
+procedure TAnalysisData.SetEdgePolicy(const Value: TEdgePolicy);
+begin
+  FEdgePolicy := Value;
+  FEdgeFunc := EdgePolicyFor.GetFunc(Value);
+  FNEdgeFunc := EdgePolicyFor.GetFuncN(Value);
+end;
+
 procedure TAnalysisData.SetExemplar(const Value: TImageDesc);
+var
+  i: integer;
+  tmp: Byte;
+  p: PByte;
 begin
   Assert(Value.Data <> nil);
-  Assert((Value.ColorFormat = GL_RGB) or (Value.ColorFormat = GL_RGBA));
+  Assert((Value.ColorFormat = GL_RGB) or (Value.ColorFormat = GL_RGBA)
+    or (Value.ColorFormat = GL_BGR) or (Value.ColorFormat = GL_BGRA));
   Assert(Value.DataType = GL_UNSIGNED_BYTE);
 
   FExemplar.Free;
@@ -1033,7 +1130,25 @@ begin
   begin
     GetMem(Data, DataSize);
     Move(PByte(Value.Data)^, PByte(Data)^, DataSize);
+
+    if (ColorFormat = GL_BGR) or
+      (ColorFormat = GL_BGRA) then
+    begin
+      p :=  Data;
+      for i := 0 to DataSize div ElementSize - 1 do
+      begin
+        tmp := p[0];
+        p[0] := p[2];
+        p[2] := tmp;
+        Inc(p, ElementSize);
+      end;
+      if ColorFormat = GL_BGR then
+        ColorFormat := GL_RGB
+      else
+        ColorFormat := GL_RGBA;
+    end;
   end;
+
   FValid := False;
 end;
 
