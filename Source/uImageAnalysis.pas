@@ -15,10 +15,7 @@ type
   TAnalyzerThread = class;
 
   TAnalyzer = class
-  private
-    function GetProgress: Single;
   protected
-    FAccessFunc: TEdgePolicyFunc;
     FAnalysisData: TAnalysisData;
     FThreads: array of TAnalyzerThread;
     FMaxCPUThreads: integer;
@@ -28,10 +25,9 @@ type
     // Using principal component analysis (PCA)
     // projecting pixel neighborhoods into a lower-dimensional space (6D vector)
     procedure ProjectNeighbTo6D(alevel: integer);
-    procedure SetToroidality(flag: boolean);
     function GetDone: boolean;
     function GetLevelCount: integer;
-    function GetToroidality: boolean;
+    function GetProgress: Single;
   public
     constructor Create(anAnalysisData: TAnalysisData);
     destructor Destroy; override;
@@ -46,8 +42,6 @@ type
     procedure AnalyzeStackLevel(alevel: integer);
     // Analisys data storage
     property AnalysisData: TAnalysisData read FAnalysisData;
-    // True if the exemplar is toroidaly repeated
-    property Toroidality: boolean read GetToroidality write SetToroidality;
     // Maximum number of CPU's thread used during analisys
     property MaxCPUThreads: integer read FMaxCPUThreads write FMaxCPUThreads;
   end;
@@ -75,6 +69,7 @@ uses
 
 {$REGION 'TAnalyzer'}
 
+
 procedure TAnalyzer.AnalyzeStackLevel(alevel: integer);
 var
   Level: PAnalyzedLevel;
@@ -97,28 +92,48 @@ begin
   SetLength(ANNPoints, w * h);
   // fill-in points
   k := 0;
-  for i := 0 to h - 1 do
-    for j := 0 to w - 1 do
+  if SizeOf(TANNpoint) = SizeOf(Single) then
+  begin
+    for i := 0 to h - 1 do
     begin
-      neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
-      SetLength(ANNPoints[k], NEIGHBOUR_SIZE_3COLOR);
-      for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
-        ANNPoints[k][n] := neigh[n]; // singe -> double
-      Inc(k);
-      Inc(Level.CycleCounter);
+      for j := 0 to w - 1 do
+      begin
+        neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
+        SetLength(ANNPoints[k], NEIGHBOUR_SIZE_3COLOR);
+        Move(neigh[0], ANNPoints[k][0], SizeOf(TNeighborhood3c));
+        Inc(k);
+      end;
+      Inc(Level.CycleCounter, w);
+    end;
+  end
+  else  if SizeOf(TANNpoint) = SizeOf(Double) then
+    for i := 0 to h - 1 do
+    begin
+      for j := 0 to w - 1 do
+      begin
+        neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
+        SetLength(ANNPoints[k], NEIGHBOUR_SIZE_3COLOR);
+        for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
+          ANNPoints[k][n] := neigh[n]; // singe -> double
+        Inc(k);
+      end;
+      Inc(Level.CycleCounter, w);
     end;
   // build search structure
   kdTree := TANNkd_tree.CreateFromPointArray(ANNPoints, NEIGHBOUR_SIZE_3COLOR);
-
+  SetLength(queryPt, NEIGHBOUR_SIZE_3COLOR);
   for i := 0 to h - 1 do
+  begin
     for j := 0 to w - 1 do
     begin
       neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
-      SetLength(queryPt, NEIGHBOUR_SIZE_3COLOR);
-      for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
-        queryPt[n] := neigh[n];
+      if SizeOf(TANNpoint) = SizeOf(Single) then
+          Move(neigh[0], queryPt[0], SizeOf(TNeighborhood3c))
+      else if SizeOf(TANNpoint) = SizeOf(Double) then
+        for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
+          queryPt[n] := neigh[n];
       // search for similar neighborhood in reference
-      kdTree.annkSearch(queryPt, SIMILAR_NEIGHBOUR_SIZE, nnIdx, dists, 0.001);
+      kdTree.annkSearch(queryPt, SIMILAR_NEIGHBOUR_SIZE, nnIdx, dists, 1);
 
       // store result
       for n := 0 to SIMILAR_NEIGHBOUR_SIZE - 1 do
@@ -128,18 +143,101 @@ begin
         KNearest[n][1] := Idx div w;
       end;
       FAnalysisData.kNearests.At[j, i, alevel] := KNearest;
-
-      Inc(Level.CycleCounter);
     end;
-
+    Inc(Level.CycleCounter, w);
+  end;
   kdTree.Free;
 end;
 
+{
+// used ANN as DLL
+procedure TAnalyzer.AnalyzeStackLevel(alevel: integer);
+var
+  Level: PAnalyzedLevel;
+  i, j, n: integer;
+  addres: ^pointer;
+  dataPts: ANNpointArray; // data points
+  tempPts: ^Double;
+  queryPt: TANNpoint; // query point
+  Idx: TANNidx;
+  nnIdx: TANNidxArray; // near neighbor indices
+  dists: TANNdistArray; // near neighbor distances
+  kdTree: TANNkd_tree; // search structure
+  neigh: TNeighborhood3c;
+  Knearest: TMostSimilar;
+  neighsSize: integer;
+begin
+  Level := FAnalysisData.Levels[alevel];
+  // build ANN structure
+  neighsSize := FAnalysisData.Neighborhoods.Width *
+    FAnalysisData.Neighborhoods.Height;
+  GetMem(nnIdx, SIMILAR_NEIGHBOUR_SIZE * SizeOf(TANNidx));
+  GetMem(dists, SIMILAR_NEIGHBOUR_SIZE * SizeOf(TANNdist));
+  // allocate query point
+  queryPt := annAllocPt(NEIGHBOUR_SIZE_3COLOR);
+  // allocate data points
+  dataPts := annAllocPts(neighsSize, NEIGHBOUR_SIZE_3COLOR);
+  // fill-in points
+  addres := pointer(dataPts);
+  for i := 0 to FAnalysisData.Neighborhoods.Height - 1 do
+  begin
+    for j := 0 to FAnalysisData.Neighborhoods.Width - 1 do begin
+      neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
+      tempPts := addres^;
+      for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do begin
+        tempPts^ := neigh[n]; // singe -> double
+        Inc(tempPts);
+      end;
+      Inc(addres);
+    end;
+    Inc(Level.CycleCounter, FAnalysisData.Neighborhoods.Width);
+  end;
+  // build search structure
+  kdTree := TANNkd_tree.Create(dataPts, neighsSize, NEIGHBOUR_SIZE_3COLOR);
+
+  for i := 0 to FAnalysisData.Neighborhoods.Height - 1 do
+  begin
+    for j := 0 to FAnalysisData.Neighborhoods.Width - 1 do
+    begin
+      neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
+      // tempPts := pointer(queryPt);
+      for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
+      begin
+        queryPt^ := neigh[n];
+        Inc(queryPt);
+      end;
+      Dec(queryPt, NEIGHBOUR_SIZE_3COLOR);
+      // search for similar neighborhood in reference
+      kdTree.annkSearch( // search
+        queryPt, // query point
+        SIMILAR_NEIGHBOUR_SIZE, // number of near neighbors
+        nnIdx, // nearest neighbors (returned)
+        dists, // distance (returned)
+        INV255); // error bound);
+      // store result
+      for n := 0 to SIMILAR_NEIGHBOUR_SIZE - 1 do begin
+        Idx := nnIdx^;
+        Inc(nnIdx);
+        Knearest[n][0] := Idx mod FAnalysisData.Neighborhoods.Width;
+        Knearest[n][1] := Idx div FAnalysisData.Neighborhoods.Width;
+      end;
+      FAnalysisData.KNearests.At[j, i, alevel] := Knearest;
+      Dec(nnIdx, SIMILAR_NEIGHBOUR_SIZE);
+    end;
+    Inc(Level.CycleCounter, FAnalysisData.Neighborhoods.Width);
+  end;
+
+  kdTree.Free;
+  annDeallocPt(queryPt);
+  annDeallocPts(dataPts);
+  FreeMem(nnIdx, SIMILAR_NEIGHBOUR_SIZE * SizeOf(TANNidx));
+  FreeMem(dists, SIMILAR_NEIGHBOUR_SIZE * SizeOf(TANNdist));
+end;
+}
 constructor TAnalyzer.Create(anAnalysisData: TAnalysisData);
 begin
   Assert(Assigned(anAnalysisData));
   FAnalysisData := anAnalysisData;
-  FAccessFunc := TIVec2Array2D.WrapAccess;
   FMaxCPUThreads := 2;
 end;
 
@@ -156,12 +254,14 @@ var
 begin
   Level := FAnalysisData.Levels[aLevel];
   for i := 0 to FAnalysisData.Exemplar.Height - 1 do
+  begin
     for j := 0 to FAnalysisData.Exemplar.Width - 1 do
     begin
       FAnalysisData.Neighborhoods.At[j, i, alevel] :=
         FAnalysisData.GatherNeighborhood(j, i, alevel);
-      Inc(Level.CycleCounter);
     end;
+    Inc(Level.CycleCounter, FAnalysisData.Exemplar.Width);
+  end;
 end;
 
 function TAnalyzer.GetDone: boolean;
@@ -198,11 +298,6 @@ begin
 
   if Result >= 1.0 then
     FAnalysisData.IsValid := True;
-end;
-
-function TAnalyzer.GetToroidality: boolean;
-begin
-  result := FAnalysisData.Toroidality;
 end;
 
 procedure TAnalyzer.Process;
@@ -253,15 +348,16 @@ begin
   SetLength(x, w * h, NEIGHBOUR_SIZE_3COLOR);
   row := 0;
   for i := 0 to h - 1 do
+  begin
     for j := 0 to w - 1 do
     begin
       Neighb := FAnalysisData.Neighborhoods[j, i, alevel];
       for mj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         x[row][mj] := Neighb[mj];
       Inc(row);
-
-      Inc(Level.CycleCounter);
     end;
+    Inc(Level.CycleCounter, w);
+  end;
 
   // run principal component analysis
   PrincipalComponentsAnalysis.BuildBasis(x, w * h, NEIGHBOUR_SIZE_3COLOR,
@@ -349,20 +445,22 @@ begin
       p1[0] := floor(255 * V6D[0]);
       p1[1] := floor(255 * V6D[1]);
       p1[2] := floor(255 * V6D[2]);
-      p1[2] := $FF;
+      p1[3] := $FF;
+      Inc(p1, 4);
       p2[0] := floor(255 * V6D[3]);
       p2[1] := floor(255 * V6D[4]);
       p2[2] := floor(255 * V6D[5]);
-      p2[2] := $FF;
-
-      Inc(Level.CycleCounter);
+      p2[3] := $FF;
+      Inc(p2, 4);
     end;
+    Inc(Level.CycleCounter, w);
   end;
 end;
 
 procedure TAnalyzer.ProjectStackLevelTo2D(aLevel: integer);
 var
   Level: PAnalyzedLevel;
+  img: PImageDesc;
   x: TDouble2DArray;
   p: PByte;
   Dispersion: TDouble1DArray;
@@ -374,26 +472,26 @@ var
   minValue, maxValue: TVector;
 begin
   Level := FAnalysisData.Levels[aLevel];
-  w := FAnalysisData.Exemplar.Width;
-  h := FAnalysisData.Exemplar.Height;
-  esize := FAnalysisData.Exemplar.ElementSize;
+  img := FAnalysisData.Images[aLevel];
+  w := img.Width;
+  h := img.Height;
+  esize := img.ElementSize;
   // Fill array for principal components analysis
   SetLength(x, w * h, 3);
   row := 0;
   for i := 0 to h - 1 do
   begin
-    p := FAnalysisData.Exemplar.Data;
+    p := img.Data;
     Inc(p, i * w * esize);
     for j := 0 to w - 1 do
     begin
-      x[row][0] := INV255 * p[0];
-      x[row][1] := INV255 * p[1];
-      x[row][2] := INV255 * p[2];
+      x[row][0] := p[0];
+      x[row][1] := p[1];
+      x[row][2] := p[2];
       Inc(row);
       Inc(p, esize);
-
-      Inc(Level.CycleCounter);
     end;
+    Inc(Level.CycleCounter, w);
   end;
 
   // Run analysis
@@ -415,7 +513,7 @@ begin
     iterC2 := C2;
     for i := 0 to h - 1 do
     begin
-      p := FAnalysisData.Exemplar.Data;
+      p := img.Data;
       Inc(p, i * w * esize);
       for j := 0 to w - 1 do
       begin
@@ -483,18 +581,6 @@ begin
     end;
   finally
     FreeMem(C2);
-  end;
-end;
-
-procedure TAnalyzer.SetToroidality(flag: boolean);
-begin
-  if flag <> FAnalysisData.Toroidality then
-  begin
-    FAnalysisData.Toroidality := flag;
-    if flag then
-      FAccessFunc := TIVec2Array2D.WrapAccess
-    else
-      FAccessFunc := TIVec2Array2D.MirrorAccess;
   end;
 end;
 
