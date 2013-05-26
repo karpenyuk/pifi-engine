@@ -38,8 +38,8 @@ const
 
 type
 
-  TANNcoord = double;
-  TANNdist = double;
+  TANNcoord = single;
+  TANNdist = single;
   TANNidx = integer;
   PANNidx = ^TANNidx;
 
@@ -380,7 +380,7 @@ begin
   length := aBnd_box.hi[0] - aBnd_box.lo[0];
   min_length := length; // min side length
   max_length := length; // max side length
-  for d := 0 to aDim - 1 do
+  for d := 1 to aDim - 1 do
   begin
     length := aBnd_box.hi[d] - aBnd_box.lo[d];
     if (length < min_length) then
@@ -1622,7 +1622,7 @@ begin
   begin
     // no, allocate space for point indices
     SetLength(FPointsIndices, length(FPoints));
-    for i := 0 to length(FPoints) - 1 do
+    for i := 0 to High(FPoints) do
         FPointsIndices[i] := i;
   end
   else
@@ -1660,7 +1660,7 @@ begin
         box_diff := 0;
     // distance to further box
     aDistToNeighbors := aDistToNeighbors +
-      (box_diff * box_diff - cut_diff * cut_diff);
+      (cut_diff * cut_diff - box_diff * box_diff);
 
     // visit further child if in range
     if (aDistToNeighbors * aParams.ANNkdFRMaxErr <= aParams.ANNkdFRSqRad) then
@@ -1676,7 +1676,7 @@ begin
         box_diff := 0;
     // distance to further box
     aDistToNeighbors := aDistToNeighbors +
-      (box_diff * box_diff - cut_diff * cut_diff);
+      (cut_diff * cut_diff - box_diff * box_diff);
 
     // visit further child if close enough
     if aDistToNeighbors * aParams.ANNkdFRMaxErr <= aParams.ANNkdFRSqRad then
@@ -1700,7 +1700,7 @@ begin
     if (box_diff < 0) then // within bounds - ignore
         box_diff := 0;
     // distance to further box
-    new_dist := aDistToNeighbors + (box_diff * box_diff - cut_diff * cut_diff);
+    new_dist := aDistToNeighbors + (cut_diff * cut_diff - box_diff * box_diff);
 
     if (Fchild[1] <> TANNkd_tree.KD_TRIVIAL) then // enqueue if not trivial
         aParams.ANNprBoxPQ.Insert(new_dist, Fchild[1]);
@@ -1713,7 +1713,7 @@ begin
     if (box_diff < 0) then // within bounds - ignore
         box_diff := 0;
     // distance to further box
-    new_dist := aDistToNeighbors + (box_diff * box_diff - cut_diff * cut_diff);
+    new_dist := aDistToNeighbors + (cut_diff * cut_diff - box_diff * box_diff);
 
     if (Fchild[0] <> TANNkd_tree.KD_TRIVIAL) then // enqueue if not trivial
         aParams.ANNprBoxPQ.Insert(new_dist, Fchild[0]);
@@ -1742,7 +1742,7 @@ begin
         box_diff := 0;
     // distance to further box
     aDistToNeighbors := aDistToNeighbors +
-      (box_diff * box_diff - cut_diff * cut_diff);
+      (cut_diff * cut_diff - box_diff * box_diff);
 
     // visit further child if close enough
     if (aDistToNeighbors * aParams.ANNkdMaxErr < aParams.ANNkdPointMK.Max_key())
@@ -1759,7 +1759,7 @@ begin
         box_diff := 0;
     // distance to further box
     aDistToNeighbors := aDistToNeighbors +
-      (box_diff * box_diff - cut_diff * cut_diff);
+      (cut_diff * cut_diff - box_diff * box_diff);
 
     // visit further child if close enough
     if (aDistToNeighbors * aParams.ANNkdMaxErr < aParams.ANNkdPointMK.Max_key())
@@ -1903,8 +1903,8 @@ var
 begin
   kv := FNodes[1].key; // key of min item
   inf := FNodes[1].info; // information of min item
-  Dec(FItemsNum);
   kn := FNodes[FItemsNum].key; // last item in queue
+  Dec(FItemsNum);
   p := 1; // p points to item out of position
   r := p shl 1; // left child of p
   while (r <= FItemsNum) do // while r is still within the heap
@@ -1926,13 +1926,14 @@ var
   r, p: integer;
 begin
   Inc(FItemsNum);
-  Assert(FItemsNum <= length(FNodes));
   r := length(FNodes);
+  Assert(FItemsNum <= r);
   while r > 1 do
   begin
     p := r div 2;
     if (FNodes[p].key <= kv) then // in proper order
         break;
+    FNodes[r] := FNodes[p];
     r := p;
   end;
   // insert new item at final location
