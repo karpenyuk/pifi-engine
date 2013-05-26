@@ -94,7 +94,7 @@ type
     property Kappa: single read FKappa write FKappa;
     property AnalysisData: TAnalysisData read FAnalysisData;
     // Number of threads to be used for the correction step
-    property MaxCPUThreads: integer read FMaxCPUThreads write SetMaxCPUThreads;
+    property MaxCPUThreads: integer read FMaxCPUThreads write FMaxCPUThreads;
   end;
 
   TSynthesizerThread = class(TThread)
