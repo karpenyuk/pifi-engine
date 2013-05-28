@@ -71,6 +71,7 @@
 			<DCC_RemoteDebug>true</DCC_RemoteDebug>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+			<DCC_ConsoleTarget>true</DCC_ConsoleTarget>
 			<DCC_RangeChecking>true</DCC_RangeChecking>
 			<DCC_MapFile>3</DCC_MapFile>
 			<DCC_Optimize>true</DCC_Optimize>

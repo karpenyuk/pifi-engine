@@ -18,6 +18,7 @@ uses
   uImageAnalysisClasses,
   uImageAnalysis,
   uImageSynthesis,
+  uGLImageSynthesis,
   uBaseTypes;
 
 type
@@ -104,6 +105,7 @@ type
     AnalysisData: TAnalysisData;
     Analyzer: TAnalyzer;
     Synthesizer: TSynthesizer;
+    GLSynthesizer: TGLSynthesizer;
   end;
 
 var
@@ -148,6 +150,7 @@ var
   Proj: TMatrix;
 
   TextureChaged: array[0..2] of Boolean;
+  UpdateGLSynth: Boolean;
 
 function _GetTime: Double;
 var
@@ -169,6 +172,8 @@ begin
   SQ_VO.Destroy;
   ViewShader.Destroy;
   SQ_Drawer.Destroy;
+  if GLSynthesizer.Initialized then
+    GLSynthesizer.Finalize;
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
@@ -180,6 +185,7 @@ begin
   AnalysisData := TAnalysisData.Create;
   Analyzer := TAnalyzer.Create(AnalysisData);
   Synthesizer := TSynthesizer.Create(AnalysisData);
+  GLSynthesizer := TGLSynthesizer.Create(AnalysisData);
 
   with AnalysisData.Exemplar^ do
   begin
@@ -216,6 +222,7 @@ begin
   AnalysisData.Destroy;
   Analyzer.Destroy;
   Synthesizer.Destroy;
+  GLSynthesizer.Destroy;
 end;
 
 // Analysis process
@@ -255,6 +262,9 @@ begin
   Memo1.Lines.Add(Format('Expanded time %.2f msec', [1000 * t]));
   AnalyzeButton.Enabled := true;
   SynthesizeButton.Enabled := true;
+
+  GLSynthesizer.Initialize;
+  UpdateGLSynth := True;
 end;
 
 // CPU synthesis process
@@ -361,6 +371,9 @@ begin
     Memo1.Lines.Add('Analysis data loaded.');
     AnalysisProgressBar.Position := 100;
     TextureChaged[0] := True;
+
+    GLSynthesizer.Initialize;
+    UpdateGLSynth := True;
   end;
 end;
 
@@ -731,11 +744,20 @@ begin
     TextureChaged[2] := false;
   end;
 
+  if UpdateGLSynth and GLSynthesizer.Initialized then
+  begin
+    GLSynthesizer.Process;
+    UpdateGLSynth := False;
+  end;
+
   GLViewer1.Context.ClearDevice;
 
   ViewShader.Apply;
 
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, 0);
   glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, 0);
   case ComboBox1.ItemIndex of
     0:
       begin
@@ -754,13 +776,20 @@ begin
         glBindTexture(GL_TEXTURE_2D, PatchesTextureId);
         w := PatchesImage.Width;
         h := PatchesImage.Height;
-      end
-  else
-  begin
-    w := GLViewer1.Width;
-    h := GLViewer1.Height;
-    glBindTexture(GL_TEXTURE_2D, 0);
-  end;
+      end;
+    3:
+      if GLSynthesizer.Initialized then
+      begin
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[0]);
+        w := GLSynthesizer.SideSize;
+        h := w;
+      end;
+    else
+    begin
+      w := GLViewer1.Width;
+      h := GLViewer1.Height;
+    end;
   end;
 
   ratio := TVector.Make(GLViewer1.Width / w, GLViewer1.Height / h);

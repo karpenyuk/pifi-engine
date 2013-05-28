@@ -18,8 +18,8 @@ type
   private
     FAnalysisData: TAnalysisData;
     FWidth, FHeight: integer;
-    FSynthesized: array of TIVec2Array2D;
-    FReadBuffer: TIVec2Array2D;
+    FSynthesized: array of TVec2iArray2D;
+    FReadBuffer: TVec2iArray2D;
     FProcessedLevel: integer;
     FKappa: single;
     FJitterStrength: single;
@@ -40,13 +40,13 @@ type
     // Upsamples previous level synthesis result
     procedure UpsampleToNextLevel;
     // Adds jitter
-    procedure Jitter(strength: single; const aIndices: TIVec2Array2D);
+    procedure Jitter(strength: single; const aIndices: TVec2iArray2D);
 
     // Sub-pass mechanism
 
     // CorrectionSubpass processes pixels in an interleaved pattern aligned with ci,cj
     // TSynthesizerThread are created, each calling CorrectionSubpassInRegion
-    procedure CorrectionSubpass(subPass: integer; aIndices: TIVec2Array2D);
+    procedure CorrectionSubpass(subPass: integer; aIndices: TVec2iArray2D);
     // CorrectionSubpassInRegion processes pixels of a sub-region of the synthesized image
     procedure CorrectionSubpassInRegion(subPass, rx, ry, rw, rh: integer);
 
@@ -111,6 +111,7 @@ implementation
 
 uses
   uMath,
+  uVMath,
   Math,
   uMiscUtils;
 
@@ -158,7 +159,7 @@ procedure TSynthesizer.Start;
 var
   l: integer;
   nx, ny: integer;
-  V: IVec2;
+  V: Vec2i;
 begin
   Stop;
   FEdgePolicyFunc := EdgePolicyFor.GetFuncN(FAnalysisData.EdgePolicy);
@@ -170,7 +171,7 @@ begin
   FTotalCycles := -nx * ny * (2 + 4 * FCorrectionSubpassesCount);
   for l := High(FSynthesized) downto 0 do
   begin
-    FSynthesized[l] := TIVec2Array2D.Create(nx, ny);
+    FSynthesized[l] := TVec2iArray2D.Create(nx, ny);
     Inc(FTotalCycles, nx * ny * (2 + 4 * FCorrectionSubpassesCount));
     nx := 2 * nx;
     ny := 2 * ny;
@@ -256,15 +257,13 @@ begin
       begin
         DestroyThread;
         if not Assigned(FReadBuffer) then
-          FReadBuffer := TIVec2Array2D.Create(
+          FReadBuffer := TVec2iArray2D.Create(
             FSynthesized[FProcessedLevel].Width,
             FSynthesized[FProcessedLevel].Height);
 
         FReadBuffer.Assign(FSynthesized[FProcessedLevel]);
         CorrectionSubpass(FPhase - 2, FSynthesized[FProcessedLevel]);
         Inc(FPhase);
-//        if (FProcessedLevel = 4) and (FPhase = 4) then
-//          FPhase := 10;
       end;
     end
     else
@@ -285,8 +284,8 @@ end;
 procedure TSynthesizer.UpsampleToNextLevel;
 var
   spacing, pi, pj, p2i, p2j: integer;
-  V, detV: IVec2;
-  UpLevel, DownLevel: TIVec2Array2D;
+  V, detV: Vec2i;
+  UpLevel, DownLevel: TVec2iArray2D;
 begin
   DownLevel := FSynthesized[FProcessedLevel + 1];
   UpLevel := FSynthesized[FProcessedLevel];
@@ -322,11 +321,11 @@ begin
   UpLevel.CycleCounter := UpLevel.CycleCounter + UpLevel.Width * UpLevel.Height;
 end;
 
-procedure TSynthesizer.Jitter(strength: single; const aIndices: TIVec2Array2D);
+procedure TSynthesizer.Jitter(strength: single; const aIndices: TVec2iArray2D);
 var
   spacing, i, j, w, h: integer;
   kx, ky, dx, dy: single;
-  V: IVec2;
+  V: Vec2i;
 begin
   w := aIndices.Width;
   h := aIndices.Height;
@@ -380,7 +379,7 @@ begin
 end;
 
 procedure TSynthesizer.CorrectionSubpass(subPass: integer;
-  aIndices: TIVec2Array2D);
+  aIndices: TVec2iArray2D);
 var
   t, next: integer;
   h: integer;
@@ -414,12 +413,12 @@ end;
 procedure TSynthesizer.CorrectionSubpassInRegion(subPass: integer; rx: integer;
   ry: integer; rw: integer; rh: integer);
 const
-  step: array [0 .. 3] of IVec2 = ((0, 0), (1, 0), (0, 1), (1, 1));
+  step: array [0 .. 3] of Vec2i = ((0, 0), (1, 0), (0, 1), (1, 1));
 var
-  Dest: TIVec2Array2D;
+  Dest: TVec2iArray2D;
   spacing, i, j, k, ni, nj, ci, cj, nk: integer;
   ms: TMostSimilar;
-  filter, n, c, best: IVec2;
+  filter, n, c, best: Vec2i;
   syN: TNeighborhood3c;
   NM: TNeighbPCAmatrix;
   syN_V6D, exN_V6D: TVector6f;
@@ -528,7 +527,7 @@ var
   p: PByte;
   At: integer;
   x, y: integer;
-  s: IVec2;
+  s: Vec2i;
 begin
   // Gather a neighborhood in the current synthesis result
   At := 0;
@@ -551,9 +550,9 @@ end;
 function TSynthesizer.GetSynthImage(aLevel: integer): TImageDesc;
 var
   src: PImageDesc;
-  crd: TIVec2Array2D;
+  crd: TVec2iArray2D;
   i, j: integer;
-  xy: IVec2;
+  xy: Vec2i;
   pb_Src, pb_Dst: PByte;
 begin
   // Create color version of the synthesis result (which contains coordinates only)
@@ -590,9 +589,9 @@ end;
 
 function TSynthesizer.GetPatchesImage(aLevel: integer): TImageDesc;
 var
-  img: TIVec2Array2D;
+  img: TVec2iArray2D;
   i, j: integer;
-  xy: IVec2;
+  xy: Vec2i;
   p: PByte;
 begin
   img := FSynthesized[aLevel];

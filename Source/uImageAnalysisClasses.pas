@@ -3,7 +3,7 @@ unit uImageAnalysisClasses;
 interface
 
 uses
-  Classes, uBaseTypes, uVMath;
+  Classes, uBaseTypes, uMath, uVMath;
 
 const
   NEIGHBOUR_DIM = 5;
@@ -43,10 +43,9 @@ type
     class function MirrorRepeatedDblImage(c, size: integer; aLoc: integer = 0): integer;
   end;
 
-  IVec2 = array [0 .. 1] of integer;
   TNeighborhood2c = array [0 .. NEIGHBOUR_SIZE_2COLOR - 1] of single;
   TNeighborhood3c = array [0 .. NEIGHBOUR_SIZE_3COLOR - 1] of single;
-  TMostSimilar = array [0 .. SIMILAR_NEIGHBOUR_SIZE - 1] of IVec2;
+  TMostSimilar = array [0 .. SIMILAR_NEIGHBOUR_SIZE - 1] of Vec2i;
   TVector6f = array [0 .. 5] of single;
 
   TColorPCAMatrix = array [0 .. 2, 0 .. 1] of single;
@@ -62,23 +61,23 @@ const
 
 type
 
-  TIVec2Array2D = class
+  TVec2iArray2D = class
   private
-    FData: array of IVec2;
+    FData: array of Vec2i;
     FWidth, FHeight: integer;
     FWidthPolicy, FHeightPolicy: TEdgePolicy;
     FWidthAccessFunc, FHeightAccessFunc: TEdgePolicyFunc;
     FCycleCounter: integer;
 
-    function GetItem(x, y: integer): IVec2;
-    procedure SetItem(x, y: integer; const aValue: IVec2);
+    function GetItem(x, y: integer): Vec2i;
+    procedure SetItem(x, y: integer; const aValue: Vec2i);
     procedure SetWidthEdgePolisy(ap: TEdgePolicy);
     procedure SetHeightEdgePolisy(ap: TEdgePolicy);
   public
     constructor Create(w, h: integer);
 
-    procedure Clear(const aClearValue: IVec2);
-    procedure Assign(source: TIVec2Array2D);
+    procedure Clear(const aClearValue: Vec2i);
+    procedure Assign(source: TVec2iArray2D);
 
     property Width: integer read FWidth;
     property Height: integer read FHeight;
@@ -86,7 +85,7 @@ type
       write SetWidthEdgePolisy;
     property HeightEdgePolisy: TEdgePolicy read FHeightPolicy
       write SetHeightEdgePolisy;
-    property At[x, y: integer]: IVec2 read GetItem write SetItem; default;
+    property At[x, y: integer]: Vec2i read GetItem write SetItem; default;
     // For progressing computing
     property CycleCounter: integer read FCycleCounter write FCycleCounter;
   end;
@@ -245,7 +244,7 @@ type
 implementation
 
 uses
-  Math, uMath, uMiscUtils;
+  Math, uMiscUtils;
 
 
 {$REGION 'EdgePolicyFor'}
@@ -343,9 +342,9 @@ begin
 end;
 
 {$ENDREGION}
-{$REGION 'TIVec2Array2D'}
+{$REGION 'TVec2iArray2D'}
 
-constructor TIVec2Array2D.Create(w: integer; h: integer);
+constructor TVec2iArray2D.Create(w: integer; h: integer);
 begin
   FWidthPolicy := epRepeat;
   FHeightPolicy := epRepeat;
@@ -356,21 +355,21 @@ begin
   SetLength(FData, w * h);
 end;
 
-function TIVec2Array2D.GetItem(x: integer; y: integer): IVec2;
+function TVec2iArray2D.GetItem(x: integer; y: integer): Vec2i;
 begin
   x := FWidthAccessFunc(x, FWidth);
   y := FHeightAccessFunc(y, FHeight);
   result := FData[x + y * FWidth];
 end;
 
-procedure TIVec2Array2D.SetItem(x: integer; y: integer; const aValue: IVec2);
+procedure TVec2iArray2D.SetItem(x: integer; y: integer; const aValue: Vec2i);
 begin
   x := FWidthAccessFunc(x, FWidth);
   y := FHeightAccessFunc(y, FHeight);
   FData[x + y * FWidth] := aValue;
 end;
 
-procedure TIVec2Array2D.Clear(const aClearValue: IVec2);
+procedure TVec2iArray2D.Clear(const aClearValue: Vec2i);
 var
   i: integer;
 begin
@@ -378,7 +377,7 @@ begin
       FData[i] := aClearValue;
 end;
 
-procedure TIVec2Array2D.Assign(source: TIVec2Array2D);
+procedure TVec2iArray2D.Assign(source: TVec2iArray2D);
 begin
   FWidth := source.FWidth;
   FHeight := source.FHeight;
@@ -390,7 +389,7 @@ begin
   FCycleCounter := source.FCycleCounter;
 end;
 
-procedure TIVec2Array2D.SetWidthEdgePolisy(ap: TEdgePolicy);
+procedure TVec2iArray2D.SetWidthEdgePolisy(ap: TEdgePolicy);
 begin
   if ap <> FWidthPolicy then
   begin
@@ -399,7 +398,7 @@ begin
   end;
 end;
 
-procedure TIVec2Array2D.SetHeightEdgePolisy(ap: TEdgePolicy);
+procedure TVec2iArray2D.SetHeightEdgePolisy(ap: TEdgePolicy);
 begin
   if ap <> FHeightPolicy then
   begin
