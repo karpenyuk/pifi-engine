@@ -6,7 +6,7 @@
 
 interface
 
-uses Classes, uPersistentClasses, uLists, uVMath, uMiscUtils, {ImageLoader,}
+uses Classes, uPersistentClasses, uLists, uMath, uVMath, uMiscUtils, {ImageLoader,}
   uBaseTypes, uBaseClasses, uRenderResource, dglOpenGL;
 
 Type
@@ -313,6 +313,12 @@ Type
     procedure SetUniform(const Name: ansistring; const Value: vec4;
       Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: integer;
+      Count: GLsizei = 1); overload;
+    procedure SetUniform(const Name: ansistring; const Value: vec2i;
+      Count: GLsizei = 1); overload;
+    procedure SetUniform(const Name: ansistring; const Value: vec3i;
+      Count: GLsizei = 1); overload;
+    procedure SetUniform(const Name: ansistring; const Value: vec4i;
       Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: mat2;
       Count: GLsizei = 1; transpose: boolean = false); overload;
@@ -1400,6 +1406,24 @@ procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
 begin
   glUniformMatrix4fv(GetUniformLocation(FShaderId, name), Count,
     transpose, @Value);
+end;
+
+procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
+  const Value: vec2i; Count: GLsizei);
+begin
+  glUniform2iv(GetUniformLocation(FShaderId, name), Count, @Value);
+end;
+
+procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
+  const Value: vec3i; Count: GLsizei);
+begin
+  glUniform3iv(GetUniformLocation(FShaderId, name), Count, @Value);
+end;
+
+procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
+  const Value: vec4i; Count: GLsizei);
+begin
+  glUniform4iv(GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
