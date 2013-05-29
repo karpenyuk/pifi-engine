@@ -6,7 +6,8 @@ const
   GLSL_SYNTH_HEADER: ansistring =
 '#version 430 core'#10#13+
 '#extension GL_ARB_compute_shader : require'#10#13+
-'#extension GL_ARB_shader_storage_buffer_object : require'#10#13;
+'#extension GL_ARB_shader_storage_buffer_object : require'#10#13+
+'#define M_PI 3.14159265358979323846'#10#13;
 
   GLSL_SYNTH_TILINGSUB: ansistring =
 'ivec2 tiling(ivec2 c) {'#10#13+
@@ -18,17 +19,29 @@ const
 '  c.xy = c.xy % exemplarSize;'#10#13+
 '  if (c.x < 0) c.x += exemplarSize.x;'#10#13+
 '  if (c.y < 0) c.y += exemplarSize.y;'#10#13+
-'  return c; }';
+'  return c; }'#10#13;
 
-  GLSL_SYNTH_RANDSUB: ansistring =
+  GLSL_SYNTH_RANDSUB_TEXTURE: ansistring =
 'ivec4 rand(ivec2 c) {'#10#13+
-'  ivec2 tc = c + randOffeset;'#10#13+
+'  ivec2 tc = c * randScaleOffset.xy + randScaleOffset.zw;'#10#13+
 '  tc %= synthSize;'#10#13+
 '  vec2 rnd = texelFetch(Random, tc, 0).xy;'#10#13+
-'  rnd = rnd * vec2(2.0) - vec2(1.0);'#10#13+
 '  rnd *= strength;'#10#13+
 '  return ivec4(ivec2(rnd), 0, 0);'#10#13+
-'}';
+'}'#10#13;
+
+  GLSL_SYNTH_RANDSUB_MATH: ansistring =
+'ivec4 rand(ivec2 c) {'#10#13+
+'  const vec4 a = vec4(M_PI * M_PI * M_PI * M_PI, exp(4.0),  1.0, 0.0);'#10#13+
+'  const vec4 b = vec4(pow(13.0, M_PI / 2.0), sqrt(1997.0),  0.0, 1.0);'#10#13+
+'  vec2 xy0    = vec2(c) / M_PI;'#10#13+
+'  vec2 xym    = fract(xy0.xy / vec2(257.0) ) * vec2(257.0) + vec2(1.0);'#10#13+
+'  vec2 xym2   = fract(xym * xym);'#10#13+
+'  vec4 pxy    = vec4(xym.yx * xym2 , fract(xy0));'#10#13+
+'  vec2 rnd    = vec2(dot(pxy, a) , dot(pxy, b));'#10#13+
+'  rnd *= strength;'#10#13+
+'  return ivec4(round(rnd), 0, 0);'#10#13+
+'}'#10#13;
 
   GLSL_SYNTH_UPSAMPLE_JITTER_INTERFACE: ansistring =
 'layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;'#10#13+
@@ -39,8 +52,8 @@ const
 'uniform ivec2 quarter;'#10#13+
 'uniform ivec2 exemplarSize;'#10#13+
 'uniform ivec2 synthSize;'#10#13+
-'uniform ivec2 randOffeset;'#10#13+
-'uniform vec2 strength;';
+'uniform ivec4 randScaleOffset;'#10#13+
+'uniform vec2 strength;'#10#13;
 
   GLSL_SYNTH_UPSAMPLE_JITTER_MAIN: ansistring =
 'void main()'#10#13+
@@ -61,7 +74,7 @@ const
 '  up_coords += ivec2(1, 0);'#10#13+
 '  delta = rand(up_coords);'#10#13+
 '  imageStore(UpLevel, up_coords, delta + tiling(p + spacing[2]));'#10#13+
-'}';
+'}'#10#13;
 
   GLSL_SYNTH_CORRECTION_INTERFACE: ansistring =
 'layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;'#10#13+
@@ -81,7 +94,7 @@ const
 'layout(binding = 0, rg16i) uniform iimage2D WriteSynth;'#10#13+
 'layout(std430, binding = 0) buffer NeihgbPCAMatrix {'#10#13+
 '  vec4 Matrix[150];'#10#13+
-'} NPCA;';
+'} NPCA;'#10#13;
 
   GLSL_SYNTH_CORRECTION_MAIN: ansistring =
 'void main()'#10#13+
@@ -163,7 +176,18 @@ const
 '		}'#10#13+
 '	}'#10#13+
 ' imageStore(WriteSynth, coords, best);'#10#13+
-'}';
+'}'#10#13;
+
+  GLSL_SYNTH_COPY_IMAGE: ansistring =
+'layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;'#10#13+
+'layout(binding = 5) uniform isampler2D ReadSynth;'#10#13+
+'layout(binding = 1, rg16i) uniform iimage2D WriteSynth;'#10#13+
+'void main()'#10#13+
+'{'#10#13+
+'  ivec2 coords = ivec2(gl_WorkGroupID.xy * uvec2(32) + gl_LocalInvocationID.xy);'#10#13+
+'  ivec4 pass = texelFetch(ReadSynth, coords, 0);'#10#13+
+'  imageStore(WriteSynth, coords, pass);'#10#13+
+'}'#10#13;
 
 implementation
 

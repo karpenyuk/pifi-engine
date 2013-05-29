@@ -30,12 +30,15 @@ type
     FLevels: array of TGLSynthLevel;
     FUpsampleShaderSource: TShaderProgram;
     FCorrectionShaderSource: TShaderProgram;
+    FCopyImageShaderSource: TShaderProgram;
 
     FInitialized: Boolean;
     FUpsampleShader: TGLSLShaderProgram;
     FCorrectionShader: TGLSLShaderProgram;
+    FCopyImageShader: TGLSLShaderProgram;
     FWorkGroupCount: vec3i;
 
+    FFBOId: GLuint;
     FReadSynthTextureId: GLuint;
     FRandomTextureId: GLuint;
 
@@ -50,6 +53,7 @@ type
     procedure CreateRandomTexture;
     procedure DoUpsample(aLevel: integer);
     procedure DoCorrection(aLevel: integer);
+    procedure CopyToReadSynthTexture(aLevel: integer);
   public
     constructor Create(anAnalysisData: TAnalysisData);
     destructor Destroy; override;
@@ -85,11 +89,39 @@ uses
 {$REGION 'TGLSynthesizer'}
 
 
+procedure TGLSynthesizer.CopyToReadSynthTexture(aLevel: integer);
+begin
+  if GL_ARB_copy_image then
+  begin
+    glCopyImageSubData(
+      FLevels[aLevel].PatchesTextureId,
+      GL_TEXTURE_2D,
+      0, 0, 0, 0,
+      FReadSynthTextureId,
+      GL_TEXTURE_2D,
+      0, 0, 0, 0,
+      FSideSize, FSideSize, 1);
+  end
+  else
+  begin
+    FCopyImageShader.Apply;
+    // Source
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, FLevels[aLevel].PatchesTextureId);
+    // Destination
+    glBindImageTexture(1, FReadSynthTextureId, 0, False, 0,
+      GL_WRITE_ONLY, GL_RG16I);
+    glDispatchCompute(FWorkGroupCount[0], FWorkGroupCount[1], 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    FCorrectionShader.Apply;
+  end;
+end;
+
 constructor TGLSynthesizer.Create(anAnalysisData: TAnalysisData);
 begin
   Assert(Assigned(anAnalysisData));
   FAnalysisData := anAnalysisData;
-  FSideSize := 256;
+  FSideSize := 512;
   FKappa := 1;
 end;
 
@@ -124,6 +156,7 @@ begin
   if Assigned(FCorrectionShaderSource)
     and (FCorrectionShaderSource.Owner = Self) then
       FreeAndNil(FCorrectionShaderSource);
+  FCopyImageShaderSource.Free;
   inherited;
 end;
 
@@ -190,16 +223,9 @@ begin
 
     for subPass := 0 to 7 do
     begin
-      glCopyImageSubData(
-        FLevels[aLevel].PatchesTextureId,
-        GL_TEXTURE_2D,
-        0, 0, 0, 0,
-        FReadSynthTextureId,
-        GL_TEXTURE_2D,
-        0, 0, 0, 0,
-        FSideSize, FSideSize, 1);
+      CopyToReadSynthTexture(aLevel);
       SetUniform('subPassOffset', STEP[subPass and 3]);
-      glDispatchCompute(FWorkGroupCount[0], FWorkGroupCount[1], 1);
+      glDispatchCompute(2 * FWorkGroupCount[0], 2 * FWorkGroupCount[1], 1);
       glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     end;
 
@@ -212,6 +238,7 @@ end;
 procedure TGLSynthesizer.DoUpsample(aLevel: integer);
 var
   iv: Vec2i;
+  iv4: Vec4i;
 begin
   with FUpsampleShader do
   begin
@@ -244,9 +271,11 @@ begin
     SetUniform('quarter', iv);
 
     // Coordinates shift for random texture
-    iv[0] := Round(Random * FSideSize);
-    iv[1] := Round(Random * FSideSize);
-    SetUniform('randOffeset', iv);
+    iv4[0] := Round(Random * FSideSize);
+    iv4[1] := Round(Random * FSideSize);
+    iv4[2] := Round(Random * FSideSize);
+    iv4[3] := Round(Random * FSideSize);
+    SetUniform('randScaleOffset', iv4);
 
     // Jitter strength
     SetUniform('strength', FLevels[aLevel].JitterStrength);
@@ -254,7 +283,7 @@ begin
     // Spacing exemplar coordinates for level
     SetUniform('spacing', FLevels[aLevel].Spacing[0], 3);
 
-    glDispatchCompute(FWorkGroupCount[0] div 2, FWorkGroupCount[1] div 2, 1);
+    glDispatchCompute(FWorkGroupCount[0], FWorkGroupCount[1], 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     UnApply;
   end;
@@ -265,6 +294,7 @@ var
   L: integer;
 begin
   Assert(FInitialized);
+  glDeleteFramebuffers(1, @FFBOId);
   glDeleteTextures(1, @FReadSynthTextureId);
   glDeleteTextures(1, @FRandomTextureId);
   for L := 0 to FAnalysisData.LevelsAmount - 1 do
@@ -275,6 +305,7 @@ begin
   SetLength(FLevels, 0);
   FreeAndNil(FUpsampleShader);
   FreeAndNil(FCorrectionShader);
+  FreeAndNil(FCopyImageShader);
   FInitialized := False;
 end;
 
@@ -292,7 +323,6 @@ procedure TGLSynthesizer.Initialize;
 var
   L, spacing: integer;
   img: TImageDesc;
-  tempFBO: GLuint;
   initCoords: Vec2i;
   wgs, wgc: vec3i;
 begin
@@ -328,12 +358,13 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16I, FSideSize, FSideSize, 0, GL_RG_INTEGER, GL_SHORT, nil);
-//  glTextureStorage2DEXT(FReadSynthTextureId, GL_TEXTURE_2D, 1,
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16I, FSideSize, FSideSize, 0,
+    GL_RG_INTEGER, GL_SHORT, nil);
+  //  glTextureStorage2DEXT(FReadSynthTextureId, GL_TEXTURE_2D, 1,
 //    GL_RG16I, FSideSize, FSideSize);
 
   SetLength(FLevels, FAnalysisData.LevelsAmount);
-  for L := 0 to FAnalysisData.LevelsAmount - 1 do
+  for L := 0 to High(FLevels) do
   begin
     // Spacing exemplar coordinates for level
     spacing := 1 shl L;
@@ -390,23 +421,25 @@ begin
     FLevels[L].NeihgbPCAMatrixBuffer := TGLBufferObject.Create(btUniform);
     FLevels[L].NeihgbPCAMatrixBuffer.Allocate(SizeOf(TNeighbPCAmatrix),
       @FAnalysisData.Levels[L].NeihgbPCAMatrix, GL_STATIC_READ);
-    if L < 3  then
-      FLevels[L].JitterStrength := Vec2Make(2, 2)
+    if L < 3 then
+      FLevels[L].JitterStrength := Vec2Make(0, 0)
     else
-      FLevels[L].JitterStrength := Vec2Make(25, 25);
+    begin
+      FLevels[L].JitterStrength[0] := 25 * L / LevelCount;
+      FLevels[L].JitterStrength[1] := FLevels[L].JitterStrength[0];
+    end;
   end;
 
   // Fill coarsest level with midle exemplar's coordinates
-  glGenFramebuffers(1, @tempFBO);
-  glFramebufferDrawBufferEXT(tempFBO, GL_COLOR_ATTACHMENT0);
-  glNamedFramebufferTextureEXT(tempFBO, GL_COLOR_ATTACHMENT0,
+  glGenFramebuffers(1, @FFBOID);
+  glFramebufferDrawBufferEXT(FFBOID, GL_COLOR_ATTACHMENT0);
+  glNamedFramebufferTextureEXT(FFBOID, GL_COLOR_ATTACHMENT0,
     FLevels[FAnalysisData.LevelsAmount - 1].PatchesTextureId, 0);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tempFBO);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FFBOID);
   initCoords[0] := FAnalysisData.Exemplar.Width div 2;
   initCoords[1] := FAnalysisData.Exemplar.Height div 2;
   glClearBufferiv(GL_COLOR, 0, @initCoords[0]);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glDeleteFramebuffers(1, @tempFBO);
 
   if not Assigned(FUpsampleShaderSource) then
   begin
@@ -415,7 +448,7 @@ begin
       GLSL_SYNTH_HEADER +
       GLSL_SYNTH_UPSAMPLE_JITTER_INTERFACE +
       GLSL_SYNTH_TILINGSUB +
-      GLSL_SYNTH_RANDSUB +
+      GLSL_SYNTH_RANDSUB_TEXTURE +
       GLSL_SYNTH_UPSAMPLE_JITTER_MAIN;
   end;
   FUpsampleShader := TGLSLShaderProgram.CreateFrom(FUpsampleShaderSource);
@@ -433,6 +466,17 @@ begin
   FCorrectionShader := TGLSLShaderProgram.CreateFrom(FCorrectionShaderSource);
   FCorrectionShader.LinkShader;
   WriteLn(FCorrectionShader.Log);
+
+  if not GL_ARB_copy_image then
+  begin
+    FCopyImageShaderSource := TShaderProgram.CreateOwned(Self);
+    FCopyImageShaderSource.ShaderText[stCompute] :=
+      GLSL_SYNTH_HEADER +
+      GLSL_SYNTH_COPY_IMAGE;
+    FCopyImageShader := TGLSLShaderProgram.CreateFrom(FCopyImageShaderSource);
+    FCopyImageShader.LinkShader;
+    WriteLn(FCopyImageShader.Log);
+  end;
 
   FInitialized := True;
 end;

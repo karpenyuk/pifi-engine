@@ -533,6 +533,10 @@ object MainForm: TMainForm
       object TabSheet2: TTabSheet
         Caption = 'CPU synthesis'
         ImageIndex = 1
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object Label1: TLabel
           Left = 3
           Top = 3
@@ -667,6 +671,10 @@ object MainForm: TMainForm
       object TabSheet3: TTabSheet
         Caption = 'GPU synthesis'
         ImageIndex = 2
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object Label10: TLabel
           Left = 11
           Top = 283

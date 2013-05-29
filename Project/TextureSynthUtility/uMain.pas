@@ -21,6 +21,9 @@ uses
   uGLImageSynthesis,
   uBaseTypes;
 
+const
+  VIEW_LEVEL = 0;
+
 type
   TMainForm = class(TForm)
     MainPanel: TPanel;
@@ -312,8 +315,8 @@ begin
     t := _GetTime - t;
     Memo1.Lines.Add('End synthesis');
     Memo1.Lines.Add(Format('Expanded time %.2f msec', [1000 * t]));
-    SynthImage := Synthesizer.SynthImage[0];
-    PatchesImage := Synthesizer.PatchesImage[0];
+    SynthImage := Synthesizer.SynthImage[VIEW_LEVEL];
+    PatchesImage := Synthesizer.PatchesImage[VIEW_LEVEL];
     TextureChaged[1] := True;
     TextureChaged[2] := True;
     ComboBox1.ItemIndex := 1;
@@ -794,7 +797,7 @@ begin
       if GLSynthesizer.Initialized then
       begin
         shader := ViewShader2;
-        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[0]);
+        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[VIEW_LEVEL]);
         w := GLSynthesizer.SideSize;
         h := w;
       end;
