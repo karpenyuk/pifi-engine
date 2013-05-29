@@ -873,6 +873,7 @@ object MainForm: TMainForm
     Height = 592
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
+    OnContextDebugMessage = GLViewer1ContextDebugMessage
     Align = alClient
     OnCanResize = GLViewer1CanResize
   end

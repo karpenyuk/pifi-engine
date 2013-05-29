@@ -101,6 +101,7 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure SaveDataButtonClick(Sender: TObject);
     procedure LoadDataButtonClick(Sender: TObject);
+    procedure GLViewer1ContextDebugMessage(const AMessage: string);
   public
     AnalysisData: TAnalysisData;
     Analyzer: TAnalyzer;
@@ -140,7 +141,7 @@ var
 
   SQ_VO: TVertexObject;
   SQ_Drawer: TGLVertexObject;
-  ViewShader: TGLSLShaderProgram;
+  ViewShader1, ViewShader2: TGLSLShaderProgram;
   Render: TBaseRender;
   ExemplarTextureId: LongInt;
   SynthTextureId: LongInt;
@@ -170,7 +171,8 @@ begin
   while SQ_VO.AttribsCount > 0 do
     SQ_VO.Attribs[0].Destroy;
   SQ_VO.Destroy;
-  ViewShader.Destroy;
+  ViewShader1.Destroy;
+  ViewShader2.Destroy;
   SQ_Drawer.Destroy;
   if GLSynthesizer.Initialized then
     GLSynthesizer.Finalize;
@@ -215,6 +217,8 @@ begin
 
   for e := 0 to High(TextureChaged) do
       TextureChaged[e] := false;
+
+  GLViewer1.Context.DebugContext := True;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -621,6 +625,11 @@ begin
   Proj := TMatrix.PerspectiveMatrix(60, NewWidth / NewHeight, 0.1, 100);
 end;
 
+procedure TMainForm.GLViewer1ContextDebugMessage(const AMessage: string);
+begin
+  WriteLn(AMessage);
+end;
+
 procedure TMainForm.GLViewer1ContextReady(Sender: TObject);
 var
   ver: TApiVersion;
@@ -637,15 +646,23 @@ begin
   path := '../../Source/Media/'; { :-/ }
 {$ENDIF}
 
-  ViewShader := TGLSLShaderProgram.Create;
-
-  ViewShader.AttachShaderFromFile(stVertex, path + 'ScreenQuadShader.Vert');
-  ViewShader.AttachShaderFromFile(stFragment, path + 'ScreenQuadShader.Frag');
-
-  ViewShader.LinkShader;
-  if ViewShader.Error then
+  ViewShader1 := TGLSLShaderProgram.Create;
+  ViewShader1.AttachShaderFromFile(stVertex, path + 'ScreenQuadShader.Vert');
+  ViewShader1.AttachShaderFromFile(stFragment, path + 'ScreenQuadShader.Frag');
+  ViewShader1.LinkShader;
+  if ViewShader1.Error then
   begin
-    showmessage(ViewShader.Log);
+    showmessage(ViewShader1.Log);
+    Halt(0);
+  end;
+
+  ViewShader2 := TGLSLShaderProgram.Create;
+  ViewShader2.AttachShaderFromFile(stVertex, path + 'ScreenQuadShader.Vert');
+  ViewShader2.AttachShaderFromFile(stFragment, path + 'ScreenQuadShaderInt.Frag');
+  ViewShader2.LinkShader;
+  if ViewShader2.Error then
+  begin
+    showmessage(ViewShader2.Log);
     Halt(0);
   end;
 
@@ -702,13 +719,13 @@ begin
 
   SQ_VO := CreatePlane(2, 2);
   SQ_Drawer := TGLVertexObject.CreateFrom(SQ_VO);
-  SQ_Drawer.Shader := ViewShader;
 end;
 
 procedure TMainForm.GLViewer1Render(Sender: TObject);
 var
   ratio: TVector;
   w, h: integer;
+  shader: TGLSLShaderProgram;
 begin
 
   if TextureChaged[0] then
@@ -752,12 +769,8 @@ begin
 
   GLViewer1.Context.ClearDevice;
 
-  ViewShader.Apply;
-
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  shader := ViewShader1;
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, 0);
   case ComboBox1.ItemIndex of
     0:
       begin
@@ -777,29 +790,32 @@ begin
         w := PatchesImage.Width;
         h := PatchesImage.Height;
       end;
-    3:
+    4:
       if GLSynthesizer.Initialized then
       begin
-        glActiveTexture(GL_TEXTURE1);
+        shader := ViewShader2;
         glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[0]);
         w := GLSynthesizer.SideSize;
         h := w;
       end;
     else
     begin
+      glBindTexture(GL_TEXTURE_2D, 0);
       w := GLViewer1.Width;
       h := GLViewer1.Height;
     end;
   end;
+
+  shader.Apply;
 
   ratio := TVector.Make(GLViewer1.Width / w, GLViewer1.Height / h);
   if ratio.X < ratio.Y then
     ratio := TVector.Make(1, ratio.X / ratio.Y)
   else
     ratio := TVector.Make(ratio.Y / ratio.X, 1);
-  ViewShader.SetUniform('Ration', ratio.Vec2);
+  shader.SetUniform('Ration', ratio.Vec2);
 
-  SQ_Drawer.RenderVO;
+  SQ_Drawer.RenderVO(shader.Id);
 end;
 
 end.

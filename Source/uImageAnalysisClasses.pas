@@ -8,8 +8,10 @@ uses
 const
   NEIGHBOUR_DIM = 5;
   HALF_NEIGHBOUR_DIM = 5 div 2;
+  NEIGHBOUR_SIZE_1COLOR = 1 * NEIGHBOUR_DIM * NEIGHBOUR_DIM;
   NEIGHBOUR_SIZE_2COLOR = 2 * NEIGHBOUR_DIM * NEIGHBOUR_DIM;
   NEIGHBOUR_SIZE_3COLOR = 3 * NEIGHBOUR_DIM * NEIGHBOUR_DIM;
+  NEIGHBOUR_SIZE_4COLOR = 4 * NEIGHBOUR_DIM * NEIGHBOUR_DIM;
   SIMILAR_NEIGHBOUR_SIZE = 8;
   INV255 = 1.0 / 255.0;
 
@@ -19,10 +21,13 @@ const
   GL_RGBA = $1908;
   GL_BGR = $80E0;
   GL_BGRA = $80E1;
+  GL_RGBA_INTEGER = $8D99;
   GL_RG8 = $822B;
   GL_RGB8 = $8051;
   GL_RGBA8 = $8058;
+  GL_RGBA8I = $8D8E;
   GL_UNSIGNED_BYTE = $1401;
+  GL_SHORT = $1402;
 
 type
   TEdgePolicy = (
@@ -49,7 +54,7 @@ type
   TVector6f = array [0 .. 5] of single;
 
   TColorPCAMatrix = array [0 .. 2, 0 .. 1] of single;
-  TNeighbPCAmatrix = array [0 .. NEIGHBOUR_SIZE_3COLOR - 1, 0 .. 5] of single;
+  TNeighbPCAmatrix = array [0 .. NEIGHBOUR_SIZE_4COLOR - 1, 0 .. 5] of single;
 
   TFloatPixel = record
     r, g, b: single;

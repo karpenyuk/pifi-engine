@@ -33,7 +33,7 @@ const
   GLSL_SYNTH_UPSAMPLE_JITTER_INTERFACE: ansistring =
 'layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;'#10#13+
 'layout(binding = 0) uniform isampler2D DownLevel;'#10#13+
-'layout(binding = 0) iimage2D UpLevel;'#10#13+
+'layout(binding = 0, rg16i) uniform iimage2D UpLevel;'#10#13+
 'layout(binding = 1) uniform sampler2D Random;'#10#13+
 'uniform ivec4 spacing[3];'#10#13+
 'uniform ivec2 quarter;'#10#13+
@@ -52,13 +52,13 @@ const
 '  ivec4 delta;'#10#13+
 '  delta = rand(up_coords);'#10#13+
 '  imageStore(UpLevel, up_coords, delta + p);'#10#13+
-'  coords += ivec2(1, 0);'#10#13+
+'  up_coords += ivec2(1, 0);'#10#13+
 '  delta = rand(up_coords);'#10#13+
 '  imageStore(UpLevel, up_coords, delta + tiling(p + spacing[0]));'#10#13+
-'  coords += ivec2(-1, 1);'#10#13+
+'  up_coords += ivec2(-1, 1);'#10#13+
 '  delta = rand(up_coords);'#10#13+
 '  imageStore(UpLevel, up_coords, delta + tiling(p + spacing[1]));'#10#13+
-'  coords += ivec2(1, 0);'#10#13+
+'  up_coords += ivec2(1, 0);'#10#13+
 '  delta = rand(up_coords);'#10#13+
 '  imageStore(UpLevel, up_coords, delta + tiling(p + spacing[2]));'#10#13+
 '}';
@@ -78,16 +78,16 @@ const
 'layout(binding = 2) uniform isampler2D kNearestMap;'#10#13+
 'layout(binding = 3) uniform sampler2D neigbMapPart1;'#10#13+
 'layout(binding = 4) uniform sampler2D neigbMapPart2;'#10#13+
-'layout(binding = 0) iimage2D WriteSynth;'#10#13+
+'layout(binding = 0, rg16i) uniform iimage2D WriteSynth;'#10#13+
 'layout(std430, binding = 0) buffer NeihgbPCAMatrix {'#10#13+
-'  vec3 Matrix[150];'#10#13+
+'  vec4 Matrix[150];'#10#13+
 '} NPCA;';
 
   GLSL_SYNTH_CORRECTION_MAIN: ansistring =
 'void main()'#10#13+
 '{'#10#13+
-'  ivec2 coords = ivec2(gl_WorkGroupID.xy * uvec2(32) + gl_LocalInvocationID.xy);'#10#13+
-'  coords += subPassOffset;'#10#13+
+'  ivec2 coords = ivec2(gl_WorkGroupID.xy * uvec2(16) + gl_LocalInvocationID.xy);'#10#13+
+'  coords = coords * ivec2(2) + subPassOffset;'#10#13+
 '	 vec3 N123 = vec3(0.0);'#10#13+
 '	 vec3 N456 = vec3(0.0);'#10#13+
 '	 int idx = 0;'#10#13+
@@ -96,12 +96,12 @@ const
 '      ivec2 xy = tiling(coords + ivec2(nj, ni));'#10#13+
 '      ivec2 p = texelFetch( ReadSynth, xy, 0 ).xy;'#10#13+
 '		   vec3 N = texelFetch( Exemplar, p, 0 ).rgb;'#10#13+
-'			 N123.x += dot(N, NPCA.Matrix[idx]);	idx += 25;'#10#13+
-'			 N123.y += dot(N, NPCA.Matrix[idx]);	idx += 25;'#10#13+
-'			 N123.z += dot(N, NPCA.Matrix[idx]);	idx += 25;'#10#13+
-'			 N456.x += dot(N, NPCA.Matrix[idx]);	idx += 25;'#10#13+
-'			 N456.y += dot(N, NPCA.Matrix[idx]);	idx += 25;'#10#13+
-'			 N456.z += dot(N, NPCA.Matrix[idx]);	idx -= 124;'#10#13+
+'			 N123.x += dot(N, NPCA.Matrix[idx].xyz);	idx += 25;'#10#13+
+'			 N123.y += dot(N, NPCA.Matrix[idx].xyz);	idx += 25;'#10#13+
+'			 N123.z += dot(N, NPCA.Matrix[idx].xyz);	idx += 25;'#10#13+
+'			 N456.x += dot(N, NPCA.Matrix[idx].xyz);	idx += 25;'#10#13+
+'			 N456.y += dot(N, NPCA.Matrix[idx].xyz);	idx += 25;'#10#13+
+'			 N456.z += dot(N, NPCA.Matrix[idx].xyz);	idx -= 124;'#10#13+
 '		 }'#10#13+
 '	 }'#10#13+
 
@@ -130,9 +130,9 @@ const
 '			candidate.xy -= delta;'#10#13+
 '			candidate.zw -= delta;'#10#13+
 
-'			exN123 = texelFetch( neigbMapPart1, candidate.xy, 0 ).rgb;'#10#13+
+'			exN123 = texelFetch( neigbMapPart1, tiling(candidate.xy), 0 ).rgb;'#10#13+
 '			exN123 = exN123 * NeighbScale1 + NeighbOffset1;'#10#13+
-'			exN456 = texelFetch( neigbMapPart2, candidate.xy, 0 ).rgb;'#10#13+
+'			exN456 = texelFetch( neigbMapPart2, tiling(candidate.xy), 0 ).rgb;'#10#13+
 '			exN456 = exN456 * NeighbScale2 + NeighbOffset2;'#10#13+
 
 '			diff = N123 - exN123;'#10#13+
@@ -145,9 +145,9 @@ const
 '				best.xy = candidate.xy;'#10#13+
 '			}'#10#13+
 
-'			exN123 = texelFetch( neigbMapPart1, candidate.zw, 0 ).rgb;'#10#13+
+'			exN123 = texelFetch( neigbMapPart1, tiling(candidate.zw), 0 ).rgb;'#10#13+
 '			exN123 = exN123 * NeighbScale1 + NeighbOffset1;'#10#13+
-'			exN456 = texelFetch( neigbMapPart2, candidate.zw, 0 ).rgb;'#10#13+
+'			exN456 = texelFetch( neigbMapPart2, tiling(candidate.zw), 0 ).rgb;'#10#13+
 '			exN456 = exN456 * NeighbScale2 + NeighbOffset2;'#10#13+
 
 '			diff = N123 - exN123;'#10#13+

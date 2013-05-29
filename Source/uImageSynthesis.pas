@@ -86,7 +86,8 @@ type
     // Controls jitter horizontal and vertical periods
     property JitterPeriodX: integer read FJitterPeriodX write FJitterPeriodX;
     property JitterPeriodY: integer read FJitterPeriodY write FJitterPeriodY;
-    // Controls whether coherent candidates are favored; 1.0 has no effect, 0.1 has strong effect, 0.0 is invalid.
+    // Controls whether coherent candidates are favored; 1.0 has no effect,
+    // 0.1 has strong effect, 0.0 is invalid.
     property Kappa: single read FKappa write FKappa;
     property AnalysisData: TAnalysisData read FAnalysisData;
     // Number of threads to be used for the correction step
@@ -413,7 +414,7 @@ end;
 procedure TSynthesizer.CorrectionSubpassInRegion(subPass: integer; rx: integer;
   ry: integer; rw: integer; rh: integer);
 const
-  step: array [0 .. 3] of Vec2i = ((0, 0), (1, 0), (0, 1), (1, 1));
+  STEP: array [0 .. 3] of Vec2i = ((0, 0), (1, 1), (0, 1), (1, 0));
 var
   Dest: TVec2iArray2D;
   spacing, i, j, k, ni, nj, ci, cj, nk: integer;
@@ -446,7 +447,7 @@ begin
       // project it to 6D vector
       for nj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         for ni := 0 to 5 do
-          syN_V6D[ni] := syN_V6D[ni] + NM[nj, ni] * syN[nj];
+          syN_V6D[ni] := syN_V6D[ni] + NM[4 * nj div 3, ni] * syN[nj];
       /// Find best matching candidate
       minDis := 1E30;
       best := FReadBuffer.At[j, i];

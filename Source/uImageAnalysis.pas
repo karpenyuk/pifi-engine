@@ -8,7 +8,8 @@ uses
   uVMath,
   uImageAnalysisClasses;
 
-{ .$IFDEF PACKED_EXEMPLAR_RG }
+{$POINTERMATH ON}
+{.$IFDEF PACKED_EXEMPLAR_RG }
 
 type
 
@@ -25,6 +26,7 @@ type
     // Using principal component analysis (PCA)
     // projecting pixel neighborhoods into a lower-dimensional space (6D vector)
     procedure ProjectNeighbTo6D(alevel: integer);
+    procedure PrepareKNearest(alevel: integer);
     function GetDone: boolean;
     function GetLevelCount: integer;
     function GetProgress: Single;
@@ -300,6 +302,44 @@ begin
     FAnalysisData.IsValid := True;
 end;
 
+procedure TAnalyzer.PrepareKNearest(alevel: integer);
+var
+  Level: PAnalyzedLevel;
+  p: PWord;
+  i, j: integer;
+  ms: TMostSimilar;
+begin
+  Level := FAnalysisData.Levels[alevel];
+  with Level^ do
+  begin
+    FillChar(kNearest, SizeOf(TImageDesc), $00);
+    kNearest.Width := FAnalysisData.Exemplar.Width;
+    kNearest.Height := FAnalysisData.Exemplar.Height;
+    kNearest.InternalFormat := GL_RGBA8I;
+    kNearest.ColorFormat := GL_RGBA_INTEGER;
+    kNearest.ElementSize := 8;
+    kNearest.DataType := GL_SHORT;
+    kNearest.DataSize := kNearest.Width * kNearest.Height * 8;
+    GetMem(kNearest.Data, kNearest.DataSize);
+  end;
+
+  // scale color to byte size
+  p := Level.kNearest.Data;
+  for i := 0 to Level.kNearest.Height - 1 do
+  begin
+    for j := 0 to Level.kNearest.Width  - 1 do
+    begin
+      ms := FAnalysisData.kNearests.At[j, i, alevel];
+      p[0] := ms[1][0];
+      p[1] := ms[1][1];
+      p[2] := ms[SIMILAR_NEIGHBOUR_SIZE-1][0];
+      p[3] := ms[SIMILAR_NEIGHBOUR_SIZE-1][1];
+      Inc(p, 2);
+//      Inc(Level.CycleCounter);
+    end;
+  end;
+end;
+
 procedure TAnalyzer.Process;
 var
   i, w: integer;
@@ -366,9 +406,19 @@ begin
   // store only 6 basis
   if Info = 1 then
     for i := 0 to 5 do
-      for j := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
+    begin
+      k := 0;
+      for j := 0 to NEIGHBOUR_SIZE_1COLOR - 1 do
         with FAnalysisData.Levels[alevel]^ do
-            NeihgbPCAMatrix[j, i] := PCA[j, i];
+        begin
+          k := j * 4;
+          row := j * 3;
+          NeihgbPCAMatrix[k, i] := PCA[row, i];
+          NeihgbPCAMatrix[k+1, i] := PCA[row+1, i];
+          NeihgbPCAMatrix[k+2, i] := PCA[row+2, i];
+          NeihgbPCAMatrix[k+3, i] := 0;
+        end;
+    end;
 
   minValue := MAX6D;
   maxValue := MIN6D;
@@ -381,7 +431,7 @@ begin
       for mj := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
         for mi := 0 to 5 do
           with FAnalysisData.Levels[alevel]^ do
-              V6D[mi] := V6D[mi] + NeihgbPCAMatrix[mj, mi] * Neighb[mj];
+              V6D[mi] := V6D[mi] + NeihgbPCAMatrix[4 * mj div 3, mi] * Neighb[mj];
       FAnalysisData.Neighborhoods.As6DAt[j, i, alevel] := V6D;
 
       for k := 0 to 5 do
@@ -667,6 +717,8 @@ begin
   FAnalyzer.ProjectNeighbTo6D(FData.LevelId);
   // Analyze stack level - search most similar neighborhoods
   FAnalyzer.AnalyzeStackLevel(FData.LevelId);
+  // Prepare image for kNearest
+  FAnalyzer.PrepareKNearest(FData.LevelId);
 end;
 
 function TAnalyzerThread.GetProgress: Single;
