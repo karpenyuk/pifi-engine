@@ -70,7 +70,6 @@ type
     procedure setDepthBits(const Value: byte); virtual;
     property ForwardContext: Boolean read FForwardContext write FForwardContext default True;
     property DebugContext: Boolean read FDebugContext write FDebugContext default False;
-    property OnContextDebugMessage: TOnDebugMessage read FOnDebug write FOnDebug;
   public
     constructor Create;
 
@@ -154,7 +153,6 @@ type
     property MaxMinorVersion: integer read FMinorVersion;
     property ForwardContext;
     property DebugContext;
-    property OnContextDebugMessage;
   end;
 
 {$IFDEF FPC}
@@ -199,6 +197,8 @@ type
     procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
     procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
     function getDeltaZ: single;
+    function GetOnDebug: TOnDebugMessage;
+    procedure SetOnDebug(const Value: TOnDebugMessage);
 
   protected
     procedure CreateWnd; override;
@@ -245,6 +245,7 @@ type
     property VSync: boolean read getVSync write SetVSync default False;
     property FixedFPS: integer read FFixedFPS write setUpdateTime default 0;
     property Context: TGLContext read FContext;
+    property OnContextDebugMessage: TOnDebugMessage read GetOnDebug write SetOnDebug;
 
     property Align;
     property Visible;
@@ -469,6 +470,11 @@ begin
   FDeltaZ := FDeltaZ / 1.2;
 end;
 
+function TGLViewer.GetOnDebug: TOnDebugMessage;
+begin
+  Result := FContext.FOnDebug;
+end;
+
 function TGLViewer.getVSync: boolean;
 begin
   if (csDesigning in ComponentState) then
@@ -561,6 +567,11 @@ begin
   inherited;
   if ContextReady then
     FContext.Resize(Width, Height);
+end;
+
+procedure TGLViewer.SetOnDebug(const Value: TOnDebugMessage);
+begin
+  Context.FOnDebug := Value;
 end;
 
 {$ENDIF}
