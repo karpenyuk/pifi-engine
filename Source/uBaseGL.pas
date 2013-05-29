@@ -1120,6 +1120,8 @@ var
   pLog: PAnsiChar;
   p: PGLChar;
 begin
+  if Length(Source) = 0 then
+    Exit;
   Shader := glCreateShader(CShaderTypes[ShaderType]);
   p := PGLChar(Source);
   if (Shader > 0) then
