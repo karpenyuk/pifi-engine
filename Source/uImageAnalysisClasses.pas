@@ -25,7 +25,8 @@ const
   GL_RG8 = $822B;
   GL_RGB8 = $8051;
   GL_RGBA8 = $8058;
-  GL_RGBA8I = $8D8E;
+  GL_RGBA8UI = $8D7C;
+  GL_RGBA16I = $8D88;
   GL_UNSIGNED_BYTE = $1401;
   GL_SHORT = $1402;
 
@@ -654,11 +655,11 @@ begin
 
   result.Width := FWidth;
   result.Height := FHeight;
-  result.InternalFormat := GL_RGB8;
-  result.ColorFormat := GL_RGB;
+  result.InternalFormat := GL_RGBA8UI;
+  result.ColorFormat := GL_RGBA_INTEGER;
   result.DataType := GL_UNSIGNED_BYTE;
-  result.ElementSize := 3;
-  result.DataSize := FWidth * FHeight * 3;
+  result.ElementSize := 4;
+  result.DataSize := FWidth * FHeight * 4;
   GetMem(result.Data, result.DataSize);
   p := result.Data;
 
@@ -667,7 +668,8 @@ begin
     p[0] := Floor(FData[i].r);
     p[1] := Floor(FData[i].g);
     p[2] := Floor(FData[i].b);
-    Inc(p, 3);
+    p[3] := $FF;
+    Inc(p, result.ElementSize);
   end;
 end;
 

@@ -305,7 +305,7 @@ end;
 procedure TAnalyzer.PrepareKNearest(alevel: integer);
 var
   Level: PAnalyzedLevel;
-  p: PWord;
+  p: PSmallInt;
   i, j: integer;
   ms: TMostSimilar;
 begin
@@ -315,7 +315,7 @@ begin
     FillChar(kNearest, SizeOf(TImageDesc), $00);
     kNearest.Width := FAnalysisData.Exemplar.Width;
     kNearest.Height := FAnalysisData.Exemplar.Height;
-    kNearest.InternalFormat := GL_RGBA8I;
+    kNearest.InternalFormat := GL_RGBA16I;
     kNearest.ColorFormat := GL_RGBA_INTEGER;
     kNearest.ElementSize := 8;
     kNearest.DataType := GL_SHORT;
@@ -334,9 +334,9 @@ begin
       p[1] := ms[1][1];
       p[2] := ms[SIMILAR_NEIGHBOUR_SIZE-1][0];
       p[3] := ms[SIMILAR_NEIGHBOUR_SIZE-1][1];
-      Inc(p, 2);
-//      Inc(Level.CycleCounter);
+      Inc(p, 4);
     end;
+    Inc(Level.CycleCounter, Level.kNearest.Width);
   end;
 end;
 
@@ -481,12 +481,10 @@ begin
     GetMem(Neighborhoods[1].Data, Neighborhoods[1].DataSize);
   end;
 
+  p1 := FAnalysisData.Levels[alevel].Neighborhoods[0].Data;
+  p2 := FAnalysisData.Levels[alevel].Neighborhoods[1].Data;
   for i := 0 to h - 1 do
   begin
-    p1 := FAnalysisData.Levels[alevel].Neighborhoods[0].Data;
-    p2 := FAnalysisData.Levels[alevel].Neighborhoods[1].Data;
-    Inc(p1, i * w * 4);
-    Inc(p2, i * w * 4);
     for j := 0 to w - 1 do
     begin
       V6D := FAnalysisData.Neighborhoods.As6DAt[j, i, alevel];
@@ -703,7 +701,7 @@ begin
   inherited Create(true);
   FAnalyzer := aOwner;
   FData := alevel;
-  FTatalCycle := 5 * FData.FloatImage.Width * FData.FloatImage.Height + 4 *
+  FTatalCycle := 5 * FData.FloatImage.Width * FData.FloatImage.Height + 5 *
     aOwner.FAnalysisData.Exemplar.Width * aOwner.FAnalysisData.Exemplar.Height;
 end;
 

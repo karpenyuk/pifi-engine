@@ -671,10 +671,6 @@ object MainForm: TMainForm
       object TabSheet3: TTabSheet
         Caption = 'GPU synthesis'
         ImageIndex = 2
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object Label10: TLabel
           Left = 11
           Top = 283
@@ -883,7 +879,6 @@ object MainForm: TMainForm
     OnContextReady = GLViewer1ContextReady
     OnContextDebugMessage = GLViewer1ContextDebugMessage
     Align = alClient
-    OnCanResize = GLViewer1CanResize
   end
   object OpenPictureDialog: TOpenPictureDialog
     DefaultExt = 'bmp'

@@ -99,8 +99,6 @@ type
     procedure FormCreate(Sender: TObject);
     procedure GLViewer1ContextReady(Sender: TObject);
     procedure GLViewer1Render(Sender: TObject);
-    procedure GLViewer1CanResize(Sender: TObject; var NewWidth,
-      NewHeight: Integer; var Resize: Boolean);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure SaveDataButtonClick(Sender: TObject);
     procedure LoadDataButtonClick(Sender: TObject);
@@ -127,6 +125,7 @@ uses
   uBaseRenders,
   uBaseGL,
   uRenderResource,
+  uImageSynthesisShaderGen,
   uVMath,
   JPEG;
 
@@ -144,14 +143,14 @@ var
 
   SQ_VO: TVertexObject;
   SQ_Drawer: TGLVertexObject;
-  ViewShader1, ViewShader2: TGLSLShaderProgram;
+  ViewShader1, ViewShader2, ViewShader3: TGLSLShaderProgram;
   Render: TBaseRender;
   ExemplarTextureId: LongInt;
   SynthTextureId: LongInt;
   PatchesTextureId: LongInt;
+  SamplerId: LongInt;
   SynthImage: TImageDesc;
   PatchesImage: TImageDesc;
-  Proj: TMatrix;
 
   TextureChaged: array[0..2] of Boolean;
   UpdateGLSynth: Boolean;
@@ -169,6 +168,9 @@ procedure TMainForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   glFinish;
   glDeleteTextures(1, @ExemplarTextureId);
+  glDeleteTextures(1, @SynthTextureId);
+  glDeleteTextures(1, @PatchesTextureId);
+  glDeleteSamplers(1, @SamplerId);
   GLViewer1.OnRender := nil;
   GLViewer1.Context.Deactivate;
   while SQ_VO.AttribsCount > 0 do
@@ -622,12 +624,6 @@ begin
   }
 end;
 
-procedure TMainForm.GLViewer1CanResize(Sender: TObject; var NewWidth,
-  NewHeight: Integer; var Resize: Boolean);
-begin
-  Proj := TMatrix.PerspectiveMatrix(60, NewWidth / NewHeight, 0.1, 100);
-end;
-
 procedure TMainForm.GLViewer1ContextDebugMessage(const AMessage: string);
 begin
   WriteLn(AMessage);
@@ -637,6 +633,7 @@ procedure TMainForm.GLViewer1ContextReady(Sender: TObject);
 var
   ver: TApiVersion;
   path: string;
+  shader: TShaderProgram;
 begin
   ver.GAPI := avGL;
   ver.Version := 420;
@@ -668,6 +665,13 @@ begin
     showmessage(ViewShader2.Log);
     Halt(0);
   end;
+
+  shader := TShaderProgram.Create;
+  shader.ShaderText[stVertex] := GLSL_SYNTH_VIEW_IMAGE_VTX;
+  shader.ShaderText[stFragment] := GLSL_SYNTH_VIEW_IMAGE_FRAG;
+  ViewShader3 := TGLSLShaderProgram.CreateFrom(shader);
+  ViewShader3.LinkShader;
+  shader.Free;
 
   glGenTextures(1, @ExemplarTextureId);
   glBindTexture(GL_TEXTURE_2D, ExemplarTextureId);
@@ -719,6 +723,10 @@ begin
     GL_NEAREST);
   glTextureParameterfEXT(PatchesTextureId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
     GL_NEAREST);
+
+  glGenSamplers(1, @SamplerId);
+  glSamplerParameteri(SamplerId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
   SQ_VO := CreatePlane(2, 2);
   SQ_Drawer := TGLVertexObject.CreateFrom(SQ_VO);
@@ -793,6 +801,17 @@ begin
         w := PatchesImage.Width;
         h := PatchesImage.Height;
       end;
+    3:
+      if GLSynthesizer.Initialized then
+      begin
+        glBindSampler(0, SamplerId);
+        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.ExemplarTextureIDs[VIEW_LEVEL]);
+        shader := ViewShader3;
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[VIEW_LEVEL]);
+        w := GLSynthesizer.SideSize;
+        h := w;
+      end;
     4:
       if GLSynthesizer.Initialized then
       begin
@@ -819,6 +838,8 @@ begin
   shader.SetUniform('Ration', ratio.Vec2);
 
   SQ_Drawer.RenderVO(shader.Id);
+
+  glBindSampler(0, 0);
 end;
 
 end.

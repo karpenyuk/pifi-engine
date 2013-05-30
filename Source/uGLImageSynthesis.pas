@@ -10,6 +10,8 @@ uses
   uRenderResource,
   uVMath;
 
+{$POINTERMATH ON}
+
 type
 
   TGLSynthLevel = record
@@ -48,6 +50,7 @@ type
     procedure SetCorrectionShaderSource(const Value: TShaderProgram);
     procedure SetUpsampleShaderSource(const Value: TShaderProgram);
     function GetTextureID(Level: integer): GLuint;
+    function GetExemplarTextureID(Level: integer): GLuint;
 
   protected
     procedure CreateRandomTexture;
@@ -64,6 +67,7 @@ type
     class function Supported: Boolean;
     property Initialized: Boolean read FInitialized;
 
+    property ExemplarTextureIDs[Level: integer]: GLuint read GetExemplarTextureID;
     // GL name of synthesized pathces texture
     property PachesTextureIDs[Level: integer]: GLuint read GetTextureID;
     // Return numder of synthesyzed levels
@@ -106,10 +110,10 @@ begin
   begin
     FCopyImageShader.Apply;
     // Source
-    glActiveTexture(GL_TEXTURE5);
+    glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, FLevels[aLevel].PatchesTextureId);
     // Destination
-    glBindImageTexture(1, FReadSynthTextureId, 0, False, 0,
+    glBindImageTexture(6, FReadSynthTextureId, 0, False, 0,
       GL_WRITE_ONLY, GL_RG16I);
     glDispatchCompute(FWorkGroupCount[0], FWorkGroupCount[1], 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -162,7 +166,8 @@ end;
 
 procedure TGLSynthesizer.DoCorrection(aLevel: integer);
 const
-  STEP: array [0 .. 3] of Vec2i = ((0, 0), (1, 1), (0, 1), (1, 0));
+  STEP: array [0 .. 7] of Vec2i = (
+    (0, 0), (1, 1), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0));
 var
   iv: Vec2i;
   v6: TVector6f;
@@ -192,10 +197,10 @@ begin
     glBindTexture(GL_TEXTURE_2D, FLevels[aLevel].NeihgbPart2TextureId);
 
     // Destination
-    glBindImageTexture(0, FLevels[aLevel].PatchesTextureId, 0, False, 0,
+    glBindImageTexture(5, FLevels[aLevel].PatchesTextureId, 0, False, 0,
       GL_WRITE_ONLY, GL_RG16I);
 
-    FLevels[aLevel].NeihgbPCAMatrixBuffer.BindBase(0);
+    FLevels[aLevel].NeihgbPCAMatrixBuffer.BindAllRange(0);
 
     // Exemplar texture size
     iv[0] := FAnalysisData.Exemplar.Width;
@@ -219,13 +224,13 @@ begin
     pv := @v6[3];
     SetUniform('NeighbOffset2', pv^);
 
-    SetUniform('Kappa', FKappa);
+    SetUniform('Kappa', 1.0);
 
     for subPass := 0 to 7 do
     begin
       CopyToReadSynthTexture(aLevel);
-      SetUniform('subPassOffset', STEP[subPass and 3]);
-      glDispatchCompute(2 * FWorkGroupCount[0], 2 * FWorkGroupCount[1], 1);
+      SetUniform('subPassOffset', STEP[subPass]);
+      glDispatchCompute(FWorkGroupCount[0] div 2, FWorkGroupCount[1] div 2, 1);
       glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     end;
 
@@ -309,6 +314,11 @@ begin
   FInitialized := False;
 end;
 
+function TGLSynthesizer.GetExemplarTextureID(Level: integer): GLuint;
+begin
+  Result := FLevels[Level].ExemplarTextureId;
+end;
+
 function TGLSynthesizer.GetLevelCount: integer;
 begin
   Result := Length(FLevels);
@@ -321,13 +331,16 @@ end;
 
 procedure TGLSynthesizer.Initialize;
 var
-  L, spacing: integer;
+  L, spacing, i, j, k: integer;
   img: TImageDesc;
   initCoords: Vec2i;
   wgs, wgc: vec3i;
+  M: Pointer;
+  pM: PSingle;
 begin
-  Assert(not FInitialized);
   Assert(Supported);
+  if FInitialized then
+    Finalize;
 
   if not FAnalysisData.IsValid then
   begin
@@ -358,10 +371,22 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  if FAnalysisData.EdgePolicy = epRepeat then
+  begin
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  end
+  else
+  begin
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+  end;
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16I, FSideSize, FSideSize, 0,
     GL_RG_INTEGER, GL_SHORT, nil);
   //  glTextureStorage2DEXT(FReadSynthTextureId, GL_TEXTURE_2D, 1,
 //    GL_RG16I, FSideSize, FSideSize);
+
+  GetMem(M, SizeOf(TNeighbPCAmatrix));
 
   SetLength(FLevels, FAnalysisData.LevelsAmount);
   for L := 0 to High(FLevels) do
@@ -384,6 +409,7 @@ begin
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, img.InternalFormat, img.Width, img.Height, 0,
       img.ColorFormat, img.DataType, img.Data);
+
     // Empty patches level
     glBindTexture(GL_TEXTURE_2D, FLevels[L].PatchesTextureId);
     glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
@@ -394,6 +420,7 @@ begin
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16I, FSideSize, FSideSize, 0, GL_RG_INTEGER, GL_SHORT, nil);
 //    glTextureStorage2DEXT(FReadSynthTextureId, GL_TEXTURE_2D, 1,
 //      GL_RG16I, FSideSize, FSideSize);
+
     // Most similar
     img := FAnalysisData.Levels[L].kNearest;
     glBindTexture(GL_TEXTURE_2D, FLevels[L].kNearestTextureId);
@@ -402,6 +429,7 @@ begin
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, img.InternalFormat, img.Width, img.Height, 0,
       img.ColorFormat, img.DataType, img.Data);
+
     // Neihgborhoods in two texture
     img := FAnalysisData.Levels[L].Neighborhoods[0];
     glBindTexture(GL_TEXTURE_2D, FLevels[L].NeihgbPart1TextureId);
@@ -417,10 +445,24 @@ begin
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, img.InternalFormat, img.Width, img.Height, 0,
       img.ColorFormat, img.DataType, img.Data);
+
     // PCA matrix of neihgborhoods level
+    pM := M;
+    for i := 0 to 5 do
+      for j := 0 to NEIGHBOUR_SIZE_1COLOR - 1 do
+      with FAnalysisData.Levels[L]^ do
+      begin
+        k := 4 * j;
+        pM[0] := NeihgbPCAMatrix[k + 0, i];
+        pM[1] := NeihgbPCAMatrix[k + 1, i];
+        pM[2] := NeihgbPCAMatrix[k + 2, i];
+        pM[3] := 0;
+        Inc(pM, 4);
+      end;
     FLevels[L].NeihgbPCAMatrixBuffer := TGLBufferObject.Create(btUniform);
-    FLevels[L].NeihgbPCAMatrixBuffer.Allocate(SizeOf(TNeighbPCAmatrix),
-      @FAnalysisData.Levels[L].NeihgbPCAMatrix, GL_STATIC_READ);
+    FLevels[L].NeihgbPCAMatrixBuffer.Allocate(SizeOf(TNeighbPCAmatrix), M,
+      GL_STATIC_READ);
+
     if L < 3 then
       FLevels[L].JitterStrength := Vec2Make(0, 0)
     else
@@ -477,6 +519,8 @@ begin
     FCopyImageShader.LinkShader;
     WriteLn(FCopyImageShader.Log);
   end;
+
+  FreeMem(M);
 
   FInitialized := True;
 end;
