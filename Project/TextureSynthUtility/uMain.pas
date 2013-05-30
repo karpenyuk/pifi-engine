@@ -835,7 +835,7 @@ begin
     ratio := TVector.Make(1, ratio.X / ratio.Y)
   else
     ratio := TVector.Make(ratio.Y / ratio.X, 1);
-  shader.SetUniform('Ration', ratio.Vec2);
+  shader.SetUniform('Ratio', ratio.Vec2);
 
   SQ_Drawer.RenderVO(shader.Id);
 
