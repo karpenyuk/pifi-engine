@@ -28,13 +28,24 @@ type
   TMainForm = class(TForm)
     MainPanel: TPanel;
     Memo1: TMemo;
+    Label8: TLabel;
+    ComboBox1: TComboBox;
+    OpenPictureDialog: TOpenPictureDialog;
+    GLViewer1: TGLViewer;
+    OpenDataDialog: TOpenDialog;
+    SaveDataDialog: TSaveDialog;
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
     Label2: TLabel;
     Image1: TImage;
     Label9: TLabel;
+    Label15: TLabel;
     AnalyzeButton: TButton;
     SpinEdit1: TSpinEdit;
+    SaveDataButton: TButton;
+    LoadDataButton: TButton;
+    AnalysisProgressBar: TProgressBar;
+    TilingComboBox: TComboBox;
     TabSheet2: TTabSheet;
     Label1: TLabel;
     Label3: TLabel;
@@ -50,12 +61,12 @@ type
     Edit5: TEdit;
     Edit3: TEdit;
     SynthesizeButton: TButton;
-    TabSheet3: TTabSheet;
+    SynthProgressBar: TProgressBar;
     Label10: TLabel;
-    Label11: TLabel;
+    ComboBox3: TComboBox;
+    JitterControllPanel: TPanel;
+    Label14: TLabel;
     Label12: TLabel;
-    Label13: TLabel;
-    ComboBox2: TComboBox;
     TrackBar1: TTrackBar;
     TrackBar2: TTrackBar;
     TrackBar3: TTrackBar;
@@ -63,22 +74,8 @@ type
     TrackBar5: TTrackBar;
     TrackBar6: TTrackBar;
     TrackBar7: TTrackBar;
+    Label13: TLabel;
     TrackBar8: TTrackBar;
-    Label14: TLabel;
-    TrackBar9: TTrackBar;
-    Button3: TButton;
-    Label8: TLabel;
-    ComboBox1: TComboBox;
-    OpenPictureDialog: TOpenPictureDialog;
-    GLViewer1: TGLViewer;
-    OpenDataDialog: TOpenDialog;
-    SaveDataDialog: TSaveDialog;
-    SaveDataButton: TButton;
-    LoadDataButton: TButton;
-    AnalysisProgressBar: TProgressBar;
-    SynthProgressBar: TProgressBar;
-    TilingComboBox: TComboBox;
-    Label15: TLabel;
     procedure TrackBar9Change(Sender: TObject);
     procedure ComboBox2Change(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
@@ -135,7 +132,7 @@ var
   TexWidth: integer = 512;
   TexHeight: integer = 512;
   // one for analyzer, one for synthesizer
-  Jitter: single = 1.0;
+  Jitter: single = 25.0;
   tsKappa: single = 1.0;
   PeriodX: integer = 0;
   PeriodY: integer = 0;
@@ -536,13 +533,16 @@ end;
 
 // Jitter control
 procedure TMainForm.TrackBar1Change(Sender: TObject);
-//var  L: integer;
+var
+  L: integer;
 begin
-  // L := TTrackBar(Sender).Tag;
-  // if L < GPUSynthesizer.NumLevels then begin
-  // GPUSynthesizer.JitterControl[L] := TTrackBar(Sender).Position /
-  // TTrackBar(Sender).Max;
-  // end;
+  L := TTrackBar(Sender).Tag;
+  if L < GLSynthesizer.LevelCount then
+  begin
+    GLSynthesizer.JitterStrength[L] :=
+      Jitter * TTrackBar(Sender).Position / TTrackBar(Sender).Max;
+    UpdateGLSynth := true;
+  end;
 end;
 
 // Coherence control
@@ -666,9 +666,7 @@ begin
     Halt(0);
   end;
 
-  shader := TShaderProgram.Create;
-  shader.ShaderText[stVertex] := GLSL_SYNTH_VIEW_IMAGE_VTX;
-  shader.ShaderText[stFragment] := GLSL_SYNTH_VIEW_IMAGE_FRAG;
+  shader := SynthesisShaderGenerator.GenViewShader(nil);
   ViewShader3 := TGLSLShaderProgram.CreateFrom(shader);
   ViewShader3.LinkShader;
   shader.Free;
@@ -780,6 +778,8 @@ begin
 
   GLViewer1.Context.ClearDevice;
 
+  w := GLViewer1.Width;
+  h := GLViewer1.Height;
   shader := ViewShader1;
   glActiveTexture(GL_TEXTURE0);
   case ComboBox1.ItemIndex of
@@ -823,8 +823,6 @@ begin
     else
     begin
       glBindTexture(GL_TEXTURE_2D, 0);
-      w := GLViewer1.Width;
-      h := GLViewer1.Height;
     end;
   end;
 

@@ -1,8 +1,8 @@
 object MainForm: TMainForm
   Left = 0
   Top = 0
-  ClientHeight = 592
-  ClientWidth = 803
+  ClientHeight = 864
+  ClientWidth = 1084
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -16,24 +16,32 @@ object MainForm: TMainForm
   PixelsPerInch = 96
   TextHeight = 13
   object MainPanel: TPanel
-    Left = 583
+    Left = 864
     Top = 0
     Width = 220
-    Height = 592
+    Height = 864
     Align = alRight
     TabOrder = 0
+    ExplicitLeft = 580
+    ExplicitHeight = 800
+    DesignSize = (
+      220
+      864)
     object Label8: TLabel
       Left = 14
-      Top = 367
+      Top = 639
       Width = 71
       Height = 13
+      Anchors = [akRight, akBottom]
       Caption = 'Image preview'
+      ExplicitTop = 367
     end
     object Memo1: TMemo
-      Left = 8
-      Top = 413
+      Left = 6
+      Top = 685
       Width = 209
       Height = 176
+      Anchors = [akRight, akBottom]
       Color = clMenuText
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindow
@@ -44,17 +52,41 @@ object MainForm: TMainForm
       ReadOnly = True
       ScrollBars = ssVertical
       TabOrder = 0
+      ExplicitTop = 583
+    end
+    object ComboBox1: TComboBox
+      Left = 14
+      Top = 658
+      Width = 200
+      Height = 21
+      Anchors = [akRight, akBottom]
+      ItemIndex = 0
+      TabOrder = 1
+      Text = 'Exemplar'
+      OnChange = ComboBox1Change
+      Items.Strings = (
+        'Exemplar'
+        'CPU synthesis result'
+        'CPU result patches'
+        'GPU synthesis result'
+        'GPU result patches')
+      ExplicitTop = 386
     end
     object PageControl1: TPageControl
       Left = 6
-      Top = 8
+      Top = 0
       Width = 214
-      Height = 353
+      Height = 631
       ActivePage = TabSheet1
-      TabOrder = 1
+      Anchors = [akTop, akRight]
+      TabOrder = 2
       OnChange = PageControl1Change
       object TabSheet1: TTabSheet
         Caption = 'Analysis'
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 325
         object Label2: TLabel
           Left = 3
           Top = 0
@@ -531,12 +563,11 @@ object MainForm: TMainForm
         end
       end
       object TabSheet2: TTabSheet
-        Caption = 'CPU synthesis'
+        Caption = 'Synthesis'
         ImageIndex = 1
         ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
+        ExplicitTop = 31
+        ExplicitHeight = 549
         object Label1: TLabel
           Left = 3
           Top = 3
@@ -546,7 +577,7 @@ object MainForm: TMainForm
         end
         object Label3: TLabel
           Left = 3
-          Top = 249
+          Top = 524
           Width = 64
           Height = 13
           Caption = 'CPU threads:'
@@ -583,6 +614,13 @@ object MainForm: TMainForm
           Height = 13
           Caption = 'Coherence weight:'
         end
+        object Label10: TLabel
+          Left = 3
+          Top = 472
+          Width = 90
+          Height = 13
+          Caption = 'Correction passes:'
+        end
         object Edit1: TEdit
           Left = 3
           Top = 22
@@ -594,9 +632,9 @@ object MainForm: TMainForm
         end
         object SpinEdit2: TSpinEdit
           Tag = 1
-          Left = 103
-          Top = 246
-          Width = 66
+          Left = 73
+          Top = 518
+          Width = 48
           Height = 22
           MaxValue = 0
           MinValue = 0
@@ -609,7 +647,7 @@ object MainForm: TMainForm
           Width = 200
           Height = 21
           TabOrder = 2
-          Text = '1.0'
+          Text = '25.0'
           OnChange = Edit2Change
         end
         object CheckBox4: TCheckBox
@@ -652,8 +690,8 @@ object MainForm: TMainForm
           OnChange = Edit3Change
         end
         object SynthesizeButton: TButton
-          Left = 58
-          Top = 274
+          Left = 55
+          Top = 552
           Width = 93
           Height = 24
           Caption = 'Synthesize'
@@ -661,63 +699,18 @@ object MainForm: TMainForm
           OnClick = SynthesizeButtonClick
         end
         object SynthProgressBar: TProgressBar
-          Left = 6
-          Top = 304
+          Left = 3
+          Top = 582
           Width = 197
           Height = 18
           TabOrder = 8
         end
-      end
-      object TabSheet3: TTabSheet
-        Caption = 'GPU synthesis'
-        ImageIndex = 2
-        object Label10: TLabel
-          Left = 11
-          Top = 283
-          Width = 90
-          Height = 13
-          Caption = 'Correction passes:'
-        end
-        object Label11: TLabel
-          Left = 11
-          Top = 237
-          Width = 104
-          Height = 13
-          Caption = 'Coherence threshold:'
-        end
-        object Label12: TLabel
-          Left = 11
-          Top = 3
-          Width = 186
-          Height = 14
-          Caption = 'Jitter constraint at each levels'
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -12
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          ParentFont = False
-        end
-        object Label13: TLabel
-          Left = 72
-          Top = 218
-          Width = 54
-          Height = 13
-          Caption = 'Finest level'
-        end
-        object Label14: TLabel
-          Left = 75
-          Top = 23
-          Width = 68
-          Height = 13
-          Caption = 'Coarsest level'
-        end
-        object ComboBox2: TComboBox
+        object ComboBox3: TComboBox
           Left = 3
-          Top = 301
+          Top = 491
           Width = 200
           Height = 21
-          TabOrder = 0
+          TabOrder = 9
           Text = '2 passes'
           OnChange = ComboBox2Change
           Items.Strings = (
@@ -726,159 +719,161 @@ object MainForm: TMainForm
             '4 passes'
             '8 passes')
         end
-        object TrackBar1: TTrackBar
-          Left = 3
-          Top = 34
-          Width = 200
-          Height = 25
-          Max = 100
-          ShowSelRange = False
-          TabOrder = 1
-          TickMarks = tmBoth
-          TickStyle = tsNone
-          OnChange = TrackBar1Change
-        end
-        object TrackBar2: TTrackBar
-          Tag = 1
-          Left = 3
-          Top = 57
-          Width = 200
-          Height = 25
-          Max = 100
-          ShowSelRange = False
-          TabOrder = 2
-          TickMarks = tmBoth
-          TickStyle = tsNone
-          OnChange = TrackBar1Change
-        end
-        object TrackBar3: TTrackBar
-          Tag = 2
-          Left = 3
-          Top = 80
-          Width = 200
-          Height = 25
-          Max = 100
-          ShowSelRange = False
-          TabOrder = 3
-          TickMarks = tmBoth
-          TickStyle = tsNone
-          OnChange = TrackBar1Change
-        end
-        object TrackBar4: TTrackBar
-          Tag = 3
-          Left = 3
-          Top = 103
-          Width = 200
-          Height = 25
-          Max = 100
-          ShowSelRange = False
-          TabOrder = 4
-          TickMarks = tmBoth
-          TickStyle = tsNone
-          OnChange = TrackBar1Change
-        end
-        object TrackBar5: TTrackBar
-          Tag = 4
-          Left = 3
-          Top = 126
-          Width = 200
-          Height = 25
-          Max = 100
-          ShowSelRange = False
-          TabOrder = 5
-          TickMarks = tmBoth
-          TickStyle = tsNone
-          OnChange = TrackBar1Change
-        end
-        object TrackBar6: TTrackBar
-          Tag = 5
-          Left = 3
-          Top = 149
-          Width = 200
-          Height = 25
-          Max = 100
-          ShowSelRange = False
-          TabOrder = 6
-          TickMarks = tmBoth
-          TickStyle = tsNone
-          OnChange = TrackBar1Change
-        end
-        object TrackBar7: TTrackBar
-          Tag = 6
-          Left = 3
-          Top = 172
-          Width = 200
-          Height = 25
-          Max = 100
-          ShowSelRange = False
-          TabOrder = 7
-          TickMarks = tmBoth
-          TickStyle = tsNone
-          OnChange = TrackBar1Change
-        end
-        object TrackBar8: TTrackBar
-          Tag = 7
-          Left = 3
-          Top = 195
-          Width = 200
-          Height = 25
-          Max = 100
-          ShowSelRange = False
-          TabOrder = 8
-          TickMarks = tmBoth
-          TickStyle = tsNone
-          OnChange = TrackBar1Change
-        end
-        object TrackBar9: TTrackBar
-          Tag = 7
-          Left = 3
-          Top = 256
-          Width = 200
-          Height = 25
-          Max = 100
-          Position = 100
-          ShowSelRange = False
-          TabOrder = 9
-          TickMarks = tmBoth
-          TickStyle = tsNone
-          OnChange = TrackBar9Change
-        end
-        object Button3: TButton
-          Left = 136
-          Top = 236
-          Width = 49
-          Height = 18
-          Caption = 'Save'
+        object JitterControllPanel: TPanel
+          Left = 2
+          Top = 189
+          Width = 201
+          Height = 260
+          BevelInner = bvLowered
           TabOrder = 10
+          object Label14: TLabel
+            Left = 67
+            Top = 20
+            Width = 68
+            Height = 13
+            Caption = 'Coarsest level'
+          end
+          object Label12: TLabel
+            Left = 3
+            Top = 0
+            Width = 186
+            Height = 14
+            Caption = 'Jitter constraint at each levels'
+            Font.Charset = DEFAULT_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -12
+            Font.Name = 'Tahoma'
+            Font.Style = [fsBold]
+            ParentFont = False
+          end
+          object Label13: TLabel
+            Left = 72
+            Top = 241
+            Width = 54
+            Height = 13
+            Caption = 'Finest level'
+          end
+          object TrackBar1: TTrackBar
+            Left = 3
+            Top = 39
+            Width = 200
+            Height = 25
+            Max = 100
+            Position = 100
+            ShowSelRange = False
+            TabOrder = 0
+            TickMarks = tmBoth
+            TickStyle = tsNone
+            OnChange = TrackBar1Change
+          end
+          object TrackBar2: TTrackBar
+            Tag = 1
+            Left = 3
+            Top = 64
+            Width = 200
+            Height = 25
+            Max = 100
+            Position = 100
+            ShowSelRange = False
+            TabOrder = 1
+            TickMarks = tmBoth
+            TickStyle = tsNone
+            OnChange = TrackBar1Change
+          end
+          object TrackBar3: TTrackBar
+            Tag = 2
+            Left = 3
+            Top = 89
+            Width = 200
+            Height = 25
+            Max = 100
+            Position = 100
+            ShowSelRange = False
+            TabOrder = 2
+            TickMarks = tmBoth
+            TickStyle = tsNone
+            OnChange = TrackBar1Change
+          end
+          object TrackBar4: TTrackBar
+            Tag = 3
+            Left = 3
+            Top = 114
+            Width = 200
+            Height = 25
+            Max = 100
+            ShowSelRange = False
+            TabOrder = 3
+            TickMarks = tmBoth
+            TickStyle = tsNone
+            OnChange = TrackBar1Change
+          end
+          object TrackBar5: TTrackBar
+            Tag = 4
+            Left = 3
+            Top = 139
+            Width = 200
+            Height = 25
+            Max = 100
+            ShowSelRange = False
+            TabOrder = 4
+            TickMarks = tmBoth
+            TickStyle = tsNone
+            OnChange = TrackBar1Change
+          end
+          object TrackBar6: TTrackBar
+            Tag = 5
+            Left = 3
+            Top = 164
+            Width = 200
+            Height = 25
+            Max = 100
+            ShowSelRange = False
+            TabOrder = 5
+            TickMarks = tmBoth
+            TickStyle = tsNone
+            OnChange = TrackBar1Change
+          end
+          object TrackBar7: TTrackBar
+            Tag = 6
+            Left = 3
+            Top = 189
+            Width = 200
+            Height = 25
+            Max = 100
+            ShowSelRange = False
+            TabOrder = 6
+            TickMarks = tmBoth
+            TickStyle = tsNone
+            OnChange = TrackBar1Change
+          end
+          object TrackBar8: TTrackBar
+            Tag = 7
+            Left = 3
+            Top = 214
+            Width = 200
+            Height = 25
+            Max = 100
+            ShowSelRange = False
+            TabOrder = 7
+            TickMarks = tmBoth
+            TickStyle = tsNone
+            OnChange = TrackBar1Change
+          end
         end
       end
-    end
-    object ComboBox1: TComboBox
-      Left = 14
-      Top = 386
-      Width = 200
-      Height = 21
-      ItemIndex = 0
-      TabOrder = 2
-      Text = 'Exemplar'
-      OnChange = ComboBox1Change
-      Items.Strings = (
-        'Exemplar'
-        'CPU synthesis result'
-        'CPU result patches'
-        'GPU synthesis result'
-        'GPU result patches')
     end
   end
   object GLViewer1: TGLViewer
     Left = 0
     Top = 0
-    Width = 583
-    Height = 592
+    Width = 864
+    Height = 864
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
     OnContextDebugMessage = GLViewer1ContextDebugMessage
     Align = alClient
+    ExplicitWidth = 583
+    ExplicitHeight = 592
   end
   object OpenPictureDialog: TOpenPictureDialog
     DefaultExt = 'bmp'
