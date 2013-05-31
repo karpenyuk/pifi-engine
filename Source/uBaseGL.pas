@@ -218,6 +218,25 @@ Type
     constructor Create(const aProgram: cardinal = 0; aIndex: integer = -1);
   end;
 
+  TUniformSubroutine = class
+  private
+    FShaderType: TShaderType;
+    FSubs: array of record
+      FSubName: ansistring;
+      FSubIndex: integer;
+    end;
+    FIndex: integer;
+    FName: ansistring;
+    procedure QuerySubroutineInfo(aProgram: cardinal; anIndex: integer);
+  public
+    procedure SetSubroutine(const Name: ansistring);
+    property UniformName: ansistring read FName;
+    property UniformIndex: integer read FIndex;
+    property ShaderType: TShaderType read FShaderType;
+
+    constructor Create(const aProgram: cardinal = 0; aIndex: integer = -1);
+  end;
+
   TGLBufferObjectsPool = class
   private
     FBuffer: TGLBufferObject;
@@ -260,18 +279,37 @@ Type
     property UBOs[Index: integer]: TGLUniformBlock read getUBO;
   end;
 
+  TUSUBList = class
+  private
+    FItems: TList;
+    function getCount: integer;
+    function getSUB(Index: integer): TUniformSubroutine;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    function AddSUB(const aSubroutine: TUniformSubroutine): integer;
+    function GetSUBByName(const aName: ansistring): TUniformSubroutine;
+
+    property Count: integer read getCount;
+    property SUBs[Index: integer]: TUniformSubroutine read getSUB;
+  end;
+
   TGLSLShaderProgram = class(TGLBaseResource)
   private
     FShaderId: cardinal;
     FLog: string;
+    FStages: set of TShaderType;
     FDetachList: array of cardinal;
     FLinked: boolean;
     FError: boolean;
     FUniforms: TUniformList;
     FUBOList: TUBOList;
+    FUSUBList: TUSUBList;
     FActiveUniforms: integer;
     FActiveAttribs: integer;
     FActiveUniformsBlocks: integer;
+    FActiveUniformSubroutines: integer;
     function getShaderId: cardinal;
     function GetUniformLocation(ShaderId: cardinal;
       const Name: ansistring): integer;
@@ -326,6 +364,7 @@ Type
       Count: GLsizei = 1; transpose: boolean = false); overload;
     procedure SetUniform(const Name: ansistring; const Value: mat4;
       Count: GLsizei = 1; transpose: boolean = false); overload;
+    procedure SetSubroutine(const Name: ansistring; const Value: ansistring);
   end;
 
   TGLVertexObject = class(TGLBaseResource)
@@ -1122,6 +1161,7 @@ var
 begin
   if Length(Source) = 0 then
     Exit;
+  Include(FStages, ShaderType);
   Shader := glCreateShader(CShaderTypes[ShaderType]);
   p := PGLChar(Source);
   if (Shader > 0) then
@@ -1196,6 +1236,7 @@ begin
   FError := false;
   FUniforms := TUniformList.Create;
   FUBOList := TUBOList.Create;
+  FUSUBList := TUSUBList.Create;
 end;
 
 destructor TGLSLShaderProgram.Destroy;
@@ -1211,6 +1252,7 @@ begin
   glDeleteProgram(FShaderId);
   FUniforms.Free;
   FUBOList.Free;
+  FUSUBList.Free;
   inherited;
 end;
 
@@ -1340,12 +1382,35 @@ end;
 procedure TGLSLShaderProgram.QueryProgramInfo;
 var
   i: integer;
+  n: GLuint;
+  st: TShaderType;
+  sub: TUniformSubroutine;
 begin
   glGetProgramiv(FShaderId, GL_ACTIVE_ATTRIBUTES, @FActiveAttribs);
   glGetProgramiv(FShaderId, GL_ACTIVE_UNIFORMS, @FActiveUniforms);
   glGetProgramiv(FShaderId, GL_ACTIVE_UNIFORM_BLOCKS, @FActiveUniformsBlocks);
   for i := 0 to FActiveUniformsBlocks - 1 do
     FUBOList.AddUBO(TGLUniformBlock.Create(FShaderId, i));
+  if GL_ARB_shader_subroutine then
+  begin
+    for st := Low(TShaderType) to High(TShaderType) do
+    if st in FStages then begin
+      glGetProgramStageiv(FShaderId, CShaderTypes[st],
+        GL_ACTIVE_SUBROUTINE_UNIFORMS, @n);
+      Inc(FActiveUniformSubroutines, n);
+    end;
+    if FActiveUniformSubroutines > 0 then
+    begin
+      for i := 0 to FActiveUniformSubroutines - 1 do
+      begin
+        sub := TUniformSubroutine.Create(FShaderId, i);
+        if Length(sub.UniformName) > 0 then
+          FUSUBList.AddSUB(sub)
+        else
+          sub.Destroy;
+      end;
+    end;
+  end;
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
@@ -1401,6 +1466,20 @@ begin
   if FLinked then
     exit;
   glBindFragDataLocation(FShaderId, Index, PAnsiChar(Name));
+end;
+
+procedure TGLSLShaderProgram.SetSubroutine(const Name, Value: ansistring);
+var
+  i: integer;
+begin
+  for i := 0 to FUSUBList.Count - 1 do
+  begin
+    if Name = FUSUBList.getSUB(i).UniformName then
+    begin
+      FUSUBList.getSUB(i).SetSubroutine(Value);
+      Exit;
+    end;
+  end;
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
@@ -2575,10 +2654,50 @@ begin
   begin
     ubo := FItems[i];
     if ubo.BlockName = aName then
-    begin
-      result := ubo;
-      exit;
-    end;
+      exit(ubo);
+  end;
+  result := nil;
+end;
+
+{ TUSUBList }
+
+function TUSUBList.AddSUB(const aSubroutine: TUniformSubroutine): integer;
+begin
+  result := FItems.Add(aSubroutine);
+end;
+
+constructor TUSUBList.Create;
+begin
+  inherited;
+  FItems := TList.Create;
+end;
+
+destructor TUSUBList.Destroy;
+begin
+  FreeObjectList(FItems);
+  inherited;
+end;
+
+function TUSUBList.getCount: integer;
+begin
+  result := FItems.Count;
+end;
+
+function TUSUBList.getSUB(Index: integer): TUniformSubroutine;
+begin
+  result := FItems[Index];
+end;
+
+function TUSUBList.GetSUBByName(const aName: ansistring): TUniformSubroutine;
+var
+  i: integer;
+  sub: TUniformSubroutine;
+begin
+  for i := 0 to FItems.Count - 1 do
+  begin
+    sub := FItems[i];
+    if sub.UniformName = aName then
+      exit(sub);
   end;
   result := nil;
 end;
@@ -2785,6 +2904,73 @@ end;
 procedure TGLTextureSampler.UnBind(aUnit: cardinal);
 begin
   if GL_ARB_sampler_objects then glBindSampler(aUnit,FSamplerId);
+end;
+
+{ TUniformSubroutine }
+
+constructor TUniformSubroutine.Create(const aProgram: cardinal;
+  aIndex: integer);
+begin
+  Assert(aProgram > 0, 'Shader program is not assigned');
+  QuerySubroutineInfo(aProgram, aIndex);
+end;
+
+procedure TUniformSubroutine.QuerySubroutineInfo(aProgram: cardinal;
+  anIndex: integer);
+var
+  st: TShaderType;
+  len: integer;
+  cbuff: PAnsiChar;
+  i: Integer;
+  indices: array of GLuint;
+begin
+  getmem(cbuff, 256);
+  len := 0;
+  for st := Low(TShaderType) to High(TShaderType) do
+  begin
+    glGetActiveSubroutineUniformName(aProgram, CShaderTypes[st], anIndex,
+      256, @len, cbuff);
+    if len > 0 then
+      break;
+  end;
+  if len = 0 then
+    Exit;
+  FName := Copy(cbuff, 0, len);
+  FIndex := anIndex;
+  FShaderType := st;
+
+  glGetActiveSubroutineUniformiv(aProgram, CShaderTypes[FShaderType], anIndex,
+    GL_NUM_COMPATIBLE_SUBROUTINES, @len);
+
+  if len > 0 then
+  begin
+    SetLength(FSubs, len);
+    SetLength(indices, len);
+    glGetActiveSubroutineUniformiv(aProgram, CShaderTypes[FShaderType], anIndex,
+      GL_COMPATIBLE_SUBROUTINES, @indices[0]);
+    for I := 0 to High(FSubs) do
+    begin
+      FSubs[I].FSubIndex := indices[i];
+      glGetActiveSubroutineName(aProgram, CShaderTypes[st], indices[i],
+      256, @len, cbuff);
+      FSubs[I].FSubName := Copy(cbuff, 0, len);
+    end;
+  end;
+
+  FreeMem(cbuff, 256);
+end;
+
+procedure TUniformSubroutine.SetSubroutine(const Name: ansistring);
+var
+  i: integer;
+begin
+  for I := 0 to High(FSubs) do
+    if Name = FSubs[i].FSubName then
+    begin
+      glUniformSubroutinesuiv(CShaderTypes[FShaderType], 1, @FSubs[i].FSubIndex);
+      Exit;
+    end;
+  Assert(False, 'Wrong subroutine name');
 end;
 
 initialization
