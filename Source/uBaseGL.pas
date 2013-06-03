@@ -484,10 +484,8 @@ Type
   end;
 
   TGLTextureFormatSelector = class (TAbstractPixelFormatSelector<TGLTextureFormatDescriptor>)
-    //Not implemented
-    class function GetBaseFormat(aFormat: cardinal): cardinal;
-    class function GetInternalFormat(aFormat: cardinal): cardinal;
-    class function GetPixelFormat(aFormat: cardinal): cardinal;
+    //Get GL texture format from ImageFormatBits
+    class function GetTextureFormat(aFormat: cardinal): TGLTextureFormatDescriptor;
     //virtual functions
     class function CreateInt8(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
     class function CreateInt16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
@@ -3015,18 +3013,93 @@ begin
 end;
 
 class function TGLTextureFormatSelector.GetBaseFormat(aFormat: cardinal): cardinal;
+var bFormat: TBaseImageFormat;
+    cFormat: TS3TCCompressedFormats;
+    sFormat: TImageSpecialFormat;
 begin
   result := 0;
+  bFormat := TImageFormatBits.GetBaseFormat(aFormat);
+  case bFormat of
+    bfRed: result := GL_RED;
+    bfRG: result := GL_RG;
+    bfRGB: result := GL_RGB;
+    bfBGR: result := GL_BGR;
+    bfRGBA: result := GL_RGBA;
+    bfBGRA: result := GL_BGRA;
+    bfDepth: result := GL_DEPTH_COMPONENT;
+    bfDepthStencil: result:= GL_DEPTH_STENCIL;
+    bfCompressed: begin
+        cFormat :=  TImageFormatBits.GetCompressedFormat(aFormat);
+        case cFormat of
+          cfRGB_DXT1: result := GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+          cfSRGB_DXT1: result := GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+          cfRGBA_DXT1: result := GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+          cfSRGBA_DXT1: result := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+          cfRGBA_DXT3: result := GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+          cfSRGBA_DXT3: result := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+          cfRGBA_DXT5: result := GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+          cfSRGBA_DXT5: result := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+          else assert(false, 'Unsupported base format');
+        end;
+      end;
+    bfSpecial: begin
+        sFormat := TImageFormatBits.GetSpecialFormat(aFormat);
+        case sFormat of
+          sfR3G3B2: result := GL_RGB;
+          sfRGB565: result := GL_RGB;
+          sfRGB5A1: result := GL_RGBA;
+          sfRGB10A2: result:= GL_RGBA;
+          sfRGB10A2UI: result := GL_RGBA;
+          sfR11FG11FB10F: result := GL_RGB;
+          sfRGB9E5: result := GL_RGB;
+          else assert(false, 'Unsupported base format');
+        end;
+      end;
+    else assert(false, 'Unsupported base format');
+  end;
 end;
 
-class function TGLTextureFormatSelector.GetInternalFormat(aFormat: cardinal): cardinal;
+class function TGLTextureFormatSelector.GetTextureFormat(
+  aFormat: cardinal): TGLTextureFormatDescriptor;
+var bFormat: TBaseImageFormat;
+    dFormat: TDepthStencilFormat;
+    cFormat: TS3TCCompressedFormats;
+    sFormat: TImageSpecialFormat;
+    pFormat: TImagePixelFormat;
 begin
-  result := 0;
-end;
-
-class function TGLTextureFormatSelector.GetPixelFormat(aFormat: cardinal): cardinal;
-begin
-  result := 0;
+  bFormat := TImageFormatBits.GetBaseFormat(aFormat);
+  if bFormat in [bfRed..bfBGRA] then begin
+    pFormat := TImageFormatBits.GetPixelFormat(aFormat);
+    case pFormat of
+      pfUByte: result := CreateUInt8(bFormat);
+      pfByte: result := CreateInt8(bFormat);
+      pfUShort: result := CreateUInt16(bFormat);
+      pfShort: result := CreateInt16(bFormat);
+      pfUInt: result := CreateUInt32(bFormat);
+      pfInt: result := CreateInt32(bFormat);
+      pfFloat16: result := CreateFloat16(bFormat);
+      pfFloat: result := CreateFloat32(bFormat);
+    end;
+  end else
+    if bFormat in [bfDepth, bfDepthStencil] then begin
+      dFormat := TImageFormatBits.GetDepthStencilFormat(aFormat);
+      case dFormat of
+        dfDepth16: result := CreateDepthStencil(16, false);
+        dfDepth24: result := CreateDepthStencil(24, false);
+        dfDepth32: result := CreateDepthStencil(32, false);
+        dfDepth24Stencil8: result := CreateDepthStencil(24, true);
+        dfDepth32FStencil8: result := CreateDepthStencil(32, true);
+        dfStencilIndex8: result := CreateDepthStencil(0, true);
+      end;
+    end else
+      if bFormat = bfCompressed then begin
+        cFormat := TImageFormatBits.GetCompressedFormat(aFormat);
+        result :=CreateCompressed(cFormat);
+      end else
+        if bFormat = bfSpecial then begin
+          sFormat := TImageFormatBits.GetSpecialFormat(aFormat);
+          result := CreateSpecial(sFormat);
+        end else assert(false, 'Unsupported format!');
 end;
 
 initialization
