@@ -100,6 +100,7 @@ Type
     Depth: Integer;
     Offset: LongWord;
     Size: integer;
+    LayersOffset: array of LongWord;
   end;
 
   TImageDesc = record

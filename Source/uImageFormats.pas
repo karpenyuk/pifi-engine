@@ -45,10 +45,18 @@ Type
       aWidth: integer; aHeight: integer = 1; aDepth: integer = 1): cardinal; overload;
     class function GetMemSize(aPixelFormat: TDepthStencilFormat;
       aWidth: integer; aHeight: integer = 1; aDepth: integer = 1): cardinal; overload;
+    class function GetMemSize(aPixelFormat: TImageSpecialFormat;
+      aWidth: integer; aHeight: integer = 1; aDepth: integer = 1): cardinal; overload;
+    class function GetMemSize(aFormatBits: cardinal; aWidth: integer;
+      aHeight: integer = 1; aDepth: integer = 1; aMipMapping: boolean = false): cardinal; overload;
 
     class function GetPixelSize(aPixelFormat: TImagePixelFormat): cardinal; overload;
     class function GetPixelSize(aPixelFormat: TDepthStencilFormat): cardinal; overload;
     class function GetPixelSize(aPixelFormat: TS3TCCompressedFormats): cardinal; overload;
+    class function GetPixelSize(aPixelFormat: TImageSpecialFormat): cardinal; overload;
+    class function GetPixelSize(aPixelFormatBits: cardinal): cardinal; overload;
+
+    class function GetMipmapsCount(Size: integer): byte;
   end;
 
   TImageFormatSelector = class (TAbstractPixelFormatSelector<cardinal>)
@@ -120,6 +128,8 @@ const
     (2,3,4,4,1,4,5);
   CCompressedPixelSize: array[TS3TCCompressedFormats] of byte =
     (8,8,8,8,16,16,16,16);
+  CSpecialFormatPixelSize: array[TImageSpecialFormat] of byte =
+    (1, 2, 2, 4, 4, 4, 4);
 
 implementation
 
@@ -537,12 +547,6 @@ begin
   result := trunc(max(1, mw / 4) * max(1, mh / 4)*bs)*md;
 end;
 
-class function TAbstractPixelFormatSelector<T>.GetPixelSize(
-  aPixelFormat: TImagePixelFormat): cardinal;
-begin
-  result := CBasePixelSize[aPixelFormat];
-end;
-
 class function TAbstractPixelFormatSelector<T>.GetMemSize(
   aPixelFormat: TImagePixelFormat; aWidth, aHeight, aDepth: integer): cardinal;
 begin
@@ -558,6 +562,20 @@ begin
     CDepthStencilSize[aPixelFormat];
 end;
 
+class function TAbstractPixelFormatSelector<T>.GetMemSize(
+  aPixelFormat: TImageSpecialFormat; aWidth, aHeight,
+  aDepth: integer): cardinal;
+begin
+  result := max(1,aWidth) * max(1,aHeight) * max(1, aDepth) *
+    CSpecialFormatPixelSize[aPixelFormat];
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetPixelSize(
+  aPixelFormat: TImagePixelFormat): cardinal;
+begin
+  result := CBasePixelSize[aPixelFormat];
+end;
+
 class function TAbstractPixelFormatSelector<T>.GetPixelSize(
   aPixelFormat: TS3TCCompressedFormats): cardinal;
 begin
@@ -568,6 +586,60 @@ class function TAbstractPixelFormatSelector<T>.GetPixelSize(
   aPixelFormat: TDepthStencilFormat): cardinal;
 begin
   result := CDepthStencilSize[aPixelFormat];
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetPixelSize(
+  aPixelFormat: TImageSpecialFormat): cardinal;
+begin
+  result := CSpecialFormatPixelSize[aPixelFormat];
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetMemSize(aFormatBits: cardinal;
+  aWidth, aHeight, aDepth: integer; aMipMapping: boolean): cardinal;
+var w,h,d: integer;
+    size: cardinal;
+begin
+  size := 0; w := aWidth; h := aHeight; d := aDepth;
+  repeat
+    if TImageFormatBits.isCompressedFormat(aFormatBits) then
+      size := size + GetMemSize(TImageFormatBits.GetCompressedFormat(aFormatBits),w,h,d)
+    else
+      if TImageFormatBits.isDepthStencilFormat(aFormatBits) then
+        size := size + GetMemSize(TImageFormatBits.GetDepthStencilFormat(aFormatBits),w,h,d)
+      else
+        if TImageFormatBits.isSpecialFormat(aFormatBits) then
+          size := size + GetMemSize(TImageFormatBits.GetSpecialFormat(aFormatBits),w,h,d)
+        else
+          size := size + GetMemSize(TImageFormatBits.GetPixelFormat(aFormatBits),w,h,d);
+    w := w div 2; h:= h div 2; d:= d div 2;
+  until (not aMipMapping) or (w+h+d = 0);
+  result := size;
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetMipmapsCount(
+  Size: integer): byte;
+var s: integer;
+begin
+  result := 1; s := size;
+  while s > 0 do begin
+    result := result +1;
+    s := s shr 2;
+  end;
+end;
+
+class function TAbstractPixelFormatSelector<T>.GetPixelSize(
+  aPixelFormatBits: cardinal): cardinal;
+begin
+    if TImageFormatBits.isCompressedFormat(aPixelFormatBits) then
+      result := GetPixelSize(TImageFormatBits.GetCompressedFormat(aPixelFormatBits))
+    else
+      if TImageFormatBits.isDepthStencilFormat(aPixelFormatBits) then
+        result := GetPixelSize(TImageFormatBits.GetDepthStencilFormat(aPixelFormatBits))
+      else
+        if TImageFormatBits.isSpecialFormat(aPixelFormatBits) then
+          result := GetPixelSize(TImageFormatBits.GetSpecialFormat(aPixelFormatBits))
+        else
+          result := GetPixelSize(TImageFormatBits.GetPixelFormat(aPixelFormatBits));
 end;
 
 end.

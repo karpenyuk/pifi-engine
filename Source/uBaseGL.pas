@@ -6,7 +6,7 @@
 
 interface
 
-uses Classes, uPersistentClasses, uLists, uVMath, uMiscUtils, {ImageLoader,}
+uses Classes, uPersistentClasses, uVMath, uLists, uMiscUtils, {ImageLoader,}
   uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, dglOpenGL;
 
 Type
@@ -3009,53 +3009,6 @@ begin
     bfRGBA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_RGBA; end;
     bfBGRA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_BGRA; end;
     else assert(false, 'Unsupported pixel format, try another selector');
-  end;
-end;
-
-class function TGLTextureFormatSelector.GetBaseFormat(aFormat: cardinal): cardinal;
-var bFormat: TBaseImageFormat;
-    cFormat: TS3TCCompressedFormats;
-    sFormat: TImageSpecialFormat;
-begin
-  result := 0;
-  bFormat := TImageFormatBits.GetBaseFormat(aFormat);
-  case bFormat of
-    bfRed: result := GL_RED;
-    bfRG: result := GL_RG;
-    bfRGB: result := GL_RGB;
-    bfBGR: result := GL_BGR;
-    bfRGBA: result := GL_RGBA;
-    bfBGRA: result := GL_BGRA;
-    bfDepth: result := GL_DEPTH_COMPONENT;
-    bfDepthStencil: result:= GL_DEPTH_STENCIL;
-    bfCompressed: begin
-        cFormat :=  TImageFormatBits.GetCompressedFormat(aFormat);
-        case cFormat of
-          cfRGB_DXT1: result := GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-          cfSRGB_DXT1: result := GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
-          cfRGBA_DXT1: result := GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-          cfSRGBA_DXT1: result := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
-          cfRGBA_DXT3: result := GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-          cfSRGBA_DXT3: result := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
-          cfRGBA_DXT5: result := GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-          cfSRGBA_DXT5: result := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
-          else assert(false, 'Unsupported base format');
-        end;
-      end;
-    bfSpecial: begin
-        sFormat := TImageFormatBits.GetSpecialFormat(aFormat);
-        case sFormat of
-          sfR3G3B2: result := GL_RGB;
-          sfRGB565: result := GL_RGB;
-          sfRGB5A1: result := GL_RGBA;
-          sfRGB10A2: result:= GL_RGBA;
-          sfRGB10A2UI: result := GL_RGBA;
-          sfR11FG11FB10F: result := GL_RGB;
-          sfRGB9E5: result := GL_RGB;
-          else assert(false, 'Unsupported base format');
-        end;
-      end;
-    else assert(false, 'Unsupported base format');
   end;
 end;
 
