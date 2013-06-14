@@ -7,7 +7,7 @@
 interface
 
 uses Classes, uPersistentClasses, uLists, uVMath, uMiscUtils, {ImageLoader,}
-  uBaseTypes, uBaseClasses, uRenderResource, dglOpenGL;
+  uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, dglOpenGL;
 
 Type
 
@@ -474,6 +474,33 @@ Type
     property Active: boolean read FActive write FActive;
     property DeactivateAfter: boolean read FDeactivate write FDeactivate;
     property Handle: cardinal read FBOId;
+  end;
+
+  TGLTextureFormatDescriptor = record
+    InternalFormat: cardinal;
+    BaseFormat: cardinal;
+    PixelFormat: cardinal;
+    Compressed: boolean;
+  end;
+
+  TGLTextureFormatSelector = class (TAbstractPixelFormatSelector<TGLTextureFormatDescriptor>)
+    //Not implemented
+    class function GetBaseFormat(aFormat: cardinal): cardinal;
+    class function GetInternalFormat(aFormat: cardinal): cardinal;
+    class function GetPixelFormat(aFormat: cardinal): cardinal;
+    //virtual functions
+    class function CreateInt8(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateInt16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateInt32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateUInt8(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateUInt16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateUInt32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateFloat16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateFloat32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+
+    class function CreateCompressed(aFormat: TS3TCCompressedFormats): TGLTextureFormatDescriptor; override;
+    class function CreateDepthStencil(aDepthBit: byte; aStencil: boolean = false): TGLTextureFormatDescriptor; override;
+    class function CreateSpecial(aFormat: TImageSpecialFormat): TGLTextureFormatDescriptor; override;
   end;
 
 procedure CheckOpenGLError;
@@ -2759,6 +2786,247 @@ end;
 procedure TGLTextureSampler.UnBind(aUnit: cardinal);
 begin
   if GL_ARB_sampler_objects then glBindSampler(aUnit,FSamplerId);
+end;
+
+{ TGLTextureFormat }
+
+class function TGLTextureFormatSelector.CreateCompressed(
+  aFormat: TS3TCCompressedFormats): TGLTextureFormatDescriptor;
+begin
+  result.Compressed:=true; result.BaseFormat := 0;
+  result.PixelFormat := 0; result.InternalFormat := 0;
+  case aFormat of
+    cfRGB_DXT1: result.InternalFormat := GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+    cfSRGB_DXT1: result.InternalFormat := GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+    cfRGBA_DXT1: result.InternalFormat := GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+    cfSRGBA_DXT1: result.InternalFormat := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+    cfRGBA_DXT3: result.InternalFormat := GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+    cfSRGBA_DXT3: result.InternalFormat := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+    cfRGBA_DXT5: result.InternalFormat := GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+    cfSRGBA_DXT5: result.InternalFormat := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateDepthStencil(aDepthBit: byte;
+  aStencil: boolean): TGLTextureFormatDescriptor;
+begin
+  result.Compressed := false;
+  if not aStencil then begin
+    result.BaseFormat := GL_DEPTH_COMPONENT;
+    case aDepthBit of
+      16: begin
+        result.InternalFormat := GL_DEPTH_COMPONENT16;
+        result.PixelFormat := GL_UNSIGNED_SHORT;
+      end;
+      24: begin
+        result.InternalFormat := GL_DEPTH_COMPONENT24;
+        result.PixelFormat := GL_UNSIGNED_INT;
+      end;
+      32: begin
+        result.InternalFormat := GL_DEPTH_COMPONENT32;
+        result.PixelFormat := GL_UNSIGNED_INT;
+      end;
+      else assert(false, 'Unsupported Depth format!');
+    end;
+  end else begin
+    result.BaseFormat := GL_DEPTH_STENCIL;
+    case aDepthBit of
+       0: begin
+        result.BaseFormat := GL_STENCIL;
+        result.InternalFormat := GL_STENCIL_INDEX8;
+        result.PixelFormat := GL_UNSIGNED_BYTE;
+       end;
+      24: begin
+        result.InternalFormat := GL_DEPTH24_STENCIL8;
+        result.PixelFormat := GL_UNSIGNED_INT_24_8;
+      end;
+      32: begin
+        result.InternalFormat := GL_DEPTH32F_STENCIL8;
+        result.PixelFormat := GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+      end;
+      else assert(false, 'Unsupported DepthStencil format!');
+    end;
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateSpecial(
+  aFormat: TImageSpecialFormat): TGLTextureFormatDescriptor;
+begin
+  result.Compressed := false;
+  case aFormat of
+    sfR3G3B2: begin
+        result.BaseFormat := GL_RGB;
+        result.InternalFormat := GL_R3_G3_B2;
+        result.PixelFormat := GL_UNSIGNED_BYTE_3_3_2;
+      end;
+    sfRGB565: begin
+        result.BaseFormat := GL_RGB;
+        result.InternalFormat := GL_RGB565;
+        result.PixelFormat := GL_UNSIGNED_SHORT_5_6_5;
+      end;
+    sfRGB5A1: begin
+        result.BaseFormat := GL_RGBA;
+        result.InternalFormat := GL_RGB5_A1;
+        result.PixelFormat := GL_UNSIGNED_SHORT_5_5_5_1;
+      end;
+    sfRGB10A2: begin
+        result.BaseFormat := GL_RGBA;
+        result.InternalFormat := GL_RGB10_A2;
+        result.PixelFormat := GL_UNSIGNED_INT_10_10_10_2;
+      end;
+    sfRGB10A2UI: begin
+        result.BaseFormat := GL_RGBA;
+        result.InternalFormat := GL_RGB10_A2UI;
+        result.PixelFormat := GL_UNSIGNED_INT_10_10_10_2;
+      end;
+    sfR11FG11FB10F: begin
+        result.BaseFormat := GL_RGB;
+        result.InternalFormat := GL_R11F_G11F_B10F;
+        result.PixelFormat := GL_UNSIGNED_INT_10F_11F_11F_REV;
+      end;
+    sfRGB9E5: begin
+        result.BaseFormat := GL_RGB;
+        result.InternalFormat := GL_RGB9_E5;
+        result.PixelFormat := GL_UNSIGNED_INT_5_9_9_9_REV;
+      end;
+    else assert(false, 'Unsupported image format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateFloat16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_HALF_FLOAT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R16F; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16F; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16F; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16F; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16F; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16F; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateFloat32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_FLOAT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R32F; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG32F; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB32F; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB32F; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32F; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32F; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateInt16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_SHORT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R16I; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16I; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16I; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16I; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16I; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16I; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateInt32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_INT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R32I; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG32I; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB32I; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB32I; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateInt8(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_BYTE; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R8; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG8; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB8; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB8; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA8; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA8; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateUInt16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_UNSIGNED_SHORT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R16UI; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16UI; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16UI; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16UI; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16UI; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16UI; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateUInt32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_UNSIGNED_INT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R32UI; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG32UI; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.CreateUInt8(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_UNSIGNED_BYTE; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R8UI; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG8UI; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB8UI; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB8UI; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+class function TGLTextureFormatSelector.GetBaseFormat(aFormat: cardinal): cardinal;
+begin
+  result := 0;
+end;
+
+class function TGLTextureFormatSelector.GetInternalFormat(aFormat: cardinal): cardinal;
+begin
+  result := 0;
+end;
+
+class function TGLTextureFormatSelector.GetPixelFormat(aFormat: cardinal): cardinal;
+begin
+  result := 0;
 end;
 
 initialization
