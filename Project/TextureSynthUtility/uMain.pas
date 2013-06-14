@@ -76,10 +76,8 @@ type
     TrackBar7: TTrackBar;
     Label13: TLabel;
     TrackBar8: TTrackBar;
-    procedure TrackBar9Change(Sender: TObject);
     procedure ComboBox2Change(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
-    procedure PageControl1Change(Sender: TObject);
     procedure ComboBox1Change(Sender: TObject);
     procedure Edit4Change(Sender: TObject);
     procedure CheckBox4Click(Sender: TObject);
@@ -91,8 +89,6 @@ type
     procedure SynthesizeButtonClick(Sender: TObject);
     procedure AnalyzeButtonClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure GLCadencerProgress(Sender: TObject;
-      const deltaTime, newTime: Double);
     procedure FormCreate(Sender: TObject);
     procedure GLViewer1ContextReady(Sender: TObject);
     procedure GLViewer1Render(Sender: TObject);
@@ -100,6 +96,9 @@ type
     procedure SaveDataButtonClick(Sender: TObject);
     procedure LoadDataButtonClick(Sender: TObject);
     procedure GLViewer1ContextDebugMessage(const AMessage: string);
+  private
+    FJTracks: array[0..7] of TTrackBar;
+    procedure UpdateJitters;
   public
     AnalysisData: TAnalysisData;
     Analyzer: TAnalyzer;
@@ -140,17 +139,17 @@ var
 
   SQ_VO: TVertexObject;
   SQ_Drawer: TGLVertexObject;
-  ViewShader1, ViewShader2, ViewShader3: TGLSLShaderProgram;
+  ViewShader1, ViewShader2: TGLSLShaderProgram;
   Render: TBaseRender;
   ExemplarTextureId: LongInt;
   SynthTextureId: LongInt;
   PatchesTextureId: LongInt;
+  ShaderSynthTextureId: LongInt;
   SamplerId: LongInt;
   SynthImage: TImageDesc;
   PatchesImage: TImageDesc;
 
   TextureChaged: array[0..2] of Boolean;
-  UpdateGLSynth: Boolean;
 
 function _GetTime: Double;
 var
@@ -167,6 +166,7 @@ begin
   glDeleteTextures(1, @ExemplarTextureId);
   glDeleteTextures(1, @SynthTextureId);
   glDeleteTextures(1, @PatchesTextureId);
+  glDeleteTextures(1, @ShaderSynthTextureId);
   glDeleteSamplers(1, @SamplerId);
   GLViewer1.OnRender := nil;
   GLViewer1.Context.Deactivate;
@@ -186,10 +186,22 @@ var
   p: PByte;
   c: Graphics.TColor;
 begin
+  FJTracks[0] := TrackBar8;
+  FJTracks[1] := TrackBar7;
+  FJTracks[2] := TrackBar6;
+  FJTracks[3] := TrackBar5;
+  FJTracks[4] := TrackBar4;
+  FJTracks[5] := TrackBar3;
+  FJTracks[6] := TrackBar2;
+  FJTracks[7] := TrackBar1;
+
+  for e := 3 to 7 do
+    FJTracks[e].Position := Round(100 * e / 8);
+
   AnalysisData := TAnalysisData.Create;
-  Analyzer := TAnalyzer.Create(AnalysisData);
-  Synthesizer := TSynthesizer.Create(AnalysisData);
-  GLSynthesizer := TGLSynthesizer.Create(AnalysisData);
+  Analyzer := TAnalyzer.CreateFrom(AnalysisData);
+  Synthesizer := TSynthesizer.CreateFrom(AnalysisData);
+  GLSynthesizer := TGLSynthesizer.CreateFrom(AnalysisData);
 
   with AnalysisData.Exemplar^ do
   begin
@@ -225,10 +237,10 @@ end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
-  AnalysisData.Destroy;
   Analyzer.Destroy;
   Synthesizer.Destroy;
   GLSynthesizer.Destroy;
+  AnalysisData.Destroy;
 end;
 
 // Analysis process
@@ -269,8 +281,12 @@ begin
   AnalyzeButton.Enabled := true;
   SynthesizeButton.Enabled := true;
 
-  GLSynthesizer.Initialize;
-  UpdateGLSynth := True;
+  if GLSynthesizer.Supported then
+  begin
+    GLSynthesizer.Initialize;
+    ComboBox1.ItemIndex := 3;
+    ComboBox1Change(Sender);
+  end;
 end;
 
 // CPU synthesis process
@@ -379,7 +395,6 @@ begin
     TextureChaged[0] := True;
 
     GLSynthesizer.Initialize;
-    UpdateGLSynth := True;
   end;
 end;
 
@@ -409,29 +424,19 @@ begin
   end;
 end;
 
-// Texture lookup choise
-procedure TMainForm.ComboBox1Change(Sender: TObject);
-begin
-  // case ComboBox1.ItemIndex of
-  // 0: GLCube1.Material.LibMaterialName:='exemplar';
-  // 1: GLCube1.Material.LibMaterialName:='CPU synthesis result';
-  // 2: GLCube1.Material.LibMaterialName:='CPU result patches';
-  // 3:
-  // begin
-  // GLCube1.Material.LibMaterialName:='GPU synthesis result';
-  // GPUSynthesizer.GiveAsPatchesMap := false;
-  // end;
-  // 4:
-  // begin
-  // GLCube1.Material.LibMaterialName:='GPU result patches';
-  // GPUSynthesizer.GiveAsPatchesMap := true;
-  // end;
-  // end;
-end;
-
 // Pass number choise
 procedure TMainForm.ComboBox2Change(Sender: TObject);
+var
+  n: integer;
 begin
+  n := 0;
+  case ComboBox3.ItemIndex of
+    1: n := 2;
+    2: n := 4;
+    3: n := 8;
+  end;
+  Synthesizer.CorrectionSubpassesCount := n;
+  GLSynthesizer.CorrectionSubpassesCount := n;
 end;
 
 // Image dimension correct input
@@ -487,6 +492,7 @@ begin
   begin
     Edit2.Color := clWindow;
     Jitter := j;
+    UpdateJitters;
   end;
 end;
 
@@ -503,6 +509,7 @@ begin
   begin
     Edit3.Color := clWindow;
     tsKappa := k;
+    GLSynthesizer.CoherenceWeight := k;
   end
   else
     Edit3.Color := clRed;
@@ -536,20 +543,33 @@ procedure TMainForm.TrackBar1Change(Sender: TObject);
 var
   L: integer;
 begin
-  L := TTrackBar(Sender).Tag;
-  if L < GLSynthesizer.LevelCount then
+  if Assigned(GLSynthesizer) then
   begin
-    GLSynthesizer.JitterStrength[L] :=
-      Jitter * TTrackBar(Sender).Position / TTrackBar(Sender).Max;
-    UpdateGLSynth := true;
+    L := TTrackBar(Sender).Tag;
+    if L < GLSynthesizer.LevelCount then
+    begin
+      GLSynthesizer.JitterStrength[L] :=
+        Jitter * TTrackBar(Sender).Position / TTrackBar(Sender).Max;
+    end;
   end;
 end;
 
-// Coherence control
-procedure TMainForm.TrackBar9Change(Sender: TObject);
+procedure TMainForm.UpdateJitters;
+var
+  L: integer;
+  TB: TTrackBar;
 begin
-  // GPUSynthesizer.CoherenceControl := TTrackBar(Sender).Position /
-  // TTrackBar(Sender).Max;
+  for L := 0 to High(FJTracks) do
+  begin
+    TB := FJTracks[L];
+    if L < GLSynthesizer.LevelCount then
+    begin
+      TB.Enabled := True;
+      GLSynthesizer.JitterStrength[L] := Jitter * TB.Position / TB.Max;
+    end
+    else
+      TB.Enabled := False;
+  end;
 end;
 
 // Exemplar image loading
@@ -570,58 +590,6 @@ begin
     ComboBox1Change(Sender);
     AnalysisProgressBar.Position := 0;
   end;
-end;
-
-// Init shader synthesizer when at its page
-procedure TMainForm.PageControl1Change(Sender: TObject);
-begin
-  { if tsAnalyzer.Done and (PageControl1.ActivePageIndex = 2) then begin
-    if ComboBox1.ItemIndex < 3 then begin
-    ComboBox1.ItemIndex := 3;
-    ComboBox1Change(Sender);
-    end;
-    with GPUSynthesizer do begin
-    Coherence := tsKappa;
-    Width := TexWidth;
-    Height := TexHeight;
-    JitterStrength := Jitter;
-    end;
-    end; }
-end;
-
-procedure TMainForm.GLCadencerProgress(Sender: TObject;
-  const deltaTime, newTime: Double);
-//var L: integer;
-begin
-  { KeyDeltaTime := KeyDeltaTime + deltaTime;
-    if KeyDeltaTime > 0.1 then begin
-    KeyDeltaTime := 0;
-    // this for keydowning, but all doing by buutons
-    end;
-    if (PageControl1.TabIndex = 2) and AutoJitter then begin
-    // adapt jitter strength per level - arbitrary, ideally should be per-level
-    // user control. Overall it is often more desirable to add strong jitter at
-    // coarser levels and let synthesis recover at finer resolution levels.
-    for L := 0 to GPUSynthesizer.NumLevels - 1 do begin
-    if L > GPUSynthesizer.NumLevels - 4 then
-    GPUSynthesizer.JitterControl[L] := 0
-    else GPUSynthesizer.JitterControl[L] := 1 - (L + 1) /
-    tsAnalyzer.Stack.Count;
-    end;
-    // is not bidlocoding, is very right disigion
-    with GPUSynthesizer do begin
-    TrackBar1.Position := Round(TrackBar1.Max * JitterControl[0]);
-    TrackBar2.Position := Round(TrackBar2.Max * JitterControl[1]);
-    TrackBar3.Position := Round(TrackBar3.Max * JitterControl[2]);
-    TrackBar4.Position := Round(TrackBar4.Max * JitterControl[3]);
-    TrackBar5.Position := Round(TrackBar5.Max * JitterControl[4]);
-    TrackBar6.Position := Round(TrackBar6.Max * JitterControl[5]);
-    TrackBar7.Position := Round(TrackBar7.Max * JitterControl[6]);
-    TrackBar8.Position := Round(TrackBar8.Max * JitterControl[7]);
-    end;
-    AutoJitter := false;
-    end;
-  }
 end;
 
 procedure TMainForm.GLViewer1ContextDebugMessage(const AMessage: string);
@@ -666,11 +634,6 @@ begin
     Halt(0);
   end;
 
-  shader := SynthesisShaderGenerator.GenViewShader(nil);
-  ViewShader3 := TGLSLShaderProgram.CreateFrom(shader);
-  ViewShader3.LinkShader;
-  shader.Free;
-
   glGenTextures(1, @ExemplarTextureId);
   glBindTexture(GL_TEXTURE_2D, ExemplarTextureId);
   glTextureParameterfEXT(
@@ -706,6 +669,22 @@ begin
   glTextureParameterfEXT(SynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
     GL_LINEAR_MIPMAP_LINEAR);
 
+  glGenTextures(1, @ShaderSynthTextureId);
+  glBindTexture(GL_TEXTURE_2D, ShaderSynthTextureId);
+  glTextureParameterfEXT(
+    SynthTextureId,
+    GL_TEXTURE_2D,
+    GL_GENERATE_MIPMAP_SGIS,
+    GL_TRUE);
+  glTextureParameterfEXT(ShaderSynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+    GL_REPEAT);
+  glTextureParameterfEXT(ShaderSynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+    GL_REPEAT);
+  glTextureParameterfEXT(ShaderSynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+    GL_LINEAR);
+  glTextureParameterfEXT(ShaderSynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+    GL_LINEAR_MIPMAP_LINEAR);
+
   glGenTextures(1, @PatchesTextureId);
   glBindTexture(GL_TEXTURE_2D, PatchesTextureId);
   glTextureParameterfEXT(
@@ -736,6 +715,8 @@ var
   w, h: integer;
   shader: TGLSLShaderProgram;
 begin
+
+  UpdateJitters;
 
   if TextureChaged[0] then
   begin
@@ -770,10 +751,9 @@ begin
     TextureChaged[2] := false;
   end;
 
-  if UpdateGLSynth and GLSynthesizer.Initialized then
+  if GLSynthesizer.Supported and GLSynthesizer.Initialized then
   begin
     GLSynthesizer.Process;
-    UpdateGLSynth := False;
   end;
 
   GLViewer1.Context.ClearDevice;
@@ -804,13 +784,13 @@ begin
     3:
       if GLSynthesizer.Initialized then
       begin
-        glBindSampler(0, SamplerId);
-        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.ExemplarTextureIDs[VIEW_LEVEL]);
-        shader := ViewShader3;
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[VIEW_LEVEL]);
-        w := GLSynthesizer.SideSize;
-        h := w;
+//        glBindSampler(0, SamplerId);
+//        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.ExemplarTextureIDs[VIEW_LEVEL]);
+//        shader := ViewShader3;
+//        glActiveTexture(GL_TEXTURE1);
+//        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[VIEW_LEVEL]);
+//        w := GLSynthesizer.SideSize;
+//        h := w;
       end;
     4:
       if GLSynthesizer.Initialized then

@@ -22,8 +22,6 @@ object MainForm: TMainForm
     Height = 864
     Align = alRight
     TabOrder = 0
-    ExplicitLeft = 580
-    ExplicitHeight = 800
     DesignSize = (
       220
       864)
@@ -52,7 +50,6 @@ object MainForm: TMainForm
       ReadOnly = True
       ScrollBars = ssVertical
       TabOrder = 0
-      ExplicitTop = 583
     end
     object ComboBox1: TComboBox
       Left = 14
@@ -70,7 +67,6 @@ object MainForm: TMainForm
         'CPU result patches'
         'GPU synthesis result'
         'GPU result patches')
-      ExplicitTop = 386
     end
     object PageControl1: TPageControl
       Left = 6
@@ -80,13 +76,8 @@ object MainForm: TMainForm
       ActivePage = TabSheet1
       Anchors = [akTop, akRight]
       TabOrder = 2
-      OnChange = PageControl1Change
       object TabSheet1: TTabSheet
         Caption = 'Analysis'
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 325
         object Label2: TLabel
           Left = 3
           Top = 0
@@ -565,9 +556,6 @@ object MainForm: TMainForm
       object TabSheet2: TTabSheet
         Caption = 'Synthesis'
         ImageIndex = 1
-        ExplicitLeft = 0
-        ExplicitTop = 31
-        ExplicitHeight = 549
         object Label1: TLabel
           Left = 3
           Top = 3
@@ -710,6 +698,7 @@ object MainForm: TMainForm
           Top = 491
           Width = 200
           Height = 21
+          ItemIndex = 1
           TabOrder = 9
           Text = '2 passes'
           OnChange = ComboBox2Change
@@ -754,12 +743,12 @@ object MainForm: TMainForm
             Caption = 'Finest level'
           end
           object TrackBar1: TTrackBar
+            Tag = 7
             Left = 3
             Top = 39
             Width = 200
             Height = 25
             Max = 100
-            Position = 100
             ShowSelRange = False
             TabOrder = 0
             TickMarks = tmBoth
@@ -767,13 +756,12 @@ object MainForm: TMainForm
             OnChange = TrackBar1Change
           end
           object TrackBar2: TTrackBar
-            Tag = 1
+            Tag = 6
             Left = 3
             Top = 64
             Width = 200
             Height = 25
             Max = 100
-            Position = 100
             ShowSelRange = False
             TabOrder = 1
             TickMarks = tmBoth
@@ -781,13 +769,12 @@ object MainForm: TMainForm
             OnChange = TrackBar1Change
           end
           object TrackBar3: TTrackBar
-            Tag = 2
+            Tag = 5
             Left = 3
             Top = 89
             Width = 200
             Height = 25
             Max = 100
-            Position = 100
             ShowSelRange = False
             TabOrder = 2
             TickMarks = tmBoth
@@ -795,7 +782,7 @@ object MainForm: TMainForm
             OnChange = TrackBar1Change
           end
           object TrackBar4: TTrackBar
-            Tag = 3
+            Tag = 4
             Left = 3
             Top = 114
             Width = 200
@@ -808,7 +795,7 @@ object MainForm: TMainForm
             OnChange = TrackBar1Change
           end
           object TrackBar5: TTrackBar
-            Tag = 4
+            Tag = 3
             Left = 3
             Top = 139
             Width = 200
@@ -821,7 +808,7 @@ object MainForm: TMainForm
             OnChange = TrackBar1Change
           end
           object TrackBar6: TTrackBar
-            Tag = 5
+            Tag = 2
             Left = 3
             Top = 164
             Width = 200
@@ -834,7 +821,7 @@ object MainForm: TMainForm
             OnChange = TrackBar1Change
           end
           object TrackBar7: TTrackBar
-            Tag = 6
+            Tag = 1
             Left = 3
             Top = 189
             Width = 200
@@ -847,7 +834,6 @@ object MainForm: TMainForm
             OnChange = TrackBar1Change
           end
           object TrackBar8: TTrackBar
-            Tag = 7
             Left = 3
             Top = 214
             Width = 200
@@ -872,8 +858,6 @@ object MainForm: TMainForm
     OnContextReady = GLViewer1ContextReady
     OnContextDebugMessage = GLViewer1ContextDebugMessage
     Align = alClient
-    ExplicitWidth = 583
-    ExplicitHeight = 592
   end
   object OpenPictureDialog: TOpenPictureDialog
     DefaultExt = 'bmp'
