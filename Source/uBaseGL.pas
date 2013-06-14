@@ -1,15 +1,19 @@
-﻿unit uBaseGL;
+unit uBaseGL;
+
 
 {$IFDEF FPC}
   {$MODE Delphi}
 {$ENDIF}
 
+
 interface
 
-uses Classes, uPersistentClasses, uLists, uMath, uVMath, uMiscUtils, {ImageLoader,}
-  uBaseTypes, uBaseClasses, uRenderResource, dglOpenGL;
+uses Classes, uPersistentClasses, uMath, uVMath, uLists, uMiscUtils, {ImageLoader,}
+  uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, dglOpenGL;
+
 
 Type
+
 
   TRenderBuffer = (rbDepth, rbStencil);
   TRenderBuffers = set of TRenderBuffer;
@@ -20,12 +24,15 @@ Type
   TMRTTarget = (tgTexture, tgDepth, tgDepthStencil, tgMRT0, tgMRT1,
     tgMRT2, tgMRT3);
 
+
   // Base GL Resource
   TGLBaseResource = class(TBaseRenderResource)
     Owner: TObject;
   end;
 
+
   TGLTextureObject = class;
+
 
   TFBORenderTarget = record
     Texture: TGLTextureObject;
@@ -34,6 +41,7 @@ Type
     Precision: GLEnum;
   end;
 
+
   TAttachments = record
     Textures: TList;
     DepthBuffer: TFBORenderTarget;
@@ -41,10 +49,12 @@ Type
     DepthStencilBuffer: TFBORenderTarget;
   end;
 
+
   TFBOTarget = record
     Texture: TGLTextureObject;
     TargetTo: TMRTTarget;
   end;
+
 
   TGLBufferObject = class(TGLBaseResource)
   private
@@ -66,8 +76,10 @@ Type
     procedure Notify(Sender: TObject; Msg: cardinal;
       Params: pointer = nil); override;
 
+
     procedure Allocate(aSize: integer; aData: pointer = nil;
       aUsage: cardinal = GL_STATIC_DRAW);
+
 
     procedure Upload(NewData: pointer; aSize, aOffset: integer);
     procedure Download(DestPtr: pointer; aSize, aOffset: integer; aMapBuffer: boolean = true);
@@ -79,18 +91,23 @@ Type
     procedure BindRange(AsTarget: TBufferType; Index: cardinal;
       Offset, Size: integer);
 
+
     procedure UnBindBuffer;
+
 
     function Map(AccessType: cardinal = GL_READ_WRITE): pointer;
     function MapRange(AccessType, Offset, Length: cardinal): pointer;
     procedure UnMap;
+
 
     property Id: cardinal read FBuffId;
     property BufferType: TBufferType read FBuffType write setBufferType;
     property Size: integer read FSize;
     property Data: pointer read FData;
 
+
   end;
+
 
   TGLAtomicCounter = class(TGLBufferObject)
   private
@@ -100,6 +117,7 @@ Type
     constructor Create;
     property Value: cardinal read getValue write setValue;
   end;
+
 
   TGLAttribObject = class(TGLBaseResource)
   private
@@ -111,6 +129,7 @@ Type
     FElementSize: integer;
     FNormalized: boolean;
 
+
     FSettedParam: set of (apAttrName, apAttrSize, apAttrType, apAttrStride);
     FAttribName: ansistring;
     FSize: integer;
@@ -119,6 +138,7 @@ Type
     FSemantic: TAttribType;
     function getIndexPrt(Index: integer): pointer;
 
+
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -126,6 +146,7 @@ Type
     constructor CreateAndSetup(AttrName: ansistring; aSize: integer;
       AType: TValueType = vtFloat; AStride: integer = 0;
       aBuffType: TBufferType = btArray); virtual;
+
 
     procedure Notify(Sender: TObject; Msg: Cardinal;
       Params: pointer = nil); override;
@@ -137,6 +158,7 @@ Type
     procedure SetAttribLocation(Location: cardinal);
     procedure SetAttribSemantic(aSemantic: TAttribType);
 
+
     property Normalized: boolean read FNormalized write FNormalized;
     property Buffer: TGLBufferObject read FGLBuffer;
     property ElementSize: integer read FElementSize write FElementSize;
@@ -147,12 +169,14 @@ Type
     property PtrByIndex[Index: integer]: pointer read getIndexPrt; default;
   end;
 
+
   TGLAttribBuffer = class(TGLAttribObject)
   public
     constructor CreateAndSetup(AttrName: ansistring;
       aSize: integer; AType: TValueType = vtFloat;
       AStride: integer = 0; aBuffType: TBufferType = btArray); override;
   end;
+
 
   { TODO : Написать пресеты для стандартных типов атрибутов
     с встроенными списками координат }
@@ -166,6 +190,7 @@ Type
   TGLTexCoord3fAttribBuffer = class(TGLAttribBuffer);
   TGLTexCoord4fAttribBuffer = class(TGLAttribBuffer);
 
+
   TUniformList = class
   private
     FItems: array of record
@@ -174,12 +199,14 @@ Type
      Value: integer;
     end;
 
+
     FCount: integer;
   public
     constructor Create;
     procedure AddKey(const Key: ansistring; Value: integer);
     function getValue(const Key: ansistring): integer;
   end;
+
 
   TGLUniformBlock = class
   private
@@ -192,7 +219,9 @@ Type
     FubIndices: array of integer;
     FubOffsets: array of integer;
 
+
     FMaxUBOSize: integer;
+
 
     function getIndex(Index: integer): integer;
     function getName(Index: integer): ansistring;
@@ -206,19 +235,23 @@ Type
     property UniformsCount: integer read FUniformsCount;
     property BlockType: TUniformBlocksType read FBlockType;
 
+
     property Offsets[Index: integer]: integer read getOffset; default;
     property Names[Index: integer]: ansistring read getName;
     property Indices[Index: integer]: integer read getIndex;
 
+
     property MaxBlocksCount: integer read getMaxBC;
     property MaxUBOSize: integer read FMaxUBOSize;
 
+
     function OffsetByName(aName: ansistring): integer;
+
 
     constructor Create(const aProgram: cardinal = 0; aIndex: integer = -1);
   end;
 
-  TUniformSubroutine = class
+ TUniformSubroutine = class
   private
     FShaderType: TShaderType;
     FSubs: array of record
@@ -249,7 +282,9 @@ Type
     constructor Create(aObjectSize: integer; aObjectsCount: integer = 10000);
     destructor Destroy; override;
 
+
     property Buffer: TGLBufferObject read FBuffer;
+
 
     function OffsetByIndex(const Index: integer): integer;
     // Reserve mem in pool, return object index in pool
@@ -263,6 +298,7 @@ Type
 
   end;
 
+
   TUBOList = class
   private
     FItems: TList;
@@ -272,8 +308,10 @@ Type
     constructor Create;
     destructor Destroy; override;
 
+
     function AddUBO(const aBlock: TGLUniformBlock): integer;
     function GetUBOByName(const aName: ansistring): TGLUniformBlock;
+
 
     property Count: integer read getCount;
     property UBOs[Index: integer]: TGLUniformBlock read getUBO;
@@ -323,9 +361,11 @@ Type
     property UniformBlocksCount: integer read FActiveUniformsBlocks;
     property UniformBlocks: TUBOList read FUBOList;
 
+
     constructor Create; override;
     constructor CreateFrom(const aShaderProgram: TShaderProgram); overload;
     destructor Destroy; override;
+
 
     procedure AttachShader(ShaderType: TShaderType; Source: ansistring);
     procedure AttachShaderFromFile(ShaderType: TShaderType; FileName: string);
@@ -337,8 +377,10 @@ Type
     procedure GetProgramBinary(var Binary: pointer; var Size: integer;
       var Format: GLEnum);
 
+
     procedure Apply;
     procedure UnApply;
+
 
     procedure SetUniform(const Name: ansistring; const Value: array of TVector);
       overload;
@@ -364,8 +406,9 @@ Type
       Count: GLsizei = 1; transpose: boolean = false); overload;
     procedure SetUniform(const Name: ansistring; const Value: mat4;
       Count: GLsizei = 1; transpose: boolean = false); overload;
-    procedure SetSubroutine(const Name: ansistring; const Value: ansistring);
+   procedure SetSubroutine(const Name: ansistring; const Value: ansistring);
   end;
+
 
   TGLVertexObject = class(TGLBaseResource)
   private
@@ -383,6 +426,7 @@ Type
     FFaceType: TFaceType;
     FElementsCount: integer;
 
+
     function getAttrib(Index: integer): TGLAttribObject;
     function getAttrCount: integer;
     function getIndice(Index: integer): integer;
@@ -395,15 +439,19 @@ Type
     procedure Notify(Sender: TObject; Msg: Cardinal;
       Params: pointer = nil); override;
 
+
     procedure Bind;
     procedure UnBind;
     procedure Build(ShaderId: cardinal;
       const aVertexObject: TVertexObject = nil); overload;
     procedure Build(const aVertexObject: TVertexObject = nil); overload;
 
+
     procedure RenderVO(aShader: integer = -1);
 
+
     function GetAttribBySemantic(aSemantic: TAttribType): TGLAttribObject;
+
 
     property Attribs[index: integer]: TGLAttribObject read getAttrib; default;
     property Indices[index: integer]: integer read getIndice;
@@ -417,6 +465,7 @@ Type
     property IndiceId: cardinal read FIndiceId;
   end;
 
+
   TGLTextureSampler = class(TGLBaseResource)
   private
     FTextureSampler: TTextureSampler;
@@ -427,12 +476,15 @@ Type
     constructor CreateFrom(aSampler: TTextureSampler);
     destructor Destroy; override;
 
+
     procedure Bind(aUnit: cardinal); overload;
     procedure UnBind(aUnit: cardinal);
     procedure SetSamplerParams(aTarget: TTexTarget); overload;
 
+
     property Hash: integer read getSamplerHash;
   end;
+
 
   TGLTextureObject = class(TGLBaseResource)
   private
@@ -450,16 +502,21 @@ Type
       const aTexDesc: PTextureDesc = nil); overload;
     constructor CreateFrom(const aTexture: TTexture); overload;
 
+
     destructor Destroy; override;
+
 
     procedure UploadTexture(Data: pointer; Size: cardinal);
 
+
     property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
+
 
     property Id: cardinal read FTexId;
     property Target: TTexTarget read FTarget;
     property GenerateMipMaps: boolean read FGenerateMipMaps write FGenerateMipMaps;
   end;
+
 
   TGLFrameBufferObject = class(TGLBaseResource)
   private
@@ -475,6 +532,7 @@ Type
     FDeactivate: boolean;
     FMultisample: TMultisampleFormat;
 
+
     procedure AttachTextureTarget(tex: TGLTextureObject; attachement: GLEnum);
     function OGLDBPrecision(Precision: TDepthPrecision): GLEnum;
     function OGLSBPrecision(Precision: TStencilPrecision): GLEnum;
@@ -487,6 +545,7 @@ Type
     destructor Destroy; override;
     procedure InitFBO(Width, Height: integer);
     procedure ResetFBO(ResetConfig: boolean = true);
+
 
     procedure ConfigFBO(RenderBuffers: TRenderBuffers);
     procedure ConfigDepthBuffer(Mode: TBufferMode;
@@ -503,12 +562,15 @@ Type
     procedure DetachStencilTexture;
     procedure DetachDepthStencilTexture;
 
+
     procedure DetachTexture(Index: integer);
     procedure DetachAllTextures;
+
 
     procedure Apply(ClearBuffers: boolean = true);
     procedure UnApply;
     procedure SetReadBackBuffer(const ColorBufers: array of GLUInt);
+
 
     property Textures[index: integer]: TGLTextureObject read GetTexture
       write SetTexture;
@@ -516,10 +578,40 @@ Type
     property Multisample: TMultisampleFormat read FMultisample
       write FMultisample;
 
+
     property Active: boolean read FActive write FActive;
     property DeactivateAfter: boolean read FDeactivate write FDeactivate;
     property Handle: cardinal read FBOId;
   end;
+
+
+  TGLTextureFormatDescriptor = record
+    InternalFormat: cardinal;
+    BaseFormat: cardinal;
+    PixelFormat: cardinal;
+    Compressed: boolean;
+  end;
+
+
+  TGLTextureFormatSelector = class (TAbstractPixelFormatSelector<TGLTextureFormatDescriptor>)
+    //Get GL texture format from ImageFormatBits
+    class function GetTextureFormat(aFormat: cardinal): TGLTextureFormatDescriptor;
+    //virtual functions
+    class function CreateInt8(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateInt16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateInt32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateUInt8(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateUInt16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateUInt32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateFloat16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+    class function CreateFloat32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor; override;
+
+
+    class function CreateCompressed(aFormat: TS3TCCompressedFormats): TGLTextureFormatDescriptor; override;
+    class function CreateDepthStencil(aDepthBit: byte; aStencil: boolean = false): TGLTextureFormatDescriptor; override;
+    class function CreateSpecial(aFormat: TImageSpecialFormat): TGLTextureFormatDescriptor; override;
+  end;
+
 
 procedure CheckOpenGLError;
 function ParseDebugMessage(aSource,aType,aId,aSeverity: cardinal;
@@ -527,16 +619,20 @@ function ParseDebugMessage(aSource,aType,aId,aSeverity: cardinal;
 function GetWorkgroupCount: vec3i;
 function GetWorkgroupSize: vec3i;
 
+
 implementation
+
 
 var
   vActiveShader: TGLSLShaderProgram = nil;
+
 
 const
   CFaceTypeConst: array [TFaceType] of cardinal = (GL_POINTS, GL_LINE_STRIP,
     GL_LINE_LOOP, GL_LINES, GL_LINE_STRIP_ADJACENCY, GL_LINES_ADJACENCY,
     GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_TRIANGLES,
     GL_TRIANGLE_STRIP_ADJACENCY, GL_TRIANGLES_ADJACENCY, GL_PATCHES, GL_QUADS);
+
 
   CBufferTypes: array [TBufferType] of cardinal = (GL_ARRAY_BUFFER,
     GL_ATOMIC_COUNTER_BUFFER, GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER,
@@ -545,13 +641,16 @@ const
     GL_SHADER_STORAGE_BUFFER, GL_TEXTURE_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER,
     GL_UNIFORM_BUFFER);
 
+
   CShaderTypes: array [TShaderType] of cardinal = (GL_VERTEX_SHADER,
     GL_TESS_CONTROL_SHADER, GL_TESS_EVALUATION_SHADER, GL_GEOMETRY_SHADER,
     GL_FRAGMENT_SHADER, GL_COMPUTE_SHADER);
 
+
   CShaderNames: array [TShaderType] of string = ('VERTEX SHADER',
     'TESS CONTROL SHADER', 'TESS EVALUATION SHADER', 'GEOMETRY SHADER',
     'FRAGMENT SHADER', 'COMPUTE SHADER');
+
 
   CTexTargets: array [TTexTarget] of GLEnum = (GL_TEXTURE_1D, GL_TEXTURE_2D,
     GL_TEXTURE_3D, GL_TEXTURE_RECTANGLE, GL_TEXTURE_RECTANGLE_NV,
@@ -561,25 +660,33 @@ const
     GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, GL_TEXTURE_1D_ARRAY, GL_TEXTURE_2D_ARRAY,
     GL_TEXTURE_CUBE_MAP_ARRAY);
 
+
   CWpars: array [TTextureWraps] of GLEnum = (GL_CLAMP, GL_REPEAT,
     GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT);
+
 
   CMinFilters: array [TMinFilter] of GLEnum = (GL_NEAREST, GL_LINEAR,
     GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR,
     GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR);
 
+
   CMagFilters: array [TMagFilter] of GLEnum = (GL_NEAREST, GL_LINEAR);
+
 
   CValueTypes: array [TValueType] of cardinal = (GL_UNSIGNED_BYTE,
     GL_UNSIGNED_SHORT, GL_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_DOUBLE);
 
+
   CTextureGen: array [TTexGens] of cardinal = (0, GL_OBJECT_LINEAR, GL_EYE_LINEAR,
     GL_SPHERE_MAP, GL_NORMAL_MAP, GL_REFLECTION_MAP);
 
+
   CCompareMode: array[TTextureCompareMode] of cardinal = (GL_NONE, GL_COMPARE_REF_TO_TEXTURE);
+
 
   CCompareFunc: array[TTextureCompareFunc] of cardinal = (GL_LEQUAL, GL_GEQUAL,
     GL_LESS, GL_GREATER, GL_EQUAL, GL_NOTEQUAL, GL_ALWAYS, GL_NEVER);
+
 
 procedure CheckOpenGLError;
 var err: cardinal;
@@ -606,6 +713,7 @@ begin
   assert(not error, #13+#10+etx);
 end;
 
+
 function ParseDebugMessage(aSource,aType,aId,aSeverity: cardinal;
   const aMess: ansistring): ansistring;
 var t: ansistring;
@@ -620,6 +728,7 @@ begin
   end;
   result:='Source: '+t+'; ';
 
+
   case aType of
     GL_DEBUG_TYPE_ERROR_ARB: t:='Error';
     GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB: t:='Deprecated behavior';
@@ -630,6 +739,7 @@ begin
   end;
   result:=result+'Type: '+t+'; ';
 
+
   case aSeverity of
     GL_DEBUG_SEVERITY_HIGH_ARB: t:='High';
     GL_DEBUG_SEVERITY_MEDIUM_ARB: t:='Medium';
@@ -639,12 +749,14 @@ begin
   result:=result+'Message: '+aMess;
 end;
 
+
 function GetWorkgroupCount: vec3i;
 begin
   glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, @Result[0]);
   glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, @Result[1]);
   glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, @Result[2]);
 end;
+
 
 function GetWorkgroupSize: vec3i;
 begin
@@ -653,7 +765,9 @@ begin
   glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, @Result[2]);
 end;
 
+
 { TGLBufferObject }
+
 
 procedure TGLBufferObject.Bind;
 begin
@@ -662,6 +776,7 @@ begin
   FLastTarget := FBuffType;
 end;
 
+
 procedure TGLBufferObject.Bind(AsTarget: TBufferType);
 begin
   assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
@@ -669,10 +784,12 @@ begin
   FLastTarget := AsTarget;
 end;
 
+
 procedure TGLBufferObject.BindAllRange(Index: cardinal);
 begin
   BindRange(FBuffType, Index, 0, FSize);
 end;
+
 
 procedure TGLBufferObject.BindBase(Index: cardinal);
 begin
@@ -681,12 +798,14 @@ begin
   FLastTarget := FBuffType;
 end;
 
+
 procedure TGLBufferObject.BindBase(AsTarget: TBufferType; Index: cardinal);
 begin
   assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
   glBindBufferBase(CBufferTypes[AsTarget], Index, FBuffId);
   FLastTarget := AsTarget;
 end;
+
 
 procedure TGLBufferObject.BindRange(AsTarget: TBufferType; Index: cardinal;
   Offset, Size: integer);
@@ -701,6 +820,7 @@ begin
     assert(false, 'Bind Range not supported for this buffer type!');
 end;
 
+
 constructor TGLBufferObject.CreateFrom(const aBuffer: TBufferObject);
 begin
   Create(aBuffer.BufferType);
@@ -710,11 +830,13 @@ begin
   aBuffer.Subscribe(self);
 end;
 
+
 procedure TGLBufferObject.UnBindBuffer;
 begin
   assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
   glBindBuffer(CBufferTypes[FLastTarget], 0);
 end;
+
 
 function TGLBufferObject.Map(AccessType: cardinal): pointer;
 begin
@@ -729,6 +851,7 @@ begin
   FLocked := true;
   result := FMappedPointer;
 end;
+
 
 function TGLBufferObject.MapRange(AccessType, Offset, Length: cardinal)
   : pointer;
@@ -745,6 +868,7 @@ begin
   FLocked := true;
   result := FMappedPointer;
 end;
+
 
 procedure TGLBufferObject.Notify(Sender: TObject; Msg: cardinal;
   Params: pointer);
@@ -775,11 +899,13 @@ begin
   end;
 end;
 
+
 procedure TGLBufferObject.setBufferType(const Value: TBufferType);
 begin
   assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
   FBuffType := Value;
 end;
+
 
 procedure TGLBufferObject.UnMap;
 begin
@@ -790,6 +916,7 @@ begin
   FLocked := false;
   FMappedPointer := nil;
 end;
+
 
 constructor TGLBufferObject.Create(BuffType: TBufferType);
 begin
@@ -804,6 +931,7 @@ begin
   FBuffer := nil;
 end;
 
+
 destructor TGLBufferObject.Destroy;
 begin
   glDeleteBuffers(1, @FBuffId);
@@ -811,6 +939,7 @@ begin
     FBuffer.UnSubscribe(self);
   inherited;
 end;
+
 
 procedure TGLBufferObject.Download(DestPtr: pointer; aSize, aOffset: integer; aMapBuffer: boolean);
 var
@@ -832,6 +961,7 @@ begin
   glBindBuffer(CBufferTypes[FBuffType], 0);
 end;
 
+
 procedure TGLBufferObject.Upload(NewData: pointer; aSize, aOffset: integer);
 begin
   assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
@@ -842,10 +972,12 @@ begin
   glBindBuffer(CBufferTypes[FBuffType], 0);
 end;
 
+
 procedure TGLBufferObject.Allocate(aSize: integer; aData: pointer; aUsage: cardinal);
 begin
   assert(FSize = -1, 'You can''t change buffer size!');
   glBindBuffer(CBufferTypes[FBuffType], FBuffId);
+
 
   if ((FBuffType = btAtomicCounter) or (FBuffType = btShaderStorage))
   and (aUsage = GL_STATIC_DRAW) then
@@ -857,7 +989,9 @@ begin
   FData := aData;
 end;
 
+
 { TAtomicCounter }
+
 
 constructor TGLAtomicCounter.Create;
 var
@@ -868,6 +1002,7 @@ begin
   Allocate(sizeof(cardinal), @FValue);
 end;
 
+
 function TGLAtomicCounter.getValue: cardinal;
 var
   FValue: cardinal;
@@ -876,12 +1011,15 @@ begin
   result := FValue;
 end;
 
+
 procedure TGLAtomicCounter.setValue(const Value: cardinal);
 begin
   Upload(@Value, sizeof(Value), 0);
 end;
 
+
 { TAttribObject }
+
 
 procedure TGLAttribObject.AssignBuffer(aBuffer: TGLBufferObject);
 begin
@@ -892,11 +1030,13 @@ begin
     FGLBuffer.Subscribe(Self);
 end;
 
+
 procedure TGLAttribObject.AssignBuffer(aBuffer: TBufferObject);
 begin
   FGLBuffer := TGLBufferObject.CreateFrom(aBuffer);
   FGLBuffer.Subscribe(Self);
 end;
+
 
 procedure TGLAttribObject.Bind(DataPtr: pointer);
 begin
@@ -904,10 +1044,12 @@ begin
     not(apAttrType in FSettedParam) then
     assert(false, 'Attribute not configured');
 
+
   if (FSemantic <> atUserAttrib) then begin
     FLocation:=CAttribSematics[FSemantic].Location;
   end else
     assert(FFixedLocation and (FLocation<>-1), 'Attrib location not found!');
+
 
   if Assigned(FGLBuffer) then
   begin
@@ -917,6 +1059,7 @@ begin
       FStride, DataPtr);
   end;
 end;
+
 
 procedure TGLAttribObject.BindAttrib(ShaderId: cardinal; DataPtr: pointer);
 var
@@ -942,14 +1085,17 @@ begin
   begin
     glEnableVertexAttribArray(FLocation);
 
+
     if not(apAttrSize in FSettedParam) or not(apAttrName in FSettedParam) or
       not(apAttrType in FSettedParam) then
       assert(false, 'Attribute not configured');
+
 
     glVertexAttribPointer(FLocation, FSize, CValueTypes[FType], FNormalized,
       FStride, DataPtr);
   end;
 end;
+
 
 constructor TGLAttribObject.CreateFrom(const aAttribObject: TAttribObject);
 begin
@@ -974,6 +1120,7 @@ begin
   end;
 end;
 
+
 destructor TGLAttribObject.Destroy;
 begin
   if Assigned(FAttribObject) then
@@ -985,6 +1132,7 @@ begin
   end;
   inherited;
 end;
+
 
 constructor TGLAttribObject.Create;
 begin
@@ -1000,6 +1148,7 @@ begin
   FSemantic := atUserAttrib;
 end;
 
+
 constructor TGLAttribObject.CreateAndSetup(AttrName: ansistring; aSize: integer;
   AType: TValueType; AStride: integer; aBuffType: TBufferType);
 begin
@@ -1013,6 +1162,7 @@ begin
   include(FSettedParam, apAttrType);
   include(FSettedParam, apAttrStride);
 end;
+
 
 function TGLAttribObject.getIndexPrt(Index: integer): pointer;
 var
@@ -1030,6 +1180,7 @@ begin
   result := pointer(p);
 end;
 
+
 procedure TGLAttribObject.Notify(Sender: TObject; Msg: Cardinal;
   Params: pointer);
 begin
@@ -1046,16 +1197,19 @@ begin
   end;
 end;
 
+
 procedure TGLAttribObject.SetAttribLocation(Location: cardinal);
 begin
   FLocation := Location;
   FFixedLocation := true;
 end;
 
+
 procedure TGLAttribObject.SetAttribSemantic(aSemantic: TAttribType);
 begin
   FSemantic := aSemantic;
 end;
+
 
 procedure TGLAttribObject.Unbind;
 begin
@@ -1065,7 +1219,9 @@ begin
     glDisableVertexAttribArray(FLocation);
 end;
 
+
 { TAttribBuffer }
+
 
 constructor TGLAttribBuffer.CreateAndSetup(
   AttrName: ansistring;
@@ -1077,7 +1233,9 @@ begin
   FGLBuffer.Subscribe(Self);
 end;
 
+
 { TUniformList }
+
 
 function StringHashKey(const Name: ansistring): integer;
 var
@@ -1095,6 +1253,7 @@ begin
   end;
 end;
 
+
 procedure TUniformList.AddKey(const Key: ansistring; Value: integer);
 var
   iKey, i: integer;
@@ -1111,11 +1270,13 @@ begin
   inc(FCount);
 end;
 
+
 constructor TUniformList.Create;
 begin
   setlength(FItems, 128);
   FCount := 0;
 end;
+
 
 function TUniformList.getValue(const Key: ansistring): integer;
 var
@@ -1131,7 +1292,9 @@ begin
   result := -2;
 end;
 
+
 { TShaderProgram }
+
 
 procedure TGLSLShaderProgram.Apply;
 begin
@@ -1144,11 +1307,13 @@ begin
   end;
 end;
 
+
 procedure TGLSLShaderProgram.UnApply;
 begin
   glUseProgram(0);
   vActiveShader := nil;
 end;
+
 
 procedure TGLSLShaderProgram.AttachShader(ShaderType: TShaderType;
   Source: ansistring);
@@ -1193,6 +1358,7 @@ begin
   end;
 end;
 
+
 procedure TGLSLShaderProgram.AttachShaderFromFile(ShaderType: TShaderType;
   FileName: string);
 var
@@ -1203,6 +1369,7 @@ begin
   AttachShader(ShaderType, ansistring(s.Text));
   s.Free;
 end;
+
 
 constructor TGLSLShaderProgram.CreateFrom(const aShaderProgram: TShaderProgram);
 var
@@ -1228,6 +1395,7 @@ begin
   LinkShader;
 end;
 
+
 constructor TGLSLShaderProgram.Create;
 begin
   inherited;
@@ -1238,6 +1406,7 @@ begin
   FUBOList := TUBOList.Create;
   FUSUBList := TUSUBList.Create;
 end;
+
 
 destructor TGLSLShaderProgram.Destroy;
 var
@@ -1256,6 +1425,7 @@ begin
   inherited;
 end;
 
+
 procedure TGLSLShaderProgram.GetProgramBinary(var Binary: pointer;
   var Size: integer; var Format: GLEnum);
 var
@@ -1270,6 +1440,7 @@ begin
     exit;
   end;
 
+
   glGetProgramiv(FShaderId, GL_PROGRAM_BINARY_LENGTH, @binaryLength);
   Size := binaryLength;
   getmem(Binary, Size);
@@ -1278,6 +1449,7 @@ begin
   Format := binaryFormat;
 end;
 
+
 function TGLSLShaderProgram.getShaderId: cardinal;
 begin
   if FLinked then
@@ -1285,6 +1457,7 @@ begin
   else
     result := 0;
 end;
+
 
 function TGLSLShaderProgram.GetUniformLocation(ShaderId: cardinal;
   const Name: ansistring): integer;
@@ -1297,6 +1470,7 @@ begin
   if result >= 0 then
     FUniforms.AddKey(Name, result);
 end;
+
 
 function TGLSLShaderProgram.LinkShader: cardinal;
 var
@@ -1341,6 +1515,7 @@ begin
   QueryProgramInfo;
 end;
 
+
 function TGLSLShaderProgram.ProgramBinary(Binary: pointer; Size: integer;
   Format: GLEnum): cardinal;
 var
@@ -1378,6 +1553,7 @@ begin
   end;
   QueryProgramInfo;
 end;
+
 
 procedure TGLSLShaderProgram.QueryProgramInfo;
 var
@@ -1419,11 +1595,13 @@ begin
   glUniform4fv(GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
+
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: integer; Count: GLsizei);
 begin
   glUniform1iv(GetUniformLocation(FShaderId, name), Count, @Value);
 end;
+
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: vec3; Count: GLsizei);
@@ -1431,11 +1609,13 @@ begin
   glUniform3fv(GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
+
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: single; Count: GLsizei);
 begin
   glUniform1fv(GetUniformLocation(FShaderId, name), Count, @Value);
 end;
+
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: vec2; Count: GLsizei);
@@ -1443,12 +1623,14 @@ begin
   glUniform2fv(GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
+
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat3; Count: GLsizei; transpose: boolean);
 begin
   glUniformMatrix3fv(GetUniformLocation(FShaderId, name), Count,
     transpose, @Value);
 end;
+
 
 procedure TGLSLShaderProgram.SetAttribLocation(Index: cardinal;
   Name: ansistring);
@@ -1458,6 +1640,7 @@ begin
     exit;
   glBindAttribLocation(FShaderId, Index, PAnsiChar(Name));
 end;
+
 
 procedure TGLSLShaderProgram.SetFragDataLocation(Index: cardinal;
   Name: ansistring);
@@ -1481,6 +1664,7 @@ begin
     end;
   end;
 end;
+
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat4; Count: GLsizei; transpose: boolean);
@@ -1514,6 +1698,7 @@ begin
     PGLFloat(Value[0].GetAddr));
 end;
 
+
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat2; Count: GLsizei; transpose: boolean);
 begin
@@ -1521,7 +1706,9 @@ begin
     transpose, @Value);
 end;
 
+
 { TVertexObject }
+
 
 procedure TGLVertexObject.Build(ShaderId: cardinal;
   const aVertexObject: TVertexObject);
@@ -1549,8 +1736,10 @@ begin
       FIndiceChanged := false;
     end;
 
+
     glGenVertexArrays(1, @FVAO);
     glBindVertexArray(FVAO);
+
 
     for i := 0 to FAttribs.Count - 1 do
     begin
@@ -1562,6 +1751,7 @@ begin
     FStructureChanged := false;
   end;
 end;
+
 
 constructor TGLVertexObject.Create;
 begin
@@ -1576,6 +1766,7 @@ begin
   FIndiceChanged := true;
 end;
 
+
 procedure TGLVertexObject.Bind;
 var i: integer;
 begin
@@ -1586,7 +1777,9 @@ begin
   if FIndiceCount > 0 then
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, FIndiceId);
 
+
 end;
+
 
 procedure TGLVertexObject.Build(const aVertexObject: TVertexObject);
 var
@@ -1614,8 +1807,10 @@ begin
       FIndiceChanged := false;
     end;
 
+
     glGenVertexArrays(1, @FVAO);
     glBindVertexArray(FVAO);
+
 
     for i := 0 to FAttribs.Count - 1 do
     begin
@@ -1630,6 +1825,7 @@ begin
     FStructureChanged := false;
   end;
 end;
+
 
 constructor TGLVertexObject.CreateFrom(const aVertexObject: TVertexObject);
 var
@@ -1649,6 +1845,7 @@ begin
   FIndicePtr := aVertexObject.IndicePtr;
   FIndiceCount := aVertexObject.IndiceCount;
 end;
+
 
 destructor TGLVertexObject.Destroy;
 var
@@ -1675,10 +1872,12 @@ begin
   inherited;
 end;
 
+
 function TGLVertexObject.getAttrCount: integer;
 begin
   result := FAttribs.Count;
 end;
+
 
 function TGLVertexObject.getAttrib(Index: integer): TGLAttribObject;
 begin
@@ -1687,6 +1886,7 @@ begin
   else
     result := nil;
 end;
+
 
 function TGLVertexObject.GetAttribBySemantic(aSemantic: TAttribType)
   : TGLAttribObject;
@@ -1706,6 +1906,7 @@ begin
   result := nil;
 end;
 
+
 function TGLVertexObject.getECount: integer;
 var ec,i: integer;
 begin
@@ -1724,6 +1925,7 @@ begin
   end;
 end;
 
+
 function TGLVertexObject.getIndice(Index: integer): integer;
 begin
   if not assigned(FIndicePtr) then
@@ -1733,6 +1935,7 @@ begin
     result := PInteger(integer(FIndicePtr) + index * 4)^;
   end;
 end;
+
 
 procedure TGLVertexObject.Notify(Sender: TObject; Msg: Cardinal;
   Params: pointer);
@@ -1761,6 +1964,7 @@ begin
   end;
 end;
 
+
 procedure TGLVertexObject.RenderVO(aShader: integer);
 var
   ActiveShader: integer;
@@ -1773,11 +1977,13 @@ var
       result := b;
   end;
 
+
 begin
   if Assigned(vActiveShader) then
     ActiveShader := vActiveShader.FShaderId
   else
     ActiveShader := 0;
+
 
   if aShader > 0 then
   begin
@@ -1825,6 +2031,7 @@ begin
     then glUseProgram(0); }
 end;
 
+
 procedure TGLVertexObject.SetShader(const Value: TGLSLShaderProgram);
 begin
   if Assigned(FShader) then
@@ -1833,6 +2040,7 @@ begin
   if Assigned(FShader) then
     FShader.Subscribe(Self);
 end;
+
 
 procedure TGLVertexObject.UnBind;
 var i: integer;
@@ -1843,7 +2051,9 @@ begin
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 end;
 
+
 { TGLTextureObject }
+
 
 constructor TGLTextureObject.Create;
 begin
@@ -1858,6 +2068,7 @@ begin
   FGenerateMipMaps := false;
 end;
 
+
 constructor TGLTextureObject.CreateFrom(const aTarget: TTexTarget;
   const aImageDesc: PImageDesc; const aTexDesc: PTextureDesc);
 begin
@@ -1869,6 +2080,7 @@ begin
   FTarget := aTarget;
 end;
 
+
 constructor TGLTextureObject.CreateFrom(const aTexture: TTexture);
 begin
   Create;
@@ -1877,6 +2089,7 @@ begin
   FImageDesc := aTexture.ImageDescriptor;
   FTarget := aTexture.Target;
 end;
+
 
 destructor TGLTextureObject.Destroy;
 begin
@@ -1887,6 +2100,7 @@ begin
   glDeleteBuffers(1, @FpboId);
   inherited;
 end;
+
 
 procedure TGLTextureObject.UploadTexture(Data: pointer; Size: cardinal);
 begin
@@ -1913,7 +2127,9 @@ begin
   end;
 end;
 
+
 { TFrameBufferObject }
+
 
 procedure TGLFrameBufferObject.AttachTexture(tex: TGLTextureObject;
   aTarget: TMRTTarget);
@@ -1971,6 +2187,7 @@ begin
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 end;
 
+
 procedure TGLFrameBufferObject.DetachTexture(Index: integer);
 var
   tex: TGLTextureObject;
@@ -1986,10 +2203,12 @@ begin
   end;
 end;
 
+
 procedure TGLFrameBufferObject.ConfigFBO(RenderBuffers: TRenderBuffers);
 begin
   FRenderBuffers := RenderBuffers;
 end;
+
 
 constructor TGLFrameBufferObject.Create;
 begin
@@ -2013,12 +2232,14 @@ begin
   FInit := false;
 end;
 
+
 destructor TGLFrameBufferObject.Destroy;
 var
   FBTarget: GLEnum;
   i: integer;
 begin
   FBTarget := GL_FRAMEBUFFER;
+
 
   for i := 0 to FAttachments.Textures.Count - 1 do
     DetachTexture(i);
@@ -2037,12 +2258,14 @@ begin
   inherited;
 end;
 
+
 function TGLFrameBufferObject.GetTexture(Index: integer): TGLTextureObject;
 begin
   assert(index < FAttachments.Textures.Count,
     'Not enough attached texture units');
   result := FAttachments.Textures[index];
 end;
+
 
 procedure TGLFrameBufferObject.SetTexture(Index: integer;
   const Value: TGLTextureObject);
@@ -2051,6 +2274,7 @@ begin
     'Not enough attached texture units');
   FAttachments.Textures[index] := Value;
 end;
+
 
 function TGLFrameBufferObject.CheckCompleteness: boolean;
 var
@@ -2081,12 +2305,14 @@ begin
   end;
 end;
 
+
 procedure TGLFrameBufferObject.ConfigDepthBuffer(Mode: TBufferMode;
   Precision: TDepthPrecision);
 begin
   FAttachments.DepthBuffer.Mode := Mode;
   FAttachments.DepthBuffer.Precision := OGLDBPrecision(Precision);
 end;
+
 
 procedure TGLFrameBufferObject.ConfigStencilBuffer(Mode: TBufferMode;
   Precision: TStencilPrecision);
@@ -2095,11 +2321,13 @@ begin
   FAttachments.StencilBuffer.Precision := OGLSBPrecision(Precision);
 end;
 
+
 procedure TGLFrameBufferObject.ConfigDepthStencilBuffer(Mode: TBufferMode);
 begin
   FAttachments.DepthStencilBuffer.Mode := Mode;
   FAttachments.DepthStencilBuffer.Precision := 0;
 end;
+
 
 procedure TGLFrameBufferObject.InitFBO(Width, Height: integer);
 var
@@ -2112,6 +2340,7 @@ begin
   FWidth := Width;
   FHeight := Height;
   FBTarget := GL_FRAMEBUFFER;
+
 
   with FAttachments do
   begin
@@ -2154,6 +2383,7 @@ begin
       end;
     end;
 
+
     if (rbDepth in FRenderBuffers) and (rbStencil in FRenderBuffers) then
     begin
       glBindFramebuffer(FBTarget, FBOId);
@@ -2177,6 +2407,7 @@ begin
   // CheckCompleteness;
 end;
 
+
 procedure TGLFrameBufferObject.AttachDepthTexture(tex: TGLTextureObject);
 begin
   if FAttachments.DepthBuffer.Mode <> bmBuffer then
@@ -2194,6 +2425,7 @@ begin
   end;
 end;
 
+
 procedure TGLFrameBufferObject.AttachStencilTexture(tex: TGLTextureObject);
 begin
   if FAttachments.StencilBuffer.Mode <> bmBuffer then
@@ -2210,6 +2442,7 @@ begin
     end;
   end;
 end;
+
 
 procedure TGLFrameBufferObject.AttachDepthStencilTexture(tex: TGLTextureObject);
 begin
@@ -2232,6 +2465,7 @@ begin
   end;
 end;
 
+
 procedure TGLFrameBufferObject.DetachAllTextures;
 var
   tex: TGLTextureObject;
@@ -2248,6 +2482,7 @@ begin
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 end;
 
+
 procedure TGLFrameBufferObject.DetachDepthStencilTexture;
 begin
   if FAttachments.DepthStencilBuffer.Mode = bmTexture then
@@ -2261,6 +2496,7 @@ begin
   end;
 end;
 
+
 procedure TGLFrameBufferObject.DetachDepthTexture;
 begin
   if FAttachments.DepthBuffer.Mode = bmTexture then
@@ -2273,6 +2509,7 @@ begin
   end;
 end;
 
+
 procedure TGLFrameBufferObject.DetachStencilTexture;
 begin
   if FAttachments.StencilBuffer.Mode = bmTexture then
@@ -2284,6 +2521,7 @@ begin
     FAttachments.StencilBuffer.Mode := bmNone;
   end;
 end;
+
 
 function TGLFrameBufferObject.OGLDBPrecision
   (Precision: TDepthPrecision): GLEnum;
@@ -2301,6 +2539,7 @@ begin
     result := GL_DEPTH_COMPONENT;
   end;
 end;
+
 
 function TGLFrameBufferObject.OGLSBPrecision
   (Precision: TStencilPrecision): GLEnum;
@@ -2321,6 +2560,7 @@ begin
   end;
 end;
 
+
 procedure TGLFrameBufferObject.AttachTextureTarget(tex: TGLTextureObject;
   attachement: GLEnum);
 var
@@ -2336,6 +2576,7 @@ begin
     exit;
   end;
 
+
   case tex.Target of
     ttTexture1D:
       glFramebufferTexture1D(FBTarget, attachement, GL_TEXTURE_1D, th, 0);
@@ -2346,6 +2587,7 @@ begin
   end;
 end;
 
+
 procedure TGLFrameBufferObject.Apply(ClearBuffers: boolean);
 var
   buffers: array of GLEnum;
@@ -2355,10 +2597,12 @@ var
 begin
   FBTarget := GL_FRAMEBUFFER;
 
+
   glBindFramebuffer(FBTarget, FBOId);
   glGetIntegerv(GL_VIEWPORT, @FViewport);
   if (FViewport[2] <> FWidth) or (FViewport[3] <> FHeight) then
     glViewport(0, 0, FWidth, FHeight);
+
 
   with FAttachments do
   begin
@@ -2403,12 +2647,14 @@ begin
   end;
 end;
 
+
 procedure TGLFrameBufferObject.UnApply;
 var
   tex: TGLTextureObject;
   i, n: integer;
   FBTarget: GLEnum;
 begin
+
 
   FBTarget := GL_FRAMEBUFFER;
   for i := 0 to FReadBackBuffers.Count - 1 do
@@ -2428,6 +2674,7 @@ begin
   end;
   if (FViewport[2] <> FWidth) or (FViewport[2] <> FHeight) then
     glViewport(FViewport[0], FViewport[1], FViewport[2], FViewport[3]);
+
 
   glBindFramebuffer(FBTarget, 0);
   glReadBuffer(GL_BACK);
@@ -2469,6 +2716,7 @@ begin
     FActive := false;
 end;
 
+
 procedure TGLFrameBufferObject.SetReadBackBuffer(const ColorBufers
   : array of GLUInt);
 var
@@ -2479,16 +2727,19 @@ begin
     FReadBackBuffers.Add(pointer(ColorBufers[i]));
 end;
 
+
 function TGLFrameBufferObject.GetAttachmentsCount: integer;
 begin
   result := FAttachments.Textures.Count;
 end;
+
 
 procedure TGLFrameBufferObject.ResetFBO(ResetConfig: boolean);
 var
   i: integer;
 begin
   FInit := false;
+
 
   for i := 0 to FAttachments.Textures.Count - 1 do
     DetachTexture(i);
@@ -2498,6 +2749,7 @@ begin
     DetachStencilTexture;
   if FAttachments.DepthStencilBuffer.Mode = bmTexture then
     DetachDepthStencilTexture;
+
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -2529,9 +2781,12 @@ begin
   FActive := false;
   FDeactivate := false;
 
+
 end;
 
+
 { TGLUniformBlock }
+
 
 constructor TGLUniformBlock.Create(const aProgram: cardinal; aIndex: integer);
 begin
@@ -2539,25 +2794,30 @@ begin
   QueryUniformInfo(aProgram, aIndex);
 end;
 
+
 function TGLUniformBlock.getIndex(Index: integer): integer;
 begin
   result := FubIndices[Index];
 end;
+
 
 function TGLUniformBlock.getMaxBC: integer;
 begin
   result:=FMaxUBOSize div FBlockSize;
 end;
 
+
 function TGLUniformBlock.getName(Index: integer): ansistring;
 begin
   result := FubNames[Index];
 end;
 
+
 function TGLUniformBlock.getOffset(Index: integer): integer;
 begin
   result := FubOffsets[index];
 end;
+
 
 function TGLUniformBlock.OffsetByName(aName: ansistring): integer;
 var
@@ -2571,6 +2831,7 @@ begin
     end;
   result := -1;
 end;
+
 
 procedure TGLUniformBlock.QueryUniformInfo(aProgram: cardinal;
   aBlockIndex: integer);
@@ -2593,9 +2854,11 @@ begin
   glGetActiveUniformBlockiv(aProgram, aBlockIndex,
     GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, @FUniformsCount);
 
+
   setlength(FubIndices, FUniformsCount);
   setlength(FubNames, FUniformsCount);
   setlength(FubOffsets, FUniformsCount);
+
 
   glGetActiveUniformBlockiv(aProgram, aBlockIndex,
     GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, @FubIndices[0]);
@@ -2616,12 +2879,15 @@ begin
   glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, @FMaxUBOSize);
 end;
 
+
 { TUBOList }
+
 
 function TUBOList.AddUBO(const aBlock: TGLUniformBlock): integer;
 begin
   result := FItems.Add(aBlock);
 end;
+
 
 constructor TUBOList.Create;
 begin
@@ -2629,21 +2895,25 @@ begin
   FItems := TList.Create;
 end;
 
+
 destructor TUBOList.Destroy;
 begin
   FreeObjectList(FItems);
   inherited;
 end;
 
+
 function TUBOList.getCount: integer;
 begin
   result := FItems.Count;
 end;
 
+
 function TUBOList.getUBO(Index: integer): TGLUniformBlock;
 begin
   result := FItems[Index];
 end;
+
 
 function TUBOList.GetUBOByName(const aName: ansistring): TGLUniformBlock;
 var
@@ -2654,7 +2924,7 @@ begin
   begin
     ubo := FItems[i];
     if ubo.BlockName = aName then
-      exit(ubo);
+    exit(ubo);
   end;
   result := nil;
 end;
@@ -2702,7 +2972,9 @@ begin
   result := nil;
 end;
 
+
 { TBufferObjectsPool }
+
 
 function TGLBufferObjectsPool.BindUBO(const Index: integer;
   const aUBO: TGLUniformBlock): integer;
@@ -2711,6 +2983,7 @@ begin
     FBuffer.Id, OffsetByIndex(Index), aUBO.BlockSize);
   result := CUBOSemantics[aUBO.BlockType].Location;
 end;
+
 
 constructor TGLBufferObjectsPool.Create(aObjectSize, aObjectsCount: integer);
 var
@@ -2729,12 +3002,14 @@ begin
   FStackTop := aObjectsCount - 1;
 end;
 
+
 destructor TGLBufferObjectsPool.Destroy;
 begin
   FBuffer.Free;
   FFreeRooms.Free;
   inherited;
 end;
+
 
 procedure TGLBufferObjectsPool.FreeSlot(const Index: integer; aCheck: boolean);
 var
@@ -2751,6 +3026,7 @@ begin
   dec(FUsedCount);
 end;
 
+
 function TGLBufferObjectsPool.OffsetByIndex(const Index: integer): integer;
 begin
   if Index < FUsedCount then
@@ -2759,12 +3035,14 @@ begin
     result := -1;
 end;
 
+
 procedure TGLBufferObjectsPool.UnBindUBO(const Index: integer;
   const aUBO: TGLUniformBlock);
 begin
   glBindBufferBase(GL_UNIFORM_BUFFER, CUBOSemantics[aUBO.BlockType]
     .Location, 0);
 end;
+
 
 function TGLBufferObjectsPool.GetFreeSlotIndex: integer;
 begin
@@ -2777,6 +3055,7 @@ begin
     inc(FUsedCount);
   end;
 end;
+
 
 function TGLBufferObjectsPool.isExists(const aData: pointer): integer;
 var
@@ -2796,6 +3075,7 @@ begin
   result := -1;
 end;
 
+
 procedure TGLBufferObjectsPool.WriteToPool(const Index: integer; Data: pointer);
 var
   p: pointer;
@@ -2806,7 +3086,9 @@ begin
   FBuffer.UnMap;
 end;
 
+
 { TGLTextureSampler }
+
 
 procedure TGLTextureSampler.Bind(aUnit: cardinal);
 begin
@@ -2815,6 +3097,7 @@ begin
   end;
 end;
 
+
 procedure TGLTextureSampler.SetSamplerParams(aTarget: TTexTarget);
 begin
   with FTextureSampler do begin
@@ -2822,15 +3105,19 @@ begin
     glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_WRAP_T, CWpars[WrapT]);
     glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_WRAP_R, CWpars[WrapR]);
 
+
     glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_MAG_FILTER, CMagFilters[magFilter]);
     glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_MIN_FILTER, CMinFilters[minFilter]);
+
 
     glTexParameterf(CTexTargets[aTarget], GL_TEXTURE_MIN_LOD, MinLod);
     glTexParameterf(CTexTargets[aTarget], GL_TEXTURE_MAX_LOD, MaxLod);
     glTexParameterf(CTexTargets[aTarget], GL_TEXTURE_LOD_BIAS, LodBias);
 
+
     glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_COMPARE_MODE, CCompareMode[CompareMode]);
     glTexParameteri(CTexTargets[aTarget], GL_TEXTURE_COMPARE_FUNC, CCompareFunc[CompareFunc]);
+
 
     if FTextureSampler.UseTexGen and GL_ARB_multitexture then begin
       if TextureGenS = tgDisable then glDisable(GL_TEXTURE_GEN_S)
@@ -2853,6 +3140,7 @@ begin
   end;
 end;
 
+
 constructor TGLTextureSampler.Create;
 begin
   inherited;
@@ -2860,6 +3148,7 @@ begin
   CreateFrom(TTextureSampler.Create);
   FTextureSampler.Owner:=self;
 end;
+
 
 constructor TGLTextureSampler.CreateFrom(aSampler: TTextureSampler);
 begin
@@ -2872,15 +3161,19 @@ begin
       glSamplerParameteri(FSamplerId, GL_TEXTURE_WRAP_T, CWpars[WrapT]);
       glSamplerParameteri(FSamplerId, GL_TEXTURE_WRAP_R, CWpars[WrapR]);
 
+
       glSamplerParameteri(FSamplerId, GL_TEXTURE_MAG_FILTER, CMagFilters[magFilter]);
       glSamplerParameteri(FSamplerId, GL_TEXTURE_MIN_FILTER, CMinFilters[minFilter]);
+
 
       glSamplerParameterf(FSamplerId, GL_TEXTURE_MIN_LOD, MinLod);
       glSamplerParameterf(FSamplerId, GL_TEXTURE_MAX_LOD, MaxLod);
       glSamplerParameterf(FSamplerId, GL_TEXTURE_LOD_BIAS, LodBias);
 
+
       glSamplerParameterf(FSamplerId, GL_TEXTURE_COMPARE_MODE, CCompareMode[CompareMode]);
       glSamplerParameterf(FSamplerId, GL_TEXTURE_COMPARE_FUNC, CCompareFunc[CompareFunc]);
+
 
       if GL_EXT_texture_filter_anisotropic then begin
         glSamplerParameterf(FSamplerId, GL_TEXTURE_MAX_ANISOTROPY_EXT, AnisotropyLevel);
@@ -2889,6 +3182,7 @@ begin
   end;
 end;
 
+
 destructor TGLTextureSampler.Destroy;
 begin
   if FTextureSampler.Owner = self then FTextureSampler.Free;
@@ -2896,10 +3190,12 @@ begin
   inherited;
 end;
 
+
 function TGLTextureSampler.getSamplerHash: integer;
 begin
   result:=FTextureSampler.SamplerHash;
 end;
+
 
 procedure TGLTextureSampler.UnBind(aUnit: cardinal);
 begin
@@ -2973,12 +3269,298 @@ begin
   Assert(False, 'Wrong subroutine name');
 end;
 
+{ TGLTextureFormat }
+
+
+class function TGLTextureFormatSelector.CreateCompressed(
+  aFormat: TS3TCCompressedFormats): TGLTextureFormatDescriptor;
+begin
+  result.Compressed:=true; result.BaseFormat := 0;
+  result.PixelFormat := 0; result.InternalFormat := 0;
+  case aFormat of
+    cfRGB_DXT1: result.InternalFormat := GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+    cfSRGB_DXT1: result.InternalFormat := GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+    cfRGBA_DXT1: result.InternalFormat := GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+    cfSRGBA_DXT1: result.InternalFormat := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+    cfRGBA_DXT3: result.InternalFormat := GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+    cfSRGBA_DXT3: result.InternalFormat := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+    cfRGBA_DXT5: result.InternalFormat := GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+    cfSRGBA_DXT5: result.InternalFormat := GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateDepthStencil(aDepthBit: byte;
+  aStencil: boolean): TGLTextureFormatDescriptor;
+begin
+  result.Compressed := false;
+  if not aStencil then begin
+    result.BaseFormat := GL_DEPTH_COMPONENT;
+    case aDepthBit of
+      16: begin
+        result.InternalFormat := GL_DEPTH_COMPONENT16;
+        result.PixelFormat := GL_UNSIGNED_SHORT;
+      end;
+      24: begin
+        result.InternalFormat := GL_DEPTH_COMPONENT24;
+        result.PixelFormat := GL_UNSIGNED_INT;
+      end;
+      32: begin
+        result.InternalFormat := GL_DEPTH_COMPONENT32;
+        result.PixelFormat := GL_UNSIGNED_INT;
+      end;
+      else assert(false, 'Unsupported Depth format!');
+    end;
+  end else begin
+    result.BaseFormat := GL_DEPTH_STENCIL;
+    case aDepthBit of
+       0: begin
+        result.BaseFormat := GL_STENCIL;
+        result.InternalFormat := GL_STENCIL_INDEX8;
+        result.PixelFormat := GL_UNSIGNED_BYTE;
+       end;
+      24: begin
+        result.InternalFormat := GL_DEPTH24_STENCIL8;
+        result.PixelFormat := GL_UNSIGNED_INT_24_8;
+      end;
+      32: begin
+        result.InternalFormat := GL_DEPTH32F_STENCIL8;
+        result.PixelFormat := GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+      end;
+      else assert(false, 'Unsupported DepthStencil format!');
+    end;
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateSpecial(
+  aFormat: TImageSpecialFormat): TGLTextureFormatDescriptor;
+begin
+  result.Compressed := false;
+  case aFormat of
+    sfR3G3B2: begin
+        result.BaseFormat := GL_RGB;
+        result.InternalFormat := GL_R3_G3_B2;
+        result.PixelFormat := GL_UNSIGNED_BYTE_3_3_2;
+      end;
+    sfRGB565: begin
+        result.BaseFormat := GL_RGB;
+        result.InternalFormat := GL_RGB565;
+        result.PixelFormat := GL_UNSIGNED_SHORT_5_6_5;
+      end;
+    sfRGB5A1: begin
+        result.BaseFormat := GL_RGBA;
+        result.InternalFormat := GL_RGB5_A1;
+        result.PixelFormat := GL_UNSIGNED_SHORT_5_5_5_1;
+      end;
+    sfRGB10A2: begin
+        result.BaseFormat := GL_RGBA;
+        result.InternalFormat := GL_RGB10_A2;
+        result.PixelFormat := GL_UNSIGNED_INT_10_10_10_2;
+      end;
+    sfRGB10A2UI: begin
+        result.BaseFormat := GL_RGBA;
+        result.InternalFormat := GL_RGB10_A2UI;
+        result.PixelFormat := GL_UNSIGNED_INT_10_10_10_2;
+      end;
+    sfR11FG11FB10F: begin
+        result.BaseFormat := GL_RGB;
+        result.InternalFormat := GL_R11F_G11F_B10F;
+        result.PixelFormat := GL_UNSIGNED_INT_10F_11F_11F_REV;
+      end;
+    sfRGB9E5: begin
+        result.BaseFormat := GL_RGB;
+        result.InternalFormat := GL_RGB9_E5;
+        result.PixelFormat := GL_UNSIGNED_INT_5_9_9_9_REV;
+      end;
+    else assert(false, 'Unsupported image format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateFloat16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_HALF_FLOAT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R16F; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16F; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16F; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16F; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16F; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16F; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateFloat32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_FLOAT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R32F; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG32F; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB32F; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB32F; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32F; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32F; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateInt16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_SHORT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R16I; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16I; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16I; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16I; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16I; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16I; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateInt32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_INT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R32I; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG32I; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB32I; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB32I; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateInt8(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_BYTE; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R8; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG8; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB8; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB8; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA8; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA8; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateUInt16(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_UNSIGNED_SHORT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R16UI; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16UI; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16UI; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16UI; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16UI; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16UI; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateUInt32(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_UNSIGNED_INT; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R32UI; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG32UI; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.CreateUInt8(aFormat: TBaseImageFormat): TGLTextureFormatDescriptor;
+begin
+  result.PixelFormat := GL_UNSIGNED_BYTE; result.Compressed:=false;
+  with result do
+  case aFormat of
+    bfRed: begin InternalFormat := GL_R8UI; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG8UI; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB8UI; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB8UI; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_BGRA; end;
+    else assert(false, 'Unsupported pixel format, try another selector');
+  end;
+end;
+
+
+class function TGLTextureFormatSelector.GetTextureFormat(
+  aFormat: cardinal): TGLTextureFormatDescriptor;
+var bFormat: TBaseImageFormat;
+    dFormat: TDepthStencilFormat;
+    cFormat: TS3TCCompressedFormats;
+    sFormat: TImageSpecialFormat;
+    pFormat: TImagePixelFormat;
+begin
+  bFormat := TImageFormatBits.GetBaseFormat(aFormat);
+  if bFormat in [bfRed..bfBGRA] then begin
+    pFormat := TImageFormatBits.GetPixelFormat(aFormat);
+    case pFormat of
+      pfUByte: result := CreateUInt8(bFormat);
+      pfByte: result := CreateInt8(bFormat);
+      pfUShort: result := CreateUInt16(bFormat);
+      pfShort: result := CreateInt16(bFormat);
+      pfUInt: result := CreateUInt32(bFormat);
+      pfInt: result := CreateInt32(bFormat);
+      pfFloat16: result := CreateFloat16(bFormat);
+      pfFloat: result := CreateFloat32(bFormat);
+    end;
+  end else
+    if bFormat in [bfDepth, bfDepthStencil] then begin
+      dFormat := TImageFormatBits.GetDepthStencilFormat(aFormat);
+      case dFormat of
+        dfDepth16: result := CreateDepthStencil(16, false);
+        dfDepth24: result := CreateDepthStencil(24, false);
+        dfDepth32: result := CreateDepthStencil(32, false);
+        dfDepth24Stencil8: result := CreateDepthStencil(24, true);
+        dfDepth32FStencil8: result := CreateDepthStencil(32, true);
+        dfStencilIndex8: result := CreateDepthStencil(0, true);
+      end;
+    end else
+      if bFormat = bfCompressed then begin
+        cFormat := TImageFormatBits.GetCompressedFormat(aFormat);
+        result :=CreateCompressed(cFormat);
+      end else
+        if bFormat = bfSpecial then begin
+          sFormat := TImageFormatBits.GetSpecialFormat(aFormat);
+          result := CreateSpecial(sFormat);
+        end else assert(false, 'Unsupported format!');
+end;
+
+
 initialization
 
+
 vActiveShader := nil;
+
 
 finalization
 
+
 vActiveShader := nil;
+
 
 end.

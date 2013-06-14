@@ -19,7 +19,7 @@ interface
 
 uses
   SysUtils, Classes, uLists, uVMath, uMiscUtils, uBaseTypes, uBaseClasses,
-  uGenericsRBTree, uPersistentClasses, uDataAccess;
+  uGenericsRBTree, uPersistentClasses, uDataAccess, uImageFormats;
 
 const
   cDiffuseColor: vec4 = (0.8, 0.8, 0.8, 1);
@@ -79,8 +79,6 @@ Type
       write FFragDataBindPos;
     property AttribBinds[Index: integer]: TAttribSemantic read getAttr;
     property AttribBindsCount: integer read getAttrCount;
-
-    property Owner: TObject read FOwner;
 
     constructor CreateOwned(aOwner: TObject = nil);
   end;
@@ -214,7 +212,6 @@ Type
     constructor CreateOwned(aOwner: TObject = nil);
     destructor Destroy; override;
 
-    property Owner: TObject read FOwner;
     property Light: TLightSource read FLightProperties;
     property Properties: TMaterialProperties read FMaterialProperties;
     property ColorReplacing: TColorReplacing read FColorReplacing
@@ -285,10 +282,35 @@ Type
     property SamplerHash: integer read getSamplerHash;
   end;
 
+  TImageSampler = class(TBaseRenderResource)
+  private
+    FImageDescriptor: TImageDesc;
+    //Hide default constructor
+    constructor Create; override;
+    //Calculate size of each Lods and fill FImageDescriptor's LOD struct.
+    procedure FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
+  public
+    constructor CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
+    constructor CreateVolume(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
+    constructor CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateCubeMapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
+
+    //Presets
+    {
+    constructor CreateRGBA8Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateRGBA32fTexture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateFloat32Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateDepth32Texture(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateDepthStencilTexture(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    }
+
+    property ImageDescriptor: TImageDesc read FImageDescriptor;
+    { TODO : Add as read-only all properties from TImageDesc }
+  end;
+
   TTexture = class(TBaseRenderResource)
   private
-    FOwner: TObject;
-
     FImageDescriptor: PImageDesc;
     FReady: boolean;
     FName: string;
@@ -331,8 +353,6 @@ Type
   public
 
     constructor CreateOwned(aOwner: TObject = nil);
-
-    property Owner: TObject read FOwner;
 
     property ImageDescriptor: PImageDesc read getImgDescr;
     property Updates: TTextureUpdates read FUpdates write FUpdates;
@@ -1181,7 +1201,7 @@ constructor TTexture.CreateOwned(aOwner: TObject);
 begin
   Create;
   FTexMatrixChanged := false;
-  FOwner := aOwner;
+  Owner := aOwner;
 end;
 
 function TTexture.getGenMipMaps: boolean;
@@ -2706,6 +2726,154 @@ begin
   until StartIndex >= FCount;
 
   FCount := PackedCount;
+end;
+
+{ TImageSampler }
+
+constructor TImageSampler.Create;
+begin
+  inherited;
+end;
+
+constructor TImageSampler.CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
+var size: cardinal;
+begin
+  if not aMipmapping then FImageDescriptor.Levels := 1
+  else FillLodsStructure(aFormatCode, aWidth, aHeight, 1, false);
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 1, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.TextureArray := false;
+  FImageDescriptor.CubeMap := false;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := 1;
+end;
+
+constructor TImageSampler.CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aMipmapping: boolean);
+var size: cardinal;
+begin
+  if not aMipmapping then begin
+    FImageDescriptor.Levels := 1;
+  end else begin
+    FillLodsStructure(aFormatCode, aWidth, aHeight, aDepth, true);
+  end;
+  FImageDescriptor.TextureArray := true;
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, aDepth, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.CubeMap := false;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := aDepth;
+end;
+
+constructor TImageSampler.CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
+var size: cardinal;
+begin
+  if not aMipmapping then begin
+    FImageDescriptor.Levels := 1;
+  end else begin
+    FillLodsStructure(aFormatCode, aWidth, aHeight, 6, true);
+  end;
+  FImageDescriptor.TextureArray := false;
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 6, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.CubeMap := true;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := 6;
+end;
+
+constructor TImageSampler.CreateCubeMapArray(aFormatCode: cardinal; aWidth,
+  aHeight, aDepth: integer; aMipmapping: boolean);
+var size: cardinal;
+begin
+  if not aMipmapping then begin
+    FImageDescriptor.Levels := 1;
+  end else begin
+    FillLodsStructure(aFormatCode, aWidth, aHeight, 6*aDepth, true);
+  end;
+  FImageDescriptor.TextureArray := true;
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 6*aDepth, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.CubeMap := true;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := 6*aDepth;
+end;
+
+constructor TImageSampler.CreateVolume(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aMipmapping: boolean);
+var size: cardinal;
+begin
+  if not aMipmapping then begin
+    FImageDescriptor.Levels := 1;
+  end else begin
+    FillLodsStructure(aFormatCode, aWidth, aHeight, aDepth, false);
+  end;
+  FImageDescriptor.TextureArray := false;
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, aDepth, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.CubeMap := false;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := aDepth;
+end;
+
+procedure TImageSampler.FillLodsStructure(aFormatCode: cardinal;
+  aWidth, aHeight, aDepth: integer; aArray: boolean);
+var i,j, offs, size: integer;
+    w,h,d,layers: integer;
+
+begin
+  FImageDescriptor.Levels :=
+    TImageFormatSelector.GetMipmapsCount(max(aWidth, max(aHeight, aDepth)));
+  offs := 0; w := aWidth; h := aHeight; d := aDepth;
+  if aArray then layers := aDepth else layers := 1;
+
+  for i := 0 to FImageDescriptor.Levels - 1 do begin
+    FImageDescriptor.LODS[i].Width := w;
+    FImageDescriptor.LODS[i].Height := h;
+    if not aArray then begin
+      FImageDescriptor.LODS[i].Depth := d;
+      FImageDescriptor.LODS[i].Offset := offs;
+      FImageDescriptor.LODS[i].Size :=
+        TImageFormatSelector.GetMemSize(aFormatCode, w, h, d, false);
+      setlength(FImageDescriptor.LODS[i].LayersOffset, 0);
+    end else begin
+      FImageDescriptor.LODS[i].Depth := 1;
+      FImageDescriptor.LODS[i].Offset := offs;
+      Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, 1, false);
+      FImageDescriptor.LODS[i].Size := Size * Layers;
+      setlength(FImageDescriptor.LODS[i].LayersOffset, layers);
+      for j := 0 to layers-1 do begin
+        FImageDescriptor.LODS[i].LayersOffset[j] := offs + Size * j;
+      end;
+    end;
+
+    offs := offs + FImageDescriptor.LODS[i].Size;
+    w := max(1,w shr 2); h := max(1, h shr 2); d := max(1, d shr 2);
+  end;
 end;
 
 initialization
