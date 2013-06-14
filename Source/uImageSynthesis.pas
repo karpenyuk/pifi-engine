@@ -4,6 +4,7 @@ interface
 
 uses
   Classes,
+  uPersistentClasses,
   SyncObjs,
   uImageAnalysisClasses,
   uBaseTypes;
@@ -14,7 +15,7 @@ type
 
   TSynthesizerThread = class;
 
-  TSynthesizer = class
+  TSynthesizer = class(TPersistentResource)
   private
     FAnalysisData: TAnalysisData;
     FWidth, FHeight: integer;
@@ -61,8 +62,11 @@ type
     procedure DestroyThread;
     function GetProgress: Single;
   public
-    constructor Create(anAnalysisData: TAnalysisData);
+    constructor CreateFrom(anAnalysisData: TAnalysisData);
     destructor Destroy; override;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal;
+      Params: pointer = nil); override;
 
     // Runs synthesis.
     procedure Start;
@@ -116,10 +120,12 @@ uses
   Math,
   uMiscUtils;
 
-constructor TSynthesizer.Create(anAnalysisData: TAnalysisData);
+constructor TSynthesizer.CreateFrom(anAnalysisData: TAnalysisData);
 begin
+  Create;
   Assert(Assigned(anAnalysisData));
   FAnalysisData := anAnalysisData;
+  FAnalysisData.Subscribe(Self);
   FEdgePolicyFunc := EdgePolicyFor.GetFuncN(anAnalysisData.EdgePolicy);
   FWidth := 256;
   FHeight := 256;
@@ -136,6 +142,7 @@ end;
 destructor TSynthesizer.Destroy;
 begin
   Stop;
+  FAnalysisData.UnSubscribe(Self);
   FReadBuffer.Free;
   FLock.Destroy;
   inherited;
@@ -152,8 +159,11 @@ end;
 
 procedure TSynthesizer.SetCorrectionSubpassesCount(const Value: integer);
 begin
-  Assert(Value > 0);
-  FCorrectionSubpassesCount := Value;
+  if Value <> FCorrectionSubpassesCount then
+  begin
+    FCorrectionSubpassesCount := Value;
+    DispatchMessage(NM_ResourceChanged);
+  end;
 end;
 
 procedure TSynthesizer.Start;
@@ -377,6 +387,18 @@ begin
   end;
 
   aIndices.CycleCounter := aIndices.CycleCounter + w * h;
+end;
+
+procedure TSynthesizer.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  if Sender = FAnalysisData then
+  begin
+    if Msg = NM_ObjectDestroyed then
+    begin
+      Assert(False, 'Analysis data destroyed before class-user destruction');
+      FAnalysisData := nil;
+    end;
+  end;
 end;
 
 procedure TSynthesizer.CorrectionSubpass(subPass: integer;

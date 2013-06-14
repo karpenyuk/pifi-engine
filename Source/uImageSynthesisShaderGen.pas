@@ -23,6 +23,12 @@ type
 
     class function GenViewShader(
       anOwner: TObject): TShaderProgram;
+
+    class function GenPatchesViewShader(
+      anOwner: TObject): TShaderProgram;
+
+    class function GenImageGenShader(
+      anOwner: TObject): TShaderProgram;
   end;
 
 implementation
@@ -107,25 +113,24 @@ const
     '  imageStore(UpLevel, up_coords, delta + p);'#10#13 +
     '  up_coords += ivec2(1, 0);'#10#13 +
     '  delta = rand(up_coords);'#10#13 +
-    '  imageStore(UpLevel, up_coords, delta + wrapRepeat(p + spacing[0], exemplarSize));'#10#13
+    '  imageStore(UpLevel, up_coords, delta + p + spacing[0]);'#10#13
     +
     '  up_coords += ivec2(-1, 1);'#10#13 +
     '  delta = rand(up_coords);'#10#13 +
-    '  imageStore(UpLevel, up_coords, delta + wrapRepeat(p + spacing[1], exemplarSize));'#10#13
+    '  imageStore(UpLevel, up_coords, delta + p + spacing[1]);'#10#13
     +
     '  up_coords += ivec2(1, 0);'#10#13 +
     '  delta = rand(up_coords);'#10#13 +
-    '  imageStore(UpLevel, up_coords, delta + wrapRepeat(p + spacing[2], exemplarSize));'#10#13
+    '  imageStore(UpLevel, up_coords, delta + p + spacing[2]);'#10#13
     +
     '}'#10#13;
 
   GLSL_SYNTH_UPSAMPLE_JITTER_FIRST_MAIN: ansistring =
-    'uniform ivec2 ;'#10#13 +
+    'uniform ivec2 baseCoords;'#10#13 +
     'void main()'#10#13 +
     '{'#10#13 +
     '  ivec2 coords = ivec2(gl_WorkGroupID.xy * uvec2(16u) + gl_LocalInvocationID.xy);'#10#13
     +
-    '  ivec2 baseCoords = exemplarSize / ivec2(2);'#10#13 +
     '  ivec2 up_coords = coords * ivec2(2);'#10#13 +
     '  ivec4 p = ivec4(baseCoords, 0, 0);'#10#13 +
     '  ivec4 delta;'#10#13 +
@@ -133,15 +138,15 @@ const
     '  imageStore(UpLevel, up_coords, delta + p);'#10#13 +
     '  up_coords += ivec2(1, 0);'#10#13 +
     '  delta = rand(up_coords);'#10#13 +
-    '  imageStore(UpLevel, up_coords, delta + wrapRepeat(p + spacing[0], exemplarSize));'#10#13
+    '  imageStore(UpLevel, up_coords, delta + p + spacing[0]);'#10#13
     +
     '  up_coords += ivec2(-1, 1);'#10#13 +
     '  delta = rand(up_coords);'#10#13 +
-    '  imageStore(UpLevel, up_coords, delta + wrapRepeat(p + spacing[1], exemplarSize));'#10#13
+    '  imageStore(UpLevel, up_coords, delta + p + spacing[1]);'#10#13
     +
     '  up_coords += ivec2(1, 0);'#10#13 +
     '  delta = rand(up_coords);'#10#13 +
-    '  imageStore(UpLevel, up_coords, delta + wrapRepeat(p + spacing[2], exemplarSize));'#10#13
+    '  imageStore(UpLevel, up_coords, delta + p + spacing[2]);'#10#13
     +
     '}'#10#13;
 
@@ -298,6 +303,39 @@ const
     '  FragColor = texture(Exemplar, p) / 255.0;'#10#13 +
     '}'#10#13;
 
+  GLSL_SYNTH_VIEW_PATCHES_FRAG: ansistring =
+    '#version 430'#10#13 +
+    'in vec2 TexCoord;'#10#13 +
+    'layout(binding = 0) uniform isampler2D Patches;'#10#13 +
+    'layout(location = 0) out vec4 FragColor;'#10#13 +
+    'layout(location = 0) uniform ivec2 exemplarSize;'#10#13 +
+    'void main()'#10#13 +
+    '{'#10#13 +
+    '  ivec4 p = ivec4(0);'#10#13 +
+    '  p.xy = texture(Patches, TexCoord).xy % exemplarSize;'#10#13 +
+    '  if (p.x < 0) p.x += exemplarSize.x;'#10#13 +
+    '  if (p.y < 0) p.y += exemplarSize.y;'#10#13 +
+    '  FragColor = vec4(p) / vec4(exemplarSize);'#10#13 +
+    '}'#10#13;
+
+  GLSL_SYNTH_GEN_IMAGE: ansistring =
+    'layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;'#10#13 +
+    'layout(binding = 0) uniform isampler2D Exemplar;'#10#13 +
+    'layout(binding = 1) uniform isampler2D Pathces;'#10#13 +
+    'layout(binding = 0, rgba) uniform image2D Destination;'#10#13 +
+    'uniform ivec2 offset;'#10#13 +
+    'void main()'#10#13 +
+    '{'#10#13 +
+    '  ivec2 coords = ivec2(gl_WorkGroupID.xy * uvec2(16u) + gl_LocalInvocationID.xy);'#10#13
+    +
+    '  coords += offset;'#10#13 +
+    '  ivec2 exemplarSize = textureSize(Exemplar, 0);'#10#13 +
+    '  ivec2 p = texelFetch(Pathces, coords, 0).xy;'#10#13 +
+    '  p = wrapRepeat(p, exemplarSize);'#10#13 +
+    '  vec4 color = texelFetch(Exemplar, p, 0) / vec4(255.0);'#10#13 +
+    '  imageStore(Destination, coords, pass);'#10#13 +
+    '}'#10#13;
+
   { SynthesisShaderGenerator }
 
 class function SynthesisShaderGenerator.GenCopyImageShader(
@@ -318,6 +356,24 @@ begin
     GLSL_SYNTH_WRAPPINGSUB +
     GLSL_SYNTH_CORRECTION_INTERFACE +
     GLSL_SYNTH_CORRECTION_MAIN;
+end;
+
+class function SynthesisShaderGenerator.GenImageGenShader(
+  anOwner: TObject): TShaderProgram;
+begin
+  Result := TShaderProgram.CreateOwned(anOwner);
+  Result.ShaderText[stCompute] :=
+    GLSL_SYNTH_HEADER +
+    GLSL_SYNTH_WRAPPINGSUB +
+    GLSL_SYNTH_GEN_IMAGE;
+end;
+
+class function SynthesisShaderGenerator.GenPatchesViewShader(
+  anOwner: TObject): TShaderProgram;
+begin
+  Result := TShaderProgram.CreateOwned(anOwner);
+  Result.ShaderText[stVertex] := GLSL_SYNTH_VIEW_IMAGE_VTX;
+  Result.ShaderText[stFragment] := GLSL_SYNTH_VIEW_PATCHES_FRAG;
 end;
 
 class function SynthesisShaderGenerator.GenUpsampleJitterShader(
@@ -342,7 +398,7 @@ begin
     GLSL_SYNTH_UPSAMPLE_JITTER_INTERFACE +
     GLSL_SYNTH_WRAPPINGSUB +
     rand +
-    GLSL_SYNTH_UPSAMPLE_JITTER_MAIN;
+    main;
 end;
 
 class function SynthesisShaderGenerator.GenViewShader(anOwner: TObject)

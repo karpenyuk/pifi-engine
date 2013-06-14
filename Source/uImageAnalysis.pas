@@ -4,6 +4,7 @@ interface
 
 uses
   Classes,
+  uPersistentClasses,
   uBaseTypes,
   uVMath,
   uImageAnalysisClasses;
@@ -15,7 +16,7 @@ type
 
   TAnalyzerThread = class;
 
-  TAnalyzer = class
+  TAnalyzer = class(TPersistentResource)
   protected
     FAnalysisData: TAnalysisData;
     FThreads: array of TAnalyzerThread;
@@ -31,8 +32,11 @@ type
     function GetLevelCount: integer;
     function GetProgress: Single;
   public
-    constructor Create(anAnalysisData: TAnalysisData);
+    constructor CreateFrom(anAnalysisData: TAnalysisData);
     destructor Destroy; override;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal;
+      Params: pointer = nil); override;
 
     // Runs analysis
     procedure Start;
@@ -151,101 +155,19 @@ begin
   kdTree.Free;
 end;
 
-{
-// used ANN as DLL
-procedure TAnalyzer.AnalyzeStackLevel(alevel: integer);
-var
-  Level: PAnalyzedLevel;
-  i, j, n: integer;
-  addres: ^pointer;
-  dataPts: ANNpointArray; // data points
-  tempPts: ^Double;
-  queryPt: TANNpoint; // query point
-  Idx: TANNidx;
-  nnIdx: TANNidxArray; // near neighbor indices
-  dists: TANNdistArray; // near neighbor distances
-  kdTree: TANNkd_tree; // search structure
-  neigh: TNeighborhood3c;
-  Knearest: TMostSimilar;
-  neighsSize: integer;
+constructor TAnalyzer.CreateFrom(anAnalysisData: TAnalysisData);
 begin
-  Level := FAnalysisData.Levels[alevel];
-  // build ANN structure
-  neighsSize := FAnalysisData.Neighborhoods.Width *
-    FAnalysisData.Neighborhoods.Height;
-  GetMem(nnIdx, SIMILAR_NEIGHBOUR_SIZE * SizeOf(TANNidx));
-  GetMem(dists, SIMILAR_NEIGHBOUR_SIZE * SizeOf(TANNdist));
-  // allocate query point
-  queryPt := annAllocPt(NEIGHBOUR_SIZE_3COLOR);
-  // allocate data points
-  dataPts := annAllocPts(neighsSize, NEIGHBOUR_SIZE_3COLOR);
-  // fill-in points
-  addres := pointer(dataPts);
-  for i := 0 to FAnalysisData.Neighborhoods.Height - 1 do
-  begin
-    for j := 0 to FAnalysisData.Neighborhoods.Width - 1 do begin
-      neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
-      tempPts := addres^;
-      for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do begin
-        tempPts^ := neigh[n]; // singe -> double
-        Inc(tempPts);
-      end;
-      Inc(addres);
-    end;
-    Inc(Level.CycleCounter, FAnalysisData.Neighborhoods.Width);
-  end;
-  // build search structure
-  kdTree := TANNkd_tree.Create(dataPts, neighsSize, NEIGHBOUR_SIZE_3COLOR);
-
-  for i := 0 to FAnalysisData.Neighborhoods.Height - 1 do
-  begin
-    for j := 0 to FAnalysisData.Neighborhoods.Width - 1 do
-    begin
-      neigh := FAnalysisData.Neighborhoods.At[j, i, alevel];
-      // tempPts := pointer(queryPt);
-      for n := 0 to NEIGHBOUR_SIZE_3COLOR - 1 do
-      begin
-        queryPt^ := neigh[n];
-        Inc(queryPt);
-      end;
-      Dec(queryPt, NEIGHBOUR_SIZE_3COLOR);
-      // search for similar neighborhood in reference
-      kdTree.annkSearch( // search
-        queryPt, // query point
-        SIMILAR_NEIGHBOUR_SIZE, // number of near neighbors
-        nnIdx, // nearest neighbors (returned)
-        dists, // distance (returned)
-        INV255); // error bound);
-      // store result
-      for n := 0 to SIMILAR_NEIGHBOUR_SIZE - 1 do begin
-        Idx := nnIdx^;
-        Inc(nnIdx);
-        Knearest[n][0] := Idx mod FAnalysisData.Neighborhoods.Width;
-        Knearest[n][1] := Idx div FAnalysisData.Neighborhoods.Width;
-      end;
-      FAnalysisData.KNearests.At[j, i, alevel] := Knearest;
-      Dec(nnIdx, SIMILAR_NEIGHBOUR_SIZE);
-    end;
-    Inc(Level.CycleCounter, FAnalysisData.Neighborhoods.Width);
-  end;
-
-  kdTree.Free;
-  annDeallocPt(queryPt);
-  annDeallocPts(dataPts);
-  FreeMem(nnIdx, SIMILAR_NEIGHBOUR_SIZE * SizeOf(TANNidx));
-  FreeMem(dists, SIMILAR_NEIGHBOUR_SIZE * SizeOf(TANNdist));
-end;
-}
-constructor TAnalyzer.Create(anAnalysisData: TAnalysisData);
-begin
+  Create;
   Assert(Assigned(anAnalysisData));
   FAnalysisData := anAnalysisData;
   FMaxCPUThreads := 2;
+  FAnalysisData.Subscribe(Self);
 end;
 
 destructor TAnalyzer.Destroy;
 begin
   Stop;
+  FAnalysisData.UnSubscribe(Self);
   inherited;
 end;
 
@@ -300,6 +222,18 @@ begin
 
   if Result >= 1.0 then
     FAnalysisData.IsValid := True;
+end;
+
+procedure TAnalyzer.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  if Sender = FAnalysisData then
+  begin
+    if Msg = NM_ObjectDestroyed then
+    begin
+      Assert(False, 'Analysis data destroyed before class-user destruction');
+      FAnalysisData := nil;
+    end;
+  end;
 end;
 
 procedure TAnalyzer.PrepareKNearest(alevel: integer);
@@ -407,7 +341,6 @@ begin
   if Info = 1 then
     for i := 0 to 5 do
     begin
-      k := 0;
       for j := 0 to NEIGHBOUR_SIZE_1COLOR - 1 do
         with FAnalysisData.Levels[alevel]^ do
         begin

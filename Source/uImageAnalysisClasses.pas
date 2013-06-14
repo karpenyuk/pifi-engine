@@ -3,7 +3,7 @@ unit uImageAnalysisClasses;
 interface
 
 uses
-  Classes, uBaseTypes, uMath, uVMath;
+  Classes, uPersistentClasses, uBaseTypes, uMath, uVMath;
 
 const
   NEIGHBOUR_DIM = 5;
@@ -203,7 +203,7 @@ type
   end;
   PAnalyzedLevel = ^TAnalyzedLevel;
 
-  TAnalysisData = class
+  TAnalysisData = class(TPersistentResource)
   private
     // Exemplar image
     FExemplar: TImageDesc;
@@ -220,8 +220,9 @@ type
     function GetLevel(alevel: integer): PAnalyzedLevel;
     function GetExemplar: PImageDesc;
     procedure SetEdgePolicy(const Value: TEdgePolicy);
+    procedure SetValid(const Value: Boolean);
   public
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
 
     procedure SaveToFile(const aFileName: string);
@@ -244,7 +245,7 @@ type
     property LevelsAmount: integer read GetLevelsAmount;
     property EdgePolicy: TEdgePolicy read FEdgePolicy write SetEdgePolicy;
     // Flag to check data validation
-    property IsValid: Boolean read FValid write FValid;
+    property IsValid: Boolean read FValid write SetValid;
   end;
 
 implementation
@@ -909,6 +910,7 @@ end;
 
 constructor TAnalysisData.Create;
 begin
+  inherited;
   FEdgePolicy := epRepeat;
   FEdgeFunc := EdgePolicyFor.RepeatedImage;
   FNEdgeFunc := EdgePolicyFor.RepeatedImage;
@@ -959,12 +961,14 @@ begin
   FreeAndNil(FkNearests);
   FreeAndNil(FNeighborhoods);
   FValid := False;
+  DispatchMessage(NM_ResourceChanged);
 end;
 
 destructor TAnalysisData.Destroy;
 begin
   Clear;
   FExemplar.Free;
+  inherited;
 end;
 
 function TAnalysisData.GetLevel(alevel: integer): PAnalyzedLevel;
@@ -1072,6 +1076,7 @@ begin
 {$ENDIF}
 
   FValid := True;
+  DispatchMessage(NM_ResourceChanged);
 end;
 
 procedure TAnalysisData.SaveToFile(const aFileName: string);
@@ -1156,6 +1161,15 @@ begin
   end;
 
   FValid := False;
+end;
+
+procedure TAnalysisData.SetValid(const Value: Boolean);
+begin
+  if Value <> FValid then
+  begin
+    FValid := Value;
+    DispatchMessage(NM_ResourceChanged);
+  end;
 end;
 
 function TAnalysisData.GetImage(alevel: integer): PImageDesc;
