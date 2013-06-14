@@ -1,4 +1,4 @@
-unit uBaseGL;
+﻿unit uBaseGL;
 
 
 {$IFDEF FPC}
@@ -2073,8 +2073,6 @@ constructor TGLTextureObject.CreateFrom(const aTarget: TTexTarget;
   const aImageDesc: PImageDesc; const aTexDesc: PTextureDesc);
 begin
   Create;
-  glGenTextures(1, @FTexId);
-  glGenBuffers(1, @FpboId);
   FTexDesc := aTexDesc;
   FImageDesc := aImageDesc;
   FTarget := aTarget;
@@ -2084,8 +2082,6 @@ end;
 constructor TGLTextureObject.CreateFrom(const aTexture: TTexture);
 begin
   Create;
-  glGenTextures(1, @FTexId);
-  glGenBuffers(1, @FpboId);
   FImageDesc := aTexture.ImageDescriptor;
   FTarget := aTexture.Target;
 end;
