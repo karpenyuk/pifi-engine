@@ -80,8 +80,6 @@ Type
     property AttribBinds[Index: integer]: TAttribSemantic read getAttr;
     property AttribBindsCount: integer read getAttrCount;
 
-    property Owner: TObject read FOwner;
-
     constructor CreateOwned(aOwner: TObject = nil);
   end;
 
@@ -214,7 +212,6 @@ Type
     constructor CreateOwned(aOwner: TObject = nil);
     destructor Destroy; override;
 
-    property Owner: TObject read FOwner;
     property Light: TLightSource read FLightProperties;
     property Properties: TMaterialProperties read FMaterialProperties;
     property ColorReplacing: TColorReplacing read FColorReplacing
@@ -288,19 +285,28 @@ Type
   TImageSampler = class(TBaseRenderResource)
   private
     FImageDescriptor: TImageDesc;
-    FBitmaps: array of PByte;
     //Hide default constructor
     constructor Create; override;
+    //Calculate size of each Lods and fill FImageDescriptor's LOD struct.
+    procedure FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
   public
-    constructor CreateBitmap(aBPP: byte; aWidth, aHeight: integer);
-    constructor CreateBitmapArray(aBPP: byte; aWidth, aHeight, aDepth: integer);
-    constructor CreateCubeMap(aBPP: byte; aWidth, aHeight: integer);
+    constructor CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
+    constructor CreateVolume(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
+    constructor CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateCubeMapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
 
-    procedure SetImageFormat(aBaseFormat: TBaseImageFormat; aIntensityBits: byte); overload;
-    procedure SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits, aGBits: byte); overload;
-    procedure SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits, aGBits, aBBits: byte); overload;
-    procedure SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits, aGBits, aBBits, aABits: byte); overload;
+    //Presets
+    {
+    constructor CreateRGBA8Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateRGBA32fTexture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateFloat32Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateDepth32Texture(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    constructor CreateDepthStencilTexture(aWidth, aHeight: integer; aMipmapping: boolean = false);
+    }
 
+    property ImageDescriptor: TImageDesc read FImageDescriptor;
+    { TODO : Add as read-only all properties from TImageDesc }
   end;
 
   TTexture = class(TBaseRenderResource)
@@ -2729,68 +2735,145 @@ begin
   inherited;
 end;
 
-constructor TImageSampler.CreateBitmap(aBPP: byte; aWidth, aHeight: integer);
+constructor TImageSampler.CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
+var size: cardinal;
 begin
-  setlength(FBitmaps, 1);
-  getmem(FBitmaps[0], (aBPP div 8) * aWidth * aHeight);
-  FImageDescriptor.Width:=aWidth;
-  FImageDescriptor.Height:=aHeight;
-  FImageDescriptor.Depth:=1;
-  FImageDescriptor.TextureArray:=false;
-  FImageDescriptor.CubeMap:=false;
+  if not aMipmapping then FImageDescriptor.Levels := 1
+  else FillLodsStructure(aFormatCode, aWidth, aHeight, 1, false);
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 1, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.TextureArray := false;
+  FImageDescriptor.CubeMap := false;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := 1;
 end;
 
-constructor TImageSampler.CreateBitmapArray(aBPP: byte; aWidth, aHeight,
-  aDepth: integer);
-var i: integer;
+constructor TImageSampler.CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aMipmapping: boolean);
+var size: cardinal;
 begin
-  setlength(FBitmaps, aDepth);
-  for i := 0 to aDepth - 1 do
-    getmem(FBitmaps[i], (aBPP div 8) * aWidth * aHeight);
-  FImageDescriptor.Width:=aWidth;
-  FImageDescriptor.Height:=aHeight;
-  FImageDescriptor.Depth:=aDepth;
-  FImageDescriptor.TextureArray:=true;
+  if not aMipmapping then begin
+    FImageDescriptor.Levels := 1;
+  end else begin
+    FillLodsStructure(aFormatCode, aWidth, aHeight, aDepth, true);
+  end;
+  FImageDescriptor.TextureArray := true;
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, aDepth, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.CubeMap := false;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := aDepth;
 end;
 
-constructor TImageSampler.CreateCubeMap(aBPP: byte; aWidth, aHeight: integer);
-var i: integer;
+constructor TImageSampler.CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
+var size: cardinal;
 begin
-  setlength(FBitmaps, 6);
-  for i := 0 to 5 do
-    getmem(FBitmaps[i], (aBPP div 8) * aWidth * aHeight);
-  FImageDescriptor.Width:=aWidth;
-  FImageDescriptor.Height:=aHeight;
-  FImageDescriptor.Depth:=1;
-  FImageDescriptor.CubeMap:=true;
+  if not aMipmapping then begin
+    FImageDescriptor.Levels := 1;
+  end else begin
+    FillLodsStructure(aFormatCode, aWidth, aHeight, 6, true);
+  end;
+  FImageDescriptor.TextureArray := false;
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 6, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.CubeMap := true;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := 6;
 end;
 
-procedure TImageSampler.SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits,
-  aGBits: byte);
-var pf: TImagePixelFormat;
+constructor TImageSampler.CreateCubeMapArray(aFormatCode: cardinal; aWidth,
+  aHeight, aDepth: integer; aMipmapping: boolean);
+var size: cardinal;
 begin
-  assert(aBaseFormat in [bfRG], 'Base format does not match Bits format');
-
-//  pf = (pfUByte, pfByte, pfUShort, pfShort, pfUInt, pfInt, pfFloat);
-
+  if not aMipmapping then begin
+    FImageDescriptor.Levels := 1;
+  end else begin
+    FillLodsStructure(aFormatCode, aWidth, aHeight, 6*aDepth, true);
+  end;
+  FImageDescriptor.TextureArray := true;
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 6*aDepth, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.CubeMap := true;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := 6*aDepth;
 end;
 
-procedure TImageSampler.SetImageFormat(aBaseFormat: TBaseImageFormat;
-  aIntensityBits: byte);
+constructor TImageSampler.CreateVolume(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aMipmapping: boolean);
+var size: cardinal;
 begin
-  assert(aBaseFormat in [bfRed], 'Base format does not match Bits format');
+  if not aMipmapping then begin
+    FImageDescriptor.Levels := 1;
+  end else begin
+    FillLodsStructure(aFormatCode, aWidth, aHeight, aDepth, false);
+  end;
+  FImageDescriptor.TextureArray := false;
+  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, aDepth, aMipmapping);
+  getmem(FImageDescriptor.Data, size);
+  FImageDescriptor.DataSize := size;
+  FImageDescriptor.ReservedMem := size;
+  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
+  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
+  FImageDescriptor.CubeMap := false;
+  FImageDescriptor.Width := aWidth;
+  FImageDescriptor.Height := aHeight;
+  FImageDescriptor.Depth := aDepth;
 end;
 
-procedure TImageSampler.SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits,
-  aGBits, aBBits, aABits: byte);
-begin
-  assert(aBaseFormat in [bfRGBA, bfBGRA], 'Base format does not match Bits format');
-end;
+procedure TImageSampler.FillLodsStructure(aFormatCode: cardinal;
+  aWidth, aHeight, aDepth: integer; aArray: boolean);
+var i,j, offs, size: integer;
+    w,h,d,layers: integer;
 
-procedure TImageSampler.SetImageFormat(aBaseFormat: TBaseImageFormat; aRBits,
-  aGBits, aBBits: byte);
 begin
-  assert(aBaseFormat in [bfRGB, bfBGR], 'Base format does not match Bits format');
+  FImageDescriptor.Levels :=
+    TImageFormatSelector.GetMipmapsCount(max(aWidth, max(aHeight, aDepth)));
+  offs := 0; w := aWidth; h := aHeight; d := aDepth;
+  if aArray then layers := aDepth else layers := 1;
+
+  for i := 0 to FImageDescriptor.Levels - 1 do begin
+    FImageDescriptor.LODS[i].Width := w;
+    FImageDescriptor.LODS[i].Height := h;
+    if not aArray then begin
+      FImageDescriptor.LODS[i].Depth := d;
+      FImageDescriptor.LODS[i].Offset := offs;
+      FImageDescriptor.LODS[i].Size :=
+        TImageFormatSelector.GetMemSize(aFormatCode, w, h, d, false);
+      setlength(FImageDescriptor.LODS[i].LayersOffset, 0);
+    end else begin
+      FImageDescriptor.LODS[i].Depth := 1;
+      FImageDescriptor.LODS[i].Offset := offs;
+      Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, 1, false);
+      FImageDescriptor.LODS[i].Size := Size * Layers;
+      setlength(FImageDescriptor.LODS[i].LayersOffset, layers);
+      for j := 0 to layers-1 do begin
+        FImageDescriptor.LODS[i].LayersOffset[j] := offs + Size * j;
+      end;
+    end;
+
+    offs := offs + FImageDescriptor.LODS[i].Size;
+    w := max(1,w shr 2); h := max(1, h shr 2); d := max(1, d shr 2);
+  end;
 end;
 
 initialization
