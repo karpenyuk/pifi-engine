@@ -21,6 +21,9 @@ Type
   PByteArray = ^TByteArray;
   TByteArray = array[0..32767] of Byte;
 
+  PFloatArray = ^TFloatArray;
+  TFloatArray = array[0..32767] of single;
+
   TIntegerArray = array of Integer;
 
 //  TPtrList = TDataList<pointer>;

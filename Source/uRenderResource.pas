@@ -285,6 +285,7 @@ Type
   TImageSampler = class(TBaseRenderResource)
   private
     FImageDescriptor: TImageDesc;
+    FImageFormat: cardinal;
     //Hide default constructor
     constructor Create; override;
     //Calculate size of each Lods and fill FImageDescriptor's LOD struct.
@@ -304,6 +305,8 @@ Type
     constructor CreateDepth32Texture(aWidth, aHeight: integer; aMipmapping: boolean = false);
     constructor CreateDepthStencilTexture(aWidth, aHeight: integer; aMipmapping: boolean = false);
     }
+
+    property ImageFormat: cardinal read FImageFormat;
 
     property ImageDescriptor: TImageDesc read FImageDescriptor;
     { TODO : Add as read-only all properties from TImageDesc }
@@ -2738,6 +2741,7 @@ end;
 constructor TImageSampler.CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  FImageFormat := aFormatCode;
   if not aMipmapping then FImageDescriptor.Levels := 1
   else FillLodsStructure(aFormatCode, aWidth, aHeight, 1, false);
   size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 1, aMipmapping);
@@ -2757,6 +2761,7 @@ constructor TImageSampler.CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeig
   aDepth: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  FImageFormat := aFormatCode;
   if not aMipmapping then begin
     FImageDescriptor.Levels := 1;
   end else begin
@@ -2778,6 +2783,7 @@ end;
 constructor TImageSampler.CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  FImageFormat := aFormatCode;
   if not aMipmapping then begin
     FImageDescriptor.Levels := 1;
   end else begin
@@ -2800,6 +2806,7 @@ constructor TImageSampler.CreateCubeMapArray(aFormatCode: cardinal; aWidth,
   aHeight, aDepth: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  FImageFormat := aFormatCode;
   if not aMipmapping then begin
     FImageDescriptor.Levels := 1;
   end else begin
@@ -2822,6 +2829,7 @@ constructor TImageSampler.CreateVolume(aFormatCode: cardinal; aWidth, aHeight,
   aDepth: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  FImageFormat := aFormatCode;
   if not aMipmapping then begin
     FImageDescriptor.Levels := 1;
   end else begin
