@@ -285,10 +285,12 @@ Type
   TImageSampler = class(TBaseRenderResource)
   private
     FImageDescriptor: TImageDesc;
+    FImageFormat: cardinal;
     //Hide default constructor
     constructor Create; override;
     //Calculate size of each Lods and fill FImageDescriptor's LOD struct.
     procedure FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
+    function getImageDescriptor: PImageDesc;
   public
     constructor CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false);
     constructor CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
@@ -304,14 +306,14 @@ Type
     constructor CreateDepth32Texture(aWidth, aHeight: integer; aMipmapping: boolean = false);
     constructor CreateDepthStencilTexture(aWidth, aHeight: integer; aMipmapping: boolean = false);
     }
-
-    property ImageDescriptor: TImageDesc read FImageDescriptor;
+    property ImageFormat: cardinal read FImageFormat;
+    property ImageDescriptor: PImageDesc read getImageDescriptor;
     { TODO : Add as read-only all properties from TImageDesc }
   end;
 
   TTexture = class(TBaseRenderResource)
   private
-    FImageDescriptor: PImageDesc;
+    FImageDescriptor: TImageSampler;
     FReady: boolean;
     FName: string;
     FUpdates: TTextureUpdates;
@@ -344,17 +346,18 @@ Type
     function getTarget: TTexTarget;
     function getTexArray: boolean;
     procedure SetName(const Value: string);
-    function getImgDescr: PImageDesc;
+    function getImgDescr: TImageSampler;
     procedure setTexMatrix(const Value: TMatrix);
     procedure setData(const Value: Pointer);
 
     procedure setGenMipMaps(const Value: boolean);
+    procedure setImgDescr(const Value: TImageSampler);
 
   public
 
     constructor CreateOwned(aOwner: TObject = nil);
 
-    property ImageDescriptor: PImageDesc read getImgDescr;
+    property Descriptor: TImageSampler read getImgDescr write setImgDescr;
     property Updates: TTextureUpdates read FUpdates write FUpdates;
 
     property Disabled: boolean read FDisabled write FDisabled;
@@ -1090,89 +1093,89 @@ end;
 
 function TTexture.getCFormat: cardinal;
 begin
-  result := FImageDescriptor.ColorFormat;
+  result := FImageDescriptor.ImageDescriptor.ColorFormat;
 end;
 
 function TTexture.getCompressed: boolean;
 begin
-  result := FImageDescriptor.Compressed;
+  result := FImageDescriptor.ImageDescriptor.Compressed;
 end;
 
 function TTexture.getCubeMap: boolean;
 begin
-  result := FImageDescriptor.CubeMap;
+  result := FImageDescriptor.ImageDescriptor.CubeMap;
 end;
 
 function TTexture.getData: Pointer;
 begin
-  result := FImageDescriptor.Data;
+  result := FImageDescriptor.ImageDescriptor.Data;
 end;
 
 function TTexture.getDataSize: integer;
 begin
-  result := FImageDescriptor.DataSize
+  result := FImageDescriptor.ImageDescriptor.DataSize
 end;
 
 function TTexture.getDType: cardinal;
 begin
-  result := FImageDescriptor.DataType;
+  result := FImageDescriptor.ImageDescriptor.DataType;
 end;
 
 function TTexture.getElmSize: integer;
 begin
-  result := FImageDescriptor.ElementSize;
+  result := FImageDescriptor.ImageDescriptor.ElementSize;
 end;
 
 function TTexture.getFormat: cardinal;
 begin
-  result := FImageDescriptor.ColorFormat;
+  result := FImageDescriptor.ImageDescriptor.ColorFormat;
 end;
 
 function TTexture.getDepth: integer;
 begin
-  result := FImageDescriptor.Depth;
+  result := FImageDescriptor.ImageDescriptor.Depth;
 end;
 
 function TTexture.getHeight: integer;
 begin
-  result := FImageDescriptor.Height;
+  result := FImageDescriptor.ImageDescriptor.Height;
 end;
 
 function TTexture.getWidth: integer;
 begin
-  result := FImageDescriptor.Width;
+  result := FImageDescriptor.ImageDescriptor.Width;
 end;
 
 function TTexture.getIFormat: cardinal;
 begin
-  result := FImageDescriptor.InternalFormat;
+  result := FImageDescriptor.ImageDescriptor.InternalFormat;
 end;
 
-function TTexture.getImgDescr: PImageDesc;
+function TTexture.getImgDescr: TImageSampler;
 begin
-  result := @FImageDescriptor;
+  result := FImageDescriptor;
 end;
 
 function TTexture.getImgLod(Index: integer): TImageLevelDesc;
 begin
-  assert((index >= 0) and (index <= high(FImageDescriptor.LODS)),
+  assert((index >= 0) and (index <= high(FImageDescriptor.ImageDescriptor.LODS)),
     'Lod index [' + inttostr(Index) + '] out of Range');
-  result := FImageDescriptor.LODS[index];
+  result := FImageDescriptor.ImageDescriptor.LODS[index];
 end;
 
 function TTexture.getLevels: integer;
 begin
-  result := FImageDescriptor.Levels;
+  result := FImageDescriptor.ImageDescriptor.Levels;
 end;
 
 function TTexture.getResMem: integer;
 begin
-  result := FImageDescriptor.ReservedMem;
+  result := FImageDescriptor.ImageDescriptor.ReservedMem;
 end;
 
 function TTexture.getTexArray: boolean;
 begin
-  result := FImageDescriptor.TextureArray;
+  result := FImageDescriptor.ImageDescriptor.TextureArray;
 end;
 
 function TTexture.getTarget: TTexTarget;
@@ -1182,13 +1185,25 @@ end;
 
 procedure TTexture.setData(const Value: Pointer);
 begin
-  FImageDescriptor.Data := Value;
+  FImageDescriptor.ImageDescriptor.Data := Value;
 end;
 
 procedure TTexture.setGenMipMaps(const Value: boolean);
 begin
   include(FUpdates, tuGenMipMaps);
   FGenerateMipMaps := Value;
+end;
+
+procedure TTexture.setImgDescr(const Value: TImageSampler);
+begin
+  if Value <> FImageDescriptor then
+  begin
+    FImageDescriptor.Free;
+    FImageDescriptor := Value;
+    include(FUpdates, tuImage);
+    // Hack!
+    FTarget := TTexTarget.ttTexture2D;
+  end;
 end;
 
 procedure TTexture.setTexMatrix(const Value: TMatrix);
@@ -2738,6 +2753,8 @@ end;
 constructor TImageSampler.CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  Create;
+  FImageFormat := aFormatCode;
   if not aMipmapping then FImageDescriptor.Levels := 1
   else FillLodsStructure(aFormatCode, aWidth, aHeight, 1, false);
   size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 1, aMipmapping);
@@ -2757,6 +2774,8 @@ constructor TImageSampler.CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeig
   aDepth: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  Create;
+  FImageFormat := aFormatCode;
   if not aMipmapping then begin
     FImageDescriptor.Levels := 1;
   end else begin
@@ -2778,6 +2797,8 @@ end;
 constructor TImageSampler.CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  Create;
+  FImageFormat := aFormatCode;
   if not aMipmapping then begin
     FImageDescriptor.Levels := 1;
   end else begin
@@ -2800,6 +2821,8 @@ constructor TImageSampler.CreateCubeMapArray(aFormatCode: cardinal; aWidth,
   aHeight, aDepth: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  Create;
+  FImageFormat := aFormatCode;
   if not aMipmapping then begin
     FImageDescriptor.Levels := 1;
   end else begin
@@ -2822,6 +2845,8 @@ constructor TImageSampler.CreateVolume(aFormatCode: cardinal; aWidth, aHeight,
   aDepth: integer; aMipmapping: boolean);
 var size: cardinal;
 begin
+  Create;
+  FImageFormat := aFormatCode;
   if not aMipmapping then begin
     FImageDescriptor.Levels := 1;
   end else begin
@@ -2872,8 +2897,13 @@ begin
     end;
 
     offs := offs + FImageDescriptor.LODS[i].Size;
-    w := max(1,w shr 2); h := max(1, h shr 2); d := max(1, d shr 2);
+    w := max(1,w shr 1); h := max(1, h shr 1); d := max(1, d shr 1);
   end;
+end;
+
+function TImageSampler.getImageDescriptor: PImageDesc;
+begin
+  Result := @FImageDescriptor;
 end;
 
 initialization
