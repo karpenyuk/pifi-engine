@@ -73,7 +73,8 @@ Type
 
   TTextureUpdate = (tuWrapS, tuWrapT, tuWrapR, tuminFilter, tumagFilter, tuTextureGenS,
                      tuTextureGenT, tuTextureGenR, tuGenMipMaps, tuAnisotropyLevel,
-                     tuMinLod, tuMaxLod, tuLodBias, tuCompareMode, tuCompareFunc);
+                     tuMinLod, tuMaxLod, tuLodBias, tuCompareMode, tuCompareFunc,
+                     tuImage);
   TTextureUpdates = set of TTextureUpdate;
 
   TTextureCompareMode = (cmNone, cmCompareRefToTexture);

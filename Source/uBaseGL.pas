@@ -505,10 +505,10 @@ Type
 
     destructor Destroy; override;
 
-
+    procedure AllocateStorage();
     procedure UploadTexture(Data: pointer; Size: cardinal);
 
-
+    property ImageDescriptor: PImageDesc read FImageDesc;
     property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
 
 
@@ -2055,6 +2055,47 @@ end;
 { TGLTextureObject }
 
 
+procedure TGLTextureObject.AllocateStorage;
+var
+  L: integer;
+begin
+  assert(assigned(FImageDesc),'Image descriptor is not assigned!');
+  glBindTexture(CTexTargets[FTarget], FTexId);
+  with FImageDesc^ do
+  begin
+    if GL_ARB_texture_storage then
+    begin
+      case FTarget of
+        ttTexture1D:
+          glTextureStorage1DEXT(FTexId, CTexTargets[FTarget], Levels,
+            InternalFormat, Width);
+        ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
+          glTextureStorage2DEXT(FTexId, CTexTargets[FTarget], Levels,
+            InternalFormat, Width, Height);
+        ttTexture3D:
+          glTextureStorage3DEXT(FTexId, CTexTargets[FTarget], Levels,
+            InternalFormat, Width, Height, Depth);
+      end;
+    end
+    else for L := 0 to Levels - 1 do
+    begin
+      case FTarget of
+        ttTexture1D:
+          glTexImage1D(CTexTargets[FTarget], L, InternalFormat, LODS[L].Width,
+            0, ColorFormat, DataType, nil);
+        ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
+          glTexImage2D(CTexTargets[FTarget], L, InternalFormat, LODS[L].Width,
+            LODS[L].Height, 0,
+            ColorFormat, DataType, nil);
+        ttTexture3D:
+          glTexImage3D(CTexTargets[FTarget], L, InternalFormat, LODS[L].Width,
+            LODS[L].Height,
+            LODS[L].Depth, 0, ColorFormat, DataType, nil);
+      end;
+    end;
+  end;
+end;
+
 constructor TGLTextureObject.Create;
 begin
   inherited Create;
@@ -2082,7 +2123,7 @@ end;
 constructor TGLTextureObject.CreateFrom(const aTexture: TTexture);
 begin
   Create;
-  FImageDesc := aTexture.ImageDescriptor;
+  FImageDesc := aTexture.Descriptor.ImageDescriptor;
   FTarget := aTexture.Target;
 end;
 
