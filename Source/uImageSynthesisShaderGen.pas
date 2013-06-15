@@ -322,18 +322,20 @@ const
     'layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;'#10#13 +
     'layout(binding = 0) uniform isampler2D Exemplar;'#10#13 +
     'layout(binding = 1) uniform isampler2D Pathces;'#10#13 +
-    'layout(binding = 0, rgba) uniform image2D Destination;'#10#13 +
-    'uniform ivec2 offset;'#10#13 +
+    'layout(binding = 0, rgba8) uniform image2D Destination;'#10#13 +
+    'uniform ivec4 offsets;'#10#13 +
     'void main()'#10#13 +
     '{'#10#13 +
     '  ivec2 coords = ivec2(gl_WorkGroupID.xy * uvec2(16u) + gl_LocalInvocationID.xy);'#10#13
     +
-    '  coords += offset;'#10#13 +
     '  ivec2 exemplarSize = textureSize(Exemplar, 0);'#10#13 +
-    '  ivec2 p = texelFetch(Pathces, coords, 0).xy;'#10#13 +
+    '  ivec2 p = texelFetch(Pathces, coords + offsets.xy, 0).xy;'#10#13 +
     '  p = wrapRepeat(p, exemplarSize);'#10#13 +
     '  vec4 color = texelFetch(Exemplar, p, 0) / vec4(255.0);'#10#13 +
-    '  imageStore(Destination, coords, pass);'#10#13 +
+    '  ivec2 size = imageSize(Destination);'#10#13 +
+    '  coords += offsets.wz;'#10#13 +
+    '  if (coords.x < size.x && coords.y < size.y)'#10#13 +
+    '    imageStore(Destination, coords, color);'#10#13 +
     '}'#10#13;
 
   { SynthesisShaderGenerator }

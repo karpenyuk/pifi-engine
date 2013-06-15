@@ -78,7 +78,6 @@ type
     TrackBar8: TTrackBar;
     procedure ComboBox2Change(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
-    procedure ComboBox1Change(Sender: TObject);
     procedure Edit4Change(Sender: TObject);
     procedure CheckBox4Click(Sender: TObject);
     procedure CheckBox3Click(Sender: TObject);
@@ -88,11 +87,14 @@ type
     procedure Image1DblClick(Sender: TObject);
     procedure SynthesizeButtonClick(Sender: TObject);
     procedure AnalyzeButtonClick(Sender: TObject);
+
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+
     procedure GLViewer1ContextReady(Sender: TObject);
     procedure GLViewer1Render(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+
     procedure SaveDataButtonClick(Sender: TObject);
     procedure LoadDataButtonClick(Sender: TObject);
     procedure GLViewer1ContextDebugMessage(const AMessage: string);
@@ -122,6 +124,7 @@ uses
   uBaseGL,
   uRenderResource,
   uImageSynthesisShaderGen,
+  uImageFormats,
   uVMath,
   JPEG;
 
@@ -140,11 +143,12 @@ var
   SQ_VO: TVertexObject;
   SQ_Drawer: TGLVertexObject;
   ViewShader1, ViewShader2: TGLSLShaderProgram;
+  Texture: TTexture;
+  GLSynthTexture: TGLTextureObject;
   Render: TBaseRender;
   ExemplarTextureId: LongInt;
   SynthTextureId: LongInt;
   PatchesTextureId: LongInt;
-  ShaderSynthTextureId: LongInt;
   SamplerId: LongInt;
   SynthImage: TImageDesc;
   PatchesImage: TImageDesc;
@@ -166,7 +170,6 @@ begin
   glDeleteTextures(1, @ExemplarTextureId);
   glDeleteTextures(1, @SynthTextureId);
   glDeleteTextures(1, @PatchesTextureId);
-  glDeleteTextures(1, @ShaderSynthTextureId);
   glDeleteSamplers(1, @SamplerId);
   GLViewer1.OnRender := nil;
   GLViewer1.Context.Deactivate;
@@ -176,6 +179,11 @@ begin
   ViewShader1.Destroy;
   ViewShader2.Destroy;
   SQ_Drawer.Destroy;
+  Texture.Descriptor.ImageDescriptor.Free;
+  Texture.Descriptor.Destroy;
+  Texture.Destroy;
+  GLSynthTexture.Destroy;
+
   if GLSynthesizer.Initialized then
     GLSynthesizer.Finalize;
 end;
@@ -285,7 +293,6 @@ begin
   begin
     GLSynthesizer.Initialize;
     ComboBox1.ItemIndex := 3;
-    ComboBox1Change(Sender);
   end;
 end;
 
@@ -335,7 +342,6 @@ begin
     TextureChaged[1] := True;
     TextureChaged[2] := True;
     ComboBox1.ItemIndex := 1;
-    ComboBox1Change(Sender);
     AnalyzeButton.Enabled := true;
     SynthesizeButton.Enabled := true;
   end
@@ -587,7 +593,6 @@ begin
       Image1.Picture.Height]));
     TextureChaged[0] := true;
     ComboBox1.ItemIndex := 0;
-    ComboBox1Change(Sender);
     AnalysisProgressBar.Position := 0;
   end;
 end;
@@ -601,7 +606,6 @@ procedure TMainForm.GLViewer1ContextReady(Sender: TObject);
 var
   ver: TApiVersion;
   path: string;
-  shader: TShaderProgram;
 begin
   ver.GAPI := avGL;
   ver.Version := 420;
@@ -669,22 +673,6 @@ begin
   glTextureParameterfEXT(SynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
     GL_LINEAR_MIPMAP_LINEAR);
 
-  glGenTextures(1, @ShaderSynthTextureId);
-  glBindTexture(GL_TEXTURE_2D, ShaderSynthTextureId);
-  glTextureParameterfEXT(
-    SynthTextureId,
-    GL_TEXTURE_2D,
-    GL_GENERATE_MIPMAP_SGIS,
-    GL_TRUE);
-  glTextureParameterfEXT(ShaderSynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-    GL_REPEAT);
-  glTextureParameterfEXT(ShaderSynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-    GL_REPEAT);
-  glTextureParameterfEXT(ShaderSynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-    GL_LINEAR);
-  glTextureParameterfEXT(ShaderSynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-    GL_LINEAR_MIPMAP_LINEAR);
-
   glGenTextures(1, @PatchesTextureId);
   glBindTexture(GL_TEXTURE_2D, PatchesTextureId);
   glTextureParameterfEXT(
@@ -703,7 +691,22 @@ begin
 
   glGenSamplers(1, @SamplerId);
   glSamplerParameteri(SamplerId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//  glSamplerParameteri(SamplerId, GL_TEXTURE_MAX_LOD, 0);
+//  glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_LOD, 0);
+
+  Texture := TTexture.CreateOwned(Self);
+  Texture.Descriptor := TImageSampler.CreateBitmap(
+    TImageFormatSelector.CreateInt8(bfRGBA),
+    TexWidth, TexHeight, True);
+  Texture.Descriptor.ImageDescriptor.InternalFormat := GL_RGBA8;
+  Texture.Descriptor.ImageDescriptor.ColorFormat := GL_RGBA;
+  Texture.Descriptor.ImageDescriptor.DataType := GL_UNSIGNED_BYTE;
+  GLSynthTexture := TGLTextureObject.CreateFrom(texture);
+  GLSynthesizer.DestinationTexture := GLSynthTexture;
+  GLSynthTexture.AllocateStorage;
 
   SQ_VO := CreatePlane(2, 2);
   SQ_Drawer := TGLVertexObject.CreateFrom(SQ_VO);
@@ -784,13 +787,10 @@ begin
     3:
       if GLSynthesizer.Initialized then
       begin
-//        glBindSampler(0, SamplerId);
-//        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.ExemplarTextureIDs[VIEW_LEVEL]);
-//        shader := ViewShader3;
-//        glActiveTexture(GL_TEXTURE1);
-//        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[VIEW_LEVEL]);
-//        w := GLSynthesizer.SideSize;
-//        h := w;
+        glBindSampler(0, SamplerId);
+        glBindTexture(GL_TEXTURE_2D, GLSynthTexture.Id);
+        w := TexWidth;
+        h := TexHeight;
       end;
     4:
       if GLSynthesizer.Initialized then

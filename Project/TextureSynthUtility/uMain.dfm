@@ -10,6 +10,7 @@ object MainForm: TMainForm
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  Position = poDesktopCenter
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -60,7 +61,6 @@ object MainForm: TMainForm
       ItemIndex = 0
       TabOrder = 1
       Text = 'Exemplar'
-      OnChange = ComboBox1Change
       Items.Strings = (
         'Exemplar'
         'CPU synthesis result'
