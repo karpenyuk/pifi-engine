@@ -763,7 +763,7 @@ begin
   result := 1; s := size;
   while s > 0 do begin
     result := result +1;
-    s := s shr 2;
+    s := s shr 1;
   end;
 end;
 
