@@ -26,8 +26,13 @@ type
     JitterStrength: Vec2;
     Spacing: array [0 .. 2] of Vec4i;
     RandScaleOffset: Vec4i;
-    Status: (stOutdated, stChanged, stCompleted);
+    ParentOffset: Vec2i;
+    DestinationOffset: Vec2i;
+    State: (stOutdated, stChanged, stCompleted);
+    Status: (stMargin, stRegion);
   end;
+
+  TSynthShift = (dirRight, dirLeft, dirUp, dirDown);
 
   TGLSynthesizer = class(TPersistentResource)
   private
@@ -41,12 +46,12 @@ type
     FUpsampleShader: array [Boolean] of TGLSLShaderProgram;
     FCorrectionShader: TGLSLShaderProgram;
     FCopyImageShader: TGLSLShaderProgram;
-    FGenImageShader: TGLSLShaderProgram;
+    FImageConstructShader: TGLSLShaderProgram;
     FWorkGroupCount: vec3i;
 
     FReadSynthTextureId: GLuint;
     FRandomTextureId: GLuint;
-    FDestinationTexture: TGLTextureObject;
+    FDest: TGLTextureObject;
 
     FCorrectionSubpassesCount: integer;
     FKappa: single;
@@ -63,12 +68,13 @@ type
     procedure SetKappa(const Value: single);
     procedure SetCorrectionSubpassesCount(const Value: integer);
     procedure SetDestinationTexture(const Value: TGLTextureObject);
-
   protected
     procedure NotifyLevelChanged(const aLevel: integer);
+    procedure DefineLevelStatus;
     procedure CreateRandomTexture;
     procedure DoUpsample(const aLevel: integer);
     procedure DoCorrection(const aLevel: integer);
+    procedure DoShift(const aLevel: integer; const aStep: Vec2i);
     procedure CopyToReadSynthTexture(const aLevel: integer);
   public
     constructor CreateFrom(const anAnalysisData: TAnalysisData);
@@ -79,6 +85,7 @@ type
 
     procedure Initialize;
     procedure Process;
+    procedure Shift(const aDirect: TSynthShift);
     procedure Finalize;
     class function Supported: Boolean;
     property Initialized: Boolean read FInitialized;
@@ -105,7 +112,7 @@ type
     property CorrectionSubpassesCount: integer read FCorrectionSubpassesCount
       write SetCorrectionSubpassesCount;
 
-    property DestinationTexture: TGLTextureObject read FDestinationTexture
+    property DestinationTexture: TGLTextureObject read FDest
       write SetDestinationTexture;
   end;
 
@@ -114,6 +121,7 @@ implementation
 uses
   uMiscUtils,
   uImageSynthesisShaderGen,
+  Math,
   uMath;
 
 {$REGION 'TGLSynthesizer'}
@@ -177,6 +185,27 @@ begin
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, FSideSize, FSideSize, 0,
     GL_RG, GL_UNSIGNED_BYTE, p);
   FreeMem(p);
+end;
+
+procedure TGLSynthesizer.DefineLevelStatus;
+var
+  L, size: integer;
+begin
+  // Determine levels status
+  size := FSideSize - 16;
+  for L := 0 to High(FLevels) do
+  begin
+    if (L < FDest.ImageDescriptor.Levels) and
+      ((FDest.ImageDescriptor.LODS[L].Width > size) or
+      (FDest.ImageDescriptor.LODS[L].Height > size)) then
+      begin
+        FLevels[L].Status := stRegion;
+        FLevels[L].DestinationOffset[0] := (FDest.ImageDescriptor.LODS[L].Width - size) div 2;
+        FLevels[L].DestinationOffset[1] := (FDest.ImageDescriptor.LODS[L].Height - size) div 2;
+      end
+    else
+        FLevels[L].Status := stMargin;
+  end;
 end;
 
 destructor TGLSynthesizer.Destroy;
@@ -271,6 +300,52 @@ begin
   end;
 end;
 
+procedure TGLSynthesizer.DoShift(const aLevel: integer; const aStep: Vec2i);
+
+  function DivStep(A, S: integer): integer;
+  begin
+    Result := A div 2;
+    if Sign(Result) <> S then
+      Result := S;
+  end;
+
+var
+  downSize, L: integer;
+  newOffset, downStep, singStep, upStep: vec2i;
+begin
+  downSize := FSideSize div 2;
+  newOffset[0] := FLevels[aLevel].ParentOffset[0] + aStep[0];
+  newOffset[1] := FLevels[aLevel].ParentOffset[1] + aStep[1];
+  FLevels[aLevel].ParentOffset := newOffset;
+
+  if (newOffset[0] < 0) or (newOffset[0] + downSize > FSideSize) or
+    (newOffset[1] < 0) or (newOffset[1] + downSize > FSideSize) then
+  begin
+    singStep[0] := Sign(aStep[0]);
+    singStep[1] := Sign(aStep[1]);
+    downStep[0] := DivStep(aStep[0], singStep[0]);
+    downStep[1] := DivStep(aStep[1], singStep[1]);
+    upStep[0] := aStep[0] - 2 * downStep[0];
+    upStep[1] := aStep[1] - 2 * downStep[1];
+    for L := aLevel downto 0 do
+      with FLevels[L] do begin
+        ParentOffset[0] := ParentOffset[0] + upStep[0];
+        ParentOffset[1] := ParentOffset[1] + upStep[1];
+        upStep[0] := upStep[0] * 2;
+        upStep[1] := upStep[1] * 2;
+        DestinationOffset[0] := DestinationOffset[0] + 4 * upStep[0];
+        DestinationOffset[1] := DestinationOffset[1] + 4 * upStep[1];
+      end;
+
+    if aLevel < High(FLevels) then
+    begin
+      DoShift(aLevel + 1, downStep);
+    end;
+  end;
+
+  FLevels[aLevel].State := stOutdated;
+end;
+
 procedure TGLSynthesizer.DoUpsample(const aLevel: integer);
 var
   first: Boolean;
@@ -301,10 +376,8 @@ begin
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, FLevels[aLevel + 1].PatchesTextureId);
 
-      // Parent quarter offset which upsampled to child
-      iv[0] := FSideSize div 4;
-      iv[1] := FSideSize div 4;
-      SetUniform('quarter', iv);
+      // Parent level's quarter offset which upsampled to child
+      SetUniform('downLevelOffset', FLevels[aLevel].ParentOffset);
     end;
 
     // Coordinates shift for random texture
@@ -497,7 +570,14 @@ begin
     FLevels[L].RandScaleOffset[2] := round(random * FSideSize);
     FLevels[L].RandScaleOffset[3] := round(random * FSideSize);
 
-    FLevels[L].Status := stOutdated;
+    FLevels[L].ParentOffset[0] := FSideSize div 4;
+    FLevels[L].ParentOffset[1] := FSideSize div 4;
+
+    FLevels[L].DestinationOffset[0] := 0;
+    FLevels[L].DestinationOffset[1] := 0;
+
+    FLevels[L].State := stOutdated;
+    FLevels[L].Status := stMargin;
   end;
 
   if not Assigned(FUpsampleShaderSource[True]) then
@@ -545,13 +625,16 @@ begin
     shader.Destroy;
   end;
 
-  shader := SynthesisShaderGenerator.GenImageGenShader(Self);
-  FGenImageShader := TGLSLShaderProgram.CreateFrom(shader);
-  FGenImageShader.LinkShader;
+  shader := SynthesisShaderGenerator.GenImageConstructShader(Self);
+  FImageConstructShader := TGLSLShaderProgram.CreateFrom(shader);
+  FImageConstructShader.LinkShader;
   WriteLn(FCopyImageShader.Log);
   shader.Destroy;
 
   FreeMem(M);
+
+  if Assigned(FDest) then
+    DefineLevelStatus;
 
   FInitialized := True;
 end;
@@ -571,11 +654,11 @@ begin
       NotifyLevelChanged(High(FLevels));
     end;
   end
-  else if Sender = FDestinationTexture then
+  else if Sender = FDest then
   begin
     if Msg = NM_ObjectDestroyed then
     begin
-      FDestinationTexture := nil;
+      FDest := nil;
     end
     else if Msg = NM_ResourceChanged then
     begin
@@ -589,55 +672,68 @@ var
   L: integer;
 begin
   for L := 0 to aLevel do
-      FLevels[L].Status := stOutdated;
+      FLevels[L].State := stOutdated;
   DispatchMessage(NM_ResourceChanged);
 end;
 
 procedure TGLSynthesizer.Process;
 var
-  L, Levels, w, h: integer;
+  L, Levels, w, h, gj, gi: integer;
   changed: Boolean;
   v: vec4i;
 begin
   Assert(FInitialized);
   changed := False;
   for L := LevelCount - 1 downto 0 do
-    if FLevels[L].Status = stOutdated then
+    if FLevels[L].State = stOutdated then
     begin
       DoUpsample(L);
       if FCorrectionSubpassesCount > 0 then
           DoCorrection(L);
-      FLevels[L].Status := stChanged;
+      FLevels[L].State := stChanged;
       changed := True;
     end;
 
-  if Assigned(FDestinationTexture) and changed then
+  if Assigned(FDest) and changed then
   begin
-    Levels := TMath.Min(LevelCount, FDestinationTexture.ImageDescriptor.Levels);
-    FGenImageShader.Apply;
+    Levels := TMath.Min(LevelCount, FDest.ImageDescriptor.Levels);
+    FImageConstructShader.Apply;
     for L := 0 to Levels - 1 do
-      if FLevels[L].Status = stChanged then
+      if FLevels[L].State = stChanged then
       begin
-        glBindImageTexture(0, FDestinationTexture.Id, L, False, 0,
+        glBindImageTexture(0, FDest.Id, L, False, 0,
           GL_WRITE_ONLY, GL_RGBA8);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, FLevels[L].ExemplarTextureId);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, FLevels[L].PatchesTextureId);
-        w := FDestinationTexture.ImageDescriptor.LODS[L].Width;
-        h := FDestinationTexture.ImageDescriptor.LODS[L].Height;
-        v[0] := TMath.Max((FSideSize - w) div 2, 0);
-        v[1] := TMath.Max((FSideSize - h) div 2, 0);
-        v[2] := TMath.Max((w - FSideSize) div 2, 0);
-        v[3] := TMath.Max((h - FSideSize) div 2, 0);
-        FGenImageShader.SetUniform('offsets', v);
-        w := TMath.Min(w, FSideSize);
-        h := TMath.Min(h, FSideSize);
-        w := TMath.Max(1, w div 16);
-        h := TMath.Max(1, h div 16);
-        glDispatchCompute(w, h, 1);
+        w := FDest.ImageDescriptor.LODS[L].Width;
+        h := FDest.ImageDescriptor.LODS[L].Height;
+
+        if FLevels[L].Status = stMargin then
+        begin
+          v[0] := TMath.Max((FSideSize - w) div 2, 0);
+          v[1] := TMath.Max((FSideSize - h) div 2, 0);
+          v[2] := 0;
+          v[3] := 0;
+          gj := TMath.Max(1, w div 16);
+          gi := TMath.Max(1, h div 16);
+        end
+        else
+        begin
+          // Copy region of level without border
+          v[0] := 8;
+          v[1] := 8;
+          v[2] := FLevels[L].DestinationOffset[0];
+          v[3] := FLevels[L].DestinationOffset[1];
+          gj := TMath.Max(1, FSideSize div 16 - 1);
+          gi := TMath.Max(1, FSideSize div 16 - 1);
+        end;
+        FImageConstructShader.SetUniform('offsets', v);
+
+        glDispatchCompute(gj, gi, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        FLevels[L].Status := stCompleted;
+        FLevels[L].State := stCompleted;
       end;
   end;
 end;
@@ -662,13 +758,16 @@ end;
 
 procedure TGLSynthesizer.SetDestinationTexture(const Value: TGLTextureObject);
 begin
-  if Value <> FDestinationTexture then
+  if Value <> FDest then
   begin
-    if Assigned(FDestinationTexture) then
-      FDestinationTexture.UnSubscribe(Self);
-    FDestinationTexture := Value;
-    if Assigned(FDestinationTexture) then
-      FDestinationTexture.Subscribe(Self);
+    if Assigned(FDest) then
+        FDest.UnSubscribe(Self);
+    FDest := Value;
+    if Assigned(FDest) then
+    begin
+      FDest.Subscribe(Self);
+      DefineLevelStatus;
+    end;
   end;
 end;
 
@@ -678,7 +777,7 @@ begin
   begin
     FLevels[Level].JitterStrength[0] := Value;
     FLevels[Level].JitterStrength[1] := Value;
-    FLevels[Level].Status := stOutdated;
+    FLevels[Level].State := stOutdated;
     NotifyLevelChanged(Level);
   end;
 end;
@@ -700,6 +799,57 @@ begin
       FUpsampleShaderSource[aStarter].Destroy;
   FUpsampleShaderSource[aStarter] := Value;
   NotifyLevelChanged(High(FLevels));
+end;
+
+procedure TGLSynthesizer.Shift(const aDirect: TSynthShift);
+const
+  STEPS: array[TSynthShift] of vec2i = (
+    (4, 0), (-4, 0), (0, 4), (0, -4));
+var
+  L, w, h, size: integer;
+  S, P: vec2i;
+begin
+  S := STEPS[aDirect];
+
+  if Assigned(FDest) then
+  begin
+    w := FDest.ImageDescriptor.Width + 8;
+    h := FDest.ImageDescriptor.Height + 8;
+    P[0] := FLevels[0].DestinationOffset[0] + 2 * S[0];
+    P[1] := FLevels[0].DestinationOffset[1] + 2 * S[1];
+    if FLevels[0].Status = stRegion then
+      size := FSideSize - 16
+    else
+      size := FSideSize;
+
+    if (P[0] < -8) or (P[0] + size > w)
+      or (P[1] < -8) or (P[1] + size > h) then
+    begin
+      // Scroll
+      Exit;
+    end;
+
+    DoShift(0, S);
+    FLevels[0].DestinationOffset := P;
+
+//    for L := 1 to High(FLevels) do
+//      if FLevels[L].Status = stRegion then
+//      begin
+//        P[0] := FLevels[L].DestinationOffset[0] + S[0];
+//        P[1] := FLevels[L].DestinationOffset[1] + S[1];
+//        FLevels[L].DestinationOffset := P;
+//        FLevels[L].State := stChanged;
+//        S[0] := S[0] div 2;
+//        S[1] := S[1] div 2;
+//        if (S[0] = 0) and (S[1] = 0) then
+//            break;
+//      end
+//      else break;
+  end
+  else
+  begin
+    DoShift(0, S);
+  end;
 end;
 
 class function TGLSynthesizer.Supported: Boolean;

@@ -27,7 +27,7 @@ type
     class function GenPatchesViewShader(
       anOwner: TObject): TShaderProgram;
 
-    class function GenImageGenShader(
+    class function GenImageConstructShader(
       anOwner: TObject): TShaderProgram;
   end;
 
@@ -95,7 +95,7 @@ const
     'layout(binding = 0) uniform isampler2D DownLevel;'#10#13 +
     'layout(binding = 0, rg16i) uniform iimage2D UpLevel;'#10#13 +
     'uniform ivec4 spacing[3];'#10#13 +
-    'uniform ivec2 quarter;'#10#13 +
+    'uniform ivec2 downLevelOffset;'#10#13 +
     'uniform ivec2 exemplarSize;'#10#13 +
     'uniform ivec4 randScaleOffset;'#10#13 +
     'uniform vec2 strength;'#10#13;
@@ -106,7 +106,7 @@ const
     '  ivec2 coords = ivec2(gl_WorkGroupID.xy * uvec2(16u) + gl_LocalInvocationID.xy);'#10#13
     +
     '  ivec2 up_coords = coords * ivec2(2);'#10#13 +
-    '  coords += quarter;'#10#13 +
+    '  coords += downLevelOffset;'#10#13 +
     '  ivec4 p = ivec4(texelFetch(DownLevel, coords, 0).xy, 0, 0);'#10#13 +
     '  ivec4 delta;'#10#13 +
     '  delta = rand(up_coords);'#10#13 +
@@ -318,7 +318,7 @@ const
     '  FragColor = vec4(p) / vec4(exemplarSize);'#10#13 +
     '}'#10#13;
 
-  GLSL_SYNTH_GEN_IMAGE: ansistring =
+  GLSL_SYNTH_CONSTRUCT_IMAGE: ansistring =
     'layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;'#10#13 +
     'layout(binding = 0) uniform isampler2D Exemplar;'#10#13 +
     'layout(binding = 1) uniform isampler2D Pathces;'#10#13 +
@@ -333,8 +333,8 @@ const
     '  p = wrapRepeat(p, exemplarSize);'#10#13 +
     '  vec4 color = texelFetch(Exemplar, p, 0) / vec4(255.0);'#10#13 +
     '  ivec2 size = imageSize(Destination);'#10#13 +
-    '  coords += offsets.wz;'#10#13 +
-    '  if (coords.x < size.x && coords.y < size.y)'#10#13 +
+    '  coords += offsets.zw;'#10#13 +
+    '  if (coords.x > -1 && coords.y > -1 && coords.x < size.x && coords.y < size.y)'#10#13 +
     '    imageStore(Destination, coords, color);'#10#13 +
     '}'#10#13;
 
@@ -360,14 +360,14 @@ begin
     GLSL_SYNTH_CORRECTION_MAIN;
 end;
 
-class function SynthesisShaderGenerator.GenImageGenShader(
+class function SynthesisShaderGenerator.GenImageConstructShader(
   anOwner: TObject): TShaderProgram;
 begin
   Result := TShaderProgram.CreateOwned(anOwner);
   Result.ShaderText[stCompute] :=
     GLSL_SYNTH_HEADER +
     GLSL_SYNTH_WRAPPINGSUB +
-    GLSL_SYNTH_GEN_IMAGE;
+    GLSL_SYNTH_CONSTRUCT_IMAGE;
 end;
 
 class function SynthesisShaderGenerator.GenPatchesViewShader(

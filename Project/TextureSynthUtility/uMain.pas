@@ -50,15 +50,10 @@ type
     Label1: TLabel;
     Label3: TLabel;
     Label4: TLabel;
-    Label6: TLabel;
-    Label7: TLabel;
     Label5: TLabel;
     Edit1: TEdit;
     SpinEdit2: TSpinEdit;
     Edit2: TEdit;
-    CheckBox4: TCheckBox;
-    Edit4: TEdit;
-    Edit5: TEdit;
     Edit3: TEdit;
     SynthesizeButton: TButton;
     SynthProgressBar: TProgressBar;
@@ -76,6 +71,17 @@ type
     TrackBar7: TTrackBar;
     Label13: TLabel;
     TrackBar8: TTrackBar;
+    LeftRight1: TUpDown;
+    UpDown1: TUpDown;
+    PerionPanel: TPanel;
+    Edit5: TEdit;
+    Label7: TLabel;
+    Edit4: TEdit;
+    Label6: TLabel;
+    CheckBox4: TCheckBox;
+    ApplyButton: TButton;
+    SpinEdit3: TSpinEdit;
+    Label11: TLabel;
     procedure ComboBox2Change(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
     procedure Edit4Change(Sender: TObject);
@@ -98,6 +104,11 @@ type
     procedure SaveDataButtonClick(Sender: TObject);
     procedure LoadDataButtonClick(Sender: TObject);
     procedure GLViewer1ContextDebugMessage(const AMessage: string);
+    procedure UpDown1ChangingEx(Sender: TObject; var AllowChange: Boolean;
+      NewValue: SmallInt; Direction: TUpDownDirection);
+    procedure LeftRight1ChangingEx(Sender: TObject; var AllowChange: Boolean;
+      NewValue: SmallInt; Direction: TUpDownDirection);
+    procedure ApplyButtonClick(Sender: TObject);
   private
     FJTracks: array[0..7] of TTrackBar;
     procedure UpdateJitters;
@@ -363,6 +374,15 @@ begin
     Memo1.Lines.Add('Unable to save. Run analysis first.');
 end;
 
+procedure TMainForm.LeftRight1ChangingEx(Sender: TObject;
+  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+begin
+  case Direction of
+    updUp: GLSynthesizer.Shift(dirRight);
+    updDown: GLSynthesizer.Shift(dirLeft);
+  end;
+end;
+
 procedure TMainForm.LoadDataButtonClick(Sender: TObject);
 var
   x, y: integer;
@@ -404,7 +424,11 @@ begin
   end;
 end;
 
-// Toroidal control
+procedure TMainForm.ApplyButtonClick(Sender: TObject);
+begin
+  GLSynthesizer.CoherenceWeight := tsKappa;
+end;
+
 procedure TMainForm.CheckBox3Click(Sender: TObject);
 begin
   // tsAnalyzer.Toroidal := CheckBox3.Checked;
@@ -498,7 +522,6 @@ begin
   begin
     Edit2.Color := clWindow;
     Jitter := j;
-    UpdateJitters;
   end;
 end;
 
@@ -515,7 +538,6 @@ begin
   begin
     Edit3.Color := clWindow;
     tsKappa := k;
-    GLSynthesizer.CoherenceWeight := k;
   end
   else
     Edit3.Color := clRed;
@@ -575,6 +597,15 @@ begin
     end
     else
       TB.Enabled := False;
+  end;
+end;
+
+procedure TMainForm.UpDown1ChangingEx(Sender: TObject; var AllowChange: Boolean;
+  NewValue: SmallInt; Direction: TUpDownDirection);
+begin
+  case Direction of
+    updUp: GLSynthesizer.Shift(dirUp);
+    updDown: GLSynthesizer.Shift(dirDown);
   end;
 end;
 
@@ -694,8 +725,6 @@ begin
   glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//  glSamplerParameteri(SamplerId, GL_TEXTURE_MAX_LOD, 0);
-//  glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_LOD, 0);
 
   Texture := TTexture.CreateOwned(Self);
   Texture.Descriptor := TImageSampler.CreateBitmap(
@@ -715,10 +744,9 @@ end;
 procedure TMainForm.GLViewer1Render(Sender: TObject);
 var
   ratio: TVector;
-  w, h: integer;
+  w, h, L: integer;
   shader: TGLSLShaderProgram;
 begin
-
   UpdateJitters;
 
   if TextureChaged[0] then
@@ -788,6 +816,17 @@ begin
       if GLSynthesizer.Initialized then
       begin
         glBindSampler(0, SamplerId);
+        L := SpinEdit3.Value;
+        if L > -1 then
+        begin
+          glSamplerParameteri(SamplerId, GL_TEXTURE_MAX_LOD, L);
+          glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_LOD, L);
+        end
+        else
+        begin
+          glSamplerParameteri(SamplerId, GL_TEXTURE_MAX_LOD, GLSynthTexture.ImageDescriptor.Levels - 1);
+          glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_LOD, 0);
+        end;
         glBindTexture(GL_TEXTURE_2D, GLSynthTexture.Id);
         w := TexWidth;
         h := TexHeight;

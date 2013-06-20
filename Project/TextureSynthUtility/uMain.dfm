@@ -35,6 +35,14 @@ object MainForm: TMainForm
       Caption = 'Image preview'
       ExplicitTop = 367
     end
+    object Label11: TLabel
+      Left = 14
+      Top = 658
+      Width = 20
+      Height = 13
+      Anchors = [akRight, akBottom]
+      Caption = 'LOD'
+    end
     object Memo1: TMemo
       Left = 6
       Top = 685
@@ -53,9 +61,9 @@ object MainForm: TMainForm
       TabOrder = 0
     end
     object ComboBox1: TComboBox
-      Left = 14
-      Top = 658
-      Width = 200
+      Left = 91
+      Top = 635
+      Width = 126
       Height = 21
       Anchors = [akRight, akBottom]
       ItemIndex = 0
@@ -72,8 +80,8 @@ object MainForm: TMainForm
       Left = 6
       Top = 0
       Width = 214
-      Height = 631
-      ActivePage = TabSheet1
+      Height = 633
+      ActivePage = TabSheet2
       Anchors = [akTop, akRight]
       TabOrder = 2
       object TabSheet1: TTabSheet
@@ -559,13 +567,13 @@ object MainForm: TMainForm
         object Label1: TLabel
           Left = 3
           Top = 3
-          Width = 158
+          Width = 114
           Height = 13
-          Caption = 'Resolution of synthesized image:'
+          Caption = 'Synthesized image size:'
         end
         object Label3: TLabel
           Left = 3
-          Top = 524
+          Top = 556
           Width = 64
           Height = 13
           Caption = 'CPU threads:'
@@ -577,24 +585,6 @@ object MainForm: TMainForm
           Height = 13
           Caption = 'Jitter intensity:'
         end
-        object Label6: TLabel
-          Left = 7
-          Top = 160
-          Width = 6
-          Height = 13
-          Alignment = taCenter
-          Caption = 'X'
-          Layout = tlCenter
-        end
-        object Label7: TLabel
-          Left = 111
-          Top = 162
-          Width = 6
-          Height = 13
-          Alignment = taCenter
-          Caption = 'Y'
-          Layout = tlCenter
-        end
         object Label5: TLabel
           Left = 3
           Top = 95
@@ -604,7 +594,7 @@ object MainForm: TMainForm
         end
         object Label10: TLabel
           Left = 3
-          Top = 472
+          Top = 474
           Width = 90
           Height = 13
           Caption = 'Correction passes:'
@@ -612,7 +602,7 @@ object MainForm: TMainForm
         object Edit1: TEdit
           Left = 3
           Top = 22
-          Width = 200
+          Width = 94
           Height = 21
           TabOrder = 0
           Text = '512x512'
@@ -621,7 +611,7 @@ object MainForm: TMainForm
         object SpinEdit2: TSpinEdit
           Tag = 1
           Left = 73
-          Top = 518
+          Top = 553
           Width = 48
           Height = 22
           MaxValue = 0
@@ -632,58 +622,28 @@ object MainForm: TMainForm
         object Edit2: TEdit
           Left = 3
           Top = 68
-          Width = 200
+          Width = 94
           Height = 21
           TabOrder = 2
           Text = '25.0'
           OnChange = Edit2Change
         end
-        object CheckBox4: TCheckBox
-          Left = 3
-          Top = 139
-          Width = 163
-          Height = 17
-          Caption = 'Periodic jitter'
-          TabOrder = 3
-          OnClick = CheckBox4Click
-        end
-        object Edit4: TEdit
-          Left = 19
-          Top = 162
-          Width = 51
-          Height = 21
-          Color = clBtnFace
-          Enabled = False
-          TabOrder = 4
-          OnChange = Edit4Change
-        end
-        object Edit5: TEdit
-          Tag = 1
-          Left = 131
-          Top = 162
-          Width = 51
-          Height = 21
-          Color = clBtnFace
-          Enabled = False
-          TabOrder = 5
-          OnChange = Edit4Change
-        end
         object Edit3: TEdit
           Left = 3
           Top = 114
-          Width = 200
+          Width = 94
           Height = 21
-          TabOrder = 6
+          TabOrder = 3
           Text = '1.0'
           OnChange = Edit3Change
         end
         object SynthesizeButton: TButton
-          Left = 55
+          Left = 127
           Top = 552
-          Width = 93
+          Width = 76
           Height = 24
           Caption = 'Synthesize'
-          TabOrder = 7
+          TabOrder = 4
           OnClick = SynthesizeButtonClick
         end
         object SynthProgressBar: TProgressBar
@@ -691,15 +651,15 @@ object MainForm: TMainForm
           Top = 582
           Width = 197
           Height = 18
-          TabOrder = 8
+          TabOrder = 5
         end
         object ComboBox3: TComboBox
-          Left = 3
-          Top = 491
-          Width = 200
+          Left = 99
+          Top = 471
+          Width = 104
           Height = 21
           ItemIndex = 1
-          TabOrder = 9
+          TabOrder = 6
           Text = '2 passes'
           OnChange = ComboBox2Change
           Items.Strings = (
@@ -710,11 +670,11 @@ object MainForm: TMainForm
         end
         object JitterControllPanel: TPanel
           Left = 2
-          Top = 189
+          Top = 205
           Width = 201
           Height = 260
           BevelInner = bvLowered
-          TabOrder = 10
+          TabOrder = 7
           object Label14: TLabel
             Left = 67
             Top = 20
@@ -846,7 +806,106 @@ object MainForm: TMainForm
             OnChange = TrackBar1Change
           end
         end
+        object LeftRight1: TUpDown
+          Left = 165
+          Top = 176
+          Width = 38
+          Height = 17
+          Min = -65535
+          Max = 65535
+          Orientation = udHorizontal
+          TabOrder = 8
+          OnChangingEx = LeftRight1ChangingEx
+        end
+        object UpDown1: TUpDown
+          Left = 176
+          Top = 144
+          Width = 17
+          Height = 33
+          Min = -65535
+          Max = 65535
+          TabOrder = 9
+          OnChangingEx = UpDown1ChangingEx
+        end
+        object PerionPanel: TPanel
+          Left = 3
+          Top = 141
+          Width = 158
+          Height = 52
+          Caption = 'PerionPanel'
+          ShowCaption = False
+          TabOrder = 10
+          object Label7: TLabel
+            Left = 82
+            Top = 23
+            Width = 6
+            Height = 13
+            Alignment = taCenter
+            Caption = 'Y'
+            Layout = tlCenter
+          end
+          object Label6: TLabel
+            Left = 0
+            Top = 23
+            Width = 6
+            Height = 13
+            Alignment = taCenter
+            Caption = 'X'
+            Layout = tlCenter
+          end
+          object Edit5: TEdit
+            Tag = 1
+            Left = 94
+            Top = 23
+            Width = 51
+            Height = 21
+            Color = clBtnFace
+            Enabled = False
+            TabOrder = 0
+            OnChange = Edit4Change
+          end
+          object Edit4: TEdit
+            Left = 25
+            Top = 23
+            Width = 51
+            Height = 21
+            Color = clBtnFace
+            Enabled = False
+            TabOrder = 1
+            OnChange = Edit4Change
+          end
+          object CheckBox4: TCheckBox
+            Left = 6
+            Top = 0
+            Width = 82
+            Height = 17
+            Caption = 'Periodic jitter'
+            TabOrder = 2
+            OnClick = CheckBox4Click
+          end
+        end
+        object ApplyButton: TButton
+          Left = 167
+          Top = 114
+          Width = 36
+          Height = 21
+          Caption = 'Apply'
+          TabOrder = 11
+          OnClick = ApplyButtonClick
+        end
       end
+    end
+    object SpinEdit3: TSpinEdit
+      Tag = 1
+      Left = 91
+      Top = 657
+      Width = 33
+      Height = 22
+      EditorEnabled = False
+      MaxValue = 16
+      MinValue = -1
+      TabOrder = 3
+      Value = -1
     end
   end
   object GLViewer1: TGLViewer
