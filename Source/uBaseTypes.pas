@@ -30,6 +30,7 @@ Type
   TValueComponent = 1..4;
 
   TShaderType = (stVertex, stTessControl, stTessEval,stGeometry, stFragment, stCompute);
+  TShaderTypeSet = set of TShaderType;
 
   TBufferType = (btArray, btAtomicCounter, btCopyRead, btCopyWrite, btDrawIndirect,
                  btDispatchIndirect, btElementArray, btPixelPack, btPixelUnpack,

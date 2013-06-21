@@ -260,14 +260,16 @@ Type
     end;
     FIndex: integer;
     FName: ansistring;
-    procedure QuerySubroutineInfo(aProgram: cardinal; anIndex: integer);
+    procedure QuerySubroutineInfo(aProgram: cardinal;
+      const aStages: TShaderTypeSet; anIndex: integer);
   public
     procedure SetSubroutine(const Name: ansistring);
     property UniformName: ansistring read FName;
     property UniformIndex: integer read FIndex;
     property ShaderType: TShaderType read FShaderType;
 
-    constructor Create(const aProgram: cardinal = 0; aIndex: integer = -1);
+    constructor Create(const aProgram: cardinal;
+      const aStages: TShaderTypeSet; aIndex: integer = -1);
   end;
 
   TGLBufferObjectsPool = class
@@ -337,7 +339,7 @@ Type
   private
     FShaderId: cardinal;
     FLog: string;
-    FStages: set of TShaderType;
+    FStages: TShaderTypeSet;
     FDetachList: array of cardinal;
     FLinked: boolean;
     FError: boolean;
@@ -1579,7 +1581,7 @@ begin
     begin
       for i := 0 to FActiveUniformSubroutines - 1 do
       begin
-        sub := TUniformSubroutine.Create(FShaderId, i);
+        sub := TUniformSubroutine.Create(FShaderId, FStages, i);
         if Length(sub.UniformName) > 0 then
           FUSUBList.AddSUB(sub)
         else
@@ -3242,14 +3244,15 @@ end;
 { TUniformSubroutine }
 
 constructor TUniformSubroutine.Create(const aProgram: cardinal;
+  const aStages: TShaderTypeSet;
   aIndex: integer);
 begin
   Assert(aProgram > 0, 'Shader program is not assigned');
-  QuerySubroutineInfo(aProgram, aIndex);
+  QuerySubroutineInfo(aProgram, aStages, aIndex);
 end;
 
 procedure TUniformSubroutine.QuerySubroutineInfo(aProgram: cardinal;
-  anIndex: integer);
+  const aStages: TShaderTypeSet; anIndex: integer);
 var
   st: TShaderType;
   len: integer;
@@ -3260,6 +3263,7 @@ begin
   getmem(cbuff, 256);
   len := 0;
   for st := Low(TShaderType) to High(TShaderType) do
+  if st in aStages then
   begin
     glGetActiveSubroutineUniformName(aProgram, CShaderTypes[st], anIndex,
       256, @len, cbuff);
