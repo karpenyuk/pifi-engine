@@ -773,19 +773,22 @@ end;
 
 constructor TImagePyramid.Create(aWidth, aHeight: integer);
 var
-  LevelsNumber, l: integer;
+  l: integer;
   n: integer;
   freq: single;
-  downFactor: integer;
 begin
-  LevelsNumber := Round(ln(TMath.Min(aWidth, aHeight)) / ln(2)) + 1;
-  SetLength(FLevels, LevelsNumber);
+  SetLength(FLevels, 16);
 
-  for l := 0 to LevelsNumber - 1 do
+  for l := 0 to High(FLevels) do
   begin
-    downFactor := 1 shl l;
-    FLevels[l] := TFloatImage.Create(aWidth div downFactor,
-      aHeight div downFactor);
+    FLevels[l] := TFloatImage.Create(aWidth, aHeight);
+    aWidth := aWidth div 2;
+    aHeight := aHeight div 2;
+    if (aWidth = 0) or (aHeight = 0) then
+    begin
+      SetLength(FLevels, l + 1);
+      break;
+    end;
   end;
 
   FFilterSize := 4;

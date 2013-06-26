@@ -32,16 +32,15 @@ object MainForm: TMainForm
       Width = 71
       Height = 13
       Anchors = [akRight, akBottom]
-      Caption = 'Image preview'
-      ExplicitTop = 367
+      Caption = 'Image Preview'
     end
     object Label11: TLabel
       Left = 14
       Top = 658
-      Width = 20
+      Width = 61
       Height = 13
       Anchors = [akRight, akBottom]
-      Caption = 'LOD'
+      Caption = 'LOD Preview'
     end
     object Memo1: TMemo
       Left = 6
@@ -580,14 +579,14 @@ object MainForm: TMainForm
         end
         object Label4: TLabel
           Left = 3
-          Top = 49
+          Top = 33
           Width = 73
           Height = 13
           Caption = 'Jitter intensity:'
         end
         object Label5: TLabel
           Left = 3
-          Top = 95
+          Top = 60
           Width = 91
           Height = 13
           Caption = 'Coherence weight:'
@@ -600,9 +599,9 @@ object MainForm: TMainForm
           Caption = 'Correction passes:'
         end
         object Edit1: TEdit
-          Left = 3
-          Top = 22
-          Width = 94
+          Left = 123
+          Top = 3
+          Width = 80
           Height = 21
           TabOrder = 0
           Text = '512x512'
@@ -620,18 +619,18 @@ object MainForm: TMainForm
           Value = 2
         end
         object Edit2: TEdit
-          Left = 3
-          Top = 68
-          Width = 94
+          Left = 122
+          Top = 30
+          Width = 81
           Height = 21
           TabOrder = 2
           Text = '25.0'
           OnChange = Edit2Change
         end
         object Edit3: TEdit
-          Left = 3
-          Top = 114
-          Width = 94
+          Left = 123
+          Top = 57
+          Width = 80
           Height = 21
           TabOrder = 3
           Text = '1.0'
@@ -845,7 +844,7 @@ object MainForm: TMainForm
             Layout = tlCenter
           end
           object Label6: TLabel
-            Left = 0
+            Left = 8
             Top = 23
             Width = 6
             Height = 13
@@ -875,7 +874,7 @@ object MainForm: TMainForm
             OnChange = Edit4Change
           end
           object CheckBox4: TCheckBox
-            Left = 6
+            Left = 5
             Top = 0
             Width = 82
             Height = 17
@@ -893,6 +892,17 @@ object MainForm: TMainForm
           TabOrder = 11
           OnClick = ApplyButtonClick
         end
+        object SynthLODCheckBox: TCheckBox
+          Left = 3
+          Top = 88
+          Width = 118
+          Height = 17
+          Caption = 'Synthesized LODs'
+          Checked = True
+          State = cbChecked
+          TabOrder = 12
+          OnClick = SynthLODCheckBoxClick
+        end
       end
     end
     object SpinEdit3: TSpinEdit
@@ -901,6 +911,7 @@ object MainForm: TMainForm
       Top = 657
       Width = 33
       Height = 22
+      Anchors = [akRight, akBottom]
       EditorEnabled = False
       MaxValue = 16
       MinValue = -1
@@ -915,6 +926,7 @@ object MainForm: TMainForm
     Height = 864
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
+    VSync = True
     OnContextDebugMessage = GLViewer1ContextDebugMessage
     Align = alClient
   end

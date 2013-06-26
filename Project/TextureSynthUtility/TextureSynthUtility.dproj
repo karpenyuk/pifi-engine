@@ -74,7 +74,6 @@
 			<DCC_ConsoleTarget>true</DCC_ConsoleTarget>
 			<DCC_RangeChecking>true</DCC_RangeChecking>
 			<DCC_MapFile>3</DCC_MapFile>
-			<DCC_Optimize>true</DCC_Optimize>
 			<Icon_MainIcon>..\Common.ico</Icon_MainIcon>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<VerInfo_Locale>1033</VerInfo_Locale>

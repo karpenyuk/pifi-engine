@@ -92,7 +92,7 @@ type
     property JitterPeriodY: integer read FJitterPeriodY write FJitterPeriodY;
     // Controls whether coherent candidates are favored; 1.0 has no effect,
     // 0.1 has strong effect, 0.0 is invalid.
-    property Kappa: single read FKappa write FKappa;
+    property CoherenceWeight: single read FKappa write FKappa;
     property AnalysisData: TAnalysisData read FAnalysisData;
     // Number of threads to be used for the correction step
     property MaxCPUThreads: integer read FMaxCPUThreads write FMaxCPUThreads;
@@ -439,7 +439,7 @@ const
   STEP: array [0 .. 3] of Vec2i = ((0, 0), (1, 1), (0, 1), (1, 0));
 var
   Dest: TVec2iArray2D;
-  spacing, i, j, k, ni, nj, ci, cj, nk: integer;
+  spacing, i, j, k, ni, nj, nk: integer;
   ms: TMostSimilar;
   filter, n, c, best: Vec2i;
   syN: TNeighborhood3c;

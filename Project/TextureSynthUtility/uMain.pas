@@ -21,9 +21,6 @@ uses
   uGLImageSynthesis,
   uBaseTypes;
 
-const
-  VIEW_LEVEL = 0;
-
 type
   TMainForm = class(TForm)
     MainPanel: TPanel;
@@ -82,6 +79,7 @@ type
     ApplyButton: TButton;
     SpinEdit3: TSpinEdit;
     Label11: TLabel;
+    SynthLODCheckBox: TCheckBox;
     procedure ComboBox2Change(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
     procedure Edit4Change(Sender: TObject);
@@ -109,9 +107,11 @@ type
     procedure LeftRight1ChangingEx(Sender: TObject; var AllowChange: Boolean;
       NewValue: SmallInt; Direction: TUpDownDirection);
     procedure ApplyButtonClick(Sender: TObject);
+    procedure SynthLODCheckBoxClick(Sender: TObject);
   private
     FJTracks: array[0..7] of TTrackBar;
     procedure UpdateJitters;
+    procedure CreateDestinationTexture;
   public
     AnalysisData: TAnalysisData;
     Analyzer: TAnalyzer;
@@ -146,7 +146,7 @@ var
   TexHeight: integer = 512;
   // one for analyzer, one for synthesizer
   Jitter: single = 25.0;
-  tsKappa: single = 1.0;
+  vCWeight: single = 1.0;
   PeriodX: integer = 0;
   PeriodY: integer = 0;
   AutoJitter: boolean = true;
@@ -304,6 +304,7 @@ begin
   begin
     GLSynthesizer.Initialize;
     ComboBox1.ItemIndex := 3;
+    ApplyButton.Click;
   end;
 end;
 
@@ -312,6 +313,7 @@ procedure TMainForm.SynthesizeButtonClick(Sender: TObject);
 var
   t: Double;
   p: Single;
+  L: integer;
 begin
   if AnalysisData.IsValid then
   begin
@@ -324,7 +326,6 @@ begin
       Width := TexWidth;
       Height := TexHeight;
       JitterStrength := Jitter;
-      Kappa := tsKappa;
       MaxCPUThreads := SpinEdit2.Value;
       if CheckBox4.Checked then
       begin
@@ -348,8 +349,9 @@ begin
     t := _GetTime - t;
     Memo1.Lines.Add('End synthesis');
     Memo1.Lines.Add(Format('Expanded time %.2f msec', [1000 * t]));
-    SynthImage := Synthesizer.SynthImage[VIEW_LEVEL];
-    PatchesImage := Synthesizer.PatchesImage[VIEW_LEVEL];
+    L := min(max(SpinEdit3.Value , 0), Synthesizer.LevelCount - 1);
+    SynthImage := Synthesizer.SynthImage[L];
+    PatchesImage := Synthesizer.PatchesImage[L];
     TextureChaged[1] := True;
     TextureChaged[2] := True;
     ComboBox1.ItemIndex := 1;
@@ -358,6 +360,11 @@ begin
   end
   else
     Memo1.Lines.Add('Unable to synthesize. Run analysis first.');
+end;
+
+procedure TMainForm.SynthLODCheckBoxClick(Sender: TObject);
+begin
+  GLSynthesizer.LODFromDownLevels := SynthLODCheckBox.Checked;
 end;
 
 procedure TMainForm.SaveDataButtonClick(Sender: TObject);
@@ -421,12 +428,18 @@ begin
     TextureChaged[0] := True;
 
     GLSynthesizer.Initialize;
+    ApplyButton.Click;
   end;
 end;
 
 procedure TMainForm.ApplyButtonClick(Sender: TObject);
 begin
-  GLSynthesizer.CoherenceWeight := tsKappa;
+  GLSynthesizer.CoherenceWeight := vCWeight;
+  Synthesizer.CoherenceWeight := vCWeight;
+  UpdateJitters;
+  if (GLSynthTexture.ImageDescriptor.Width <> TexWidth)
+    or (GLSynthTexture.ImageDescriptor.Height <> TexHeight) then
+    CreateDestinationTexture;
 end;
 
 procedure TMainForm.CheckBox3Click(Sender: TObject);
@@ -467,6 +480,26 @@ begin
   end;
   Synthesizer.CorrectionSubpassesCount := n;
   GLSynthesizer.CorrectionSubpassesCount := n;
+end;
+
+procedure TMainForm.CreateDestinationTexture;
+begin
+  if Assigned(Texture) then
+  begin
+    Texture.Descriptor.ImageDescriptor.Free;
+    Texture.Descriptor.Destroy;
+    Texture.Destroy;
+  end;
+  Texture := TTexture.CreateOwned(Self);
+  Texture.Descriptor := TImageSampler.CreateBitmap(
+    TImageFormatSelector.CreateInt8(bfRGBA),
+    TexWidth, TexHeight, True);
+  Texture.Descriptor.ImageDescriptor.InternalFormat := GL_RGBA8;
+  Texture.Descriptor.ImageDescriptor.ColorFormat := GL_RGBA;
+  Texture.Descriptor.ImageDescriptor.DataType := GL_UNSIGNED_BYTE;
+  GLSynthTexture := TGLTextureObject.CreateFrom(texture);
+  GLSynthesizer.DestinationTexture := GLSynthTexture;
+  GLSynthTexture.AllocateStorage;
 end;
 
 // Image dimension correct input
@@ -537,7 +570,7 @@ begin
   else if k > 0 then
   begin
     Edit3.Color := clWindow;
-    tsKappa := k;
+    vCWeight := k;
   end
   else
     Edit3.Color := clRed;
@@ -726,19 +759,12 @@ begin
   glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-  Texture := TTexture.CreateOwned(Self);
-  Texture.Descriptor := TImageSampler.CreateBitmap(
-    TImageFormatSelector.CreateInt8(bfRGBA),
-    TexWidth, TexHeight, True);
-  Texture.Descriptor.ImageDescriptor.InternalFormat := GL_RGBA8;
-  Texture.Descriptor.ImageDescriptor.ColorFormat := GL_RGBA;
-  Texture.Descriptor.ImageDescriptor.DataType := GL_UNSIGNED_BYTE;
-  GLSynthTexture := TGLTextureObject.CreateFrom(texture);
-  GLSynthesizer.DestinationTexture := GLSynthTexture;
-  GLSynthTexture.AllocateStorage;
+  CreateDestinationTexture;
 
   SQ_VO := CreatePlane(2, 2);
   SQ_Drawer := TGLVertexObject.CreateFrom(SQ_VO);
+
+  ApplyButton.Click;
 end;
 
 procedure TMainForm.GLViewer1Render(Sender: TObject);
@@ -747,7 +773,6 @@ var
   w, h, L: integer;
   shader: TGLSLShaderProgram;
 begin
-  UpdateJitters;
 
   if TextureChaged[0] then
   begin
@@ -828,14 +853,15 @@ begin
           glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_LOD, 0);
         end;
         glBindTexture(GL_TEXTURE_2D, GLSynthTexture.Id);
-        w := TexWidth;
-        h := TexHeight;
+        w := GLSynthTexture.ImageDescriptor.Width;
+        h := GLSynthTexture.ImageDescriptor.Height;
       end;
     4:
       if GLSynthesizer.Initialized then
       begin
         shader := ViewShader2;
-        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[VIEW_LEVEL]);
+        L := min(max(SpinEdit3.Value , 0), GLSynthesizer.LevelCount - 1);
+        glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[L]);
         w := GLSynthesizer.SideSize;
         h := w;
       end;
