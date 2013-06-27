@@ -78,6 +78,7 @@ type
     SpinEdit3: TSpinEdit;
     Label11: TLabel;
     SynthLODCheckBox: TCheckBox;
+    ModulationCheckBox: TCheckBox;
     procedure ComboBox2Change(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
     procedure Edit4Change(Sender: TObject);
@@ -109,6 +110,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure GLViewer1MouseMove(Sender: TObject; Shift: TShiftState;
       X, Y: Integer);
+    procedure ModulationCheckBoxClick(Sender: TObject);
   private
     FJTracks: array [0 .. 7] of TTrackBar;
     PanMode: Boolean;
@@ -435,6 +437,12 @@ begin
     GLSynthesizer.Initialize;
     ApplyButton.Click;
   end;
+end;
+
+procedure TMainForm.ModulationCheckBoxClick(Sender: TObject);
+begin
+  Synthesizer.JitterModulation := ModulationCheckBox.Checked;
+  GLSynthesizer.JitterModulation := ModulationCheckBox.Checked;
 end;
 
 procedure TMainForm.ApplyButtonClick(Sender: TObject);

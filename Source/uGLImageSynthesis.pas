@@ -20,6 +20,7 @@ const
 type
 
   TCoverLimit = (clmWidthLimit, clmHeightLimit);
+  TCoverLimits = set of TCoverLimit;
 
   TGLSynthLevel = record
     ExemplarTextureId: GLuint;
@@ -35,7 +36,7 @@ type
     RelativeOffset: Vec2i;
     DestinationOffset: Vec2i;
     State: (stFullOutdated, stPartOutdated, stChanged, stCompleted);
-    CoverLimit: set of TCoverLimit;
+    CoverLimit: TCoverLimits;
   end;
 
   TConstructPhase = (cphForward, cphUpRight, cphBack, cphUpLeft);
@@ -55,6 +56,7 @@ type
     FCorrectionShaderSource: TShaderProgram;
 
     FInitialized: Boolean;
+    FUpShadersCompiled: Boolean;
     FUpsampleShader: array [Boolean] of TGLSLShaderProgram;
     FCorrectionShader: TGLSLShaderProgram;
     FCopyImageShader: TGLSLShaderProgram;
@@ -71,7 +73,9 @@ type
 
     FCorrectionSubpassesCount: integer;
     FKappa: single;
+    FJitterModulation: Boolean;
 
+    function CompileUpsampleJitterShaders: Boolean;
     function GetLevelCount: integer;
     function GetRelativeOffset(const aLevel: integer): Vec2i;
     procedure SetCorrectionShaderSource(const Value: TShaderProgram);
@@ -86,6 +90,7 @@ type
     procedure SetCorrectionSubpassesCount(const Value: integer);
     procedure SetDestinationTexture(const Value: TGLTextureObject);
     procedure SetLODFromDownLevels(const Value: Boolean);
+    procedure SetJitterModulation(const Value: Boolean);
   protected
     procedure NotifyLevelChanged(const aLevel: integer);
     procedure DefineLevelStatus;
@@ -132,6 +137,9 @@ type
     // Controls jitter strength.
     property JitterStrength[const Level: integer]: single read GetJitter
       write SetJitter;
+    // Spatial modulation over source exemplar
+    property JitterModulation: Boolean read FJitterModulation
+      write SetJitterModulation;
     property CorrectionSubpassesCount: integer read FCorrectionSubpassesCount
       write SetCorrectionSubpassesCount;
 
@@ -156,6 +164,48 @@ const
 
 {$REGION 'TGLSynthesizer'}
 
+
+function TGLSynthesizer.CompileUpsampleJitterShaders: Boolean;
+var
+  shader: TShaderProgram;
+  randfunc: TRandomFunc;
+begin
+  if FJitterModulation then
+    randfunc := rfRandomTextureModulation
+  else
+    randfunc := rfRandomTexture;
+
+  FUpsampleShader[True].Free;
+  if not Assigned(FUpsampleShaderSource[True]) then
+  begin
+    shader := SynthesisShaderGenerator.GenUpsampleJitterShader(Self, True, randfunc);
+    FUpsampleShader[True] := TGLSLShaderProgram.CreateFrom(shader);
+    shader.Destroy;
+  end
+  else
+      FUpsampleShader[True] := TGLSLShaderProgram.CreateFrom
+      (FUpsampleShaderSource[True]);
+  FUpsampleShader[True].LinkShader;
+  WriteLn(FUpsampleShader[True].Log);
+
+  FUpsampleShader[False].Free;
+  if not Assigned(FUpsampleShaderSource[False]) then
+  begin
+    shader := SynthesisShaderGenerator.GenUpsampleJitterShader(Self, False, randfunc);
+    FUpsampleShader[False] := TGLSLShaderProgram.CreateFrom(shader);
+    shader.Destroy;
+  end
+  else
+      FUpsampleShader[False] := TGLSLShaderProgram.CreateFrom
+      (FUpsampleShaderSource[False]);
+  FUpsampleShader[False].LinkShader;
+  WriteLn(FUpsampleShader[False].Log);
+
+  FUpShadersCompiled :=
+    not FUpsampleShader[True].Error and
+    not FUpsampleShader[False].Error;
+  Result := FUpShadersCompiled;
+end;
 
 procedure TGLSynthesizer.CopyToReadSynthTexture(const aLevel: integer);
 begin
@@ -546,6 +596,7 @@ end;
 procedure TGLSynthesizer.DoUpsample(const aLevel: integer; const aRect: Vec4i);
 var
   first: Boolean;
+  v2: Vec2;
   v2i: Vec2i;
   v4i: Vec4i;
 begin
@@ -561,6 +612,12 @@ begin
     // Random texture
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, FRandomTextureId);
+
+    if FJitterModulation then
+    begin
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, FLevels[aLevel].ExemplarTextureId);
+    end;
 
     v4i[2] := 2 * aRect[0];
     v4i[3] := 2 * aRect[1];
@@ -590,7 +647,13 @@ begin
     SetUniform('randScaleOffset', v4i);
 
     // Jitter strength
-    SetUniform('strength', FLevels[aLevel].JitterStrength);
+    if FJitterModulation then
+    begin
+      v2[0] := FLevels[aLevel].JitterStrength[0] * INV255;
+      v2[1] := FLevels[aLevel].JitterStrength[1] * INV255;
+      SetUniform('strength', v2);
+    end
+    else SetUniform('strength', FLevels[aLevel].JitterStrength);
 
     // Spacing exemplar coordinates for level
     SetUniform('spacing', FLevels[aLevel].Spacing[0], 3);
@@ -606,6 +669,7 @@ end;
 procedure TGLSynthesizer.DoUpsample(const aLevel: integer);
 var
   first: Boolean;
+  v2: Vec2;
   v2i: Vec2i;
   v4i: Vec4i;
 begin
@@ -621,6 +685,12 @@ begin
     // Random texture
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, FRandomTextureId);
+
+    if FJitterModulation then
+    begin
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, FLevels[aLevel].ExemplarTextureId);
+    end;
 
     if first then
     begin
@@ -651,7 +721,13 @@ begin
     SetUniform('randScaleOffset', v4i);
 
     // Jitter strength
-    SetUniform('strength', FLevels[aLevel].JitterStrength);
+    if FJitterModulation then
+    begin
+      v2[0] := FLevels[aLevel].JitterStrength[0] * INV255;
+      v2[1] := FLevels[aLevel].JitterStrength[1] * INV255;
+      SetUniform('strength', v2);
+    end
+    else SetUniform('strength', FLevels[aLevel].JitterStrength);
 
     // Spacing exemplar coordinates for level
     SetUniform('spacing', FLevels[aLevel].Spacing[0], 3);
@@ -875,29 +951,7 @@ begin
     FLevels[L].CoverLimit := [];
   end;
 
-  if not Assigned(FUpsampleShaderSource[True]) then
-  begin
-    shader := SynthesisShaderGenerator.GenUpsampleJitterShader(Self, True);
-    FUpsampleShader[True] := TGLSLShaderProgram.CreateFrom(shader);
-    shader.Destroy;
-  end
-  else
-      FUpsampleShader[True] := TGLSLShaderProgram.CreateFrom
-      (FUpsampleShaderSource[True]);
-  FUpsampleShader[True].LinkShader;
-  WriteLn(FUpsampleShader[True].Log);
-
-  if not Assigned(FUpsampleShaderSource[False]) then
-  begin
-    shader := SynthesisShaderGenerator.GenUpsampleJitterShader(Self, False);
-    FUpsampleShader[False] := TGLSLShaderProgram.CreateFrom(shader);
-    shader.Destroy;
-  end
-  else
-      FUpsampleShader[False] := TGLSLShaderProgram.CreateFrom
-      (FUpsampleShaderSource[False]);
-  FUpsampleShader[False].LinkShader;
-  WriteLn(FUpsampleShader[False].Log);
+  CompileUpsampleJitterShaders;
 
   if not Assigned(FCorrectionShaderSource) then
   begin
@@ -936,7 +990,8 @@ begin
   if Assigned(FDest) then
     DefineLevelStatus;
 
-  FInitialized := True;
+  FInitialized := FUpShadersCompiled and not FCorrectionShader.Error and
+    not FImageConstructShader.Error;
 end;
 
 procedure TGLSynthesizer.Notify(Sender: TObject; Msg: Cardinal;
@@ -1025,6 +1080,10 @@ var
 
 begin
   Assert(FInitialized);
+
+  if not FUpShadersCompiled then
+    if not CompileUpsampleJitterShaders then Exit;
+
   changed := False;
 
   for L := LevelCount - 1 downto 0 do
@@ -1288,6 +1347,16 @@ begin
     FLevels[Level].JitterStrength[1] := Value;
     FLevels[Level].State := stFullOutdated;
     NotifyLevelChanged(Level);
+  end;
+end;
+
+procedure TGLSynthesizer.SetJitterModulation(const Value: Boolean);
+begin
+  if FJitterModulation <> Value then
+  begin
+    FJitterModulation := Value;
+    FUpShadersCompiled := False;
+    NotifyLevelChanged(High(FLevels));
   end;
 end;
 

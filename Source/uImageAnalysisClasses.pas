@@ -58,11 +58,11 @@ type
   TNeighbPCAmatrix = array [0 .. NEIGHBOUR_SIZE_4COLOR - 1, 0 .. 5] of single;
 
   TFloatPixel = record
-    r, g, b: single;
+    r, g, b, a: single;
   end;
 
 const
-  ZERO_PIXEL: TFloatPixel = (r: 0; g: 0; b: 0);
+  ZERO_PIXEL: TFloatPixel = (r: 0; g: 0; b: 0; a: 255);
   ZERO_VECTOR6D: TVector6f = (0, 0, 0, 0, 0, 0);
 
 type
@@ -153,7 +153,7 @@ type
     constructor Create(aWidth: integer; aHeight: integer);
     procedure AssignFromImage(const aDesc: TImageDesc);
     function GetImage: TImageDesc;
-    procedure Clear(cR, cG, cB: single);
+    procedure Clear(cR, cG, cB: single; cA: single = 255);
     function BilinearWrap(u, v: single): TFloatPixel;
 
     procedure Save(aStream: TStream);
@@ -611,6 +611,7 @@ var
   i, r, b: integer;
   step: integer;
   p: PByte;
+  mask: Boolean;
 begin
   Assert(aDesc.Data <> nil);
   Assert((aDesc.ColorFormat = GL_RGB) or (aDesc.ColorFormat = GL_RGBA)
@@ -623,9 +624,15 @@ begin
   r := 0;
   b := 2;
   step := 3;
+  mask := False;
   case aDesc.ColorFormat of
-    GL_RGBA: step := 4;
-    GL_BGR: begin
+    GL_RGBA:
+      begin
+        step := 4;
+        mask := True;
+      end;
+    GL_BGR:
+       begin
         r := 2;
         b := 0;
       end;
@@ -634,6 +641,7 @@ begin
         r := 2;
         b := 0;
         step := 4;
+        mask := True;
       end;
   end;
   p := aDesc.Data;
@@ -643,6 +651,10 @@ begin
     FData[i].r := p[r];
     FData[i].g := p[1];
     FData[i].b := p[b];
+    if mask then
+      FData[i].a := p[3]
+    else
+      FData[i].a := 255;
     Inc(p, step);
   end;
 end;
@@ -669,12 +681,13 @@ begin
     p[0] := Floor(FData[i].r);
     p[1] := Floor(FData[i].g);
     p[2] := Floor(FData[i].b);
-    p[3] := $FF;
+    p[3] := Floor(FData[i].a);
     Inc(p, result.ElementSize);
   end;
 end;
 
-procedure TFloatImage.Clear(cR: single; cG: single; cB: single);
+procedure TFloatImage.Clear(cR: single; cG: single; cB: single;
+  cA: single = 255);
 var
   i: integer;
   pf: TFloatPixel;
@@ -682,6 +695,7 @@ begin
   pf.r := cR;
   pf.g := cG;
   pf.b := cB;
+  pf.a := cA;
 
   for i := 0 to High(FData) do
       FData[i] := pf;
@@ -765,6 +779,10 @@ begin
     + (fi) * pix[1].b)
     + (fj) * ((1.0 - fi) * pix[2].b
     + (fi) * pix[3].b);
+  result.a := (1.0 - fj) * ((1.0 - fi) * pix[0].a
+    + (fi) * pix[1].a)
+    + (fj) * ((1.0 - fi) * pix[2].a
+    + (fi) * pix[3].a);
 end;
 
 {$ENDREGION}
@@ -861,6 +879,7 @@ begin
       sum.r := 0;
       sum.g := 0;
       sum.b := 0;
+      sum.a := 0;
       sumWeight := 0;
       for n := 0 to High(FWeights) do
       begin
@@ -871,12 +890,14 @@ begin
           sum.r := sum.r + Pixel.r * FWeights[n];
           sum.g := sum.g + Pixel.g * FWeights[n];
           sum.b := sum.b + Pixel.b * FWeights[n];
+          sum.a := sum.a + Pixel.a * FWeights[n];
           sumWeight := sumWeight + FWeights[n];
         end;
       end;
       Pixel.r := sum.r / sumWeight;
       Pixel.g := sum.g / sumWeight;
       Pixel.b := sum.b / sumWeight;
+      Pixel.a := sum.a / sumWeight;
       tmp.Pixel[x, y] := Pixel;
     end;
 
@@ -886,6 +907,7 @@ begin
       sum.r := 0;
       sum.g := 0;
       sum.b := 0;
+      sum.a := 0;
       sumWeight := 0;
       for n := 0 to High(FWeights) do
       begin
@@ -896,12 +918,14 @@ begin
           sum.r := sum.r + Pixel.r * FWeights[n];
           sum.g := sum.g + Pixel.g * FWeights[n];
           sum.b := sum.b + Pixel.b * FWeights[n];
+          sum.a := sum.a + Pixel.a * FWeights[n];
           sumWeight := sumWeight + FWeights[n];
         end;
       end;
       Pixel.r := sum.r / sumWeight;
       Pixel.g := sum.g / sumWeight;
       Pixel.b := sum.b / sumWeight;
+      Pixel.a := sum.a / sumWeight;
       dst.Pixel[x, y] := Pixel;
     end;
 

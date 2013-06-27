@@ -26,6 +26,7 @@ type
     FJitterStrength: single;
     FJitterPeriodX: integer;
     FJitterPeriodY: integer;
+    FJitterModulation: Boolean;
     FEdgePolicyFunc: TEdgePolicyFunc;
 
     // Threads
@@ -61,6 +62,7 @@ type
     procedure SetCorrectionSubpassesCount(const Value: integer);
     procedure DestroyThread;
     function GetProgress: Single;
+    procedure SetJitterModulation(const Value: Boolean);
   public
     constructor CreateFrom(anAnalysisData: TAnalysisData);
     destructor Destroy; override;
@@ -90,9 +92,13 @@ type
     // Controls jitter horizontal and vertical periods
     property JitterPeriodX: integer read FJitterPeriodX write FJitterPeriodX;
     property JitterPeriodY: integer read FJitterPeriodY write FJitterPeriodY;
+    // Spatial modulation over source exemplar
+    property JitterModulation: Boolean read FJitterModulation
+      write SetJitterModulation;
     // Controls whether coherent candidates are favored; 1.0 has no effect,
     // 0.1 has strong effect, 0.0 is invalid.
     property CoherenceWeight: single read FKappa write FKappa;
+    // An analysis data storage
     property AnalysisData: TAnalysisData read FAnalysisData;
     // Number of threads to be used for the correction step
     property MaxCPUThreads: integer read FMaxCPUThreads write FMaxCPUThreads;
@@ -133,6 +139,7 @@ begin
   FJitterStrength := 0;
   FJitterPeriodX := 0; // zero for non periodic jitter
   FJitterPeriodY := 0;
+  FJitterModulation := False;
   FKappa := 1.0;
   FMaxCPUThreads := 4;
   FTotalCycles := 1;
@@ -162,6 +169,15 @@ begin
   if Value <> FCorrectionSubpassesCount then
   begin
     FCorrectionSubpassesCount := Value;
+    DispatchMessage(NM_ResourceChanged);
+  end;
+end;
+
+procedure TSynthesizer.SetJitterModulation(const Value: Boolean);
+begin
+  if FJitterModulation <> Value then
+  begin
+    FJitterModulation := Value;
     DispatchMessage(NM_ResourceChanged);
   end;
 end;
@@ -334,9 +350,10 @@ end;
 
 procedure TSynthesizer.Jitter(strength: single; const aIndices: TVec2iArray2D);
 var
-  spacing, i, j, w, h: integer;
-  kx, ky, dx, dy: single;
+  spacing, i, j, w, h, mx, my: integer;
+  kx, ky, dx, dy, m: single;
   V: Vec2i;
+  p: PByte;
 begin
   w := aIndices.Width;
   h := aIndices.Height;
@@ -346,15 +363,38 @@ begin
     if FJitterPeriodX + FJitterPeriodY = 0 then
     begin
       // Perturbs synthesized coordinates
-      for i := 0 to h - 1 do
-        for j := 0 to w - 1 do
-        begin
-          // add a random offset, which size is controlled by 'strength'
-          V := aIndices.At[j, i];
-          V[0] := V[0] + floor(strength * random); // Almighty Random
-          V[1] := V[1] + floor(strength * random);
-          aIndices.At[j, i] := V;
-        end;
+      if FJitterModulation then
+      begin
+        for i := 0 to h - 1 do
+          for j := 0 to w - 1 do
+          begin
+            // add a random offset, which size is controlled by 'strength'
+            V := aIndices.At[j, i];
+            mx := FEdgePolicyFunc( V[0], FAnalysisData.Exemplar.Width);
+            my := FEdgePolicyFunc( V[1], FAnalysisData.Exemplar.Height);
+            with FAnalysisData.Images[FProcessedLevel]^ do
+            begin
+              p := Data;
+              Inc(p, ElementSize * (Width * my + mx));
+            end;
+            m := strength * p[3] * INV255;
+            V[0] := V[0] + floor(m * random); // Almighty Random
+            V[1] := V[1] + floor(m * random);
+            aIndices.At[j, i] := V;
+          end;
+      end
+      else
+      begin
+        for i := 0 to h - 1 do
+          for j := 0 to w - 1 do
+          begin
+            // add a random offset, which size is controlled by 'strength'
+            V := aIndices.At[j, i];
+            V[0] := V[0] + floor(strength * random); // Almighty Random
+            V[1] := V[1] + floor(strength * random);
+            aIndices.At[j, i] := V;
+          end;
+      end;
     end
     else
     begin

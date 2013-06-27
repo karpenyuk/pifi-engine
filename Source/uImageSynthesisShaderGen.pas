@@ -7,7 +7,7 @@ uses
 
 type
 
-  TRandomFunc = (rfRandomTexture, rfRandomMath);
+  TRandomFunc = (rfRandomTexture, rfRandomTextureModulation, rfRandomMath);
 
   SynthesisShaderGenerator = class
     class function GenUpsampleJitterShader(
@@ -65,12 +65,27 @@ const
     '  return c; }'#10#13;
 
   GLSL_SYNTH_RANDSUB_TEXTURE: ansistring =
+    '#define getJitter rand(up_coords)'#10#13 +
     'layout(binding = 1) uniform sampler2D Random;'#10#13 +
     'ivec4 rand(ivec2 c) {'#10#13 +
     '  ivec2 tc = (c + randScaleOffset.zw) * randScaleOffset.xy;'#10#13 +
     '  tc %= textureSize(Random, 0);'#10#13 +
     '  vec2 rnd = texelFetch(Random, tc, 0).xy;'#10#13 +
     '  rnd *= strength;'#10#13 +
+    '  return ivec4(round(rnd), 0, 0);'#10#13 +
+    '}'#10#13;
+
+  GLSL_SYNTH_RANDSUB_TEXTURE_MODULATION: ansistring =
+    '#define getJitter rand(up_coords, p)'#10#13 +
+    'layout(binding = 1) uniform sampler2D Random;'#10#13 +
+    'layout(binding = 2) uniform usampler2D Exemplar;'#10#13 +
+    'ivec4 rand(ivec2 c, ivec4 p) {'#10#13 +
+    '  p = wrapRepeat(p, textureSize(Exemplar, 0));'#10#13 +
+    '  float m = float(texelFetch(Exemplar, p.xy, 0).a);'#10#13 +
+    '  ivec2 tc = (c + randScaleOffset.zw) * randScaleOffset.xy;'#10#13 +
+    '  tc %= textureSize(Random, 0);'#10#13 +
+    '  vec2 rnd = texelFetch(Random, tc, 0).xy;'#10#13 +
+    '  rnd *= strength * m;'#10#13 +
     '  return ivec4(round(rnd), 0, 0);'#10#13 +
     '}'#10#13;
 
@@ -109,18 +124,18 @@ const
     '  coords += offsets.xy;'#10#13 +
     '  ivec4 p = ivec4(texelFetch(DownLevel, coords, 0).xy, 0, 0);'#10#13 +
     '  ivec4 delta;'#10#13 +
-    '  delta = rand(up_coords);'#10#13 +
+    '  delta = getJitter;'#10#13 +
     '  imageStore(UpLevel, up_coords, delta + p);'#10#13 +
     '  up_coords += ivec2(1, 0);'#10#13 +
-    '  delta = rand(up_coords);'#10#13 +
+    '  delta = getJitter;'#10#13 +
     '  imageStore(UpLevel, up_coords, delta + p + spacing[0]);'#10#13
     +
     '  up_coords += ivec2(-1, 1);'#10#13 +
-    '  delta = rand(up_coords);'#10#13 +
+    '  delta = getJitter;'#10#13 +
     '  imageStore(UpLevel, up_coords, delta + p + spacing[1]);'#10#13
     +
     '  up_coords += ivec2(1, 0);'#10#13 +
-    '  delta = rand(up_coords);'#10#13 +
+    '  delta = getJitter;'#10#13 +
     '  imageStore(UpLevel, up_coords, delta + p + spacing[2]);'#10#13
     +
     '}'#10#13;
@@ -134,18 +149,18 @@ const
     '  ivec2 up_coords = coords * ivec2(2) + offsets.zw;'#10#13 +
     '  ivec4 p = ivec4(baseCoords, 0, 0);'#10#13 +
     '  ivec4 delta;'#10#13 +
-    '  delta = rand(up_coords);'#10#13 +
+    '  delta = getJitter;'#10#13 +
     '  imageStore(UpLevel, up_coords, delta + p);'#10#13 +
     '  up_coords += ivec2(1, 0);'#10#13 +
-    '  delta = rand(up_coords);'#10#13 +
+    '  delta = getJitter;'#10#13 +
     '  imageStore(UpLevel, up_coords, delta + p + spacing[0]);'#10#13
     +
     '  up_coords += ivec2(-1, 1);'#10#13 +
-    '  delta = rand(up_coords);'#10#13 +
+    '  delta = getJitter;'#10#13 +
     '  imageStore(UpLevel, up_coords, delta + p + spacing[1]);'#10#13
     +
     '  up_coords += ivec2(1, 0);'#10#13 +
-    '  delta = rand(up_coords);'#10#13 +
+    '  delta = getJitter;'#10#13 +
     '  imageStore(UpLevel, up_coords, delta + p + spacing[2]);'#10#13
     +
     '}'#10#13;
@@ -390,6 +405,7 @@ var
 begin
   case aRandomFunc of
     rfRandomTexture: rand := GLSL_SYNTH_RANDSUB_TEXTURE;
+    rfRandomTextureModulation: rand := GLSL_SYNTH_RANDSUB_TEXTURE_MODULATION;
     rfRandomMath: rand := GLSL_SYNTH_RANDSUB_MATH;
   end;
 

@@ -864,7 +864,7 @@ object MainForm: TMainForm
         end
         object ApplyButton: TButton
           Left = 167
-          Top = 114
+          Top = 172
           Width = 36
           Height = 21
           Caption = 'Apply'
@@ -881,6 +881,15 @@ object MainForm: TMainForm
           State = cbChecked
           TabOrder = 10
           OnClick = SynthLODCheckBoxClick
+        end
+        object ModulationCheckBox: TCheckBox
+          Left = 3
+          Top = 111
+          Width = 182
+          Height = 17
+          Caption = 'Jitter modulation'
+          TabOrder = 11
+          OnClick = ModulationCheckBoxClick
         end
       end
     end
