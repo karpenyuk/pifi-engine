@@ -805,27 +805,6 @@ object MainForm: TMainForm
             OnChange = TrackBar1Change
           end
         end
-        object LeftRight1: TUpDown
-          Left = 165
-          Top = 176
-          Width = 38
-          Height = 17
-          Min = -65535
-          Max = 65535
-          Orientation = udHorizontal
-          TabOrder = 8
-          OnChangingEx = LeftRight1ChangingEx
-        end
-        object UpDown1: TUpDown
-          Left = 176
-          Top = 144
-          Width = 17
-          Height = 33
-          Min = -65535
-          Max = 65535
-          TabOrder = 9
-          OnChangingEx = UpDown1ChangingEx
-        end
         object PerionPanel: TPanel
           Left = 3
           Top = 141
@@ -833,7 +812,7 @@ object MainForm: TMainForm
           Height = 52
           Caption = 'PerionPanel'
           ShowCaption = False
-          TabOrder = 10
+          TabOrder = 8
           object Label7: TLabel
             Left = 82
             Top = 23
@@ -889,7 +868,7 @@ object MainForm: TMainForm
           Width = 36
           Height = 21
           Caption = 'Apply'
-          TabOrder = 11
+          TabOrder = 9
           OnClick = ApplyButtonClick
         end
         object SynthLODCheckBox: TCheckBox
@@ -900,7 +879,7 @@ object MainForm: TMainForm
           Caption = 'Synthesized LODs'
           Checked = True
           State = cbChecked
-          TabOrder = 12
+          TabOrder = 10
           OnClick = SynthLODCheckBoxClick
         end
       end
@@ -929,6 +908,10 @@ object MainForm: TMainForm
     VSync = True
     OnContextDebugMessage = GLViewer1ContextDebugMessage
     Align = alClient
+    OnExit = GLViewer1Exit
+    OnMouseDown = GLViewer1MouseDown
+    OnMouseMove = GLViewer1MouseMove
+    OnMouseUp = GLViewer1MouseUp
   end
   object OpenPictureDialog: TOpenPictureDialog
     DefaultExt = 'bmp'

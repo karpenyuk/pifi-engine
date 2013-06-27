@@ -38,7 +38,6 @@ type
     CoverLimit: set of TCoverLimit;
   end;
 
-  TSynthShift = (dirRight, dirLeft, dirUp, dirDown);
   TConstructPhase = (cphForward, cphUpRight, cphBack, cphUpLeft);
 
   TTileRec = record
@@ -109,7 +108,7 @@ type
 
     procedure Initialize;
     procedure Process;
-    procedure Shift(const aDirect: TSynthShift);
+    procedure Panning(const aDeltaX, aDeltaY: integer);
     procedure Finalize;
     class function Supported: Boolean;
     property Initialized: Boolean read FInitialized;
@@ -1324,38 +1323,27 @@ begin
   NotifyLevelChanged(High(FLevels));
 end;
 
-procedure TGLSynthesizer.Shift(const aDirect: TSynthShift);
-const
-  STEPS: array[TSynthShift] of vec2i = (
-    (4, 0), (-4, 0), (0, 4), (0, -4));
+procedure TGLSynthesizer.Panning(const aDeltaX, aDeltaY: integer);
 var
-  size: integer;
-  S, P: vec2i;
+  step: vec2i;
 begin
   if FInitialized then
   begin
-    S := STEPS[aDirect];
+    step[0] := TMath.Ceil(aDeltaX / 8) * 4;
+    step[1] := TMath.Ceil(aDeltaY / 8) * 4;
 
     if Assigned(FDest) and (FLevels[0].CoverLimit <> []) then
     begin
-
-      size := FSideSize - 2 * PADDING_BORDER;
       if clmWidthLimit in FLevels[0].CoverLimit then
-      begin
-        P[0] := FLevels[0].DestinationOffset[0] + 2 * S[0];
-        if (P[0] < 0) or (P[0] + size > FDest.ImageDescriptor.Width) then
-          Exit;
-      end;
+        FLevels[0].DestinationOffset[0] := FLevels[0].DestinationOffset[0]  - 2 * step[0];
 
       if clmHeightLimit in FLevels[0].CoverLimit then
-      begin
-        P[1] := FLevels[0].DestinationOffset[1] + 2 * S[1];
-        if (P[1] < 0) or (P[1] + size > FDest.ImageDescriptor.Height) then
-          Exit;
-      end;
+        FLevels[0].DestinationOffset[1] := FLevels[0].DestinationOffset[1]  - 2 * step[1];
+
+      ResetConstructionProgress;
     end;
 
-    DoShift(0, S);
+    DoShift(0, step);
   end;
 end;
 

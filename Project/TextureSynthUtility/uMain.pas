@@ -68,8 +68,6 @@ type
     TrackBar7: TTrackBar;
     Label13: TLabel;
     TrackBar8: TTrackBar;
-    LeftRight1: TUpDown;
-    UpDown1: TUpDown;
     PerionPanel: TPanel;
     Edit5: TEdit;
     Label7: TLabel;
@@ -102,14 +100,22 @@ type
     procedure SaveDataButtonClick(Sender: TObject);
     procedure LoadDataButtonClick(Sender: TObject);
     procedure GLViewer1ContextDebugMessage(const AMessage: string);
-    procedure UpDown1ChangingEx(Sender: TObject; var AllowChange: Boolean;
-      NewValue: SmallInt; Direction: TUpDownDirection);
-    procedure LeftRight1ChangingEx(Sender: TObject; var AllowChange: Boolean;
-      NewValue: SmallInt; Direction: TUpDownDirection);
     procedure ApplyButtonClick(Sender: TObject);
     procedure SynthLODCheckBoxClick(Sender: TObject);
+    procedure GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure GLViewer1Exit(Sender: TObject);
+    procedure GLViewer1MouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure GLViewer1MouseMove(Sender: TObject; Shift: TShiftState;
+      X, Y: Integer);
   private
-    FJTracks: array[0..7] of TTrackBar;
+    FJTracks: array [0 .. 7] of TTrackBar;
+    PanMode: Boolean;
+    X0: Integer;
+    Y0: Integer;
+    dX: single;
+    dY: single;
     procedure UpdateJitters;
     procedure CreateDestinationTexture;
   public
@@ -142,14 +148,14 @@ uses
 var
   AppDir: string;
 
-  TexWidth: integer = 512;
-  TexHeight: integer = 512;
+  TexWidth: Integer = 512;
+  TexHeight: Integer = 512;
   // one for analyzer, one for synthesizer
   Jitter: single = 25.0;
   vCWeight: single = 1.0;
-  PeriodX: integer = 0;
-  PeriodY: integer = 0;
-  AutoJitter: boolean = true;
+  PeriodX: Integer = 0;
+  PeriodY: Integer = 0;
+  AutoJitter: Boolean = true;
 
   SQ_VO: TVertexObject;
   SQ_Drawer: TGLVertexObject;
@@ -164,7 +170,7 @@ var
   SynthImage: TImageDesc;
   PatchesImage: TImageDesc;
 
-  TextureChaged: array[0..2] of Boolean;
+  TextureChaged: array [0 .. 2] of Boolean;
 
 function _GetTime: Double;
 var
@@ -201,7 +207,7 @@ end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 var
-  x, y, e: integer;
+  X, Y, e: Integer;
   p: PByte;
   c: Graphics.TColor;
 begin
@@ -237,10 +243,10 @@ begin
   end;
 
   p := PByte(AnalysisData.Exemplar.Data);
-  for y := 0 to Image1.Picture.Height - 1 do
-    for x := 0 to Image1.Picture.Width - 1 do
+  for Y := 0 to Image1.Picture.Height - 1 do
+    for X := 0 to Image1.Picture.Width - 1 do
     begin
-      c := Image1.Picture.Bitmap.Canvas.Pixels[x, y];
+      c := Image1.Picture.Bitmap.Canvas.Pixels[X, Y];
       p[0] := c and $FF;
       p[1] := (c shr 8) and $FF;
       p[2] := (c shr 16) and $FF;
@@ -249,9 +255,9 @@ begin
     end;
 
   for e := 0 to High(TextureChaged) do
-      TextureChaged[e] := false;
+    TextureChaged[e] := false;
 
-  GLViewer1.Context.DebugContext := True;
+  GLViewer1.Context.DebugContext := true;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -265,7 +271,7 @@ end;
 // Analysis process
 procedure TMainForm.AnalyzeButtonClick(Sender: TObject);
 var
-  p: Single;
+  p: single;
   t: Double;
 begin
   AnalyzeButton.Enabled := false;
@@ -273,10 +279,14 @@ begin
 
   Analyzer.MaxCPUThreads := SpinEdit1.Value;
   case TilingComboBox.ItemIndex of
-    0: AnalysisData.EdgePolicy := epNonRepeat;
-    1: AnalysisData.EdgePolicy := epRepeat;
-    2: AnalysisData.EdgePolicy := epNonRepeatDbl;
-    3: AnalysisData.EdgePolicy := epRepeatDbl;
+    0:
+      AnalysisData.EdgePolicy := epNonRepeat;
+    1:
+      AnalysisData.EdgePolicy := epRepeat;
+    2:
+      AnalysisData.EdgePolicy := epNonRepeatDbl;
+    3:
+      AnalysisData.EdgePolicy := epRepeatDbl;
   end;
 
   Memo1.Lines.Add('Analysis started');
@@ -312,8 +322,8 @@ end;
 procedure TMainForm.SynthesizeButtonClick(Sender: TObject);
 var
   t: Double;
-  p: Single;
-  L: integer;
+  p: single;
+  L: Integer;
 begin
   if AnalysisData.IsValid then
   begin
@@ -349,11 +359,11 @@ begin
     t := _GetTime - t;
     Memo1.Lines.Add('End synthesis');
     Memo1.Lines.Add(Format('Expanded time %.2f msec', [1000 * t]));
-    L := min(max(SpinEdit3.Value , 0), Synthesizer.LevelCount - 1);
+    L := min(max(SpinEdit3.Value, 0), Synthesizer.LevelCount - 1);
     SynthImage := Synthesizer.SynthImage[L];
     PatchesImage := Synthesizer.PatchesImage[L];
-    TextureChaged[1] := True;
-    TextureChaged[2] := True;
+    TextureChaged[1] := true;
+    TextureChaged[2] := true;
     ComboBox1.ItemIndex := 1;
     AnalyzeButton.Enabled := true;
     SynthesizeButton.Enabled := true;
@@ -381,18 +391,9 @@ begin
     Memo1.Lines.Add('Unable to save. Run analysis first.');
 end;
 
-procedure TMainForm.LeftRight1ChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
-begin
-  case Direction of
-    updUp: GLSynthesizer.Shift(dirRight);
-    updDown: GLSynthesizer.Shift(dirLeft);
-  end;
-end;
-
 procedure TMainForm.LoadDataButtonClick(Sender: TObject);
 var
-  x, y: integer;
+  X, Y: Integer;
   p: PByte;
   c: Graphics.TColor;
   bmp: TBitmap;
@@ -404,28 +405,32 @@ begin
     bmp := TBitmap.Create;
     bmp.Width := AnalysisData.Exemplar.Width;
     bmp.Height := AnalysisData.Exemplar.Height;
-    for y := 0 to bmp.Height - 1 do
-      for x := 0 to bmp.Width - 1 do
+    for Y := 0 to bmp.Height - 1 do
+      for X := 0 to bmp.Width - 1 do
       begin
         c := p[0];
         c := c or (p[1] shl 8);
         c := c or (p[2] shl 16);
-        bmp.Canvas.Pixels[x, y] := c;
+        bmp.Canvas.Pixels[X, Y] := c;
         Inc(p, AnalysisData.Exemplar.ElementSize);
       end;
     Image1.Picture.Assign(bmp);
     bmp.Free;
 
     case AnalysisData.EdgePolicy of
-      epNonRepeat: TilingComboBox.ItemIndex := 0;
-      epRepeat: TilingComboBox.ItemIndex := 1;
-      epNonRepeatDbl: TilingComboBox.ItemIndex := 2;
-      epRepeatDbl: TilingComboBox.ItemIndex := 3;
+      epNonRepeat:
+        TilingComboBox.ItemIndex := 0;
+      epRepeat:
+        TilingComboBox.ItemIndex := 1;
+      epNonRepeatDbl:
+        TilingComboBox.ItemIndex := 2;
+      epRepeatDbl:
+        TilingComboBox.ItemIndex := 3;
     end;
 
     Memo1.Lines.Add('Analysis data loaded.');
     AnalysisProgressBar.Position := 100;
-    TextureChaged[0] := True;
+    TextureChaged[0] := true;
 
     GLSynthesizer.Initialize;
     ApplyButton.Click;
@@ -437,8 +442,8 @@ begin
   GLSynthesizer.CoherenceWeight := vCWeight;
   Synthesizer.CoherenceWeight := vCWeight;
   UpdateJitters;
-  if (GLSynthTexture.ImageDescriptor.Width <> TexWidth)
-    or (GLSynthTexture.ImageDescriptor.Height <> TexHeight) then
+  if (GLSynthTexture.ImageDescriptor.Width <> TexWidth) or
+    (GLSynthTexture.ImageDescriptor.Height <> TexHeight) then
     CreateDestinationTexture;
 end;
 
@@ -470,13 +475,16 @@ end;
 // Pass number choise
 procedure TMainForm.ComboBox2Change(Sender: TObject);
 var
-  n: integer;
+  n: Integer;
 begin
   n := 0;
   case ComboBox3.ItemIndex of
-    1: n := 2;
-    2: n := 4;
-    3: n := 8;
+    1:
+      n := 2;
+    2:
+      n := 4;
+    3:
+      n := 8;
   end;
   Synthesizer.CorrectionSubpassesCount := n;
   GLSynthesizer.CorrectionSubpassesCount := n;
@@ -491,13 +499,12 @@ begin
     Texture.Destroy;
   end;
   Texture := TTexture.CreateOwned(Self);
-  Texture.Descriptor := TImageSampler.CreateBitmap(
-    TImageFormatSelector.CreateInt8(bfRGBA),
-    TexWidth, TexHeight, True);
+  Texture.Descriptor := TImageSampler.CreateBitmap
+    (TImageFormatSelector.CreateInt8(bfRGBA), TexWidth, TexHeight, true);
   Texture.Descriptor.ImageDescriptor.InternalFormat := GL_RGBA8;
   Texture.Descriptor.ImageDescriptor.ColorFormat := GL_RGBA;
   Texture.Descriptor.ImageDescriptor.DataType := GL_UNSIGNED_BYTE;
-  GLSynthTexture := TGLTextureObject.CreateFrom(texture);
+  GLSynthTexture := TGLTextureObject.CreateFrom(Texture);
   GLSynthesizer.DestinationTexture := GLSynthTexture;
   GLSynthTexture.AllocateStorage;
 end;
@@ -506,9 +513,9 @@ end;
 procedure TMainForm.Edit1Change(Sender: TObject);
 var
   s1, s2: string;
-  p, err: integer;
-  w, h: integer;
-  correct: boolean;
+  p, err: Integer;
+  w, h: Integer;
+  correct: Boolean;
 begin
   correct := true;
   w := 0;
@@ -545,7 +552,7 @@ end;
 // Jitter strength correct input
 procedure TMainForm.Edit2Change(Sender: TObject);
 var
-  err: integer;
+  err: Integer;
   j: single;
 begin
   val(Edit2.Text, j, err);
@@ -561,7 +568,7 @@ end;
 // Coherent threshold correct input
 procedure TMainForm.Edit3Change(Sender: TObject);
 var
-  err: integer;
+  err: Integer;
   k: single;
 begin
   val(Edit3.Text, k, err);
@@ -579,20 +586,20 @@ end;
 // Jitter period correct input
 procedure TMainForm.Edit4Change(Sender: TObject);
 var
-  err: integer;
-  x: integer;
+  err: Integer;
+  X: Integer;
 begin
-  val(TEdit(Sender).Text, x, err);
+  val(TEdit(Sender).Text, X, err);
   if err > 0 then
     TEdit(Sender).Color := clRed
-  else if x > 0 then
+  else if X > 0 then
   begin
     TEdit(Sender).Color := clWindow;
     case TEdit(Sender).Tag of
       0:
-        PeriodX := x;
+        PeriodX := X;
       1:
-        PeriodY := x;
+        PeriodY := X;
     end;
   end
   else
@@ -602,22 +609,22 @@ end;
 // Jitter control
 procedure TMainForm.TrackBar1Change(Sender: TObject);
 var
-  L: integer;
+  L: Integer;
 begin
   if Assigned(GLSynthesizer) then
   begin
     L := TTrackBar(Sender).Tag;
     if L < GLSynthesizer.LevelCount then
     begin
-      GLSynthesizer.JitterStrength[L] :=
-        Jitter * TTrackBar(Sender).Position / TTrackBar(Sender).Max;
+      GLSynthesizer.JitterStrength[L] := Jitter * TTrackBar(Sender).Position /
+        TTrackBar(Sender).max;
     end;
   end;
 end;
 
 procedure TMainForm.UpdateJitters;
 var
-  L: integer;
+  L: Integer;
   TB: TTrackBar;
 begin
   for L := 0 to High(FJTracks) do
@@ -625,20 +632,11 @@ begin
     TB := FJTracks[L];
     if L < GLSynthesizer.LevelCount then
     begin
-      TB.Enabled := True;
-      GLSynthesizer.JitterStrength[L] := Jitter * TB.Position / TB.Max;
+      TB.Enabled := true;
+      GLSynthesizer.JitterStrength[L] := Jitter * TB.Position / TB.max;
     end
     else
-      TB.Enabled := False;
-  end;
-end;
-
-procedure TMainForm.UpDown1ChangingEx(Sender: TObject; var AllowChange: Boolean;
-  NewValue: SmallInt; Direction: TUpDownDirection);
-begin
-  case Direction of
-    updUp: GLSynthesizer.Shift(dirUp);
-    updDown: GLSynthesizer.Shift(dirDown);
+      TB.Enabled := false;
   end;
 end;
 
@@ -681,7 +679,6 @@ begin
 {$IFDEF Linux}
   path := '../../Source/Media/'; { :-/ }
 {$ENDIF}
-
   ViewShader1 := TGLSLShaderProgram.Create;
   ViewShader1.AttachShaderFromFile(stVertex, path + 'ScreenQuadShader.Vert');
   ViewShader1.AttachShaderFromFile(stFragment, path + 'ScreenQuadShader.Frag');
@@ -694,7 +691,8 @@ begin
 
   ViewShader2 := TGLSLShaderProgram.Create;
   ViewShader2.AttachShaderFromFile(stVertex, path + 'ScreenQuadShader.Vert');
-  ViewShader2.AttachShaderFromFile(stFragment, path + 'ScreenQuadShaderInt.Frag');
+  ViewShader2.AttachShaderFromFile(stFragment,
+    path + 'ScreenQuadShaderInt.Frag');
   ViewShader2.LinkShader;
   if ViewShader2.Error then
   begin
@@ -704,30 +702,24 @@ begin
 
   glGenTextures(1, @ExemplarTextureId);
   glBindTexture(GL_TEXTURE_2D, ExemplarTextureId);
-  glTextureParameterfEXT(
-    ExemplarTextureId,
-    GL_TEXTURE_2D,
-    GL_GENERATE_MIPMAP_SGIS,
-    GL_TRUE);
+  glTextureParameterfEXT(ExemplarTextureId, GL_TEXTURE_2D,
+    GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
   glTextureParameterfEXT(ExemplarTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
     GL_REPEAT);
   glTextureParameterfEXT(ExemplarTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
     GL_REPEAT);
-  glTextureParameterfEXT(ExemplarTextureId, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-    GL_LINEAR);
-  glTextureParameterfEXT(ExemplarTextureId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-    GL_LINEAR_MIPMAP_LINEAR);
+  glTextureParameterfEXT(ExemplarTextureId, GL_TEXTURE_2D,
+    GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTextureParameterfEXT(ExemplarTextureId, GL_TEXTURE_2D,
+    GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   with AnalysisData.Exemplar^ do
-      glTextureImage2DEXT(ExemplarTextureId, GL_TEXTURE_2D, 0, InternalFormat,
+    glTextureImage2DEXT(ExemplarTextureId, GL_TEXTURE_2D, 0, InternalFormat,
       Width, Height, 0, ColorFormat, DataType, Data);
 
   glGenTextures(1, @SynthTextureId);
   glBindTexture(GL_TEXTURE_2D, SynthTextureId);
-  glTextureParameterfEXT(
-    SynthTextureId,
-    GL_TEXTURE_2D,
-    GL_GENERATE_MIPMAP_SGIS,
-    GL_TRUE);
+  glTextureParameterfEXT(SynthTextureId, GL_TEXTURE_2D,
+    GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
   glTextureParameterfEXT(SynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
     GL_REPEAT);
   glTextureParameterfEXT(SynthTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
@@ -739,11 +731,8 @@ begin
 
   glGenTextures(1, @PatchesTextureId);
   glBindTexture(GL_TEXTURE_2D, PatchesTextureId);
-  glTextureParameterfEXT(
-    PatchesTextureId,
-    GL_TEXTURE_2D,
-    GL_GENERATE_MIPMAP_SGIS,
-    GL_FALSE);
+  glTextureParameterfEXT(PatchesTextureId, GL_TEXTURE_2D,
+    GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
   glTextureParameterfEXT(PatchesTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
     GL_REPEAT);
   glTextureParameterfEXT(PatchesTextureId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
@@ -755,9 +744,11 @@ begin
 
   glGenSamplers(1, @SamplerId);
   glSamplerParameteri(SamplerId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_FILTER,
+    GL_LINEAR_MIPMAP_LINEAR);
+  glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glSamplerParameteri(SamplerId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glSamplerParameterfv(SamplerId, GL_TEXTURE_BORDER_COLOR, @VecNull);
 
   CreateDestinationTexture;
 
@@ -767,11 +758,61 @@ begin
   ApplyButton.Click;
 end;
 
+procedure TMainForm.GLViewer1Exit(Sender: TObject);
+begin
+  PanMode := false;
+end;
+
+procedure TMainForm.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  if Button = mbRight then
+  begin
+    PanMode := true;
+    X0 := X;
+    Y0 := Y;
+    dX := 0;
+    dY := 0;
+  end;
+end;
+
+procedure TMainForm.GLViewer1MouseMove(Sender: TObject; Shift: TShiftState;
+  X, Y: Integer);
+var
+  ratio: TVector;
+  scale: single;
+begin
+  if PanMode then
+  begin
+    ratio := TVector.Make(GLViewer1.Width /
+      GLSynthTexture.ImageDescriptor.Width, GLViewer1.Height /
+      GLSynthTexture.ImageDescriptor.Height);
+    if ratio.X < ratio.Y then
+      scale := 1 / ratio.X
+    else
+      scale := 1 / ratio.Y;
+    dX := scale * (X0 - X);
+    dY := scale * (Y - Y0);
+  end;
+end;
+
+procedure TMainForm.GLViewer1MouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+
+begin
+  if (Button = mbRight) and PanMode then
+  begin
+    PanMode := false;
+    GLSynthesizer.Panning(Round(dX), Round(dY));
+  end;
+end;
+
 procedure TMainForm.GLViewer1Render(Sender: TObject);
 var
   ratio: TVector;
-  w, h, L: integer;
+  w, h, L: Integer;
   shader: TGLSLShaderProgram;
+  offset: TVector;
 begin
 
   if TextureChaged[0] then
@@ -849,7 +890,8 @@ begin
         end
         else
         begin
-          glSamplerParameteri(SamplerId, GL_TEXTURE_MAX_LOD, GLSynthTexture.ImageDescriptor.Levels - 1);
+          glSamplerParameteri(SamplerId, GL_TEXTURE_MAX_LOD,
+            GLSynthTexture.ImageDescriptor.Levels - 1);
           glSamplerParameteri(SamplerId, GL_TEXTURE_MIN_LOD, 0);
         end;
         glBindTexture(GL_TEXTURE_2D, GLSynthTexture.Id);
@@ -860,12 +902,12 @@ begin
       if GLSynthesizer.Initialized then
       begin
         shader := ViewShader2;
-        L := min(max(SpinEdit3.Value , 0), GLSynthesizer.LevelCount - 1);
+        L := min(max(SpinEdit3.Value, 0), GLSynthesizer.LevelCount - 1);
         glBindTexture(GL_TEXTURE_2D, GLSynthesizer.PachesTextureIDs[L]);
         w := GLSynthesizer.SideSize;
         h := w;
       end;
-    else
+  else
     begin
       glBindTexture(GL_TEXTURE_2D, 0);
     end;
@@ -879,6 +921,11 @@ begin
   else
     ratio := TVector.Make(ratio.Y / ratio.X, 1);
   shader.SetUniform('Ratio', ratio.Vec2);
+  if PanMode then
+    offset := TVector.Make(dX / w, dY / h)
+  else
+    offset := TVector.Null;
+  shader.SetUniform('TexCoordOffset', offset.Vec2);
 
   SQ_Drawer.RenderVO(shader.Id);
 

@@ -7,11 +7,12 @@ in vec2 in_TexCoord;
 
 uniform mat4 Projection;
 uniform vec2 Ratio;
+uniform vec2 TexCoordOffset;
 
 out vec2 TexCoord;
 
 void main()
 { 
 	gl_Position = vec4(Ratio * in_Position, 0.0, 1.0);
-	TexCoord = in_TexCoord;
+	TexCoord = in_TexCoord + TexCoordOffset;
 }
