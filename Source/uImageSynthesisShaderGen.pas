@@ -282,15 +282,18 @@ const
     'layout(binding = 7) uniform isampler2D ReadSynth;'#10#13 +
     'layout(binding = 1, rg16i) uniform iimage2D WriteSynth;'#10#13 +
     'uniform ivec4 offsets;'#10#13 +
+    'uniform ivec2 wh;'#10#13 +
     'void main()'#10#13 +
     '{'#10#13 +
     '  ivec2 coords = ivec2(gl_WorkGroupID.xy * uvec2(16u) + gl_LocalInvocationID.xy);'#10#13
     +
-    '  ivec4 pass = texelFetch(ReadSynth, coords + offsets.xy, 0);'#10#13 +
-    '  coords += offsets.zw;'#10#13 +
-    '  ivec2 size = imageSize(WriteSynth);'#10#13 +
-    '  if (coords.x > -1 && coords.y > -1 && coords.x < size.x && coords.y < size.y)'#10#13 +
-    '    imageStore(WriteSynth, coords, pass);'#10#13 +
+    '  if (coords.x < wh.x && coords.y < wh.y) {'#10#13 +
+    '    ivec4 pass = texelFetch(ReadSynth, coords + offsets.xy, 0);'#10#13 +
+    '    coords += offsets.zw;'#10#13 +
+    '    ivec2 size = imageSize(WriteSynth);'#10#13 +
+    '    if (coords.x > -1 && coords.y > -1 && coords.x < size.x && coords.y < size.y)'#10#13 +
+    '      imageStore(WriteSynth, coords, pass);'#10#13 +
+    '  }'#10#13 +
     '}'#10#13;
 
   GLSL_SYNTH_VIEW_IMAGE_VTX: ansistring =

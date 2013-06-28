@@ -208,6 +208,8 @@ begin
 end;
 
 procedure TGLSynthesizer.CopyToReadSynthTexture(const aLevel: integer);
+var
+  wh: Vec2i;
 begin
   if GL_ARB_copy_image then
   begin
@@ -235,6 +237,9 @@ begin
 
     FCopyImageShader.Apply;
     FCopyImageShader.SetUniform('offsets', ZERO_OFFSETS);
+    wh[0] := FSideSize;
+    wh[1] := FSideSize;
+    FCopyImageShader.SetUniform('wh', wh);
     // Source
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, FLevels[aLevel].PatchesTextureId);
@@ -545,46 +550,44 @@ end;
 
 procedure TGLSynthesizer.DoShift(const aLevel: integer; const aStep: Vec2i);
 
-  function DivStep(A, S: integer): integer;
+  function DivStep(A: integer): integer;
   begin
-    Result := A div 2;
-    if Sign(Result) <> S then
-      Result := S;
+    Result := TMath.Ceil(A / 2);
+    if Result = 0 then
+      Result := Sign(A);
   end;
 
 var
   downSize, L: integer;
-  newOffset, downStep, singStep, upStep: vec2i;
+  newOffset, downStep, upStep: vec2i;
 begin
   downSize := FSideSize div 2 + PADDING_BORDER;
   newOffset[0] := FLevels[aLevel].ParentOffset[0] + aStep[0];
   newOffset[1] := FLevels[aLevel].ParentOffset[1] + aStep[1];
 
-  // checking approach to borders
-  if (newOffset[0] < PADDING_BORDER) or (newOffset[0] + downSize > FSideSize) or
-    (newOffset[1] < PADDING_BORDER) or (newOffset[1] + downSize > FSideSize) then
+  // checking crossing the borders
+  if (aLevel < High(FLevels)) and
+   ((newOffset[0] < PADDING_BORDER)
+    or (newOffset[0] + downSize > FSideSize)
+    or (newOffset[1] < PADDING_BORDER)
+    or (newOffset[1] + downSize > FSideSize)) then
   begin
-    singStep[0] := Sign(aStep[0]);
-    singStep[1] := Sign(aStep[1]);
-    downStep[0] := DivStep(aStep[0], singStep[0]);
-    downStep[1] := DivStep(aStep[1], singStep[1]);
+    downStep[0] := DivStep(aStep[0]);
+    downStep[1] := DivStep(aStep[1]);
     upStep[0] := aStep[0] - 2 * downStep[0];
     upStep[1] := aStep[1] - 2 * downStep[1];
-    if (upStep[0] <> 0) or (upStep[1] <> 0) then
+    DoShift(aLevel + 1, downStep);
+    if (upStep[0] <> 0) and (upStep[1] <> 0) then
     begin
       for L := aLevel downto 0 do
-        with FLevels[L] do begin
-          if State > stPartOutdated then
-            State := stPartOutdated;
-          ParentOffset[0] := ParentOffset[0] + upStep[0];
-          ParentOffset[1] := ParentOffset[1] + upStep[1];
-          upStep[0] := upStep[0] * 2;
-          upStep[1] := upStep[1] * 2;
-        end;
+      begin
+        newOffset := GetRelativeOffset(L);
+        upStep[0] := (Flevels[L].RelativeOffset[0] - newOffset[0]) div 2;
+        upStep[1] := (Flevels[L].RelativeOffset[1] - newOffset[1]) div 2;
+        if (upStep[0] <> 0) and (upStep[1] <> 0) then
+          DoShift(L, upStep);
+      end;
     end;
-
-    if aLevel < High(FLevels) then
-      DoShift(aLevel + 1, downStep);
   end
   else
     FLevels[aLevel].ParentOffset := newOffset;
@@ -1249,8 +1252,13 @@ procedure TGLSynthesizer.DoScroll(const aLevel: integer;
 var
   exId: GLuint;
   offsets: Vec4i;
+  wh: Vec2i;
   gw, gh: integer;
 begin
+  // Size of movable part of image
+  wh[0] := FSideSize - Abs(aStep[0]);
+  wh[1] := FSideSize - Abs(aStep[1]);
+
   if aStep[0] < 0 then
   begin
     offsets[0] := -aStep[0];
@@ -1288,14 +1296,15 @@ begin
   begin
     FCopyImageShader.Apply;
     FCopyImageShader.SetUniform('offsets', offsets);
+    FCopyImageShader.SetUniform('wh', wh);
     // Source
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, FLevels[aLevel].PatchesTextureId);
     // Destination
     glBindImageTexture(1, FReadSynthTextureId, 0, False, 0,
       GL_WRITE_ONLY, GL_RG16I);
-    gw := TMath.Ceil( (FSideSize - Abs(aStep[0])) / WORKGROUP_SIZE );
-    gh := TMath.Ceil( (FSideSize - Abs(aStep[1])) / WORKGROUP_SIZE );
+    gw := TMath.Ceil( wh[0] / WORKGROUP_SIZE );
+    gh := TMath.Ceil( wh[1] / WORKGROUP_SIZE );
 
     glDispatchCompute(gw, gh, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
