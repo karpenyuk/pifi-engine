@@ -97,6 +97,8 @@ Type
   end;
   PTextureDesc = ^TTextureDesc;
 
+  TImageType = (itBitmap, itBitmapArray, itVolume, itCubemap, itCubemapArray);
+
   TImageLevelDesc = record
     Width: Integer;
     Height: Integer;
@@ -105,6 +107,7 @@ Type
     Size: integer;
     LayersOffset: array of LongWord;
   end;
+  PImageLevelDesc = ^TImageLevelDesc;
 
   TImageDesc = record
     InternalFormat: cardinal;

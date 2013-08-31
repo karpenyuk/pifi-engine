@@ -282,39 +282,92 @@ Type
     property SamplerHash: integer read getSamplerHash;
   end;
 
-  TImageSampler = class(TBaseRenderResource)
+  { TODO : TImageHolder: Check logic for texture arrays }
+  TImageHolder = class(TBaseRenderResource)
   private
-    FImageDescriptor: TImageDesc;
     FImageFormat: cardinal;
-    //Hide default constructor
-    constructor Create; override;
-    //Calculate size of each Lods and fill FImageDescriptor's LOD struct.
+    FImageType: TImageType;
+
+    FElementSize: integer;
+    FDataSize: integer;
+    FReservedMem: integer;
+    FData: pointer;
+    FWidth, FHeight, FDepth: integer;
+    FLevels: integer;
+    FLODS: array[0..15] of TImageLevelDesc;
+    FCompressed: boolean;
+
+    function getDataSize: integer;
+    function getImageLod(Index: integer): TImageLevelDesc;
+
+    procedure setDepth(const Value: integer);
+    procedure setHeight(const Value: integer);
+    procedure setWidth(const Value: integer);
+
+    procedure Deallocate;
     procedure FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
+    procedure setImageFormat(const Value: cardinal);
+    procedure setImageType(const Value: TImageType);
+    function getBitmapState: boolean;
+    function getCubeMapState: boolean;
+    function getTextureArrayState: boolean;
+    function getVolumeState: boolean;
   public
-    constructor CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
-    constructor CreateVolume(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
-    constructor CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateCubeMapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
+    constructor Create; overload; override;
+    constructor Create(aFormatCode: cardinal; aImageType: TImageType = itBitmap); overload;
+    constructor CreateFromStream(aStream: TStream);
+    destructor Destroy; override;
+
+    procedure Allocate(aWithMipmaps: boolean = false);
+    procedure SaveToStream(aStream: TStream); virtual;
+    procedure LoadFromStream(aStream: TStream); virtual;
+    //virtual function for implementing different image format loader
+    procedure LoadImageFromStream(aStream: TStream); virtual;
+    procedure LoadImageFromFile(aFileName: string);
+    //save image to stream/file, image format settet by extention: bmp, jpg, tga, dds etc.
+    procedure SaveImageToStream(aStream: TStream; ImageFormat: string = ''); virtual;
+    procedure SaveImageToFile(aFileName: string; ImageFormat: string = '');
+
+    property ImageFormat: cardinal read FImageFormat write setImageFormat;
+    property ImageType: TImageType read FImageType write setImageType;
+
+    property DataSize: integer read getDataSize;
+    property ElementSize: integer read FElementSize;
+    property Data: pointer read FData;
+    property Width: integer read FWidth write setWidth;
+    property Height: integer read FHeight write setHeight;
+    property Depth: integer read FDepth write setDepth;
+    property LevelsCount: integer read FLevels;
+    property LODS[Index: integer]: TImageLevelDesc read getImageLod;
+
+    property Compressed: boolean read FCompressed;
+    property isBitmap: boolean read getBitmapState;
+    property isCubeMap: boolean read getCubeMapState;
+    property isTextureArray: boolean read getTextureArrayState;
+    property isVolume: boolean read getVolumeState;
+  end;
+
+  TImageSampler = class(TBaseRenderResource)
+  public
+    class function CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateVolume(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateCubeMapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false): TImageHolder;
 
     //Presets
-    {
-    constructor CreateRGBA8Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateRGBA32fTexture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateFloat32Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateDepth32Texture(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateDepthStencilTexture(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    }
 
-    property ImageFormat: cardinal read FImageFormat;
+    class function CreateRGBA8Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateRGBA32fTexture2D(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateFloat32Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateDepth32Texture(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateDepthStencilTexture(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
 
-    property ImageDescriptor: TImageDesc read FImageDescriptor;
-    { TODO : Add as read-only all properties from TImageDesc }
   end;
 
   TTexture = class(TBaseRenderResource)
   private
-    FImageDescriptor: PImageDesc;
+    FImageDescriptor: TImageHolder;
     FReady: boolean;
     FName: string;
     FUpdates: TTextureUpdates;
@@ -327,69 +380,30 @@ Type
     FTarget: TTexTarget;
     FGenerateMipMaps: boolean;
 
-    function getCFormat: cardinal;
-    function getCompressed: boolean;
-    function getCubeMap: boolean;
-    function getData: Pointer;
-    function getDataSize: integer;
-    function getDType: cardinal;
-    function getElmSize: integer;
-    function getFormat: cardinal;
-    function getGenMipMaps: boolean;
-    function getIFormat: cardinal;
-    function getImgLod(Index: integer): TImageLevelDesc;
-    function getLevels: integer;
-    function getHeight: integer;
-    function getDepth: integer;
-    function getWidth: integer;
-
-    function getResMem: integer;
     function getTarget: TTexTarget;
-    function getTexArray: boolean;
     procedure SetName(const Value: string);
-    function getImgDescr: PImageDesc;
     procedure setTexMatrix(const Value: TMatrix);
-    procedure setData(const Value: Pointer);
 
     procedure setGenMipMaps(const Value: boolean);
+    function getImageFormat: TImageFormat;
 
   public
 
-    constructor CreateOwned(aOwner: TObject = nil);
+    constructor CreateOwned(aImageHolder: TImageHolder; aOwner: TObject = nil);
 
-    property ImageDescriptor: PImageDesc read getImgDescr;
+    property ImageHolder: TImageHolder read FImageDescriptor;
+    property ImageFormat: TImageFormat read getImageFormat;
     property Updates: TTextureUpdates read FUpdates write FUpdates;
 
     property Disabled: boolean read FDisabled write FDisabled;
+    property Target: TTexTarget read getTarget;
     property Name: string read FName write SetName;
     property MapTargets: TMapTargets read FMapTargets write FMapTargets;
     property TextureMode: TTextureMode read FTextureMode write FTextureMode;
     property Matrix: TMatrix read FTexMatrix write setTexMatrix;
     property MatrixChanged: boolean read FTexMatrixChanged;
     property TwoSides: boolean read FTwoSides write FTwoSides;
-
-    // Image Descriptors
-    property Target: TTexTarget read getTarget;
-    property Format: cardinal read getFormat;
-    property InternalFormat: cardinal read getIFormat;
-    property ColorFormat: cardinal read getCFormat;
-
-    property DataType: cardinal read getDType;
-    property Width: integer read getWidth;
-    property Height: integer read getHeight;
-    property Depth: integer read getDepth;
-
-    property ElementSize: integer read getElmSize;
-    property DataSize: integer read getDataSize;
-    property ReservedMem: integer read getResMem;
-    property Data: Pointer read getData write setData;
-    property Levels: integer read getLevels;
-    property Compressed: boolean read getCompressed;
-    property CubeMap: boolean read getCubeMap;
-    property TextureArray: boolean read getTexArray;
-    property LODS[Index: integer]: TImageLevelDesc read getImgLod;
-
-    property GenerateMipMaps: boolean read getGenMipMaps write setGenMipMaps;
+    property GenerateMipMaps: boolean read FGenerateMipMaps write setGenMipMaps;
   end;
 
   TCustomBlending = class(TBaseRenderResource)
@@ -1089,103 +1103,16 @@ begin
   FName := Value;
 end;
 
-// TImageDescriptors
-
-function TTexture.getCFormat: cardinal;
+function TTexture.getImageFormat: TImageFormat;
 begin
-  result := FImageDescriptor.ColorFormat;
-end;
-
-function TTexture.getCompressed: boolean;
-begin
-  result := FImageDescriptor.Compressed;
-end;
-
-function TTexture.getCubeMap: boolean;
-begin
-  result := FImageDescriptor.CubeMap;
-end;
-
-function TTexture.getData: Pointer;
-begin
-  result := FImageDescriptor.Data;
-end;
-
-function TTexture.getDataSize: integer;
-begin
-  result := FImageDescriptor.DataSize
-end;
-
-function TTexture.getDType: cardinal;
-begin
-  result := FImageDescriptor.DataType;
-end;
-
-function TTexture.getElmSize: integer;
-begin
-  result := FImageDescriptor.ElementSize;
-end;
-
-function TTexture.getFormat: cardinal;
-begin
-  result := FImageDescriptor.ColorFormat;
-end;
-
-function TTexture.getDepth: integer;
-begin
-  result := FImageDescriptor.Depth;
-end;
-
-function TTexture.getHeight: integer;
-begin
-  result := FImageDescriptor.Height;
-end;
-
-function TTexture.getWidth: integer;
-begin
-  result := FImageDescriptor.Width;
-end;
-
-function TTexture.getIFormat: cardinal;
-begin
-  result := FImageDescriptor.InternalFormat;
-end;
-
-function TTexture.getImgDescr: PImageDesc;
-begin
-  result := @FImageDescriptor;
-end;
-
-function TTexture.getImgLod(Index: integer): TImageLevelDesc;
-begin
-  assert((index >= 0) and (index <= high(FImageDescriptor.LODS)),
-    'Lod index [' + inttostr(Index) + '] out of Range');
-  result := FImageDescriptor.LODS[index];
-end;
-
-function TTexture.getLevels: integer;
-begin
-  result := FImageDescriptor.Levels;
-end;
-
-function TTexture.getResMem: integer;
-begin
-  result := FImageDescriptor.ReservedMem;
-end;
-
-function TTexture.getTexArray: boolean;
-begin
-  result := FImageDescriptor.TextureArray;
+  if assigned(FImageDescriptor)
+  then result:=FImageDescriptor.ImageFormat
+  else result:=$FFFFFFFF;
 end;
 
 function TTexture.getTarget: TTexTarget;
 begin
   result := FTarget;
-end;
-
-procedure TTexture.setData(const Value: Pointer);
-begin
-  FImageDescriptor.Data := Value;
 end;
 
 procedure TTexture.setGenMipMaps(const Value: boolean);
@@ -1200,18 +1127,13 @@ begin
   FTexMatrixChanged := true;
 end;
 
-constructor TTexture.CreateOwned(aOwner: TObject);
+constructor TTexture.CreateOwned(aImageHolder: TImageHolder; aOwner: TObject);
 begin
   Create;
   FTexMatrixChanged := false;
   Owner := aOwner;
+  FImageDescriptor := aImageHolder;
 end;
-
-function TTexture.getGenMipMaps: boolean;
-begin
-  result := FGenerateMipMaps;
-end;
-
 
 { TTextureSampler }
 
@@ -2296,7 +2218,7 @@ function TMaterialObject.AddNewTexture(aName: string): TTexture;
 begin
   if assigned(FTexture) and (FTexture.Owner = Self) then
     FTexture.Free;
-  FTexture := TTexture.CreateOwned(Self);
+  FTexture := TTexture.CreateOwned(nil, Self);
   FTexture.Name := aName;
   FUseTexture := true;
   result := FTexture;
@@ -2733,155 +2655,291 @@ end;
 
 { TImageSampler }
 
-constructor TImageSampler.Create;
+class function TImageSampler.CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean): TImageHolder;
 begin
+  result:=TImageHolder.Create(aFormatCode, itBitmap);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=1;
+  result.Allocate(aMipmapping);
+end;
+
+class function TImageSampler.CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aMipmapping: boolean): TImageHolder;
+begin
+  result:=TImageHolder.Create(aFormatCode, itBitmapArray);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=aDepth;
+  result.Allocate(aMipmapping);
+end;
+
+class function TImageSampler.CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result:=TImageHolder.Create(aFormatCode, itCubemapArray);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=6;
+  result.Allocate(aMipmapping);
+end;
+
+class function TImageSampler.CreateCubeMapArray(aFormatCode: cardinal; aWidth,
+  aHeight, aDepth: integer; aMipmapping: boolean): TImageHolder;
+begin
+  result:=TImageHolder.Create(aFormatCode, itCubemapArray);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=6*aDepth;
+  result.Allocate(aMipmapping);
+end;
+
+class function TImageSampler.CreateDepth32Texture(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_Depth32, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateDepthStencilTexture(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_Depth24Stencil8, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateFloat32Texture2D(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_Red32F, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateRGBA32fTexture2D(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_RGBA32F, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateRGBA8Texture2D(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_RGBA8UI, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateVolume(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aMipmapping: boolean): TImageHolder;
+begin
+  result:=TImageHolder.Create(aFormatCode, itVolume);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=aDepth;
+  result.Allocate(aMipmapping);
+end;
+
+{ TImageHolder }
+
+procedure TImageHolder.Allocate(aWithMipmaps: boolean);
+var size: cardinal;
+begin
+  if assigned(FData) then exit;
+  if FImageFormat = $FFFFFFFF then exit;
+
+  size := TImageFormatSelector.GetMemSize(FImageFormat, FWidth, FHeight, FDepth, FLevels>1);
+  FDataSize := size;
+  FReservedMem := size;
+
+  getmem(FData,FReservedMem);
+  if aWithMipmaps then
+    FillLodsStructure(FImageFormat,FWidth, FHeight,FDepth,isTextureArray);
+end;
+
+constructor TImageHolder.Create;
+begin
+  inherited;
+  FImageFormat:=$FFFFFFFF;
+  FImageType:=itBitmap;
+
+  FElementSize:=-1;
+  FDataSize:=-1;
+  FReservedMem:=-1;
+  FData:=nil;
+  FWidth:=-1;
+  FHeight:=-1;
+  FDepth:=-1;
+  FLevels:=-1;
+  FCompressed:=false;
+end;
+
+constructor TImageHolder.Create(aFormatCode: cardinal; aImageType: TImageType);
+var size: cardinal;
+begin
+  Create;
+  FImageFormat := aFormatCode;
+  setImageType(aImageType);
+end;
+
+procedure TImageHolder.Deallocate;
+begin
+  if assigned(FData) then begin
+    FreeMem(FData); FData := nil;
+    FElementSize:=-1;
+    FDataSize:=-1;
+    FReservedMem:=-1;
+  end;
+
+end;
+
+destructor TImageHolder.Destroy;
+begin
+  Deallocate;
   inherited;
 end;
 
-constructor TImageSampler.CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
-var size: cardinal;
-begin
-  FImageFormat := aFormatCode;
-  if not aMipmapping then FImageDescriptor.Levels := 1
-  else FillLodsStructure(aFormatCode, aWidth, aHeight, 1, false);
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 1, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.TextureArray := false;
-  FImageDescriptor.CubeMap := false;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := 1;
-end;
-
-constructor TImageSampler.CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight,
-  aDepth: integer; aMipmapping: boolean);
-var size: cardinal;
-begin
-  FImageFormat := aFormatCode;
-  if not aMipmapping then begin
-    FImageDescriptor.Levels := 1;
-  end else begin
-    FillLodsStructure(aFormatCode, aWidth, aHeight, aDepth, true);
-  end;
-  FImageDescriptor.TextureArray := true;
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, aDepth, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.CubeMap := false;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := aDepth;
-end;
-
-constructor TImageSampler.CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
-var size: cardinal;
-begin
-  FImageFormat := aFormatCode;
-  if not aMipmapping then begin
-    FImageDescriptor.Levels := 1;
-  end else begin
-    FillLodsStructure(aFormatCode, aWidth, aHeight, 6, true);
-  end;
-  FImageDescriptor.TextureArray := false;
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 6, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.CubeMap := true;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := 6;
-end;
-
-constructor TImageSampler.CreateCubeMapArray(aFormatCode: cardinal; aWidth,
-  aHeight, aDepth: integer; aMipmapping: boolean);
-var size: cardinal;
-begin
-  FImageFormat := aFormatCode;
-  if not aMipmapping then begin
-    FImageDescriptor.Levels := 1;
-  end else begin
-    FillLodsStructure(aFormatCode, aWidth, aHeight, 6*aDepth, true);
-  end;
-  FImageDescriptor.TextureArray := true;
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 6*aDepth, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.CubeMap := true;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := 6*aDepth;
-end;
-
-constructor TImageSampler.CreateVolume(aFormatCode: cardinal; aWidth, aHeight,
-  aDepth: integer; aMipmapping: boolean);
-var size: cardinal;
-begin
-  FImageFormat := aFormatCode;
-  if not aMipmapping then begin
-    FImageDescriptor.Levels := 1;
-  end else begin
-    FillLodsStructure(aFormatCode, aWidth, aHeight, aDepth, false);
-  end;
-  FImageDescriptor.TextureArray := false;
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, aDepth, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.CubeMap := false;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := aDepth;
-end;
-
-procedure TImageSampler.FillLodsStructure(aFormatCode: cardinal;
-  aWidth, aHeight, aDepth: integer; aArray: boolean);
+procedure TImageHolder.FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aArray: boolean);
 var i,j, offs, size: integer;
     w,h,d,layers: integer;
-
 begin
-  FImageDescriptor.Levels :=
-    TImageFormatSelector.GetMipmapsCount(max(aWidth, max(aHeight, aDepth)));
+  assert(assigned(FData), 'Allocate image memory first!');
+  FLevels := TImageFormatSelector.GetMipmapsCount(max(aWidth, max(aHeight, aDepth)));
   offs := 0; w := aWidth; h := aHeight; d := aDepth;
   if aArray then layers := aDepth else layers := 1;
 
-  for i := 0 to FImageDescriptor.Levels - 1 do begin
-    FImageDescriptor.LODS[i].Width := w;
-    FImageDescriptor.LODS[i].Height := h;
+  for i := 0 to FLevels - 1 do begin
+    FLODS[i].Width := w;
+    FLODS[i].Height := h;
     if not aArray then begin
-      FImageDescriptor.LODS[i].Depth := d;
-      FImageDescriptor.LODS[i].Offset := offs;
-      FImageDescriptor.LODS[i].Size :=
-        TImageFormatSelector.GetMemSize(aFormatCode, w, h, d, false);
-      setlength(FImageDescriptor.LODS[i].LayersOffset, 0);
+      FLODS[i].Depth := d;
+      FLODS[i].Offset := offs;
+      FLODS[i].Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, d, false);
+      setlength(FLODS[i].LayersOffset, 0);
     end else begin
-      FImageDescriptor.LODS[i].Depth := 1;
-      FImageDescriptor.LODS[i].Offset := offs;
+      FLODS[i].Depth := 1;
+      FLODS[i].Offset := offs;
       Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, 1, false);
-      FImageDescriptor.LODS[i].Size := Size * Layers;
-      setlength(FImageDescriptor.LODS[i].LayersOffset, layers);
-      for j := 0 to layers-1 do begin
-        FImageDescriptor.LODS[i].LayersOffset[j] := offs + Size * j;
-      end;
+      FLODS[i].Size := Size * Layers;
+      setlength(FLODS[i].LayersOffset, layers);
+      for j := 0 to layers-1 do FLODS[i].LayersOffset[j] := offs + Size * j;
     end;
 
-    offs := offs + FImageDescriptor.LODS[i].Size;
-    w := max(1,w shr 2); h := max(1, h shr 2); d := max(1, d shr 2);
+    offs := offs + FLODS[i].Size;
+    w := max(1,w shr 1); h := max(1, h shr 1); d := max(1, d shr 1);
   end;
+end;
+
+function TImageHolder.getBitmapState: boolean;
+begin
+   if FImageType in [itBitmap, itBitmapArray]
+   then result:=true else result:=false;
+end;
+
+function TImageHolder.getCubeMapState: boolean;
+begin
+   if FImageType in [itCubemap, itCubemapArray]
+   then result:=true else result:=false;
+end;
+
+function TImageHolder.getDataSize: integer;
+begin
+  if FImageFormat<>$FFFFFFFF then result:=FDataSize else result:=-1;
+end;
+
+function TImageHolder.getImageLod(Index: integer): TImageLevelDesc;
+begin
+  assert((Index>=0) and (Index<FLevels), 'Lod Index out of range');
+  result := FLODS[Index];
+end;
+
+function TImageHolder.getTextureArrayState: boolean;
+begin
+   if FImageType in [itBitmapArray, itCubemapArray]
+   then result:=true else result:=false;
+end;
+
+function TImageHolder.getVolumeState: boolean;
+begin
+   if FImageType in [itVolume]
+   then result:=true else result:=false;
+end;
+
+procedure TImageHolder.LoadFromStream(aStream: TStream);
+begin
+  assert(false, 'Not implemented yet :(');
+end;
+
+procedure TImageHolder.LoadImageFromFile(aFileName: string);
+var stream: TFileSTream;
+begin
+  stream:=TFileSTream.Create(aFileName, fmOpenRead);
+  LoadImageFromStream(stream);
+  stream.free;
+end;
+
+procedure TImageHolder.LoadImageFromStream(aStream: TStream);
+begin
+  assert(false, 'No one image format supported!');
+end;
+
+procedure TImageHolder.SaveImageToFile(aFileName, ImageFormat: string);
+var stream: TFileSTream;
+begin
+  stream:=TFileSTream.Create(aFileName, fmOpenWrite);
+  SaveImageToStream(stream);
+  stream.free;
+end;
+
+procedure TImageHolder.SaveImageToStream(aStream: TStream; ImageFormat: string);
+begin
+  assert(false, 'No one image format supported!');
+end;
+
+procedure TImageHolder.SaveToStream(aStream: TStream);
+begin
+  assert(false, 'Not implemented yet :(');
+end;
+
+procedure TImageHolder.setDepth(const Value: integer);
+begin
+  FDepth := Value; Deallocate;
+end;
+
+procedure TImageHolder.setHeight(const Value: integer);
+begin
+  FHeight := Value; Deallocate;
+end;
+
+procedure TImageHolder.setImageFormat(const Value: cardinal);
+begin
+  FImageFormat := Value;
+  Deallocate;
+  if FImageFormat <> $FFFFFFFF then begin
+    FElementSize := TImageFormatSelector.GetPixelSize(FImageFormat);
+    FCompressed := TImageFormatBits.isCompressedFormat(FImageFormat);
+  end else begin
+    FCompressed := false;
+    FElementSize := -1;
+  end;
+end;
+
+procedure TImageHolder.setImageType(const Value: TImageType);
+begin
+  if FImageType <> Value then Deallocate;
+  FImageType := Value;
+  case Value of
+    itVolume: FLevels := 1;
+    itBitmap: FDepth := 1;
+    itBitmapArray: FLevels := 1;
+    itCubemap: FDepth := 6;
+  end;
+
+end;
+
+procedure TImageHolder.setWidth(const Value: integer);
+begin
+  FWidth := Value; Deallocate;
+end;
+
+constructor TImageHolder.CreateFromStream(aStream: TStream);
+begin
+  assert(false, 'Not implemented yet :(');
 end;
 
 initialization

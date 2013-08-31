@@ -6,6 +6,8 @@ uses uMiscUtils;
 
 Type
 
+  TImageFormat = cardinal;
+
   TBaseImageFormat = (bfRed, bfRG, bfRGB, bfBGR, bfRGBA, bfBGRA, bfDepth,
     bfDepthStencil, bfCompressed, bfSpecial);
 

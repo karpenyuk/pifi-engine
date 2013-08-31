@@ -46,6 +46,13 @@ Type
     TargetTo: TMRTTarget;
   end;
 
+  TGLTextureFormatDescriptor = record
+    InternalFormat: cardinal;
+    BaseFormat: cardinal;
+    PixelFormat: cardinal;
+    Compressed: boolean;
+  end;
+
   TGLBufferObject = class(TGLBaseResource)
   private
     FBuffer: TBufferObject;
@@ -393,15 +400,20 @@ Type
   private
     FTexId: cardinal;
     FpboId: cardinal;
-    FImageDesc: PImageDesc;
+    FImageHolder: TImageHolder;
+    FFormatDescr: TGLTextureFormatDescriptor;
     FTexDesc: PTextureDesc;
     FTarget: TTexTarget;
     FTextureObject: TTexture;
     FTextureSampler: TTextureSampler;
     FGenerateMipMaps: boolean;
+    function getInternalFormat: cardinal;
+    function getColorFormat: cardinal;
+    function getDataType: cardinal;
+
   public
     constructor Create; override;
-    constructor CreateFrom(const aTarget: TTexTarget; const aImageDesc: PImageDesc;
+    constructor CreateFrom(const aTarget: TTexTarget; const aImageHolder: TImageHolder;
       const aTexDesc: PTextureDesc = nil); overload;
     constructor CreateFrom(const aTexture: TTexture); overload;
 
@@ -413,6 +425,10 @@ Type
 
     property Id: cardinal read FTexId;
     property Target: TTexTarget read FTarget;
+
+    property InternalFormat: cardinal read getInternalFormat;
+    property ColorFormat: cardinal read getColorFormat;
+    property DataType: cardinal read getDataType;
     property GenerateMipMaps: boolean read FGenerateMipMaps write FGenerateMipMaps;
   end;
 
@@ -474,13 +490,6 @@ Type
     property Active: boolean read FActive write FActive;
     property DeactivateAfter: boolean read FDeactivate write FDeactivate;
     property Handle: cardinal read FBOId;
-  end;
-
-  TGLTextureFormatDescriptor = record
-    InternalFormat: cardinal;
-    BaseFormat: cardinal;
-    PixelFormat: cardinal;
-    Compressed: boolean;
   end;
 
   TGLTextureFormatSelector = class (TAbstractPixelFormatSelector<TGLTextureFormatDescriptor>)
@@ -1773,19 +1782,21 @@ begin
   FTarget := ttTexture2D;
   FTextureSampler := nil;
   FTextureObject := nil;
-  FImageDesc:=nil;
+  FImageHolder:=nil;
   FTexDesc:=nil;
   FGenerateMipMaps := false;
 end;
 
 constructor TGLTextureObject.CreateFrom(const aTarget: TTexTarget;
-  const aImageDesc: PImageDesc; const aTexDesc: PTextureDesc);
+  const aImageHolder: TImageHolder; const aTexDesc: PTextureDesc);
 begin
   Create;
   glGenTextures(1, @FTexId);
   glGenBuffers(1, @FpboId);
   FTexDesc := aTexDesc;
-  FImageDesc := aImageDesc;
+  FImageHolder:= aImageHolder;
+  if assigned(FImageHolder) then
+    FFormatDescr := TGLTextureFormatSelector.GetTextureFormat(FImageHolder.ImageFormat);
   FTarget := aTarget;
 end;
 
@@ -1794,7 +1805,9 @@ begin
   Create;
   glGenTextures(1, @FTexId);
   glGenBuffers(1, @FpboId);
-  FImageDesc := aTexture.ImageDescriptor;
+  FImageHolder := aTexture.ImageHolder;
+  if assigned(FImageHolder) then
+    FFormatDescr := TGLTextureFormatSelector.GetTextureFormat(FImageHolder.ImageFormat);
   FTarget := aTexture.Target;
 end;
 
@@ -1808,23 +1821,37 @@ begin
   inherited;
 end;
 
+function TGLTextureObject.getColorFormat: cardinal;
+begin
+  result := FFormatDescr.BaseFormat;
+end;
+
+function TGLTextureObject.getDataType: cardinal;
+begin
+  result := FFormatDescr.PixelFormat;
+end;
+
+function TGLTextureObject.getInternalFormat: cardinal;
+begin
+  result := FFormatDescr.InternalFormat;
+end;
+
 procedure TGLTextureObject.UploadTexture(Data: pointer; Size: cardinal);
 begin
-  assert(assigned(FImageDesc),'Image descriptor is not assigned!');
-  with FImageDesc^ do
-  begin
+  assert(assigned(FImageHolder),'Image holder is not assigned!');
+  with FImageHolder, FFormatDescr do begin
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, FpboId);
     glBindTexture(CTexTargets[FTarget], FTexId);
     case FTarget of
       ttTexture1D:
         glTexImage1D(CTexTargets[FTarget], 0, InternalFormat, Width, 0,
-          ColorFormat, DataType, nil);
+          BaseFormat, PixelFormat, nil);
       ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
         glTexImage2D(CTexTargets[FTarget], 0, InternalFormat, Width, Height, 0,
-          ColorFormat, DataType, nil);
+          BaseFormat, PixelFormat, nil);
       ttTexture3D:
         glTexImage3D(CTexTargets[FTarget], 0, InternalFormat, Width, Height,
-          Depth, 0, ColorFormat, DataType, nil);
+          Depth, 0, BaseFormat, PixelFormat, nil);
     end;
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     if assigned(FTextureObject) and FTextureObject.GenerateMipMaps then
@@ -2341,8 +2368,8 @@ begin
       begin
         glReadBuffer(GL_COLOR_ATTACHMENT0 + n);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, tex.FpboId);
-        glReadPixels(0, 0, FWidth, FHeight, tex.FImageDesc.ColorFormat,
-          tex.FImageDesc.DataType, nil);
+        glReadPixels(0, 0, FWidth, FHeight, tex.ColorFormat,
+          tex.DataType, nil);
       end;
     end;
   end;
