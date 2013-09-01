@@ -119,10 +119,12 @@ Type
 
     //Set base format bits
     class procedure SetBaseFormat(var aFormat: cardinal; aValue: TBaseImageFormat);
+    //Set reverse format bit
+    class procedure SetReversFormat(var aFormat: cardinal; aValue: boolean);
     //Set pixel format bits
     class procedure SetPixelFormat(var aFormat: cardinal; aValue: TImagePixelFormat);
     //Set Bits count per component
-    class procedure SetBitsDepth(var aFormat: cardinal; aValue: byte);
+    class procedure SetBitsDepth(var aFormat: cardinal; aValue: byte; aFloat: boolean = false);
     //Set depth/stencil format bits
     class procedure SetDepthStencilFormat(var aFormat: cardinal; aValue: TDepthStencilFormat);
     //Set special format bits
@@ -144,6 +146,7 @@ const
     (1, 2, 2, 4, 4, 4, 4);
 
 //Format constants
+  IF_UNKNOWN             = $FFFFFFFF;
   IF_Red8I		 = 8;
   IF_Red8UI		 = 0;
   IF_Red16I		 = 40;
@@ -389,7 +392,7 @@ begin
 end;
 
 class procedure TImageFormatBits.SetBitsDepth(var aFormat: cardinal;
-  aValue: byte);
+  aValue: byte; aFloat: boolean);
 begin
   if not isBaseFormat(aFormat) then exit;
   //Reset Bits
@@ -398,7 +401,13 @@ begin
   case aValue of
     8: aFormat := aFormat + 0;
     16: aFormat := aFormat + 32;
-    32: aFormat := aFormat + 64;
+    32: begin
+        aFormat := aFormat + 64;
+        if aFloat then
+          aFormat := (aFormat and $FFFFFF7F) + 128
+        else
+          aFormat := aFormat and $FFFFFF7F;
+    end
     else assert(false, 'Unsupported bits depth');
   end;
 end;
@@ -665,6 +674,15 @@ begin
     else begin // in [pfFloat, pfI10F11F11F, pfI10F11F11FRev] then begin
       aFormat := aFormat + 80;
     end;
+end;
+
+class procedure TImageFormatBits.SetReversFormat(var aFormat: cardinal;
+  aValue: boolean);
+var temp: cardinal;
+begin
+  temp := $FFFFFFFB;
+  if aValue then aFormat := (aFormat and temp) + 4
+  else aFormat := aFormat and temp;
 end;
 
 class procedure TImageFormatBits.SetSpecialFormat(var aFormat: cardinal;

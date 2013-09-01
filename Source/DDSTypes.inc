@@ -1,3 +1,4 @@
+{$IFNDEF DDS_TYPES}
 
 {$REGION 'DDS Constants and Types'}
     DWORD = cardinal;
@@ -327,3 +328,5 @@ const
       DXGI_FORMAT_BC7_UNORM_SRGB );
 
 {$ENDREGION}
+{$DEFINE DDS_TYPES}
+{$ENDIF}

@@ -284,7 +284,7 @@ Type
 
   { TODO : TImageHolder: Check logic for texture arrays }
   TImageHolder = class(TBaseRenderResource)
-  private
+  protected
     FImageFormat: cardinal;
     FImageType: TImageType;
 
@@ -297,21 +297,23 @@ Type
     FLODS: array[0..15] of TImageLevelDesc;
     FCompressed: boolean;
 
+    procedure Deallocate;
+    procedure FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
+    procedure setImageFormat(const Value: cardinal);
+  private
     function getDataSize: integer;
-    function getImageLod(Index: integer): TImageLevelDesc;
+    function getImageLod(Index: integer): PImageLevelDesc;
 
     procedure setDepth(const Value: integer);
     procedure setHeight(const Value: integer);
     procedure setWidth(const Value: integer);
 
-    procedure Deallocate;
-    procedure FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
-    procedure setImageFormat(const Value: cardinal);
     procedure setImageType(const Value: TImageType);
     function getBitmapState: boolean;
     function getCubeMapState: boolean;
     function getTextureArrayState: boolean;
     function getVolumeState: boolean;
+
   public
     constructor Create; overload; override;
     constructor Create(aFormatCode: cardinal; aImageType: TImageType = itBitmap); overload;
@@ -328,6 +330,8 @@ Type
     procedure SaveImageToStream(aStream: TStream; ImageFormat: string = ''); virtual;
     procedure SaveImageToFile(aFileName: string; ImageFormat: string = '');
 
+    procedure DiscardLods;
+
     property ImageFormat: cardinal read FImageFormat write setImageFormat;
     property ImageType: TImageType read FImageType write setImageType;
 
@@ -338,7 +342,7 @@ Type
     property Height: integer read FHeight write setHeight;
     property Depth: integer read FDepth write setDepth;
     property LevelsCount: integer read FLevels;
-    property LODS[Index: integer]: TImageLevelDesc read getImageLod;
+    property LODS[Index: integer]: PImageLevelDesc read getImageLod;
 
     property Compressed: boolean read FCompressed;
     property isBitmap: boolean read getBitmapState;
@@ -2793,6 +2797,11 @@ begin
   inherited;
 end;
 
+procedure TImageHolder.DiscardLods;
+begin
+  FLevels := 1;
+end;
+
 procedure TImageHolder.FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight,
   aDepth: integer; aArray: boolean);
 var i,j, offs, size: integer;
@@ -2842,10 +2851,10 @@ begin
   if FImageFormat<>$FFFFFFFF then result:=FDataSize else result:=-1;
 end;
 
-function TImageHolder.getImageLod(Index: integer): TImageLevelDesc;
+function TImageHolder.getImageLod(Index: integer): PImageLevelDesc;
 begin
   assert((Index>=0) and (Index<FLevels), 'Lod Index out of range');
-  result := FLODS[Index];
+  result := @FLODS[Index];
 end;
 
 function TImageHolder.getTextureArrayState: boolean;

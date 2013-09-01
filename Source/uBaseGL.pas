@@ -682,11 +682,9 @@ procedure TGLBufferObject.BindRange(AsTarget: TBufferType; Index: cardinal;
 begin
   assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
   if AsTarget in [btAtomicCounter, btTransformFeedback, btUniform,
-    btShaderStorage] then
-  begin
+    btShaderStorage] then begin
     glBindBufferRange(CBufferTypes[AsTarget], Index, FBuffId, Offset, Size);
-  end
-  else
+  end else
     assert(false, 'Bind Range not supported for this buffer type!');
 end;
 
@@ -707,8 +705,7 @@ end;
 
 function TGLBufferObject.Map(AccessType: cardinal): pointer;
 begin
-  if FLocked then
-  begin
+  if FLocked then begin
     result := FMappedPointer;
     exit;
   end;
@@ -719,11 +716,9 @@ begin
   result := FMappedPointer;
 end;
 
-function TGLBufferObject.MapRange(AccessType, Offset, Length: cardinal)
-  : pointer;
+function TGLBufferObject.MapRange(AccessType, Offset, Length: cardinal): pointer;
 begin
-  if FLocked then
-  begin
+  if FLocked then begin
     result := FMappedPointer;
     exit;
   end;
@@ -737,27 +732,23 @@ end;
 
 procedure TGLBufferObject.Notify(Sender: TObject; Msg: cardinal;
   Params: pointer);
-var
-  buff: TBufferObject;
+var buff: TBufferObject;
 begin
   inherited;
   case Msg of
     NM_ResourceChanged:
-      if Sender.ClassType = TBufferObject then
-      begin
+      if Sender.ClassType = TBufferObject then begin
         buff := TBufferObject(Sender);
         if buff.Size = FSize then
           Upload(buff.Data, buff.Size, 0)
-        else
-        begin
+        else begin
           glDeleteBuffers(1, @FBuffId);
           glGenBuffers(1, @FBuffId);
           Allocate(buff.Size, buff.Data);
         end;
       end;
     NM_ObjectDestroyed:
-      if Sender = FBuffer then
-      begin
+      if Sender = FBuffer then begin
         FBuffer := nil;
         glDeleteBuffers(1, @FBuffId);
       end;
@@ -772,8 +763,7 @@ end;
 
 procedure TGLBufferObject.UnMap;
 begin
-  if not FLocked then
-    exit;
+  if not FLocked then exit;
   glUnmapBuffer(CBufferTypes[FBuffType]);
   glBindBuffer(CBufferTypes[FBuffType], 0);
   FLocked := false;
@@ -796,8 +786,7 @@ end;
 destructor TGLBufferObject.Destroy;
 begin
   glDeleteBuffers(1, @FBuffId);
-  if assigned(FBuffer) then
-    FBuffer.UnSubscribe(self);
+  if assigned(FBuffer) then FBuffer.UnSubscribe(self);
   inherited;
 end;
 
@@ -2358,18 +2347,14 @@ var
 begin
 
   FBTarget := GL_FRAMEBUFFER;
-  for i := 0 to FReadBackBuffers.Count - 1 do
-  begin
+  for i := 0 to FReadBackBuffers.Count - 1 do begin
     n := integer(FReadBackBuffers[i]);
-    if n < FAttachments.Textures.Count then
-    begin
+    if n < FAttachments.Textures.Count then begin
       tex := FAttachments.Textures[n];
-      if assigned(tex) then
-      begin
+      if assigned(tex) then begin
         glReadBuffer(GL_COLOR_ATTACHMENT0 + n);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, tex.FpboId);
-        glReadPixels(0, 0, FWidth, FHeight, tex.ColorFormat,
-          tex.DataType, nil);
+        glReadPixels(0, 0, FWidth, FHeight, tex.ColorFormat, tex.DataType, nil);
       end;
     end;
   end;
@@ -2379,47 +2364,38 @@ begin
   glBindFramebuffer(FBTarget, 0);
   glReadBuffer(GL_BACK);
   glDrawBuffer(GL_BACK);
-  with FAttachments do
-  begin
-    for i := 0 to Textures.Count - 1 do
-    begin
+  with FAttachments do begin
+    for i := 0 to Textures.Count - 1 do begin
       tex := Textures[i];
-      if assigned(tex) and tex.GenerateMipMaps then
-      begin
+      if assigned(tex) and tex.GenerateMipMaps then begin
         glBindTexture(CTexTargets[tex.Target], tex.Id);
         glGenerateMipmap(CTexTargets[tex.Target]);
         glBindTexture(CTexTargets[tex.Target], 0);
       end;
     end;
-    if DepthBuffer.Mode = bmTexture then
-    begin
+    if DepthBuffer.Mode = bmTexture then begin
       tex := DepthBuffer.Texture;
-      if assigned(tex) and tex.GenerateMipMaps then
-      begin
+      if assigned(tex) and tex.GenerateMipMaps then begin
         glBindTexture(CTexTargets[tex.Target], tex.Id);
         glGenerateMipmap(CTexTargets[tex.Target]);
         glBindTexture(CTexTargets[tex.Target], 0);
       end;
     end;
-    if StencilBuffer.Mode = bmTexture then
-    begin
+    if StencilBuffer.Mode = bmTexture then begin
       tex := StencilBuffer.Texture;
-      if assigned(tex) and tex.GenerateMipMaps then
-      begin
+      if assigned(tex) and tex.GenerateMipMaps then begin
         glBindTexture(CTexTargets[tex.Target], tex.Id);
         glGenerateMipmap(CTexTargets[tex.Target]);
         glBindTexture(CTexTargets[tex.Target], 0);
       end;
     end;
   end;
-  if FDeactivate then
-    FActive := false;
+  if FDeactivate then FActive := false;
 end;
 
 procedure TGLFrameBufferObject.SetReadBackBuffer(const ColorBufers
   : array of GLUInt);
-var
-  i: integer;
+var i: integer;
 begin
   FReadBackBuffers.Clear;
   for i := 0 to Length(ColorBufers) - 1 do
@@ -2451,17 +2427,14 @@ begin
   glDeleteFramebuffers(1, @FBOId);
   glDeleteFramebuffers(1, @FMSFBOId);
   FReadBackBuffers.Clear;
-  with FAttachments do
-  begin
+  with FAttachments do begin
     Textures.Clear;
     glDeleteRenderbuffers(1, @DepthBuffer.BuffId);
     glDeleteRenderbuffers(1, @StencilBuffer.BuffId);
     glDeleteRenderbuffers(1, @DepthStencilBuffer.BuffId);
   end;
-  with FAttachments do
-  begin
-    if ResetConfig then
-    begin
+  with FAttachments do begin
+    if ResetConfig then begin
       DepthBuffer.Mode := bmNone;
       StencilBuffer.Mode := bmNone;
       DepthStencilBuffer.Mode := bmNone;
@@ -2511,8 +2484,7 @@ var
   i: integer;
 begin
   for i := 0 to Length(FubNames) - 1 do
-    if FubNames[i] = aName then
-    begin
+    if FubNames[i] = aName then begin
       result := FubOffsets[i];
       exit;
     end;
@@ -2548,8 +2520,7 @@ begin
     GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, @FubIndices[0]);
   glGetActiveUniformsiv(aProgram, FUniformsCount, @FubIndices[0],
     GL_UNIFORM_OFFSET, @FubOffsets[0]);
-  for j := 0 to FUniformsCount - 1 do
-  begin
+  for j := 0 to FUniformsCount - 1 do begin
     glGetActiveUniformName(aProgram, FubIndices[j], 256, @len, cbuff);
     if bl <= 0 then
       FubNames[j] := copy(cbuff, 0, len)
@@ -2597,11 +2568,9 @@ var
   i: integer;
   ubo: TGLUniformBlock;
 begin
-  for i := 0 to FItems.Count - 1 do
-  begin
+  for i := 0 to FItems.Count - 1 do begin
     ubo := FItems[i];
-    if ubo.BlockName = aName then
-    begin
+    if ubo.BlockName = aName then begin
       result := ubo;
       exit;
     end;
@@ -2650,8 +2619,7 @@ begin
   if aCheck then
   begin
     for i := 0 to FStackTop do
-      if FFreeRooms[i] = index then
-        exit;
+      if FFreeRooms[i] = index then exit;
   end;
   inc(FStackTop);
   FFreeRooms[FStackTop] := Index;
