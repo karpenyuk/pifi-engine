@@ -400,6 +400,7 @@ Type
   private
     FTexId: cardinal;
     FpboId: cardinal;
+    FPBOInit: boolean;
     FImageHolder: TImageHolder;
     FFormatDescr: TGLTextureFormatDescriptor;
     FTexDesc: PTextureDesc;
@@ -419,7 +420,7 @@ Type
 
     destructor Destroy; override;
 
-    procedure UploadTexture(Data: pointer; Size: cardinal);
+    procedure UploadTexture(aData: pointer = nil);
 
     property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
 
@@ -1768,6 +1769,7 @@ begin
   inherited Create;
   glGenTextures(1, @FTexId);
   glGenBuffers(1, @FpboId);
+  FPBOInit := false;
   FTarget := ttTexture2D;
   FTextureSampler := nil;
   FTextureObject := nil;
@@ -1825,22 +1827,49 @@ begin
   result := FFormatDescr.InternalFormat;
 end;
 
-procedure TGLTextureObject.UploadTexture(Data: pointer; Size: cardinal);
+procedure TGLTextureObject.UploadTexture(aData: pointer);
 begin
   assert(assigned(FImageHolder),'Image holder is not assigned!');
+
   with FImageHolder, FFormatDescr do begin
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, FpboId);
+    if not FPBOInit then begin
+       glBufferData(GL_PIXEL_UNPACK_BUFFER, DataSize, nil, GL_STREAM_DRAW);
+       FPBOInit := true;
+    end else begin
+      //t := glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+      //Move(Data^,t^,DataSize);
+      //glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+
+      if assigned(aData) then
+        glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, aData)
+      else
+        glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, Data);
+    end;
+
     glBindTexture(CTexTargets[FTarget], FTexId);
-    case FTarget of
-      ttTexture1D:
-        glTexImage1D(CTexTargets[FTarget], 0, InternalFormat, Width, 0,
-          BaseFormat, PixelFormat, nil);
-      ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
-        glTexImage2D(CTexTargets[FTarget], 0, InternalFormat, Width, Height, 0,
-          BaseFormat, PixelFormat, nil);
-      ttTexture3D:
-        glTexImage3D(CTexTargets[FTarget], 0, InternalFormat, Width, Height,
-          Depth, 0, BaseFormat, PixelFormat, nil);
+    if not Compressed then begin
+      case FTarget of
+        ttTexture1D:
+          glTexImage1D(CTexTargets[FTarget], 0, InternalFormat, Width, 0,
+            BaseFormat, PixelFormat, nil);
+        ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
+          glTexImage2D(CTexTargets[FTarget], 0, InternalFormat, Width, Height, 0,
+            BaseFormat, PixelFormat, nil);
+        ttTexture3D:
+          glTexImage3D(CTexTargets[FTarget], 0, InternalFormat, Width, Height,
+            Depth, 0, BaseFormat, PixelFormat, nil);
+      end;
+    end else begin
+      //Upload compressed image
+      case FTarget of
+        ttTexture1D: glCompressedTexImage1D(GL_TEXTURE_1D, 0, InternalFormat, Width,
+          0, DataSize, nil);
+        ttTexture2D: glCompressedTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, Width,
+          Height, 0, DataSize, nil);
+        ttTexture3D: glCompressedTexImage3D(GL_TEXTURE_2D, 0, InternalFormat, Width,
+          Height, Depth, 0, DataSize, nil);
+      end;
     end;
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     if assigned(FTextureObject) and FTextureObject.GenerateMipMaps then
