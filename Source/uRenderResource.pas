@@ -282,6 +282,7 @@ Type
     property SamplerHash: integer read getSamplerHash;
   end;
 
+  TTexture = class;
   { TODO : TImageHolder: Check logic for texture arrays }
   TImageHolder = class(TBaseRenderResource)
   protected
@@ -319,6 +320,8 @@ Type
     constructor Create(aFormatCode: cardinal; aImageType: TImageType = itBitmap); overload;
     constructor CreateFromStream(aStream: TStream);
     destructor Destroy; override;
+
+    function CreateTexture: TTexture;
 
     procedure Allocate(aWithMipmaps: boolean = false);
     procedure SaveToStream(aStream: TStream); virtual;
@@ -2949,6 +2952,12 @@ end;
 constructor TImageHolder.CreateFromStream(aStream: TStream);
 begin
   assert(false, 'Not implemented yet :(');
+end;
+
+function TImageHolder.CreateTexture: TTexture;
+begin
+  assert(FDataSize > 0, 'Allocate image first!');
+  result := TTexture.CreateOwned(self);
 end;
 
 initialization
