@@ -11,6 +11,7 @@ object Form2: TForm2
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = True
+  OnClose = FormClose
   PixelsPerInch = 96
   TextHeight = 13
   object GLViewer1: TGLViewer

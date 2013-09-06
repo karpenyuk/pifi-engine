@@ -23,11 +23,16 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
     MX, MY: Integer;
     FImagePathList: TStringList;
     FImagesList: TList;
+    FTexturesList: TList;
+    FGLTexturesList: TList;
+    FSampler: TTextureSampler;
+    FGLSampler: TGLTextureSampler;
     procedure GL1xDebugRender(const Mesh: TGLVertexObject;
       const Model: TMatrix);
   public
@@ -74,7 +79,7 @@ end;
 
 function MakeQuad: TGLVertexObject;
 begin
-  result := TGLVertexObject.CreateFrom(CreatePlane(4, 4));
+  result := TGLVertexObject.CreateFrom(CreatePlane(0.6, 0.6));
 end;
 
 function MakeSphere: TGLVertexObject;
@@ -104,6 +109,8 @@ var
   path: string;
   i: integer;
   image: TImageLoader;
+  texture: TTexture;
+  gltex: TGLTextureObject;
   fn: string;
 begin
   // Checking OpenGL Version
@@ -131,10 +138,10 @@ begin
   if not GL1xRender then begin
     Shader1 := TGLSLShaderProgram.Create;
 {$IFDEF MSWindows}
-    path := '..\..\Source\Media\';
+    path := 'Media\';
 {$ENDIF}
 {$IFDEF Linux}
-    path := '../../Source/Media/';
+    path := 'Media/';
 {$ENDIF}
     Shader1.AttachShaderFromFile(stVertex, path + 'Shader.Vert');
     Shader1.AttachShaderFromFile(stFragment, path + 'Shader.Frag');
@@ -182,8 +189,16 @@ begin
   Teapod.Shader := Shader1;
 
   SceneGraph := TSceneGraph.Create;
+
+  FSampler:=TTextureSampler.Create;
+  FSampler.minFilter := mnLinear;
+  FSampler.magFilter := mgLinear;
+  FGLSampler:=TGLTextureSampler.CreateFrom(FSampler);
+
   FImagePathList := ImageList('Media\');
   FImagesList:=TList.Create;
+  FTexturesList:=TList.Create;
+  FGLTexturesList:=TList.Create;
   for i:= 0 to FImagePathList.Count-1 do begin
      image := TImageLoader.Create;
      fn:=FImagePathList[i];
@@ -192,12 +207,18 @@ begin
      try
              image.LoadImageFromFile('Media\'+fn);
              FImagesList.add(image);
+             texture := image.CreateTexture;
+             texture.GenerateMipMaps := false;
+             FTexturesList.Add(texture);
+             gltex := TGLTextureObject.CreateFrom(texture);
+             glTex.TextureSampler := FSampler;
+             gltex.UploadTexture;
+             FGLTexturesList.Add(gltex);
      finally
-             FImagePathList[i]:='Passed: ' + fn;
+             FImagePathList[i]:='Passed: ' + fn + ' ('+inttostr(gltex.Id)+')';
      end;
      FImagePathList.SaveToFile('ddslog.txt');
   end;
-  FreeObjectList(FImagesList);
 //  RunTest;
 end;
 
@@ -232,6 +253,14 @@ begin
       PByteArray(aData)[i*ps+j] := (i-(i div 255)*255 + j);
     end else PFloatArray(aData)[i] := (i-(i div 255)*255)/255;
   end;
+end;
+
+procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  GLViewer1.OnRender := nil;
+  FreeObjectList(FImagesList);
+  FreeObjectList(FTexturesList);
+  FreeObjectList(FGLTexturesList);
 end;
 
 procedure TForm2.GL1xDebugRender(const Mesh: TGLVertexObject;
@@ -292,6 +321,8 @@ begin
 end;
 
 procedure TForm2.GLViewer1Render(Sender: TObject);
+var tex: TGLTextureObject;
+    i,j,n: integer;
 begin
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
@@ -305,13 +336,32 @@ begin
     Shader1.Apply;
     Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
     Shader1.SetUniform('ModelView', mvp.Matrix4);
+    Shader1.SetUniform('tex', 0);
     Shader1.UnApply;
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     // TGLStaticRender.RenderVertexObject(box,slUseActiveShader, spUseActiveShaderFirst);
+    glActiveTexture(GL_TEXTURE0);
+    for i:=0 to 5 do for j:=0 to 5 do begin
+      n:=i*6+j;
+      if n < FGLTexturesList.Count then begin
+        tex:=TGLTextureObject(FGLTexturesList[n]);
+        glBindTexture(GL_TEXTURE_2D, tex.Id);
+        //FGLSampler.Bind(0);
+        FGLSampler.SetSamplerParams(ttTexture2D);
+        Shader1.Apply;
+        Model := TMatrix.TranslationMatrix(Vector(0.7 * (j-3), 0.7 * (i-3), 0));
+        mvp := Model * View;
+        Shader1.SetUniform('ModelView', mvp.Matrix4);
+        Shader1.UnApply;
+        Quad.RenderVO;
+      end;
+    end;
+ {
     Box.RenderVO;
     Quad.RenderVO;
     Sphere.RenderVO;
     Teapod.RenderVO();
+}
   end else begin
     GL1xDebugRender(Quad, Model);
     GL1xDebugRender(Sphere, Model);

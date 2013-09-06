@@ -1140,6 +1140,27 @@ begin
   FTexMatrixChanged := false;
   Owner := aOwner;
   FImageDescriptor := aImageHolder;
+
+  case FImageDescriptor.ImageType of
+    itBitmap: begin
+      FTarget := ttTexture2D;
+      if FImageDescriptor.Height <= 1 then FTarget := ttTexture1D;
+      if FImageDescriptor.Depth > 1 then FTarget := ttTexture3D;
+    end;
+    itBitmapArray: begin
+      if FImageDescriptor.Height <= 1 then FTarget := tt1DArray
+      else FTarget := tt2DArray;
+    end;
+    itVolume: begin
+      FTarget := ttTexture3D;
+    end;
+    itCubemap: begin
+      FTarget := ttCubemap;
+    end;
+    itCubemapArray: begin
+      FTarget := ttCubemapArray;
+    end;
+  end;
 end;
 
 { TTextureSampler }

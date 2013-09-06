@@ -408,9 +408,12 @@ Type
     FTextureObject: TTexture;
     FTextureSampler: TTextureSampler;
     FGenerateMipMaps: boolean;
+    FHandle: GLuint64;
+
     function getInternalFormat: cardinal;
     function getColorFormat: cardinal;
     function getDataType: cardinal;
+    function getHandle: GLuint64;
 
   public
     constructor Create; override;
@@ -426,6 +429,7 @@ Type
 
     property Id: cardinal read FTexId;
     property Target: TTexTarget read FTarget;
+    property Handle: GLuint64 read getHandle;
 
     property InternalFormat: cardinal read getInternalFormat;
     property ColorFormat: cardinal read getColorFormat;
@@ -1776,14 +1780,13 @@ begin
   FImageHolder:=nil;
   FTexDesc:=nil;
   FGenerateMipMaps := false;
+  FHandle := 0;
 end;
 
 constructor TGLTextureObject.CreateFrom(const aTarget: TTexTarget;
   const aImageHolder: TImageHolder; const aTexDesc: PTextureDesc);
 begin
   Create;
-  glGenTextures(1, @FTexId);
-  glGenBuffers(1, @FpboId);
   FTexDesc := aTexDesc;
   FImageHolder:= aImageHolder;
   if assigned(FImageHolder) then
@@ -1794,12 +1797,11 @@ end;
 constructor TGLTextureObject.CreateFrom(const aTexture: TTexture);
 begin
   Create;
-  glGenTextures(1, @FTexId);
-  glGenBuffers(1, @FpboId);
   FImageHolder := aTexture.ImageHolder;
   if assigned(FImageHolder) then
     FFormatDescr := TGLTextureFormatSelector.GetTextureFormat(FImageHolder.ImageFormat);
   FTarget := aTexture.Target;
+  FTextureObject := aTexture;
 end;
 
 destructor TGLTextureObject.Destroy;
@@ -1807,6 +1809,9 @@ begin
   glBindTexture(CTexTargets[FTarget], 0);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+{  if GL_ARB_bindless_texture then
+    glMakeTextureHandleNonResidentARB(FHandle);
+}
   glDeleteTextures(1, @FTexId);
   glDeleteBuffers(1, @FpboId);
   inherited;
@@ -1822,6 +1827,16 @@ begin
   result := FFormatDescr.PixelFormat;
 end;
 
+function TGLTextureObject.getHandle: GLuint64;
+begin
+(* if GL_ARB_bindless_texture then begin
+    FHandle := glGetTextureHandleARB(FTexId);
+    glMakeTextureHandleResidentARB(FHandle);
+  end;
+*)
+  result := FHandle;
+end;
+
 function TGLTextureObject.getInternalFormat: cardinal;
 begin
   result := FFormatDescr.InternalFormat;
@@ -1832,43 +1847,44 @@ begin
   assert(assigned(FImageHolder),'Image holder is not assigned!');
 
   with FImageHolder, FFormatDescr do begin
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, FpboId);
+(*    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, FpboId);
     if not FPBOInit then begin
        glBufferData(GL_PIXEL_UNPACK_BUFFER, DataSize, nil, GL_STREAM_DRAW);
        FPBOInit := true;
-    end else begin
+    end;
       //t := glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
       //Move(Data^,t^,DataSize);
       //glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 
-      if assigned(aData) then
-        glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, aData)
-      else
-        glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, Data);
-    end;
-
+    if assigned(aData) then
+      glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, aData)
+    else
+      glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, Data);
+*)
+    { TODO : Replace direct loading texture data to PBO }
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     glBindTexture(CTexTargets[FTarget], FTexId);
     if not Compressed then begin
       case FTarget of
         ttTexture1D:
           glTexImage1D(CTexTargets[FTarget], 0, InternalFormat, Width, 0,
-            BaseFormat, PixelFormat, nil);
+            BaseFormat, PixelFormat, Data);
         ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
           glTexImage2D(CTexTargets[FTarget], 0, InternalFormat, Width, Height, 0,
-            BaseFormat, PixelFormat, nil);
+            BaseFormat, PixelFormat, Data);
         ttTexture3D:
           glTexImage3D(CTexTargets[FTarget], 0, InternalFormat, Width, Height,
-            Depth, 0, BaseFormat, PixelFormat, nil);
+            Depth, 0, BaseFormat, PixelFormat, Data);
       end;
     end else begin
       //Upload compressed image
       case FTarget of
         ttTexture1D: glCompressedTexImage1D(GL_TEXTURE_1D, 0, InternalFormat, Width,
-          0, DataSize, nil);
+          0, DataSize, Data);
         ttTexture2D: glCompressedTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, Width,
-          Height, 0, DataSize, nil);
+          Height, 0, DataSize, Data);
         ttTexture3D: glCompressedTexImage3D(GL_TEXTURE_2D, 0, InternalFormat, Width,
-          Height, Depth, 0, DataSize, nil);
+          Height, Depth, 0, DataSize, Data);
       end;
     end;
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -2951,12 +2967,12 @@ begin
   result.PixelFormat := GL_SHORT; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R16I; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG16I; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB16I; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB16I; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA16I; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA16I; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R16; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16; BaseFormat := GL_BGRA; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;
@@ -2966,12 +2982,12 @@ begin
   result.PixelFormat := GL_INT; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R32I; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG32I; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB32I; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB32I; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R32I; BaseFormat := GL_RED_INTEGER; end;
+    bfRG: begin InternalFormat := GL_RG32I; BaseFormat := GL_RG_INTEGER; end;
+    bfRGB: begin InternalFormat := GL_RGB32I; BaseFormat := GL_RGB_INTEGER; end;
+    bfBGR: begin InternalFormat := GL_RGB32I; BaseFormat := GL_BGR_INTEGER; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_RGBA_INTEGER; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_BGRA_INTEGER; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;
@@ -2996,12 +3012,12 @@ begin
   result.PixelFormat := GL_UNSIGNED_SHORT; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R16UI; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG16UI; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB16UI; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB16UI; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA16UI; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA16UI; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R16; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16; BaseFormat := GL_BGRA; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;
@@ -3011,12 +3027,12 @@ begin
   result.PixelFormat := GL_UNSIGNED_INT; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R32UI; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG32UI; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R32UI; BaseFormat := GL_RED_INTEGER; end;
+    bfRG: begin InternalFormat := GL_RG32UI; BaseFormat := GL_RG_INTEGER; end;
+    bfRGB: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_RGB_INTEGER; end;
+    bfBGR: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_BGR_INTEGER; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_RGBA_INTEGER; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_BGRA_INTEGER; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;
@@ -3026,12 +3042,12 @@ begin
   result.PixelFormat := GL_UNSIGNED_BYTE; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R8UI; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG8UI; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB8UI; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB8UI; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R8; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG8; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB8; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB8; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA8; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA8; BaseFormat := GL_BGRA; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;
