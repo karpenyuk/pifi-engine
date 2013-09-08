@@ -339,6 +339,7 @@ var dds: TDDSImage;
     p: pointer;
     f,FaceCount: cardinal;
     CubeMap: boolean;
+    mipmaps: integer;
 begin
   aStream.Read(dds.dwMagic,4);
   assert(dds.dwMagic='DDS ','Invalid DDS file');
@@ -355,7 +356,8 @@ begin
     then FDepth := dwDepth else FDepth := 0;
     if (dwFlags and DDSD_MIPMAPCOUNT) > 0
     then FLevels := dwMipMapCount else FLevels:= 1;
-    FLevels := 1;
+    mipmaps := TImageFormatSelector.GetMipmapsCount(max(FWidth, max(FHeight, FDepth)));
+    if mipmaps <> FLevels then FLevels := 1;
     CubeMap:=((dwCaps2 and DDSCAPS2_CUBEMAP_ALLFACES)=DDSCAPS2_CUBEMAP_ALLFACES)
       or (dds.header10.miscFlag=DDS_RESOURCE_MISC_TEXTURECUBE);
     if CubeMap then assert(FWidth=FHeight,'Invalid cubemap');
@@ -370,7 +372,7 @@ begin
     if Compressed then
       buffsize:=ReservCompMem(ElementSize,self)
     else buffsize:=ReservUncompMem(ElementSize,self);
-    getmem(FData, buffsize);
+    getmem(FData, buffsize*FaceCount);
     aStream.Read(FData^,buffSize*FaceCount);
 
     FReservedMem:=buffSize*FaceCount;

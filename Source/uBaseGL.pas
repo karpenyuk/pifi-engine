@@ -423,7 +423,7 @@ Type
 
     destructor Destroy; override;
 
-    procedure UploadTexture(aData: pointer = nil);
+    procedure UploadTexture(aData: pointer = nil; aLevel: integer = -1);
 
     property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
 
@@ -1842,7 +1842,9 @@ begin
   result := FFormatDescr.InternalFormat;
 end;
 
-procedure TGLTextureObject.UploadTexture(aData: pointer);
+procedure TGLTextureObject.UploadTexture(aData: pointer; aLevel: integer);
+var i,sl,el: integer;
+    dataptr: pointer;
 begin
   assert(assigned(FImageHolder),'Image holder is not assigned!');
 
@@ -1864,27 +1866,33 @@ begin
     { TODO : Replace direct loading texture data to PBO }
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     glBindTexture(CTexTargets[FTarget], FTexId);
-    if not Compressed then begin
-      case FTarget of
-        ttTexture1D:
-          glTexImage1D(CTexTargets[FTarget], 0, InternalFormat, Width, 0,
-            BaseFormat, PixelFormat, Data);
-        ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
-          glTexImage2D(CTexTargets[FTarget], 0, InternalFormat, Width, Height, 0,
-            BaseFormat, PixelFormat, Data);
-        ttTexture3D:
-          glTexImage3D(CTexTargets[FTarget], 0, InternalFormat, Width, Height,
-            Depth, 0, BaseFormat, PixelFormat, Data);
-      end;
-    end else begin
-      //Upload compressed image
-      case FTarget of
-        ttTexture1D: glCompressedTexImage1D(GL_TEXTURE_1D, 0, InternalFormat, Width,
-          0, DataSize, Data);
-        ttTexture2D: glCompressedTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, Width,
-          Height, 0, DataSize, Data);
-        ttTexture3D: glCompressedTexImage3D(GL_TEXTURE_2D, 0, InternalFormat, Width,
-          Height, Depth, 0, DataSize, Data);
+    if aLevel = -1 then begin sl :=0; el := LevelsCount-1; end
+    else begin sl := aLevel; el := aLevel; end;
+    for i := sl to el do begin
+      if assigned(aData) then dataptr := aData
+      else dataptr := pointer(cardinal(Data)+LODS[i].Offset);
+      if not Compressed then begin
+        case FTarget of
+          ttTexture1D:
+            glTexImage1D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, 0,
+              BaseFormat, PixelFormat, DataPtr);
+          ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
+            glTexImage2D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, LODS[i].Height, 0,
+              BaseFormat, PixelFormat, DataPtr);
+          ttTexture3D:
+            glTexImage3D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, LODS[i].Height,
+              LODS[i].Depth, 0, BaseFormat, PixelFormat, DataPtr);
+        end;
+      end else begin
+        //Upload compressed image
+        case FTarget of
+          ttTexture1D: glCompressedTexImage1D(GL_TEXTURE_1D, i, InternalFormat, LODS[i].Width,
+            0, LODS[i].Size, DataPtr);
+          ttTexture2D: glCompressedTexImage2D(GL_TEXTURE_2D, i, InternalFormat, LODS[i].Width,
+            LODS[i].Height, 0, LODS[i].Size, DataPtr);
+          ttTexture3D: glCompressedTexImage3D(GL_TEXTURE_2D, i, InternalFormat, LODS[i].Width, LODS[i].Height,
+            LODS[i].Depth, 0, LODS[i].Size, DataPtr);
+        end;
       end;
     end;
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);

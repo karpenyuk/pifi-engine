@@ -215,7 +215,8 @@ begin
              gltex.UploadTexture;
              FGLTexturesList.Add(gltex);
      finally
-             FImagePathList[i]:='Passed: ' + fn + ' ('+inttostr(gltex.Id)+')';
+             if assigned(gltex) then
+               FImagePathList[i]:='Passed: ' + fn + ' ('+inttostr(gltex.Id)+')';
      end;
      FImagePathList.SaveToFile('ddslog.txt');
   end;
@@ -341,8 +342,8 @@ begin
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     // TGLStaticRender.RenderVertexObject(box,slUseActiveShader, spUseActiveShaderFirst);
     glActiveTexture(GL_TEXTURE0);
-    for i:=0 to 5 do for j:=0 to 5 do begin
-      n:=i*6+j;
+    for i:=0 to 5 do for j:=0 to 6 do begin
+      n:=i*7+j;
       if n < FGLTexturesList.Count then begin
         tex:=TGLTextureObject(FGLTexturesList[n]);
         glBindTexture(GL_TEXTURE_2D, tex.Id);
