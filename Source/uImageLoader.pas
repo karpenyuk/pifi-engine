@@ -442,6 +442,7 @@ begin
             FOURCC_G16R16: FImageFormat := IF_RG16UI;
             FOURCC_G16R16F: FImageFormat := IF_RG16F;
             FOURCC_G32R32F: FImageFormat := IF_RG32F;
+            FOURCC_Q16W16V16U16: FImageFormat := IF_RGBA16I;
                 //these are unsupported for now
             else assert(false,'Unsupported format');
         end;
@@ -457,6 +458,11 @@ begin
             if ddspf.dwRBitMask<ddspf.dwBBitMask
             then FImageFormat:=IF_RGB8UI
             else FImageFormat:=IF_BGR8UI;
+          end;
+          16: begin
+            FImageFormat:=IF_RG8UI;
+            if ddspf.dwRBitMask>ddspf.dwBBitMask
+            then TImageFormatBits.SetReversFormat(FImageFormat, true);
           end;
           8: begin
             FImageFormat:=IF_Red8UI;

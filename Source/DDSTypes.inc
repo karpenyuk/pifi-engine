@@ -268,6 +268,7 @@ const
   // Floating point surface formats
 
   // s10e5 formats (16-bits per channel)
+    FOURCC_Q16W16V16U16  = 110;
     FOURCC_R16F          = 111;
     FOURCC_G16R16F       = 112;
     FOURCC_A16B16G16R16F = 113;
