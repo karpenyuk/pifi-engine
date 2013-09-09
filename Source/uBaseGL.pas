@@ -1849,7 +1849,17 @@ begin
   assert(assigned(FImageHolder),'Image holder is not assigned!');
 
   with FImageHolder, FFormatDescr do begin
-(*    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, FpboId);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, FpboId);
+    glBindTexture(CTexTargets[FTarget], FTexId);
+      glPixelStorei ( GL_UNPACK_ALIGNMENT,   1 );
+      glPixelStorei ( GL_UNPACK_ROW_LENGTH,  0 );
+      glPixelStorei ( GL_UNPACK_SKIP_ROWS,   0 );
+      glPixelStorei ( GL_UNPACK_SKIP_PIXELS, 0 );
+      glPixelStorei ( GL_PACK_ALIGNMENT,   1 );
+      glPixelStorei ( GL_PACK_ROW_LENGTH,  0 );
+      glPixelStorei ( GL_PACK_SKIP_ROWS,   0 );
+      glPixelStorei ( GL_PACK_SKIP_PIXELS, 0 );
+
     if not FPBOInit then begin
        glBufferData(GL_PIXEL_UNPACK_BUFFER, DataSize, nil, GL_STREAM_DRAW);
        FPBOInit := true;
@@ -1862,15 +1872,15 @@ begin
       glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, aData)
     else
       glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, Data);
-*)
+
     { TODO : Replace direct loading texture data to PBO }
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    glBindTexture(CTexTargets[FTarget], FTexId);
+//    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     if aLevel = -1 then begin sl :=0; el := LevelsCount-1; end
     else begin sl := aLevel; el := aLevel; end;
     for i := sl to el do begin
-      if assigned(aData) then dataptr := aData
-      else dataptr := pointer(cardinal(Data)+LODS[i].Offset);
+//      if assigned(aData) then dataptr := aData
+//      else dataptr := pointer(cardinal(Data)+LODS[i].Offset);
+      DataPtr := nil;
       if not Compressed then begin
         case FTarget of
           ttTexture1D:
@@ -1896,8 +1906,9 @@ begin
       end;
     end;
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    if assigned(FTextureObject) and FTextureObject.GenerateMipMaps then
-      glGenerateMipmap(CTexTargets[FTarget]);
+    if assigned(FTextureObject) and FTextureObject.GenerateMipMaps
+    //and (FImageHolder.LevelsCount <= 1)
+    then glGenerateMipmap(CTexTargets[FTarget]);
     glBindTexture(CTexTargets[FTarget], 0);
   end;
 end;

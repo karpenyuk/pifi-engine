@@ -105,27 +105,8 @@ Type
     Depth: Integer;
     Offset: LongWord;
     Size: integer;
-    LayersOffset: array of LongWord;
   end;
   PImageLevelDesc = ^TImageLevelDesc;
-
-  TImageDesc = record
-    InternalFormat: cardinal;
-    ColorFormat: cardinal;
-    DataType: cardinal;
-
-    ElementSize: integer;
-    DataSize: integer;
-    ReservedMem: integer;
-    Data: pointer;
-    Width, Height, Depth, Levels: integer;
-    LODS: array[0..15] of TImageLevelDesc;
-    Compressed: boolean;
-    CubeMap: boolean;
-    TextureArray: boolean;
-    procedure Free;
-  end;
-  PImageDesc = ^TImageDesc;
 
   TApiVersion = record
     GAPI: (avGL, avDX, avES, avCanvas);
@@ -252,13 +233,5 @@ const
   NM_ObjectDestroyed = 10201;
 
 implementation
-
-procedure TImageDesc.Free;begin
-  if Assigned(Data) then
-  begin
-    FreeMem(Data);
-    Data := nil;
-  end;
-end;
 
 end.

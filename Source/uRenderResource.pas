@@ -295,6 +295,7 @@ Type
     FData: pointer;
     FWidth, FHeight, FDepth: integer;
     FLevels: integer;
+
     FLODS: array[0..15] of TImageLevelDesc;
     FCompressed: boolean;
 
@@ -2843,14 +2844,14 @@ begin
       FLODS[i].Depth := d;
       FLODS[i].Offset := offs;
       FLODS[i].Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, d, false);
-      setlength(FLODS[i].LayersOffset, 0);
+//      setlength(FLODS[i].LayersOffset, 0);
     end else begin
       FLODS[i].Depth := 1;
       FLODS[i].Offset := offs;
       Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, 1, false);
       FLODS[i].Size := Size * Layers;
-      setlength(FLODS[i].LayersOffset, layers);
-      for j := 0 to layers-1 do FLODS[i].LayersOffset[j] := offs + Size * j;
+//      setlength(FLODS[i].LayersOffset, layers);
+//      for j := 0 to layers-1 do FLODS[i].LayersOffset[j] := offs + Size * j;
     end;
 
     offs := offs + FLODS[i].Size;

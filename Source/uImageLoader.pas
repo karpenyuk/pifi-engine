@@ -358,12 +358,15 @@ begin
     then FLevels := dwMipMapCount else FLevels:= 1;
     mipmaps := TImageFormatSelector.GetMipmapsCount(max(FWidth, max(FHeight, FDepth)));
     if mipmaps <> FLevels then FLevels := 1;
+
     CubeMap:=((dwCaps2 and DDSCAPS2_CUBEMAP_ALLFACES)=DDSCAPS2_CUBEMAP_ALLFACES)
       or (dds.header10.miscFlag=DDS_RESOURCE_MISC_TEXTURECUBE);
     if CubeMap then assert(FWidth=FHeight,'Invalid cubemap');
-    //TextureArray:=(dds.header10.arraySize>1) and (not CubeMap);
-    //Compressed:=isCompressedFormat(dds);
-    if CubeMap then FaceCount:=6 else FaceCount:=1;
+{    if (dds.header10.arraySize>1) and (not CubeMap) then
+      FSlices := dds.header10.arraySize
+    else if CubeMap then FSlices := 6;}
+    if CubeMap then
+        FaceCount:=6 else FaceCount:=1;
 
     SetDDSFormat(dds);
     assert(FImageFormat <> IF_UNKNOWN, 'Unsupported dds format!');

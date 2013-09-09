@@ -191,7 +191,7 @@ begin
   SceneGraph := TSceneGraph.Create;
 
   FSampler:=TTextureSampler.Create;
-  FSampler.minFilter := mnLinear;
+  FSampler.minFilter := mnLinearMipmapLinear;
   FSampler.magFilter := mgLinear;
   FGLSampler:=TGLTextureSampler.CreateFrom(FSampler);
 
@@ -208,7 +208,7 @@ begin
              image.LoadImageFromFile('Media\'+fn);
              FImagesList.add(image);
              texture := image.CreateTexture;
-             texture.GenerateMipMaps := false;
+             texture.GenerateMipMaps := true;
              FTexturesList.Add(texture);
              gltex := TGLTextureObject.CreateFrom(texture);
              glTex.TextureSampler := FSampler;
