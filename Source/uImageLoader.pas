@@ -443,7 +443,10 @@ begin
             FOURCC_D32: FImageFormat := IF_Depth32;
             FOURCC_D24X8: FImageFormat := IF_Depth24;
             FOURCC_D16: FImageFormat := IF_Depth16;
-            FOURCC_D32F_LOCKABLE: TImageFormatBits.SetBitsDepth(FImageFormat, 32, true);
+            FOURCC_D32F_LOCKABLE: begin
+                FImageFormat := 0;
+                TImageFormatBits.SetBitsDepth(FImageFormat, 32, true);
+            end;
             FOURCC_G16R16: FImageFormat := IF_RG16UI;
             FOURCC_G16R16F: FImageFormat := IF_RG16F;
             FOURCC_G32R32F: FImageFormat := IF_RG32F;

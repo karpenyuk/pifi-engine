@@ -108,6 +108,9 @@ Type
   end;
   PImageLevelDesc = ^TImageLevelDesc;
 
+  TImageLods = array[0..32] of TImageLevelDesc;
+  PImageLods = ^TImageLods;
+
   TApiVersion = record
     GAPI: (avGL, avDX, avES, avCanvas);
     VendorName: string; //ATI, NVidia, Intel etc.
