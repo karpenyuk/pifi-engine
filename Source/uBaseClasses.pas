@@ -27,6 +27,8 @@ Type
   private
     function getItemObj(index: integer): TBaseSceneItem;
   public
+    destructor Destroy; override;
+
     function AddSceneItem(const aItem: TBaseSceneItem): integer;
     function GetSceneItem(aKey: TGUID): TBaseSceneItem; overload;
     function GetSceneItem(aFriendlyName: string): TBaseSceneItem; overload;
@@ -718,6 +720,18 @@ function TSceneItemList.AddSceneItem(
   const aItem: TBaseSceneItem): integer;
 begin
   result:=AddKey(aItem.GUID, aItem);
+end;
+
+destructor TSceneItemList.Destroy;
+var i: integer;
+    obj: TBaseSceneItem;
+begin
+  for i:=0 to Count-1 do begin
+    obj := getItemObj(i);
+    if obj.Owner = self then  obj.Free;
+  end;
+
+  inherited;
 end;
 
 function TSceneItemList.getItemObj(index: integer): TBaseSceneItem;

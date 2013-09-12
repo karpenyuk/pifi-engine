@@ -102,6 +102,7 @@ Type
     FLinearAttenuation: single;
     FQuadraticAttenuation: single;
     FLightSlot: integer;
+    FName: string;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -126,6 +127,7 @@ Type
 
     property Enabled: boolean read FEnabled write FEnabled;
 
+    property FriendlyName: string read FName write FName;
   end;
 
   TColorVectorClass = class
@@ -284,6 +286,7 @@ Type
 
   TTexture = class;
   { TODO : TImageHolder: Check logic for texture arrays }
+  TImageLayers = TDataList<PImageLods>;
   TImageHolder = class(TBaseRenderResource)
   protected
     FImageFormat: cardinal;
@@ -296,8 +299,10 @@ Type
     FWidth, FHeight, FDepth: integer;
     FLevels: integer;
 
-    FLODS: array[0..15] of TImageLevelDesc;
+    FLODS: TImageLods;
     FCompressed: boolean;
+
+    FLayers: TImageLayers;
 
     procedure Deallocate;
     procedure FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
@@ -515,6 +520,37 @@ Type
     property NormalScale: single read FNormalScale write FNormalScale;
 
   end;
+
+  TMaterialList = class (TObjectsDictionary)
+  private
+    function getItemObj(index: integer): TMaterialObject;
+  public
+    destructor Destroy; override;
+
+    function AddMaterial(const aItem: TMaterialObject): integer;
+    function GetMaterial(aKey: TGUID): TMaterialObject; overload;
+    function GetMaterial(aName: string): TMaterialObject; overload;
+
+    procedure RemoveMaterial(const aItem: TMaterialObject);
+
+    property Materials[index: integer]: TMaterialObject read getItemObj; default;
+  end;
+
+  TLightsList = class (TObjectsDictionary)
+  private
+    function getItemObj(index: integer): TLightSource;
+  public
+    destructor Destroy; override;
+
+    function AddLight(const aItem: TLightSource): integer;
+    function GetLight(aKey: TGUID): TLightSource; overload;
+    function GetLight(aName: string): TLightSource; overload;
+
+    procedure RemoveLight(const aItem: TLightSource);
+
+    property Lights[index: integer]: TLightSource read getItemObj; default;
+  end;
+
 
   TBufferObject = class(TBaseRenderResource)
   strict private
@@ -804,6 +840,19 @@ Type
     property MeshObjects: TMeshObjectsList read FMeshObjects;
   end;
 
+  TSceneCamera = class(TMovableObject)
+  public
+{    property ViewPortSize: vec2i;
+    property ViewTarget: TMovableObject;
+    property FoV: single;
+    property zNear: single;
+    property zFar: single;
+    property ViewMatrix: TMatrix;
+    property ProjMatrix: TMatrix;
+    property RenderTarget: TFrameBuffer;
+}
+  end;
+
   { TODO : Заменить TList'ы на адекватные библиотки (материалов, источников света, объектов) }
   TSceneGraph = class(TSceneItemList)
     // Решить вопрос с камерой (списком камер) - где хранятся, как используются
@@ -811,10 +860,10 @@ Type
     // Или передавать их в рендер через ProcessScene(Scene, Camera, Target, Script)?
     // Реализовать удаление используемых объектом ресурсов при уничтожении графа, подсчет ссылок?
   private
-    FItemsList: TList;
+    FRoot: TSceneCamera;
     // List of TBaseSceneItem and TSceneObject(TBaseSceneItem)
-    FLights: TList; // List of TLightSource
-    FMaterials: TList; // List of TMaterialObjct
+    FLights: TLightsList; // List of TLightSource
+    FMaterials: TMaterialList; // List of TMaterialObjct
     function getItem(Index: integer): TBaseSceneItem;
     function getCount: integer;
     function getLight(Index: integer): TLightSource;
@@ -827,9 +876,11 @@ Type
 
     function AddItem(aItem: TBaseSceneItem): integer;
     function AddLight(aLight: TLightSource): integer;
+    function GetLights: TLightsList;
 
     function AddMaterial(aMat: TMaterialObject): integer;
     function AddNewMaterial(aName: string): TMaterialObject;
+    function GetMaterials: TMaterialList;
 
     property Items[index: integer]: TBaseSceneItem read getItem; default;
     property Lights[index: integer]: TLightSource read getLight;
@@ -2541,49 +2592,55 @@ end;
 
 function TSceneGraph.AddItem(aItem: TBaseSceneItem): integer;
 begin
-  result := FItemsList.Add(aItem);
+  result := FRoot.Childs.AddSceneItem(aItem);
 end;
 
 function TSceneGraph.AddLight(aLight: TLightSource): integer;
 begin
-  result := FLights.Add(aLight);
+  result := FLights.AddLight(aLight);
 end;
 
 function TSceneGraph.AddMaterial(aMat: TMaterialObject): integer;
 begin
-  result := FMaterials.Add(aMat);
+  result := FMaterials.AddMaterial(aMat);
 end;
 
 function TSceneGraph.AddNewMaterial(aName: string): TMaterialObject;
 var
   aMat: TMaterialObject;
 begin
-  { TODO : Проверить на существование в библиотеке материала с таким именем }
+  assert(not assigned(FMaterials.GetMaterial(aName)),
+    'Material with name "'+aName+'" is exists in library!');
   aMat := TMaterialObject.Create;
   aMat.Name := aName;
+  aMat.Owner:=FMaterials;
+  FMaterials.AddMaterial(aMat);
   result := aMat;
 end;
 
 constructor TSceneGraph.Create;
 begin
-  FItemsList := TList.Create;
-  FLights := TList.Create;
+  FRoot := TSceneCamera.Create;
+  FMaterials:=TMaterialList.Create;
+  FLights := TLightsList.Create;
 end;
 
 destructor TSceneGraph.Destroy;
 begin
-  FreeObjectList(FItemsList);
+  FRoot.Free;
+  FMaterials.Free;
+  FLights.Free;
   inherited;
 end;
 
 function TSceneGraph.getCount: integer;
 begin
-  result := FItemsList.Count;
+  result := FRoot.Childs.Count;
 end;
 
 function TSceneGraph.getItem(Index: integer): TBaseSceneItem;
 begin
-  result := TBaseSceneItem(FItemsList[index]);
+  result := TBaseSceneItem(FRoot.Childs[index]);
 end;
 
 function TSceneGraph.getLight(Index: integer): TLightSource;
@@ -2596,6 +2653,11 @@ begin
   result := FLights.Count;
 end;
 
+function TSceneGraph.GetLights: TLightsList;
+begin
+  result := FLights;
+end;
+
 function TSceneGraph.getMatCount: integer;
 begin
   result := FMaterials.Count;
@@ -2604,6 +2666,11 @@ end;
 function TSceneGraph.getMaterial(Index: integer): TMaterialObject;
 begin
   result := TMaterialObject(FMaterials[index]);
+end;
+
+function TSceneGraph.GetMaterials: TMaterialList;
+begin
+  result := FMaterials;
 end;
 
 { TAttribList }
@@ -2795,6 +2862,9 @@ begin
   FDepth:=-1;
   FLevels:=-1;
   FCompressed:=false;
+
+  FLayers := TImageLayers.Create;
+  FLayers.Add(@FLODS);
 end;
 
 constructor TImageHolder.Create(aFormatCode: cardinal; aImageType: TImageType);
@@ -2980,6 +3050,115 @@ function TImageHolder.CreateTexture: TTexture;
 begin
   assert(FDataSize > 0, 'Allocate image first!');
   result := TTexture.CreateOwned(self);
+end;
+
+{ TMaterialList }
+
+function TMaterialList.AddMaterial(const aItem: TMaterialObject): integer;
+begin
+  result:=AddKey(aItem.GUID, aItem);
+end;
+
+destructor TMaterialList.Destroy;
+var i: integer;
+    obj: TMaterialObject;
+begin
+  for i:=0 to Count-1 do begin
+    obj := getItemObj(i);
+    if obj.Owner = self then  obj.Free;
+  end;
+
+  inherited;
+end;
+
+function TMaterialList.getItemObj(index: integer): TMaterialObject;
+begin
+  result:=TMaterialObject(FItems[Index].Value);
+end;
+
+function TMaterialList.GetMaterial(aKey: TGUID): TMaterialObject;
+begin
+   result:=TMaterialObject(GetValue(aKey));
+end;
+
+function TMaterialList.GetMaterial(aName: string): TMaterialObject;
+var i: integer;
+    mi: TMaterialObject;
+begin
+  for i:=0 to FCount-1 do begin
+    mi:=TMaterialObject(FItems[i].Value);
+    if mi.FName=aName then begin
+      result:=mi; exit;
+    end;
+  end; result:=nil;
+end;
+
+procedure TMaterialList.RemoveMaterial(const aItem: TMaterialObject);
+var i: integer;
+    mi: TMaterialObject;
+begin
+  for i:=0 to FCount-1 do begin
+    mi:=TMaterialObject(FItems[i].Value);
+    if mi=aItem then begin
+      FItems[i].Key:=-1; FItems[i].KeyName:='';
+      FItems[i].KeyGUID := TGUIDEx.Empty;
+      FItems[i].Value:=nil; exit;
+    end;
+  end;
+end;
+
+{ TLightsList }
+
+function TLightsList.AddLight(const aItem: TLightSource): integer;
+begin
+  result:=AddKey(aItem.GUID, aItem);
+end;
+
+destructor TLightsList.Destroy;
+var i: integer;
+    obj: TLightSource;
+begin
+  for i:=0 to Count-1 do begin
+    obj := getItemObj(i);
+    if obj.Owner = self then  obj.Free;
+  end;
+  inherited;
+end;
+
+function TLightsList.getItemObj(index: integer): TLightSource;
+begin
+  result:=TLightSource(FItems[Index].Value);
+end;
+
+function TLightsList.GetLight(aName: string): TLightSource;
+var i: integer;
+    li: TLightSource;
+begin
+  for i:=0 to FCount-1 do begin
+    li:=TLightSource(FItems[i].Value);
+    if li.FName=aName then begin
+      result:=li; exit;
+    end;
+  end; result:=nil;
+end;
+
+function TLightsList.GetLight(aKey: TGUID): TLightSource;
+begin
+  result:=TLightSource(GetValue(aKey));
+end;
+
+procedure TLightsList.RemoveLight(const aItem: TLightSource);
+var i: integer;
+    li: TLightSource;
+begin
+  for i:=0 to FCount-1 do begin
+    li:=TLightSource(FItems[i].Value);
+    if li=aItem then begin
+      FItems[i].Key:=-1; FItems[i].KeyName:='';
+      FItems[i].KeyGUID := TGUIDEx.Empty;
+      FItems[i].Value:=nil; exit;
+    end;
+  end;
 end;
 
 initialization
