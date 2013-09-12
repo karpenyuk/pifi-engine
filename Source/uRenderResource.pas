@@ -130,6 +130,21 @@ Type
     property FriendlyName: string read FName write FName;
   end;
 
+  TLightsList = class (TObjectsDictionary)
+  private
+    function getItemObj(index: integer): TLightSource;
+  public
+    destructor Destroy; override;
+
+    function AddLight(const aItem: TLightSource): integer;
+    function GetLight(aKey: TGUID): TLightSource; overload;
+    function GetLight(aName: string): TLightSource; overload;
+
+    procedure RemoveLight(const aItem: TLightSource);
+
+    property Lights[index: integer]: TLightSource read getItemObj; default;
+  end;
+
   TColorVectorClass = class
   private
     FColorVector: TVector;
@@ -536,22 +551,6 @@ Type
     property Materials[index: integer]: TMaterialObject read getItemObj; default;
   end;
 
-  TLightsList = class (TObjectsDictionary)
-  private
-    function getItemObj(index: integer): TLightSource;
-  public
-    destructor Destroy; override;
-
-    function AddLight(const aItem: TLightSource): integer;
-    function GetLight(aKey: TGUID): TLightSource; overload;
-    function GetLight(aName: string): TLightSource; overload;
-
-    procedure RemoveLight(const aItem: TLightSource);
-
-    property Lights[index: integer]: TLightSource read getItemObj; default;
-  end;
-
-
   TBufferObject = class(TBaseRenderResource)
   strict private
     FDataHandler: TAbstractDataList; // Второй источник данных
@@ -840,17 +839,71 @@ Type
     property MeshObjects: TMeshObjectsList read FMeshObjects;
   end;
 
-  TSceneCamera = class(TMovableObject)
+{ TODO : Need refactoring for TRenderTarget & TAttachments }
+  TRenderTarget = record
+    Texture: TTexture;
+    Mode: TBufferMode;
+    Precision: TDepthPrecision;
+    TargetTo: TMRTTarget;
+  end;
+
+  TTexturesList = TDataList<TTexture>;
+  TAttachments = record
+    Textures: TTexturesList;
+    DepthBuffer: TRenderTarget;
+    StencilBuffer: TRenderTarget;
+    DepthStencilBuffer: TRenderTarget;
+  end;
+
+  TFrameBuffer = class (TPersistentResource)
+  private
+    FAttachments: TAttachments;
+    FReadBackBuffers: TList; //List of TImageHolder
+    FRenderBuffers: TRenderBuffers;
+    FActive: boolean;
+    FMultisample: TMultisampleFormat;
+    procedure SetActive(const Value: boolean);
+    procedure SetAttachments(const Value: TAttachments);
+    procedure SetMultisample(const Value: TMultisampleFormat);
+    procedure SetReadBackBuffers(const Value: TList);
+    procedure SetRenderBuffers(const Value: TRenderBuffers);
   public
-{    property ViewPortSize: vec2i;
-    property ViewTarget: TMovableObject;
-    property FoV: single;
-    property zNear: single;
-    property zFar: single;
-    property ViewMatrix: TMatrix;
-    property ProjMatrix: TMatrix;
-    property RenderTarget: TFrameBuffer;
-}
+    property Attachments: TAttachments read FAttachments write SetAttachments;
+    property RenderBuffers: TRenderBuffers read FRenderBuffers write SetRenderBuffers;
+    property ReadBackBuffers: TList read FReadBackBuffers write SetReadBackBuffers;
+    property Active: boolean read FActive write SetActive;
+    property Multisample: TMultisampleFormat read FMultisample write SetMultisample;
+
+  end;
+
+  TSceneCamera = class(TMovableObject)
+  private
+    FzNear: single;
+    FProjMatrix: TMatrix;
+    FFoV: single;
+    FRenderTarget: TFrameBuffer;
+    FViewPortSize: vec2i;
+    FzFar: single;
+    FViewTarget: TMovableObject;
+    FViewMatrix: TMatrix;
+    procedure SetFoV(const Value: single);
+    procedure SetProjMatrix(const Value: TMatrix);
+    procedure SetRenderTarget(const Value: TFrameBuffer);
+    procedure SetViewMatrix(const Value: TMatrix);
+    procedure SetViewPortSize(const Value: vec2i);
+    procedure SetViewTarget(const Value: TMovableObject);
+    procedure SetzFar(const Value: single);
+    procedure SetzNear(const Value: single);
+
+  public
+    property ViewPortSize: vec2i read FViewPortSize write SetViewPortSize;
+    property ViewTarget: TMovableObject read FViewTarget write SetViewTarget;
+    property FoV: single read FFoV write SetFoV;
+    property zNear: single read FzNear write SetzNear;
+    property zFar: single read FzFar write SetzFar;
+    property ViewMatrix: TMatrix read FViewMatrix write SetViewMatrix;
+    property ProjMatrix: TMatrix read FProjMatrix write SetProjMatrix;
+    property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
   end;
 
   { TODO : Заменить TList'ы на адекватные библиотки (материалов, источников света, объектов) }
@@ -3159,6 +3212,75 @@ begin
       FItems[i].Value:=nil; exit;
     end;
   end;
+end;
+
+{ TSceneCamera }
+
+procedure TSceneCamera.SetFoV(const Value: single);
+begin
+  FFoV := Value;
+end;
+
+procedure TSceneCamera.SetProjMatrix(const Value: TMatrix);
+begin
+  FProjMatrix := Value;
+end;
+
+procedure TSceneCamera.SetRenderTarget(const Value: TFrameBuffer);
+begin
+  FRenderTarget := Value;
+end;
+
+procedure TSceneCamera.SetViewMatrix(const Value: TMatrix);
+begin
+  FViewMatrix := Value;
+end;
+
+procedure TSceneCamera.SetViewPortSize(const Value: vec2i);
+begin
+  FViewPortSize := Value;
+end;
+
+procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
+begin
+  FViewTarget := Value;
+end;
+
+procedure TSceneCamera.SetzFar(const Value: single);
+begin
+  FzFar := Value;
+end;
+
+procedure TSceneCamera.SetzNear(const Value: single);
+begin
+  FzNear := Value;
+end;
+
+{ TFrameBuffer }
+
+procedure TFrameBuffer.SetActive(const Value: boolean);
+begin
+  FActive := Value;
+end;
+
+procedure TFrameBuffer.SetAttachments(const Value: TAttachments);
+begin
+  FAttachments := Value;
+end;
+
+procedure TFrameBuffer.SetMultisample(const Value: TMultisampleFormat);
+begin
+  FMultisample := Value;
+end;
+
+procedure TFrameBuffer.SetReadBackBuffers(const Value: TList);
+begin
+  FReadBackBuffers := Value;
+end;
+
+procedure TFrameBuffer.SetRenderBuffers(const Value: TRenderBuffers);
+begin
+  FRenderBuffers := Value;
 end;
 
 initialization

@@ -193,6 +193,15 @@ Type
   //Приоритет использования шейдера, если назначены оба или один не доступен
   TShaderUsagePriority = (spUseOwnShaderFirst, spUseActiveShaderFirst);
 
+//FBO types
+  TRenderBuffer = (rbDepth, rbStencil);
+  TRenderBuffers = set of TRenderBuffer;
+  TBufferMode = (bmNone, bmBuffer, bmTexture);
+  TDepthPrecision = (dpDefault, dp16, dp24, dp32);
+  TStencilPrecision = (spDefault, sp1bit, sp4bits, sp8bits, sp16bits);
+  TMultisampleFormat = (MSAA2, MSAA4, MSAA8);
+  TMRTTarget = (tgTexture, tgDepth, tgDepthStencil, tgMRT0, tgMRT1, tgMRT2, tgMRT3);
+
 const
   CValueSizes: array[TValueType] of byte = (1, 2, 4, 4, 4, 8);
 

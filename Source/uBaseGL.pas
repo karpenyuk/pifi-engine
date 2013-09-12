@@ -11,15 +11,6 @@ uses Classes, uPersistentClasses, uVMath, uLists, uMiscUtils, {ImageLoader,}
 
 Type
 
-  TRenderBuffer = (rbDepth, rbStencil);
-  TRenderBuffers = set of TRenderBuffer;
-  TBufferMode = (bmNone, bmBuffer, bmTexture);
-  TDepthPrecision = (dpDefault, dp16, dp24, dp32);
-  TStencilPrecision = (spDefault, sp1bit, sp4bits, sp8bits, sp16bits);
-  TMultisampleFormat = (MSAA2, MSAA4, MSAA8);
-  TMRTTarget = (tgTexture, tgDepth, tgDepthStencil, tgMRT0, tgMRT1,
-    tgMRT2, tgMRT3);
-
   // Base GL Resource
   TGLBaseResource = class(TBaseRenderResource)
     Owner: TObject;
@@ -34,7 +25,7 @@ Type
     Precision: GLEnum;
   end;
 
-  TAttachments = record
+  TFBOAttachments = record
     Textures: TList;
     DepthBuffer: TFBORenderTarget;
     StencilBuffer: TFBORenderTarget;
@@ -441,7 +432,7 @@ Type
   private
     FBOId: GLUInt;
     FMSFBOId: GLUInt;
-    FAttachments: TAttachments;
+    FAttachments: TFBOAttachments;
     FRenderBuffers: TRenderBuffers;
     FReadBackBuffers: TList;
     FWidth, FHeight: integer;
