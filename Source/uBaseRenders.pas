@@ -82,6 +82,7 @@ end;
 
 constructor TBaseRender.Create;
 begin
+  inherited Create;
   FRegisteredSubRenders:=TList.Create;
 end;
 
@@ -142,6 +143,7 @@ end;
 
 constructor TBaseSubRender.Create;
 begin
+  inherited Create;
   FSupportedResources:=TList.Create;
   FRenderPurpose:=[rpUnknown];
 end;

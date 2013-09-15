@@ -194,11 +194,14 @@ Type
   TShaderUsagePriority = (spUseOwnShaderFirst, spUseActiveShaderFirst);
 
 //FBO types
-  TRenderBuffer = (rbDepth, rbStencil);
+  TRenderBuffer = (rbDepth, rbStencil, rbDepthStencil);
   TRenderBuffers = set of TRenderBuffer;
   TBufferMode = (bmNone, bmBuffer, bmTexture);
   TDepthPrecision = (dpDefault, dp16, dp24, dp32);
   TStencilPrecision = (spDefault, sp1bit, sp4bits, sp8bits, sp16bits);
+  TRenderBufferFormat = (rbDepth16, rbDepth24, rbDepth32,
+    rbStencil1b, rbStencil4b, rbStencil8b, rbStencil16b,
+    rbDepth24Stencil8, rbDepth32FStencil8);
   TMultisampleFormat = (MSAA2, MSAA4, MSAA8);
   TMRTTarget = (tgTexture, tgDepth, tgDepthStencil, tgMRT0, tgMRT1, tgMRT2, tgMRT3);
 

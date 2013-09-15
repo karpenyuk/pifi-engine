@@ -46,6 +46,8 @@ type
 
   TPersistentResource = class(TNotifiableObject)
   private
+    FOwner: TObject;
+    procedure setOwner(const Value: TObject);
   protected
     procedure WriteString(const s: string; const stream: TStream);
     function ReadString(const stream: TStream): string;
@@ -58,7 +60,6 @@ type
     procedure WriteFloat(const Value: single; const stream: TStream);
     function ReadFloat(const stream: TStream): single;
   public
-    Owner: TObject;
     GUID: TGUID;
     Version: integer;
     Storage: TObject;
@@ -67,6 +68,7 @@ type
     procedure SetGUID(GUIDString: string);
     constructor Create; virtual;
     destructor Destroy; override;
+    property Owner: TObject read FOwner write setOwner;
   end;
 
   TPersistentResClass = class of TPersistentResource;
@@ -82,7 +84,7 @@ constructor TPersistentResource.Create;
 begin
   CreateGuid(GUID);
   Version := 1;
-  Owner := nil;
+  FOwner := nil;
   inherited;
 end;
 
@@ -90,7 +92,6 @@ destructor TPersistentResource.Destroy;
 begin
   Assert(FUpdateCount = 0);
   FUpdateCount := 0;
-  DispatchMessage(NM_ObjectDestroyed);
   inherited Destroy;
 end;
 
@@ -160,6 +161,15 @@ begin
   GUID := StringToGUID(GUIDString);
 end;
 
+procedure TPersistentResource.setOwner(const Value: TObject);
+begin
+  if assigned(FOwner) and (FOwner is TPersistentResource)
+  then TPersistentResource(FOwner).UnSubscribe(Self);
+  FOwner := Value;
+  if assigned(FOwner) and (FOwner is TPersistentResource)
+  then TPersistentResource(FOwner).Subscribe(Self);
+end;
+
 procedure TPersistentResource.WriteBool(const Value: boolean;
   const stream: TStream);
 begin
@@ -221,6 +231,7 @@ end;
 
 destructor TNotifiableObject.Destroy;
 begin
+  DispatchMessage(NM_ObjectDestroyed);
   FreeAndNil(FSubscribers);
   RemoveFromCollector;
   inherited;
@@ -243,8 +254,7 @@ begin
 end;
 
 procedure TNotifiableObject.DispatchMessage(Msg: Cardinal; Params: pointer);
-var
-  i: integer;
+var i: integer;
 begin
   if FUpdateCount = 0 then
   begin
