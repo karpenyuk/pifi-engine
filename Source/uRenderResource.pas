@@ -861,6 +861,8 @@ Type
     FActive: boolean;
     FMultisample: TMultisampleFormat;
 
+    FSize: vec2i;
+
     procedure SetActive(const Value: boolean);
     procedure SetMultisample(const Value: TMultisampleFormat);
   public
@@ -868,6 +870,7 @@ Type
     constructor Create;
     destructor Destroy; override;
 
+    procedure SetSize(aSize: vec2i);
     procedure AttachRenderBuffer(aFormat: TRenderBufferFormat; aMode: TBufferMode = bmBuffer);
     procedure AttachColor(aTexture: TTexture);
     function GetTexture(aRenderBuffer: TRenderBuffer): TTexture; overload;
@@ -886,14 +889,15 @@ Type
 
   TSceneCamera = class(TMovableObject)
   private
-    FzNear: single;
+    FViewMatrix: TMatrix;
     FProjMatrix: TMatrix;
-    FFoV: single;
     FRenderTarget: TFrameBuffer;
     FViewPortSize: vec2i;
+    FFoV: single;
+    FzNear: single;
     FzFar: single;
     FViewTarget: TMovableObject;
-    FViewMatrix: TMatrix;
+
     procedure SetFoV(const Value: single);
     procedure SetProjMatrix(const Value: TMatrix);
     procedure SetRenderTarget(const Value: TFrameBuffer);
@@ -902,8 +906,14 @@ Type
     procedure SetViewTarget(const Value: TMovableObject);
     procedure SetzFar(const Value: single);
     procedure SetzNear(const Value: single);
+    procedure RebuildProjMatrix;
+    procedure RebuildViewMatrix;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
   public
+    constructor Create; override;
+
     property ViewPortSize: vec2i read FViewPortSize write SetViewPortSize;
     property ViewTarget: TMovableObject read FViewTarget write SetViewTarget;
     property FoV: single read FFoV write SetFoV;
@@ -914,17 +924,13 @@ Type
     property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
   end;
 
-  { TODO : Заменить TList'ы на адекватные библиотки (материалов, источников света, объектов) }
   TSceneGraph = class(TSceneItemList)
-    // Решить вопрос с камерой (списком камер) - где хранятся, как используются
     // Решить вопрос со скриптовым рендером - добавить вместе с камерами в корень графа?
     // Или передавать их в рендер через ProcessScene(Scene, Camera, Target, Script)?
-    // Реализовать удаление используемых объектом ресурсов при уничтожении графа, подсчет ссылок?
   private
     FRoot: TSceneCamera;
-    // List of TBaseSceneItem and TSceneObject(TBaseSceneItem)
-    FLights: TLightsList; // List of TLightSource
-    FMaterials: TMaterialList; // List of TMaterialObjct
+    FLights: TLightsList;
+    FMaterials: TMaterialList;
     function getItem(Index: integer): TBaseSceneItem;
     function getCount: integer;
     function getLight(Index: integer): TLightSource;
@@ -3226,9 +3232,60 @@ end;
 
 { TSceneCamera }
 
+constructor TSceneCamera.Create;
+begin
+  inherited;
+  FViewMatrix := TMatrix.IdentityMatrix;
+  FProjMatrix := TMatrix.IdentityMatrix;
+  FRenderTarget := nil;
+  FViewPortSize[0]:=256;
+  FViewPortSize[1]:=256;
+  FFoV := 60;
+  FzNear := 0.1;
+  FzFar := 100;
+  FViewTarget := nil;
+  RebuildProjMatrix;
+  RebuildViewMatrix;
+end;
+
+procedure TSceneCamera.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  if sender = FViewTarget then
+    case Msg of
+      NM_WorldMatrixChanged: RebuildViewMatrix;
+      NM_ObjectDestroyed: FViewTarget := nil;
+    end;
+  if sender = Owner then
+    case Msg of
+      NM_WorldMatrixChanged: begin
+        UpdateWorldMatrix; RebuildViewMatrix;
+      end;
+      NM_ObjectDestroyed: UpdateWorldMatrix;
+    end;
+  inherited;
+end;
+
+procedure TSceneCamera.RebuildProjMatrix;
+begin
+  if FFoV = 0 then
+    FProjMatrix := TMatrix.OrthoMatrix(0,FViewPortSize[0],0,FViewPortSize[1],FzNear, FzFar)
+  else
+    FProjMatrix := TMatrix.PerspectiveMatrix(FFov,FViewPortSize[0]/FViewPortSize[1],FzNear, FzFar);
+end;
+
+procedure TSceneCamera.RebuildViewMatrix;
+begin
+  if WorldMatrixUpdated then UpdateWorldMatrix;
+  if assigned(FViewTarget) then
+    FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
+  else
+    FViewMatrix := TMatrix.LookAtMatrix(Position,Direction,Up);
+end;
+
 procedure TSceneCamera.SetFoV(const Value: single);
 begin
   FFoV := Value;
+  RebuildProjMatrix;
 end;
 
 procedure TSceneCamera.SetProjMatrix(const Value: TMatrix);
@@ -3238,32 +3295,45 @@ end;
 
 procedure TSceneCamera.SetRenderTarget(const Value: TFrameBuffer);
 begin
+  if assigned(FRenderTarget) and (FRenderTarget.Owner = self)
+  then FRenderTarget.Free;
+
   FRenderTarget := Value;
+  if assigned(FRenderTarget) then FRenderTarget.SetSize(FViewPortSize);
 end;
 
 procedure TSceneCamera.SetViewMatrix(const Value: TMatrix);
 begin
   FViewMatrix := Value;
+  WorldMatrixUpdated := true;
 end;
 
 procedure TSceneCamera.SetViewPortSize(const Value: vec2i);
 begin
   FViewPortSize := Value;
+  if assigned(FRenderTarget) then FRenderTarget.SetSize(Value);
 end;
 
 procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
 begin
   FViewTarget := Value;
+  if assigned(FViewTarget) then begin
+    FViewTarget.Subscribe(self);
+    if WorldMatrixUpdated then UpdateWorldMatrix;
+    FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up);
+  end;
 end;
 
 procedure TSceneCamera.SetzFar(const Value: single);
 begin
   FzFar := Value;
+  RebuildProjMatrix;
 end;
 
 procedure TSceneCamera.SetzNear(const Value: single);
 begin
   FzNear := Value;
+  RebuildProjMatrix;
 end;
 
 { TFrameBuffer }
@@ -3389,6 +3459,12 @@ end;
 procedure TFrameBuffer.SetMultisample(const Value: TMultisampleFormat);
 begin
   FMultisample := Value;
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TFrameBuffer.SetSize(aSize: vec2i);
+begin
+  FSize := aSize;
   DispatchMessage(NM_ResourceChanged);
 end;
 
