@@ -744,11 +744,9 @@ Type
 
     MaterialObject: TMaterialObject;
 
-    constructor CreateFrom(const aVertexObject: TVertexObject;
-      const aGUID: TGUID); overload;
+    constructor CreateFrom(const aVertexObject: TVertexObject; const aGUID: TGUID); overload;
     constructor CreateFrom(const aVertexObject: TVertexObject); overload;
-    constructor CreateFrom(const aVertexObject: TVertexObject;
-      aName: string); overload;
+    constructor CreateFrom(const aVertexObject: TVertexObject; aName: string); overload;
 
     property VertexObject: TVertexObject read FVertexObject;
     property Extents: TExtents read FExtents;
@@ -763,6 +761,9 @@ Type
     function getCount: integer;
   public
     constructor Create;
+    constructor CreateFrom(aMesh: TMesh); overload;
+    constructor CreateFrom(aVertexObject: TVertexObject); overload;
+
     destructor Destroy; override;
     function AddNewMesh(aVertexObject: TVertexObject): TMesh;
 
@@ -770,28 +771,67 @@ Type
     property Count: integer read getCount;
   end;
 
-  TListOfMeshList =  TDataList<TMeshList>;
+  TLodFunction = function (aDistance: single): integer;
 
-  { TODO : Заменить "Lods: TDataList<TMeshList>" на библиотеку ЛОДов
-    с возможностью задавать закон смены ЛОДов, события на выбор ЛОДа и ограничения
-    на минимальный/максимальный ЛОД.
-    - Реализовать функцию GetMeshLod с выборкой по расстоянию из библиотеки ЛОДов.
+  TLoD = class
+    LoD: TMeshList;
+    Distance: single;
+    constructor Create(aLoD: TMeshList; aDistance: single);
+  end;
+
+  TLodsDataList = TDataList<TLoD>;
+
+  { TODO : Реализовать закон смены ЛОДов + функцию GetMeshLod с выборкой
+           по расстоянию из библиотеки ЛОДов.
   }
+
+  TLODsController = class (TPersistentResource)
+  private
+    FList: TLodsDataList;
+    FLodFunction: TLodFunction;
+    FConstant, FLinear, FQuadric: single;
+    FMinLod, FMaxLod: integer;
+    function getLod(Index: integer): TLod;
+    function getCount: integer;
+  public
+    constructor Create(aBaseLod: TMeshList);
+    destructor Destroy; override;
+
+    procedure SetLodEquation(aConstant, aLinear, aQuadric: single);
+    procedure SetLodRange(aMinLod, aMaxLod: integer);
+
+    function GetMeshLod(const aLod: integer): TMeshList; overload;
+    function GetMeshLod(const aDistance: single): TMeshList; overload;
+
+    function AddLod(aLoD: TMeshList; aDistance: single): integer; overload;
+    function AddLod(aLoD: TLoD): integer; overload;
+
+    property onGetLod: TLodFunction read FLodFunction write FLodFunction;
+    property LODS[Index: integer]: TLod read getLod; default;
+    property Count: integer read getCount;
+
+  end;
+
   TMeshObject = class(TBaseRenderResource)
   private
-    FLods: TListOfMeshList;
+    FLods: TLODsController;
     FOccluder: TMeshList;
     FCollider: TTriangleList;
     FExtents: TExtents;
+    function getMeshes: TMeshList;
   public
     FriendlyName: string;
 
     constructor Create; override;
+    constructor CreateFrom(aMesh: TMeshList); overload;
+    constructor CreateFrom(aMesh: TMesh); overload;
     destructor Destroy; override;
-    function GetMeshLod(const aLod: integer): TMeshList; overload;
-    // function GetMeshLod(const aDistance: single): TMeshList; overload;
-    // Вся работа с мешами через список ЛОДов
-    property LODS: TListOfMeshList read FLods;
+
+    function SetMesh(aMesh: TMeshList): integer; overload;
+    function SetMesh(aMesh: TMesh): integer; overload;
+
+    property Meshes: TMeshList read getMeshes;
+    property LODS: TLODsController read FLods;
     property Occluder: TMeshList read FOccluder;
     property Collider: TTriangleList read FCollider;
   end;
@@ -810,8 +850,6 @@ Type
   end;
 
   { TODO : Доработать структуру отображаемого объекта сцены.
-    Вопрос: Есть ли смысл делать Лоды на уровне объектов сцены?
-    Переделать работу с MeshObjects на запрос ЛОДа
   }
   TSceneObject = class(TMovableObject)
   private
@@ -2037,9 +2075,25 @@ end;
 constructor TMeshObject.Create;
 begin
   inherited;
-  FLods := TListOfMeshList.Create;
+  FLods := TLODsController.Create(nil);
   FOccluder := TMeshList.Create;
   FCollider := TTriangleList.Create;
+end;
+
+constructor TMeshObject.CreateFrom(aMesh: TMeshList);
+begin
+  inherited Create;
+  FOccluder := TMeshList.Create;
+  FCollider := TTriangleList.Create;
+  FLods := TLODsController.Create(aMesh);
+end;
+
+constructor TMeshObject.CreateFrom(aMesh: TMesh);
+begin
+  inherited Create;
+  FOccluder := TMeshList.Create;
+  FCollider := TTriangleList.Create;
+  FLods := TLODsController.Create(TMeshList.CreateFrom(aMesh));
 end;
 
 destructor TMeshObject.Destroy;
@@ -2050,17 +2104,19 @@ begin
   inherited;
 end;
 
-function TMeshObject.GetMeshLod(const aLod: integer): TMeshList;
+function TMeshObject.getMeshes: TMeshList;
 begin
-  if (FLods.Count = 0) or (aLod < 0) then
-  begin
-    result := nil;
-    exit;
-  end;
-  if aLod < FLods.Count then
-    result := FLods[aLod]
-  else
-    result := FLods[FLods.Count - 1];
+  result:=FLods.GetMeshLod(0);
+end;
+
+function TMeshObject.SetMesh(aMesh: TMeshList): integer;
+begin
+
+end;
+
+function TMeshObject.SetMesh(aMesh: TMesh): integer;
+begin
+
 end;
 
 { TRegisteredResource }
@@ -2099,7 +2155,7 @@ end;
 
 function TMeshList.AddNewMesh(aVertexObject: TVertexObject): TMesh;
 begin
-  result := TMesh.CreateFrom(aVertexObject);
+  result := TMesh.CreateFrom(aVertexObject,'VertexObject'+inttostr(FList.Count));
   FList.Add(result);
 end;
 
@@ -2107,6 +2163,17 @@ constructor TMeshList.Create;
 begin
   inherited;
   FList := TList.Create;
+end;
+
+constructor TMeshList.CreateFrom(aMesh: TMesh);
+begin
+  Create;
+  FList.Add(aMesh);
+end;
+
+constructor TMeshList.CreateFrom(aVertexObject: TVertexObject);
+begin
+  CreateFrom(TMesh.CreateFrom(aVertexObject, 'VertexObject'+inttostr(FList.Count)));
 end;
 
 destructor TMeshList.Destroy;
@@ -2133,6 +2200,7 @@ begin
   Create;
   GUID := aGUID;
   FriendlyName := '';
+  LocalMatrix := TMatrix.IdentityMatrix;
 end;
 
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject);
@@ -2140,6 +2208,7 @@ begin
   Create;
   CreateGUID(GUID);
   FriendlyName := '';
+  LocalMatrix := TMatrix.IdentityMatrix;
 end;
 
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject; aName: string);
@@ -2147,6 +2216,7 @@ begin
   Create;
   CreateGUID(GUID);
   FriendlyName := aName;
+  LocalMatrix := TMatrix.IdentityMatrix;
 end;
 
 { TShaderProgram }
@@ -3455,6 +3525,85 @@ procedure TFrameBuffer.SetSize(aSize: vec2i);
 begin
   FSize := aSize;
   DispatchMessage(NM_ResourceChanged);
+end;
+
+{ TLODsController }
+
+function TLODsController.AddLod(aLoD: TMeshList; aDistance: single): integer;
+begin
+  result := FList.Add(TLod.Create(aLod,aDistance));
+end;
+
+function TLODsController.AddLod(aLoD: TLoD): integer;
+begin
+  result := FList.Add(aLod);
+end;
+
+constructor TLODsController.Create(aBaseLod: TMeshList);
+begin
+  inherited Create;
+  FList := TLodsDataList.Create;
+  FList.Add(TLod.Create(aBaseLod, 0));
+  FMinLod := 0; FMaxLod := high(Integer);
+end;
+
+destructor TLODsController.Destroy;
+begin
+  FList.Free;
+  inherited;
+end;
+
+function TLODsController.getCount: integer;
+begin
+  result := FList.Count;
+end;
+
+function TLODsController.getLod(Index: integer): TLod;
+begin
+  result := FList[min(Index,FList.Count-1)];
+end;
+
+function TLODsController.GetMeshLod(const aLod: integer): TMeshList;
+var n: integer;
+begin
+  n := max(aLod, FMinLod);
+  n := min(n,FMaxLod);
+  if n<FList.Count then result := FList[n].LoD
+  else result:=nil;
+end;
+
+function TLODsController.GetMeshLod(const aDistance: single): TMeshList;
+var i: integer;
+begin
+  if assigned(FLodFunction) then begin
+    i:=FLodFunction(aDistance);
+    i:=max(FMinLod,i); i:=min(FMaxLod,i);
+    result:=FList[i].LoD;
+  end else begin
+    for i:= FList.Count-1 downto 0 do begin
+      if FList[i].Distance <= aDistance then begin
+        result:=FList[i].LoD; exit;
+      end;
+    end;
+    result:=FList[0].LoD;
+  end;
+end;
+
+procedure TLODsController.SetLodEquation(aConstant, aLinear, aQuadric: single);
+begin
+  FConstant:=aConstant; FLinear:=aLinear; FQuadric:=aQuadric;
+end;
+
+procedure TLODsController.SetLodRange(aMinLod, aMaxLod: integer);
+begin
+  FMinLod := aMinLod; FMaxLod := aMaxLod;
+end;
+
+{ TLoD }
+
+constructor TLoD.Create(aLoD: TMeshList; aDistance: single);
+begin
+  LoD:=aLod; Distance:=aDistance;
 end;
 
 initialization

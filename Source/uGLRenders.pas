@@ -1,4 +1,4 @@
- { TODO : Реализовать использование зарегистрированных рендеров и менеджеров ресурсов }
+﻿ { TODO : Реализовать использование зарегистрированных рендеров и менеджеров ресурсов }
 unit uGLRenders;
 
 {$IFDEF FPC}
@@ -672,9 +672,9 @@ begin
   FMeshObject:=aMeshObject;
   setlength(FLods, aMeshObject.Lods.Count);
   for i:=0 to aMeshObject.Lods.Count-1 do begin
-    setlength(FLods[i], aMeshObject.Lods[i].Count);
-    for j:=0 to aMeshObject.Lods[i].Count-1 do begin
-      FLods[i,j]:=TGLMesh(aOwner.GetOrCreateResource(aMeshObject.Lods[i][j]));
+    setlength(FLods[i], aMeshObject.Lods[i].LoD.Count);
+    for j:=0 to aMeshObject.Lods[i].LoD.Count-1 do begin
+      FLods[i,j]:=TGLMesh(aOwner.GetOrCreateResource(aMeshObject.Lods[i].LoD[j]));
     end;
   end;
   setlength(FOccluder, aMeshObject.Occluder.Count);
@@ -878,12 +878,10 @@ initialization
 //  vMaterialPool:=TGLPoolBuffers.Create(CLightUBOSize,true,-1);
 
 finalization
-
   vRegisteredRenders.UnRegisterRender(vGLRender);
   vGLRender.Free;
   if assigned(vMaterialPool) then vMaterialPool.Free;
   if assigned(vLightsPool) then vLightsPool.Free;
-
 end.
 //Projected Sphere radius
 //radius * cot(fov / 2) / Z * ViewerSize
