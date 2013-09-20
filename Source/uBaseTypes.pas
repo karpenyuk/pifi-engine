@@ -202,7 +202,7 @@ Type
   TRenderBufferFormat = (rbDepth16, rbDepth24, rbDepth32,
     rbStencil1b, rbStencil4b, rbStencil8b, rbStencil16b,
     rbDepth24Stencil8, rbDepth32FStencil8);
-  TMultisampleFormat = (MSAA2, MSAA4, MSAA8);
+  TMultisampleFormat = (MSNone, MSAA2, MSAA4, MSAA8);
   TMRTTarget = (tgTexture, tgDepth, tgDepthStencil, tgMRT0, tgMRT1, tgMRT2, tgMRT3);
 
 const

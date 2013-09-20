@@ -839,38 +839,46 @@ Type
     property MeshObjects: TMeshObjectsList read FMeshObjects;
   end;
 
-{ TODO : Need refactoring for TRenderTarget & TAttachments }
-  TRenderTarget = record
-    Texture: TTexture;
-    Mode: TBufferMode;
-    Precision: TDepthPrecision;
-    TargetTo: TMRTTarget;
-  end;
 
   TTexturesList = TDataList<TTexture>;
-  TAttachments = record
-    Textures: TTexturesList;
-    DepthBuffer: TRenderTarget;
-    StencilBuffer: TRenderTarget;
-    DepthStencilBuffer: TRenderTarget;
+  TImageHolders = TDataList<TImageHolder>;
+
+  TRenderBufferAttachment = record
+    Texture: TTexture;
+    Format: TRenderBufferFormat;
+    Mode: TBufferMode;
   end;
 
   TFrameBuffer = class (TPersistentResource)
   private
-    FAttachments: TAttachments;
-    FReadBackBuffers: TList; //List of TImageHolder
+    FReadBackBuffers: TImageHolders;
     FRenderBuffers: TRenderBuffers;
+    FDepthBuffer: TRenderBufferAttachment;
+    FStencilBuffer: TRenderBufferAttachment;
+    FDepthStencilBuffer: TRenderBufferAttachment;
+    FColorAttachments: TTexturesList;
+
     FActive: boolean;
     FMultisample: TMultisampleFormat;
+
     procedure SetActive(const Value: boolean);
-    procedure SetAttachments(const Value: TAttachments);
     procedure SetMultisample(const Value: TMultisampleFormat);
-    procedure SetReadBackBuffers(const Value: TList);
-    procedure SetRenderBuffers(const Value: TRenderBuffers);
   public
-    property Attachments: TAttachments read FAttachments write SetAttachments;
-    property RenderBuffers: TRenderBuffers read FRenderBuffers write SetRenderBuffers;
-    property ReadBackBuffers: TList read FReadBackBuffers write SetReadBackBuffers;
+
+    constructor Create;
+    destructor Destroy; override;
+
+    procedure AttachRenderBuffer(aFormat: TRenderBufferFormat; aMode: TBufferMode = bmBuffer);
+    procedure AttachColor(aTexture: TTexture);
+    function GetTexture(aRenderBuffer: TRenderBuffer): TTexture; overload;
+    function GetTexture(aAttachmentSlot: cardinal): TTexture; overload;
+
+    procedure ResetColorAttachments;
+    procedure ResetRenderBuffers;
+    procedure ResetReedBackBuffers;
+
+    property RenderBuffers: TRenderBuffers read FRenderBuffers;
+    property ReadBackBuffers: TImageHolders read FReadBackBuffers;
     property Active: boolean read FActive write SetActive;
     property Multisample: TMultisampleFormat read FMultisample write SetMultisample;
 
@@ -1241,10 +1249,12 @@ end;
 
 constructor TTexture.CreateOwned(aImageHolder: TImageHolder; aOwner: TObject);
 begin
+  assert(assigned(aImageHolder),'Image holder is not assigned!');
   Create;
   FTexMatrixChanged := false;
   Owner := aOwner;
   FImageDescriptor := aImageHolder;
+  aImageHolder.Subscribe(Self);
 
   case FImageDescriptor.ImageType of
     itBitmap: begin
@@ -3258,29 +3268,128 @@ end;
 
 { TFrameBuffer }
 
+function TFrameBuffer.GetTexture(aRenderBuffer: TRenderBuffer): TTexture;
+begin
+  case aRenderBuffer of
+    rbDepth: if FDepthBuffer.Mode = bmTexture
+      then result := FDepthBuffer.Texture
+      else result := nil;
+    rbStencil: if FStencilBuffer.Mode = bmTexture
+      then result := FStencilBuffer.Texture
+      else result := nil;
+    rbDepthStencil: if FDepthStencilBuffer.Mode = bmTexture
+      then result := FDepthStencilBuffer.Texture
+      else result := nil;
+    else result := nil;
+  end;
+end;
+
+procedure TFrameBuffer.AttachColor(aTexture: TTexture);
+begin
+  FColorAttachments.Add(aTexture);
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TFrameBuffer.AttachRenderBuffer(aFormat: TRenderBufferFormat; aMode: TBufferMode);
+var buffptr: ^TRenderBufferAttachment;
+begin
+  case aFormat of
+    rbDepth16, rbDepth24, rbDepth32: begin
+        buffptr := @FDepthBuffer;
+          if aMode<>bmNone then include(FRenderBuffers,rbDepth)
+          else exclude(FRenderBuffers,rbDepth);
+      end;
+    rbStencil1b, rbStencil4b, rbStencil8b, rbStencil16b: begin
+        buffptr := @FStencilBuffer;
+          if aMode<>bmNone then include(FRenderBuffers,rbStencil)
+          else exclude(FRenderBuffers,rbStencil);
+      end;
+    rbDepth24Stencil8, rbDepth32FStencil8: begin
+        buffptr := @FDepthStencilBuffer;
+          if aMode<>bmNone then include(FRenderBuffers,rbDepthStencil)
+          else exclude(FRenderBuffers,rbDepthStencil);
+      end;
+    else assert(false, 'Unknown render buffer format!');
+  end;
+
+  buffptr.Mode := aMode;
+  buffptr.Format := aFormat;
+  if assigned(buffptr.Texture) then buffptr.Texture.Free;
+  buffptr.Texture := nil;
+
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+constructor TFrameBuffer.Create;
+begin
+    inherited Create;
+
+    FReadBackBuffers := TImageHolders.Create;
+    FRenderBuffers := [];
+    FDepthBuffer.Mode := bmNone;
+    FDepthBuffer.Texture := nil;
+    FStencilBuffer.Mode := bmNone;
+    FStencilBuffer.Texture := nil;
+    FDepthStencilBuffer.Mode := bmNone;
+    FDepthStencilBuffer.Texture :=nil;
+    FColorAttachments := TTexturesList.Create;
+
+    FActive := false;
+    FMultisample := MSNone;
+
+end;
+
+destructor TFrameBuffer.Destroy;
+begin
+  ResetColorAttachments;
+  ResetRenderBuffers;
+  ResetReedBackBuffers;
+
+  FColorAttachments.Free;
+  FReadBackBuffers.Free;
+  inherited;
+end;
+
+function TFrameBuffer.GetTexture(aAttachmentSlot: cardinal): TTexture;
+begin
+  if (aAttachmentSlot < FColorAttachments.Count)
+  then result := FColorAttachments[aAttachmentSlot]
+  else result := nil;
+end;
+
+procedure TFrameBuffer.ResetColorAttachments;
+begin
+  FColorAttachments.Clear;
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TFrameBuffer.ResetReedBackBuffers;
+begin
+  FReadBackBuffers.Clear;
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TFrameBuffer.ResetRenderBuffers;
+begin
+  FRenderBuffers:=[];
+  FDepthBuffer.Mode:=bmNone;
+  if assigned(FDepthBuffer.Texture) then FDepthBuffer.Texture.Free;
+  FStencilBuffer.Mode:=bmNone;
+  if assigned(FStencilBuffer.Texture) then FStencilBuffer.Texture.Free;
+  FDepthStencilBuffer.Mode:=bmNone;
+  if assigned(FDepthStencilBuffer.Texture) then FDepthStencilBuffer.Texture.Free;
+  DispatchMessage(NM_ResourceChanged);
+end;
+
 procedure TFrameBuffer.SetActive(const Value: boolean);
 begin
   FActive := Value;
 end;
 
-procedure TFrameBuffer.SetAttachments(const Value: TAttachments);
-begin
-  FAttachments := Value;
-end;
-
 procedure TFrameBuffer.SetMultisample(const Value: TMultisampleFormat);
 begin
   FMultisample := Value;
-end;
-
-procedure TFrameBuffer.SetReadBackBuffers(const Value: TList);
-begin
-  FReadBackBuffers := Value;
-end;
-
-procedure TFrameBuffer.SetRenderBuffers(const Value: TRenderBuffers);
-begin
-  FRenderBuffers := Value;
+  DispatchMessage(NM_ResourceChanged);
 end;
 
 initialization

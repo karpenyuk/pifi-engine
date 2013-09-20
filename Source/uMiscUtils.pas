@@ -97,8 +97,8 @@ function min(a,b: single): single; overload;
 function max(a,b: integer): integer; overload;
 function max(a,b: single): single; overload;
 
-procedure FreeList(var List: TList);
-procedure FreeObjectList(var List: TList);overload;
+procedure FreeList(var List: TList; aFreeList: boolean = true);
+procedure FreeObjectList(var List: TList; aFreeList: boolean = true);overload;
 procedure FreeAndNil(var Obj);
 
 function StrToInt(const Str: string):integer;
@@ -179,17 +179,18 @@ begin
   result:=copy(s,1,min(length(s),l));
 end;
 
-procedure FreeList(var List: TList);
+procedure FreeList(var List: TList; aFreeList: boolean);
 var i: integer;
     p: pointer;
 begin
   if not assigned(List) then exit;
   for i:=0 to List.Count-1 do begin
     p:=List[i]; if assigned(p) then Dispose(p);
-  end; List.Free; List:=nil;
+  end;
+  if aFreeList then begin List.Free; List:=nil; end;
 end;
 
-procedure FreeObjectList(var List: TList);overload;
+procedure FreeObjectList(var List: TList; aFreeList: boolean);overload;
 var i: integer;
     p: TObject;
 begin
@@ -198,7 +199,8 @@ begin
     p:=List[i];
     if assigned(p) then
       FreeAndNil(p);
-  end; FreeAndNil(List);
+  end;
+  if aFreeList then FreeAndNil(List);
 end;
 
 procedure FreeAndNil(var Obj);
