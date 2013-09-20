@@ -29,17 +29,6 @@ const
 
 Type
 
-  TColor = record
-    Red, Green, Blue, Alpha: single;
-  end;
-
-  TLightModels = (lmNone, lmGouraud, lmPhong, lmBlinn, lmLambert, lmDeferred);
-  TColorReplacing = (crDisable, crEmission, crAmbient, crDiffuse, crSpecular,
-    crAmbientAndDiffuse);
-
-  TMaterialType = (mtFFP, mtShader);
-  TLightStyle = (lsSpot, lsOmni, lsParallel, lsDirectional);
-
   TRegisteredResource = class(TNotifiableObject)
   private
     FResource: TList;
@@ -83,7 +72,46 @@ Type
     constructor CreateOwned(aOwner: TObject = nil);
   end;
 
-  TColorVectorClass = class;
+  TColorVectorClass = class
+  private
+    FColorVector: TVector;
+    FColorRec: TColor;
+    FColorKey: integer;
+    procedure RecalcHashKey;
+    procedure setAlpha(const Value: single);
+    procedure setBlue(const Value: single);
+    procedure setGreen(const Value: single);
+    procedure setRed(const Value: single);
+
+    function getVecAddr: Pointer;
+    procedure SetColorVector(const Value: TVector);
+    procedure SetColorRec(const Value: TColor);
+    function getIntColorVect: Vec4i;
+    procedure setIntColorVect(const Value: Vec4i);
+    function getAlpha: single;
+    function getBValue: single;
+    function getGValue: single;
+    function getRValue: single;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Assign(Color: TColorVectorClass);
+
+    procedure SetColor(r, g, b, a: byte); overload;
+    procedure SetColor(r, g, b, a: single); overload;
+
+    property HasKey: integer read FColorKey;
+
+    property ColorRec: TColor read FColorRec write SetColorRec;
+    property ColorVector: TVector read FColorVector write SetColorVector;
+    property ColorVector4i: Vec4i read getIntColorVect write setIntColorVect;
+    property ColorAsAddress: Pointer read getVecAddr;
+
+    property Red: single read getRValue write setRed;
+    property Green: single read getGValue write setGreen;
+    property Blue: single read getBValue write setBlue;
+    property Alpha: single read getAlpha write setAlpha;
+  end;
 
   TLightSource = class(TBaseRenderResource)
   private
@@ -143,47 +171,6 @@ Type
     procedure RemoveLight(const aItem: TLightSource);
 
     property Lights[index: integer]: TLightSource read getItemObj; default;
-  end;
-
-  TColorVectorClass = class
-  private
-    FColorVector: TVector;
-    FColorRec: TColor;
-    FColorKey: integer;
-    procedure RecalcHashKey;
-    procedure setAlpha(const Value: single);
-    procedure setBlue(const Value: single);
-    procedure setGreen(const Value: single);
-    procedure setRed(const Value: single);
-
-    function getVecAddr: Pointer;
-    procedure SetColorVector(const Value: TVector);
-    procedure SetColorRec(const Value: TColor);
-    function getIntColorVect: Vec4i;
-    procedure setIntColorVect(const Value: Vec4i);
-    function getAlpha: single;
-    function getBValue: single;
-    function getGValue: single;
-    function getRValue: single;
-  public
-    constructor Create;
-    destructor Destroy; override;
-    procedure Assign(Color: TColorVectorClass);
-
-    procedure SetColor(r, g, b, a: byte); overload;
-    procedure SetColor(r, g, b, a: single); overload;
-
-    property HasKey: integer read FColorKey;
-
-    property ColorRec: TColor read FColorRec write SetColorRec;
-    property ColorVector: TVector read FColorVector write SetColorVector;
-    property ColorVector4i: Vec4i read getIntColorVect write setIntColorVect;
-    property ColorAsAddress: Pointer read getVecAddr;
-
-    property Red: single read getRValue write setRed;
-    property Green: single read getGValue write setGreen;
-    property Blue: single read getBValue write setBlue;
-    property Alpha: single read getAlpha write setAlpha;
   end;
 
   TMaterialProperties = class

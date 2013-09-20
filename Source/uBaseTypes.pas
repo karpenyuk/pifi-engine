@@ -174,6 +174,17 @@ Type
 
   TTriangleBoundaryArray = array of TTriangleBoundary;
 
+  TColor = record
+    Red, Green, Blue, Alpha: single;
+  end;
+
+  TLightModels = (lmNone, lmGouraud, lmPhong, lmBlinn, lmLambert, lmDeferred);
+  TColorReplacing = (crDisable, crEmission, crAmbient, crDiffuse, crSpecular,
+    crAmbientAndDiffuse);
+
+  TMaterialType = (mtFFP, mtShader);
+  TLightStyle = (lsSpot, lsOmni, lsParallel, lsDirectional);
+
   //Логика использования шейдеров рендером вершинных объектов
   //slDisableShader - деактивировать активный шейдер и не использовать собственный
   //slUseActiveShader - использовать активный шейдер вместо собственного
