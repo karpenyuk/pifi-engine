@@ -943,6 +943,8 @@ Type
     property Materials[index: integer]: TMaterialObject read getMaterial;
     property MaterialsCount: integer read getMatCount;
 
+    property Camera: TSceneCamera read FRoot;
+
     property Count: integer read getCount;
   end;
 
