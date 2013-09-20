@@ -52,10 +52,6 @@ Type
     property Childs: TSceneItemList read FChilds;
   end;
 
- { TODO : Реализовать подписку объектов TMovableObject для получения уведомлений
-          о изменении родительской матрицы.
- }
-
   TMovableObject = class (TBaseSceneItem)
   private
     //координатный базис
@@ -73,7 +69,6 @@ Type
     function getDirection: TVector;
     function getLeftVector: TVector;
     function getUpVector: TVector;
-
   protected
     FParent: TMovableObject;
 
@@ -108,82 +103,84 @@ Type
 
     WorldMatrixUpdated: boolean; //false=требуется перестроить мировую матрицу
 
-    Constructor Create; override;
-    Destructor Destroy; override;
+    constructor Create; override;
+    destructor Destroy; override;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     //установка родителя, из которого будет браться базовая матрица трансформаций
-    Property Parent: TMovableObject read getParent write SetParent;
+    property Parent: TMovableObject read getParent write SetParent;
     //Прямая установка родительской матрицы
-    Property ParentMatrix: TMatrix read FParentMatrix write FParentMatrix;
+    property ParentMatrix: TMatrix read FParentMatrix write FParentMatrix;
 
     //модельная матрица, хранит локальные/базовые трансформации объекта
-    Property ModelMatrix: TMatrix read FModelMatrix write setModelMatrix;
+    property ModelMatrix: TMatrix read FModelMatrix write setModelMatrix;
     //масштабная матрица
-    Property ScaleMatrix: TMatrix read FScaleMatrix write setScaleMatrix;
+    property ScaleMatrix: TMatrix read FScaleMatrix write setScaleMatrix;
     //матрица поворота
-    Property RotationMatrix: TMatrix read FRotationMatrix write setRotMatrix;
+    property RotationMatrix: TMatrix read FRotationMatrix write setRotMatrix;
     //матрица переноса
-    Property TranslationMatrix: TMatrix read FTranslationMatrix write setTranslMatrix;
+    property TranslationMatrix: TMatrix read FTranslationMatrix write setTranslMatrix;
     //результирующая мировая матрица
-    Property WorldMatrix: TMatrix read FWorldMatrix write setWorldMatrix;
+    property WorldMatrix: TMatrix read FWorldMatrix write setWorldMatrix;
     //транспонированная мировая матрица
-    Property WorldMatrixT: TMatrix read FWorldMatrixT;
+    property WorldMatrixT: TMatrix read FWorldMatrixT;
     //обратная мировая матрица
-    Property InvWorldMatrix: TMatrix read FInvWorldMatrix;
+    property InvWorldMatrix: TMatrix read FInvWorldMatrix;
 
 
     //Установка/чтение локального положения
-    Property Position: TVector read FPosition write SetPosition;
+    property Position: TVector read FPosition write SetPosition;
     //Чтение абсолютного положения
-    Property AbsolutePosition: TVector read FAbsolutePosition;
+    property AbsolutePosition: TVector read FAbsolutePosition;
     //Установка/чтение масштаба объекта
-    Property Scale: TVector read FScale write SetScale;
+    property Scale: TVector read FScale write SetScale;
     //Угол поворота в плоскости экрана
-    Property RollAngle: single read FRollAngle write FRollAngle;
+    property RollAngle: single read FRollAngle write FRollAngle;
     //Установка/чтение ориентации объекта
-    Property Direction: TVector read getDirection write SetDirection;
-    Property Left: TVector read getLeftVector;
-    Property Up: TVector read getUpVector;
+    property Direction: TVector read getDirection write SetDirection;
+    property Left: TVector read getLeftVector;
+    property Up: TVector read getUpVector;
 
     //Вращение относительно локальных осей
-    Procedure TurnObject(Angle:single);  //Вокруг локальной оси Y
-    Procedure RollObject(Angle:single);  //Вокруг локальной оси Z
-    Procedure PitchObject(Angle:single); //Вокруг локальной оси X
+    procedure TurnObject(Angle:single);  //Вокруг локальной оси Y
+    procedure RollObject(Angle:single);  //Вокруг локальной оси Z
+    procedure PitchObject(Angle:single); //Вокруг локальной оси X
     //Передвигает объект вдоль оси Direction
-    Procedure MoveForward(Step:single);
+    procedure MoveForward(Step:single);
     //Передвигает объект вдоль оси Left
-    Procedure MoveLeft(Step:single);
+    procedure MoveLeft(Step:single);
     //Передвигает объект вдоль оси Up
-    Procedure MoveUp(Step:single);
+    procedure MoveUp(Step:single);
     //формирует матрицу поворота, при AbsoluteRotation=false модифицируется существующая
-    Procedure RotateObject(const Axis: TVector; Angle: single; AbsoluteRotation: boolean=true);
-    Procedure RotateAround(const Pivot, Axis: TVector; Angle: single);
-    Procedure RotateAroundX(Angle: single; AbsoluteRotation: boolean=true);
-    Procedure RotateAroundY(Angle: single; AbsoluteRotation: boolean=true);
-    Procedure RotateAroundZ(Angle: single; AbsoluteRotation: boolean=true);
+    procedure RotateObject(const Axis: TVector; Angle: single; AbsoluteRotation: boolean=true);
+    procedure RotateAround(const Pivot, Axis: TVector; Angle: single);
+    procedure RotateAroundX(Angle: single; AbsoluteRotation: boolean=true);
+    procedure RotateAroundY(Angle: single; AbsoluteRotation: boolean=true);
+    procedure RotateAroundZ(Angle: single; AbsoluteRotation: boolean=true);
     //Накопленные углы при абсолютном повороте
     property XRotationAngle: single read FXRotationAngle;
     property YRotationAngle: single read FYRotationAngle;
     property ZRotationAngle: single read FZRotationAngle;
 
     //формирует матрицу масштабирования, при AbsoluteScale=false модифицируется существующая
-    Procedure ScaleObject(Scale: TVector; AbsoluteScale: boolean=true);overload;
-    Procedure ScaleObject(ScaleX,ScaleY,ScaleZ: single; AbsoluteScale: boolean=true);overload;
+    procedure ScaleObject(Scale: TVector; AbsoluteScale: boolean=true);overload;
+    procedure ScaleObject(ScaleX,ScaleY,ScaleZ: single; AbsoluteScale: boolean=true);overload;
     //формирует матрицу переноса, при AbsolutePos=false модифицируется существующая
-    Procedure MoveObject(Pos: TVector; AbsolutePos: boolean=true);overload;
-    Procedure MoveObject(x,y,z: single; AbsolutePos: boolean=true);overload;
+    procedure MoveObject(Pos: TVector; AbsolutePos: boolean=true);overload;
+    procedure MoveObject(x,y,z: single; AbsolutePos: boolean=true);overload;
     //перестраивается мировая матрица
-    Procedure UpdateWorldMatrix(UseMatrix: TTransforms=[ttAll]);virtual;
+    procedure UpdateWorldMatrix(UseMatrix: TTransforms=[ttAll]);virtual;
     //Заменяет все матрицы трансформаций на единичные
-    Procedure ResetMatrices;
+    procedure ResetMatrices;
     //Заменяет модельную матрицу текущей мировой матрицей
-    Procedure StoreTransforms(ToStore: TTransforms);
+    procedure StoreTransforms(ToStore: TTransforms);
     //Переводит точку из глобальной системы координат в систему координат объекта
-    Function AbsoluteToLocal(P: TVector):TVector;
+    function AbsoluteToLocal(P: TVector):TVector;
     //Переводит вектор из глобальной системы координат в локальную
-    Function VectorToLocal(V: TVector; Norm: boolean=true): TVector;
+    function VectorToLocal(V: TVector; Norm: boolean=true): TVector;
     //Переводит точку из локальной системы координат в глобальную
-    Function LocalToAbsolute(P: TVector): TVector;
+    function LocalToAbsolute(P: TVector): TVector;
   end;
 
   { TODO :
@@ -259,6 +256,7 @@ end;
 
 destructor TMovableObject.Destroy;
 begin
+  if assigned(FParent) then FParent.UnSubscribe(self);
   inherited;
 end;
 
@@ -469,7 +467,9 @@ end;
 
 procedure TMovableObject.SetParent(const Value: TMovableObject);
 begin
+  if assigned(FParent) then FParent.UnSubscribe(self);
   FParent:=Value;
+  if assigned(FParent) then FParent.Subscribe(self);
 end;
 
 procedure TMovableObject.SetPosition(const Value: TVector);
@@ -524,6 +524,20 @@ begin
   FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+FUp[1]*Step;
   FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+FUp[2]*Step;
   UpdateWorldMatrix;
+end;
+
+procedure TMovableObject.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  if Sender = FParent then
+  case Msg of
+    NM_WorldMatrixChanged: UpdateWorldMatrix;
+    NM_ObjectDestroyed: begin
+      FParent := nil; UpdateWorldMatrix;
+    end;
+  end;
+
+  inherited;
 end;
 
 procedure TMovableObject.MoveObject(x, y, z: single; AbsolutePos: boolean);
