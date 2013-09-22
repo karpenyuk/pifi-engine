@@ -8,7 +8,7 @@ uses
 {$ENDIF} Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, uGLViewer, uBaseGL, uBaseTypes, uVMath, dglOpenGL, ExtCtrls,
   uPrimitives, uMiscUtils, uRenderResource, uBaseRenders, uGLRenders,
-  uLists, uImageFormats, uImageLoader;
+  uLists, uImageFormats, uImageLoader, SceneConstructor, uWorldSpace;
 
 type
   TForm2 = class(TForm)
@@ -27,6 +27,7 @@ type
   private
     { Private declarations }
     MX, MY: Integer;
+    FDemoScene: TDemoScene;
     procedure GL1xDebugRender(const Mesh: TGLVertexObject; const Model: TMatrix);
   public
     { Public declarations }
@@ -74,6 +75,7 @@ procedure TForm2.GLViewer1CanResize(Sender: TObject; var NewWidth,
   NewHeight: Integer; var Resize: Boolean);
 begin
   Proj := TMatrix.PerspectiveMatrix(60, NewWidth / NewHeight, 0.1, 100);
+  FDemoScene.SetSize(NewWidth, NewHeight);
 end;
 
 procedure TForm2.GLViewer1ContextReady(Sender: TObject);
@@ -138,6 +140,8 @@ begin
   Teapod.Shader := Shader1;
 
   SceneGraph := TSceneGraph.Create;
+
+  FDemoScene:=TDemoScene.Create;
 end;
 
 procedure TForm2.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
