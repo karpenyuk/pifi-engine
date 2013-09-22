@@ -8,7 +8,7 @@ interface
 
 uses
   Classes, uBaseClasses, uBaseTypes, uRenderResource, uMiscUtils, uVMath,
-  uPersistentClasses;
+  uPersistentClasses, uWorldSpace;
 
 Type
 

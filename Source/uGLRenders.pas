@@ -8,7 +8,7 @@ unit uGLRenders;
 interface
 
 uses Classes, uVMath, uBaseGL, uBaseClasses, uRenderResource, uBaseRenders,
-     uBaseTypes, uLists, uMiscUtils, uGenericsRBTree, dglOpenGL;
+     uBaseTypes, uLists, uMiscUtils, uGenericsRBTree, uWorldSpace, dglOpenGL;
 
 Type
 
