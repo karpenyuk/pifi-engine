@@ -33,7 +33,8 @@ type
   end;
 
 
-  TRenderEvent = procedure (Sender: TObject; aFrameTime: double);
+  TRenderEvent = procedure (Sender: TObject; aFrameTime: double) of object;
+  TResizeEvent = procedure (Sender: TObject; aWidth, aHeight: integer) of object;
 
   TGLWindow = class
   private
@@ -49,6 +50,8 @@ type
     FCaption: string;
     FFrameTime: double;
     FonRender: TRenderEvent;
+    FonInitialize: TNotifyEvent;
+    FonResize: TResizeEvent;
     procedure setActive(const Value: boolean);
     procedure KillGLWindow;
     function InitGL: boolean;
@@ -60,6 +63,8 @@ type
     procedure setCaption(const Value: string);
     function getFrameTime: double;
     procedure SetonRender(const Value: TRenderEvent);
+    procedure SetonInitialize(const Value: TNotifyEvent);
+    procedure SetonResize(const Value: TResizeEvent);
   public
     constructor Create;
     destructor Destroy; override;
@@ -78,6 +83,8 @@ type
     property FrameTime: double read getFrameTime;
 
     property onRender: TRenderEvent read FonRender write SetonRender;
+    property onInitialize: TNotifyEvent read FonInitialize write SetonInitialize;
+    property onResize: TResizeEvent read FonResize write SetonResize;
 
   end;
 
@@ -147,8 +154,11 @@ end;
 
 procedure TGLWindow.DoResize(Width, Height: integer);
 begin
+  FWidth:=Width; FHeight:=Height;
   glViewport(0,0,Width,Height);
   glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT or GL_STENCIL_BUFFER_BIT);
+  if Assigned(FonResize) then FonResize(self,FWidth,FHeight);
+  
 end;
 
 procedure TGLWindow.DrawGLScene;
@@ -192,6 +202,7 @@ begin
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glHint(GL_PERSPECTIVE_CORRECTION_HINT,GL_NICEST);
+  if assigned(FonInitialize) then FonInitialize(self);
   Result:=true;
 end;
 
@@ -344,9 +355,19 @@ begin
   FKeys[index] := Value;
 end;
 
+procedure TGLWindow.SetonInitialize(const Value: TNotifyEvent);
+begin
+  FonInitialize := Value;
+end;
+
 procedure TGLWindow.SetonRender(const Value: TRenderEvent);
 begin
   FonRender := Value;
+end;
+
+procedure TGLWindow.SetonResize(const Value: TResizeEvent);
+begin
+  FonResize := Value;
 end;
 
 procedure TGLWindow.SetPixelFormatBits(ColorBits, DepthBits, StensilBits,
