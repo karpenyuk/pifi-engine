@@ -1278,7 +1278,8 @@ begin
     result := FShaderId;
     exit;
   end;
-  glProgramParameteri(FShaderId, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+  if GL_ARB_get_program_binary then
+    glProgramParameteri(FShaderId, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
   LinkError := false;
   glLinkProgram(FShaderId);
   glGetProgramiv(FShaderId, GL_LINK_STATUS, @val);
@@ -1318,6 +1319,13 @@ var
   pLog: PAnsiChar;
 begin
   LoadingError := false;
+  if not GL_ARB_get_program_binary then begin
+    FLinked := false;
+    result := 0;
+    assert(false, 'Program binary not supported!');
+    exit;
+  end;
+
   glProgramBinary(FShaderId, Format, Binary, Size);
   glGetProgramiv(FShaderId, GL_LINK_STATUS, @Status);
   FLog := FLog + 'Loading Program ' + inttostr(FShaderId);
