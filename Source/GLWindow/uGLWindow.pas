@@ -13,8 +13,7 @@ uses
   Messages,
   Types,
   Classes,
-  dglOpenGL,
-  Forms;
+  dglOpenGL;
 
 const
   cMaxUpdateTime = 1 / 5000;
@@ -33,6 +32,9 @@ type
     procedure Execute; override;
   end;
 
+
+  TRenderEvent = procedure (Sender: TObject; aFrameTime: double);
+
   TGLWindow = class
   private
     FKeys: array [0..255] of boolean;
@@ -46,6 +48,7 @@ type
     FColorBits, FDepthBits, FStensilBits, FAALevel : byte;
     FCaption: string;
     FFrameTime: double;
+    FonRender: TRenderEvent;
     procedure setActive(const Value: boolean);
     procedure KillGLWindow;
     function InitGL: boolean;
@@ -56,6 +59,7 @@ type
     procedure setVSync(const Value: boolean);
     procedure setCaption(const Value: string);
     function getFrameTime: double;
+    procedure SetonRender(const Value: TRenderEvent);
   public
     constructor Create;
     destructor Destroy; override;
@@ -65,12 +69,16 @@ type
     procedure DoResize(Width, Height: integer);
     procedure SwapBuffer;
     procedure DrawGLScene;
+
     property Active: boolean read FActive write setActive;
     property isRendering: boolean read FisRendering;
     property Keys[index: integer]: boolean read getKey write setKey;
     property VSync: boolean read getVSync write setVSync;
     property Caption: string read FCaption write setCaption;
     property FrameTime: double read getFrameTime;
+
+    property onRender: TRenderEvent read FonRender write SetonRender;
+
   end;
 
 implementation
@@ -144,16 +152,19 @@ begin
 end;
 
 procedure TGLWindow.DrawGLScene;
+var err: cardinal;
 begin
   if not Active then begin
     FFrameTime:=-1;
     exit;
   end;
-  FFrameTime:=gettime;
   FisRendering := true;
   glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT);
-  assert(glGetError = GL_NO_ERROR, 'Error');
+  if assigned(FonRender) then FonRender(self, FFrameTime);
+  FFrameTime:=gettime;
   FisRendering := false;
+  err := glGetError;
+  assert( err = GL_NO_ERROR, 'OpenGL Error: '+inttostr(err));
   FFrameTime:=gettime-FFrameTime;
 end;
 
@@ -333,6 +344,11 @@ begin
   FKeys[index] := Value;
 end;
 
+procedure TGLWindow.SetonRender(const Value: TRenderEvent);
+begin
+  FonRender := Value;
+end;
+
 procedure TGLWindow.SetPixelFormatBits(ColorBits, DepthBits, StensilBits,
   AALevel: byte);
 begin
@@ -367,6 +383,7 @@ begin
   case message.Msg of
    WM_CREATE: begin
        SetWindowLong (FWnd, GWL_USERDATA, Integer(PCreateStruct(Message.LParam).lpCreateParams));
+       Active:=true;
        Res := 0;
     end;
     WM_ACTIVATE: begin
@@ -375,6 +392,7 @@ begin
       Res:=0;
     end;
     WM_CLOSE: begin
+      Active:=false;
       PostQuitMessage(0);
       res:=0
     end;
