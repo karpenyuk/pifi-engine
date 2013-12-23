@@ -33,124 +33,6 @@ type
     procedure Execute; override;
   end;
 
-(*
-  TContext = class
-  private
-{$IFDEF Linux}
-    FDisplay: PDisplay;
-{$ENDIF}
-    FDepthBits: byte;
-    FScencilBits: byte;
-    FAALevel: byte;
-    FInitialized: boolean;
-    FForwardContext: boolean;
-    FDebugContext: Boolean;
-    procedure setStencilBits(const Value: byte); virtual;
-    procedure setAALevel(const Value: byte); virtual;
-  protected
-    FDC: {$IFDEF MSWINDOWS} cardinal; {$ENDIF}
-{$IFDEF Linux} GLXDrawable; {$ENDIF}
-    FVSync: boolean;
-    FPfdChanged: boolean;
-    function getVSync: boolean; virtual;
-    procedure SetVSync(Value: boolean); virtual;
-    procedure setActive(const Value: boolean); virtual; abstract;
-    function getActive: boolean; virtual; abstract;
-    property Active: Boolean read getActive write setActive;
-    procedure setDepthBits(const Value: byte); virtual;
-    property ForwardContext: Boolean read FForwardContext write FForwardContext default True;
-    property DebugContext: Boolean read FDebugContext write FDebugContext default False;
-  public
-    constructor Create;
-
-    procedure InitializeContext(aDC: HDC); virtual;
-    procedure Init; virtual; abstract;
-    procedure ComponentPaint(Sender: TObject); virtual; abstract;
-    procedure ClearDevice; virtual; abstract;
-    procedure Resize(Width, Height: integer); virtual; abstract;
-    procedure Activate; virtual; abstract;
-    procedure Deactivate; virtual; abstract;
-
-    property DeviceContext: cardinal read FDC;
-{$IFDEF Linux}
-    property Display: PDisplay read FDisplay write FDisplay;
-{$ENDIF}
-    property Initialized: boolean read FInitialized;
-    property VSync: boolean read getVSync write SetVSync;
-
-  published
-    property DepthBits: byte read FDepthBits write setDepthBits;
-    property StencilBits: byte read FScencilBits write setStencilBits;
-    property AALevel: byte read FAALevel write setAALevel;
-  end;
-
-  { TGLContext }
-
-  TGLContext = class(TContext)
-  private
-    FGLRCx: HGLRC;
-    FiAttribs: packed array of integer;
-{$IFDEF Linux}
-    FCurScreen: integer;
-    FCurXWindow: HWND;
-    FFBConfigs: PGLXFBConfigArray;
-{$ENDIF}
-    FGLInit: boolean;
-    FRendering: boolean;
-    FMajorVersion, FMinorVersion: integer;
-    FDebugLog: TStringList;
-{$IFDEF MSWINDOWS}
-    procedure SetDCPixelFormat(dc: HDC);
-{$ENDIF}
-{$IFDEF Linux}
-    procedure ChooseGLXFormat;
-{$ENDIF}
-    procedure ClearIAttribs;
-    procedure FreeIAttribs;
-    procedure AddIAttrib(attrib, Value: integer);
-    procedure ChangeIAttrib(attrib, newValue: integer);
-    procedure DropIAttrib(attrib: integer);
-
-    procedure ChangePixelFormat;
-    procedure GetOGLVersion;
-    function InitForwardContext: boolean;
-    function ParseDebug(aSource, aType, aId, aSeverity: cardinal;
-      const aMess: ansistring): ansistring;
-  protected
-    function getVSync: boolean; override;
-    procedure SetVSync(Value: boolean); override;
-    procedure setActive(const Value: boolean); override;
-    function getActive: boolean; override;
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    procedure InitializeContext(aDC: HDC); override;
-{$IFDEF Linux}
-    procedure SwapBuffers;
-{$ENDIF}
-    procedure Init; override;
-    procedure ComponentPaint(Sender: TObject); override;
-    procedure ClearDevice; override;
-    procedure Resize(Width, Height: integer); override;
-    procedure Activate; override;
-    procedure Deactivate; override;
-    procedure CheckDebugLog;
-    property DebugLog: TStringList read FDebugLog;
-    property Active;
-  published
-    property MaxMajorVersion: integer read FMajorVersion;
-    property MaxMinorVersion: integer read FMinorVersion;
-    property ForwardContext;
-    property DebugContext;
-  end;
-
-{$IFDEF FPC}
-  TCanResizeEvent = procedure(Sender: TObject; var NewWidth, NewHeight: Integer;
-    var Resize: Boolean) of object;
-{$ENDIF}
-
-*)
   TGLWindow = class
   private
     FKeys: array [0..255] of boolean;
@@ -160,23 +42,32 @@ type
     FWnd: HWnd;
     FDC: Hdc;
     FRC: HGLRC;
+    FWidth, FHeight: integer;
+    FColorBits, FDepthBits, FStensilBits, FAALevel : byte;
+    FCaption: string;
     procedure setActive(const Value: boolean);
     procedure KillGLWindow;
     function InitGL: boolean;
     procedure WindProc(var Message: TMessage);
     function getKey(index: integer): boolean;
     procedure setKey(index: integer; const Value: boolean);
+    function getVSync: boolean;
+    procedure setVSync(const Value: boolean);
+    procedure setCaption(const Value: string);
   public
     constructor Create;
     destructor Destroy; override;
     procedure CreateWindow(Title: Pchar; width, height: integer;
       FullScreen: boolean);
+    procedure SetPixelFormatBits(ColorBits, DepthBits, StensilBits, AALevel: byte);
     procedure DoResize(Width, Height: integer);
     procedure SwapBuffer;
     procedure DrawGLScene;
     property Active: boolean read FActive write setActive;
     property isRendering: boolean read FisRendering;
     property Keys[index: integer]: boolean read getKey write setKey;
+    property VSync: boolean read getVSync write setVSync;
+    property Caption: string read FCaption write setCaption;
   end;
 
 implementation
@@ -246,16 +137,27 @@ end;
 procedure TGLWindow.DoResize(Width, Height: integer);
 begin
   glViewport(0,0,Width,Height);
+  glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT or GL_STENCIL_BUFFER_BIT);
 end;
 
 procedure TGLWindow.DrawGLScene;
 begin
+  if not Active then exit;
+
+  FisRendering := true;
   glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT);
+  assert(glGetError = GL_NO_ERROR, 'Error');
+  FisRendering := false;
 end;
 
 function TGLWindow.getKey(index: integer): boolean;
 begin
   result := FKeys[index];
+end;
+
+function TGLWindow.getVSync: boolean;
+begin
+  result := boolean(wglGetSwapIntervalEXT);
 end;
 
 function TGLWindow.InitGL: boolean;
@@ -271,7 +173,10 @@ end;
 
 constructor TGLWindow.Create;
 begin
-//
+  FColorBits:=32;
+  FDepthBits:=24;
+  FStensilBits:=8;
+  FAALevel:=0;
 end;
 
 procedure TGLWindow.CreateWindow(Title: Pchar; width,height: integer;
@@ -282,6 +187,9 @@ var
   dmScreenSettings: Devmode;
 begin
   inherited Create;
+  FCaption := Title;
+  FWidth:=Width;
+  FHeight:=Height;
   FFullScreen := FullScreen;
   if FullScreen then begin
       ZeroMemory( @dmScreenSettings, sizeof(dmScreenSettings) );
@@ -299,6 +207,8 @@ begin
       end;
   end;
 
+  if FWnd<>0 then KillGLWindow;
+
   FWnd:=AllocateGLWnd(WindProc, Title, width, height, FullScreen);
 
   if FWnd=0 then begin
@@ -311,7 +221,7 @@ begin
     nVersion:= 1;
     dwFlags:= PFD_DRAW_TO_WINDOW or PFD_SUPPORT_OPENGL or PFD_DOUBLEBUFFER;
     iPixelType:= PFD_TYPE_RGBA;
-    cColorBits:= 32;
+    cColorBits:= FColorBits;
     cRedBits:= 8;
     cRedShift:= 0;
     cGreenBits:= 8;
@@ -324,8 +234,8 @@ begin
     cAccumGreenBits:= 0;
     cAccumBlueBits:= 0;
     cAccumAlphaBits:= 0;
-    cDepthBits:= 24;
-    cStencilBits:= 8;
+    cDepthBits:= FDepthBits;
+    cStencilBits:= FStensilBits;
     cAuxBuffers:= 0;
     iLayerType:= PFD_MAIN_PLANE;
     bReserved:= 0;
@@ -365,6 +275,7 @@ begin
       KillGLWindow;
       assert(false,'initialization failed.');
   end;
+  FActive:=true;
 end;
 
 
@@ -397,9 +308,30 @@ begin
   FActive := Value;
 end;
 
+procedure TGLWindow.setCaption(const Value: string);
+begin
+  FCaption := Value;
+  SetWindowText(FWnd, PChar(Value));
+end;
+
 procedure TGLWindow.setKey(index: integer; const Value: boolean);
 begin
   FKeys[index] := Value;
+end;
+
+procedure TGLWindow.SetPixelFormatBits(ColorBits, DepthBits, StensilBits,
+  AALevel: byte);
+begin
+  FColorBits:=ColorBits;
+  FDepthBits:=DepthBits;
+  FStensilBits:=StensilBits;
+  FAALevel:=AALevel;
+  CreateWindow(pChar(FCaption),FWidth, Fheight, FFullScreen);
+end;
+
+procedure TGLWindow.setVSync(const Value: boolean);
+begin
+  wglSwapIntervalEXT(integer(Value));
 end;
 
 procedure TGLWindow.SwapBuffer;

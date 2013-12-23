@@ -6,7 +6,7 @@
 {$ENDIF}
 
 uses
-  Windows, Messages, SysUtils, uGLWindow, dglOpenGL;
+  Math, Windows, Messages, SysUtils, uGLWindow, dglOpenGL;
 
 function WinMain(hInstance: HINST): integer; stdcall;
 var
@@ -14,11 +14,13 @@ var
   done: Bool;
   fs: boolean;
   glwnd: TGLWindow;
+  t: double;
 begin
   done:=false;
   fs:=false;
   glwnd:=TGLWindow.Create;
   glwnd.CreateWindow('OpenGL Framework',640,480,fs);
+  glwnd.VSync:=true;
 
   while not done do begin
     if (PeekMessage(msg, 0, 0, 0, PM_REMOVE)) then begin
@@ -31,7 +33,13 @@ begin
       if glwnd.keys[VK_ESCAPE]
       then done:=true
       else begin
+        t := gettime;
         glwnd.DrawGLScene;
+        t := gettime-t;
+        if t<>0 then
+          glwnd.Caption:='OpenGL Framework ['+floattostr(roundto(1/t,2))+']'
+        else
+          glwnd.Caption:='OpenGL Framework [NAN]';
         glwnd.SwapBuffer;
       end;
       if glwnd.keys[VK_F1] then begin
@@ -40,6 +48,11 @@ begin
         fs := not fs;
         glwnd:=TGLWindow.Create;
         glwnd.CreateWindow('OpenGL Framework',640,480,fs);
+        glwnd.VSync:=true;
+      end;
+      if glwnd.keys[VK_F2] then begin
+        glwnd.Keys[VK_F2] := false;
+        glwnd.SetPixelFormatBits(32,32,0,0);
       end;
     end;
   end;
