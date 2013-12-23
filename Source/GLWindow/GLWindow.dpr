@@ -14,7 +14,6 @@ var
   done: Bool;
   fs: boolean;
   glwnd: TGLWindow;
-  t: double;
 begin
   done:=false;
   fs:=false;
@@ -33,11 +32,9 @@ begin
       if glwnd.keys[VK_ESCAPE]
       then done:=true
       else begin
-        t := gettime;
         glwnd.DrawGLScene;
-        t := gettime-t;
-        if t<>0 then
-          glwnd.Caption:='OpenGL Framework ['+floattostr(roundto(1/t,2))+']'
+        if glwnd.FrameTime<>0 then
+          glwnd.Caption:='OpenGL Framework ['+floattostr(roundto(1/glwnd.FrameTime,2))+']'
         else
           glwnd.Caption:='OpenGL Framework [NAN]';
         glwnd.SwapBuffer;

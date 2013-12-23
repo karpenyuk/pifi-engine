@@ -45,6 +45,7 @@ type
     FWidth, FHeight: integer;
     FColorBits, FDepthBits, FStensilBits, FAALevel : byte;
     FCaption: string;
+    FFrameTime: double;
     procedure setActive(const Value: boolean);
     procedure KillGLWindow;
     function InitGL: boolean;
@@ -54,6 +55,7 @@ type
     function getVSync: boolean;
     procedure setVSync(const Value: boolean);
     procedure setCaption(const Value: string);
+    function getFrameTime: double;
   public
     constructor Create;
     destructor Destroy; override;
@@ -68,6 +70,7 @@ type
     property Keys[index: integer]: boolean read getKey write setKey;
     property VSync: boolean read getVSync write setVSync;
     property Caption: string read FCaption write setCaption;
+    property FrameTime: double read getFrameTime;
   end;
 
 implementation
@@ -142,12 +145,22 @@ end;
 
 procedure TGLWindow.DrawGLScene;
 begin
-  if not Active then exit;
-
+  if not Active then begin
+    FFrameTime:=-1;
+    exit;
+  end;
+  FFrameTime:=gettime;
   FisRendering := true;
   glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT);
   assert(glGetError = GL_NO_ERROR, 'Error');
   FisRendering := false;
+  FFrameTime:=gettime-FFrameTime;
+end;
+
+function TGLWindow.getFrameTime: double;
+begin
+  if FFrameTime<>-1 then result:=FFrameTime
+  else result:=0;
 end;
 
 function TGLWindow.getKey(index: integer): boolean;
@@ -177,6 +190,7 @@ begin
   FDepthBits:=24;
   FStensilBits:=8;
   FAALevel:=0;
+  FFrameTime:=-1;
 end;
 
 procedure TGLWindow.CreateWindow(Title: Pchar; width,height: integer;
@@ -186,11 +200,11 @@ var
   pfd: pixelformatdescriptor;
   dmScreenSettings: Devmode;
 begin
-  inherited Create;
   FCaption := Title;
   FWidth:=Width;
   FHeight:=Height;
   FFullScreen := FullScreen;
+  FFrameTime:=-1;
   if FullScreen then begin
       ZeroMemory( @dmScreenSettings, sizeof(dmScreenSettings) );
       with dmScreensettings do begin
@@ -386,11 +400,9 @@ end;
 { TCadencer }
 
 procedure TCadencer.Execute;
-var
-  t: double;
+var t: double;
 begin
-  while not Terminated do
-  begin
+  while not Terminated do begin
     if  false {not isRendering} then begin
       t := GetTime;
       if t - FLastTime > FUpdateTime then
