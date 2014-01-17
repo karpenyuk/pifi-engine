@@ -29,17 +29,6 @@ const
 
 Type
 
-  TColor = record
-    Red, Green, Blue, Alpha: single;
-  end;
-
-  TLightModels = (lmNone, lmGouraud, lmPhong, lmBlinn, lmLambert, lmDeferred);
-  TColorReplacing = (crDisable, crEmission, crAmbient, crDiffuse, crSpecular,
-    crAmbientAndDiffuse);
-
-  TMaterialType = (mtFFP, mtShader);
-  TLightStyle = (lsSpot, lsOmni, lsParallel, lsDirectional);
-
   TRegisteredResource = class(TNotifiableObject)
   private
     FResource: TList;
@@ -83,51 +72,6 @@ Type
     constructor CreateOwned(aOwner: TObject = nil);
   end;
 
-  TColorVectorClass = class;
-
-  TLightSource = class(TBaseRenderResource)
-  private
-    FEnabled: boolean;
-    FLightStyle: TLightStyle;
-    FLightModel: TLightModels;
-    FSpotDirection: TVector;
-    FSpotCutOff: single;
-    FSpotExponent: single;
-    FPosition: TVector;
-    FAmbient: TColorVectorClass;
-    FDiffuse: TColorVectorClass;
-    FSpecular: TColorVectorClass;
-    FSceneColor: TColorVectorClass;
-    FConstAttenuation: single;
-    FLinearAttenuation: single;
-    FQuadraticAttenuation: single;
-    FLightSlot: integer;
-  public
-    constructor Create; override;
-    destructor Destroy; override;
-
-    property SpotDirection: TVector read FSpotDirection write FSpotDirection;
-    property Position: TVector read FPosition write FPosition;
-    property LightStyle: TLightStyle read FLightStyle write FLightStyle;
-    property LightModel: TLightModels read FLightModel write FLightModel;
-    property SpotCutOff: single read FSpotCutOff write FSpotCutOff;
-    property SpotExponent: single read FSpotExponent write FSpotExponent;
-    property Ambient: TColorVectorClass read FAmbient;
-    property Diffuse: TColorVectorClass read FDiffuse;
-    property Specular: TColorVectorClass read FSpecular;
-    property SceneColor: TColorVectorClass read FSceneColor write FSceneColor;
-    property ConstAttenuation: single read FConstAttenuation
-      write FConstAttenuation;
-    property LinearAttenuation: single read FLinearAttenuation
-      write FLinearAttenuation;
-    property QuadraticAttenuation: single read FQuadraticAttenuation
-      write FQuadraticAttenuation;
-    property LightSlot: integer read FLightSlot write FLightSlot;
-
-    property Enabled: boolean read FEnabled write FEnabled;
-
-  end;
-
   TColorVectorClass = class
   private
     FColorVector: TVector;
@@ -167,6 +111,66 @@ Type
     property Green: single read getGValue write setGreen;
     property Blue: single read getBValue write setBlue;
     property Alpha: single read getAlpha write setAlpha;
+  end;
+
+  TLightSource = class(TBaseRenderResource)
+  private
+    FEnabled: boolean;
+    FLightStyle: TLightStyle;
+    FLightModel: TLightModels;
+    FSpotDirection: TVector;
+    FSpotCutOff: single;
+    FSpotExponent: single;
+    FPosition: TVector;
+    FAmbient: TColorVectorClass;
+    FDiffuse: TColorVectorClass;
+    FSpecular: TColorVectorClass;
+    FSceneColor: TColorVectorClass;
+    FConstAttenuation: single;
+    FLinearAttenuation: single;
+    FQuadraticAttenuation: single;
+    FLightSlot: integer;
+    FName: string;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+
+    property SpotDirection: TVector read FSpotDirection write FSpotDirection;
+    property Position: TVector read FPosition write FPosition;
+    property LightStyle: TLightStyle read FLightStyle write FLightStyle;
+    property LightModel: TLightModels read FLightModel write FLightModel;
+    property SpotCutOff: single read FSpotCutOff write FSpotCutOff;
+    property SpotExponent: single read FSpotExponent write FSpotExponent;
+    property Ambient: TColorVectorClass read FAmbient;
+    property Diffuse: TColorVectorClass read FDiffuse;
+    property Specular: TColorVectorClass read FSpecular;
+    property SceneColor: TColorVectorClass read FSceneColor write FSceneColor;
+    property ConstAttenuation: single read FConstAttenuation
+      write FConstAttenuation;
+    property LinearAttenuation: single read FLinearAttenuation
+      write FLinearAttenuation;
+    property QuadraticAttenuation: single read FQuadraticAttenuation
+      write FQuadraticAttenuation;
+    property LightSlot: integer read FLightSlot write FLightSlot;
+
+    property Enabled: boolean read FEnabled write FEnabled;
+
+    property FriendlyName: string read FName write FName;
+  end;
+
+  TLightsList = class (TObjectsDictionary)
+  private
+    function getItemObj(index: integer): TLightSource;
+  public
+    destructor Destroy; override;
+
+    function AddLight(const aItem: TLightSource): integer;
+    function GetLight(aKey: TGUID): TLightSource; overload;
+    function GetLight(aName: string): TLightSource; overload;
+
+    procedure RemoveLight(const aItem: TLightSource);
+
+    property Lights[index: integer]: TLightSource read getItemObj; default;
   end;
 
   TMaterialProperties = class
@@ -282,36 +286,103 @@ Type
     property SamplerHash: integer read getSamplerHash;
   end;
 
-  TImageSampler = class(TBaseRenderResource)
-  private
-    FImageDescriptor: TImageDesc;
-    //Hide default constructor
-    constructor Create; override;
-    //Calculate size of each Lods and fill FImageDescriptor's LOD struct.
+  TTexture = class;
+  { TODO : TImageHolder: Check logic for texture arrays }
+  TImageLayers = TDataList<PImageLods>;
+  TImageHolder = class(TBaseRenderResource)
+  protected
+    FImageFormat: cardinal;
+    FImageType: TImageType;
+
+    FElementSize: integer;
+    FDataSize: integer;
+    FReservedMem: integer;
+    FData: pointer;
+    FWidth, FHeight, FDepth: integer;
+    FLevels: integer;
+
+    FLODS: TImageLods;
+    FCompressed: boolean;
+
+    FLayers: TImageLayers;
+
+    procedure Deallocate;
     procedure FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
+    procedure setImageFormat(const Value: cardinal);
+  private
+    function getDataSize: integer;
+    function getImageLod(Index: integer): PImageLevelDesc;
+
+    procedure setDepth(const Value: integer);
+    procedure setHeight(const Value: integer);
+    procedure setWidth(const Value: integer);
+
+    procedure setImageType(const Value: TImageType);
+    function getBitmapState: boolean;
+    function getCubeMapState: boolean;
+    function getTextureArrayState: boolean;
+    function getVolumeState: boolean;
+
   public
-    constructor CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
-    constructor CreateVolume(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
-    constructor CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateCubeMapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false);
+    constructor Create; overload; override;
+    constructor Create(aFormatCode: cardinal; aImageType: TImageType = itBitmap); overload;
+    constructor CreateFromStream(aStream: TStream);
+    destructor Destroy; override;
+
+    function CreateTexture: TTexture;
+
+    procedure Allocate(aWithMipmaps: boolean = false);
+    procedure SaveToStream(aStream: TStream); virtual;
+    procedure LoadFromStream(aStream: TStream); virtual;
+    //virtual function for implementing different image format loader
+    procedure LoadImageFromStream(aStream: TStream); virtual;
+    procedure LoadImageFromFile(aFileName: string);
+    //save image to stream/file, image format settet by extention: bmp, jpg, tga, dds etc.
+    procedure SaveImageToStream(aStream: TStream; ImageFormat: string = ''); virtual;
+    procedure SaveImageToFile(aFileName: string; ImageFormat: string = '');
+
+    procedure DiscardLods;
+
+    property ImageFormat: cardinal read FImageFormat write setImageFormat;
+    property ImageType: TImageType read FImageType write setImageType;
+
+    property DataSize: integer read getDataSize;
+    property ElementSize: integer read FElementSize;
+    property Data: pointer read FData;
+    property Width: integer read FWidth write setWidth;
+    property Height: integer read FHeight write setHeight;
+    property Depth: integer read FDepth write setDepth;
+    property LevelsCount: integer read FLevels;
+    property LODS[Index: integer]: PImageLevelDesc read getImageLod;
+
+    property Compressed: boolean read FCompressed;
+    property isBitmap: boolean read getBitmapState;
+    property isCubeMap: boolean read getCubeMapState;
+    property isTextureArray: boolean read getTextureArrayState;
+    property isVolume: boolean read getVolumeState;
+  end;
+
+  TImageSampler = class(TBaseRenderResource)
+  public
+    class function CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateVolume(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateCubeMapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false): TImageHolder;
 
     //Presets
-    {
-    constructor CreateRGBA8Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateRGBA32fTexture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateFloat32Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateDepth32Texture(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    constructor CreateDepthStencilTexture(aWidth, aHeight: integer; aMipmapping: boolean = false);
-    }
 
-    property ImageDescriptor: TImageDesc read FImageDescriptor;
-    { TODO : Add as read-only all properties from TImageDesc }
+    class function CreateRGBA8Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateRGBA32fTexture2D(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateFloat32Texture2D(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateDepth32Texture(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+    class function CreateDepthStencilTexture(aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
+
   end;
 
   TTexture = class(TBaseRenderResource)
   private
-    FImageDescriptor: PImageDesc;
+    FImageDescriptor: TImageHolder;
     FReady: boolean;
     FName: string;
     FUpdates: TTextureUpdates;
@@ -324,69 +395,30 @@ Type
     FTarget: TTexTarget;
     FGenerateMipMaps: boolean;
 
-    function getCFormat: cardinal;
-    function getCompressed: boolean;
-    function getCubeMap: boolean;
-    function getData: Pointer;
-    function getDataSize: integer;
-    function getDType: cardinal;
-    function getElmSize: integer;
-    function getFormat: cardinal;
-    function getGenMipMaps: boolean;
-    function getIFormat: cardinal;
-    function getImgLod(Index: integer): TImageLevelDesc;
-    function getLevels: integer;
-    function getHeight: integer;
-    function getDepth: integer;
-    function getWidth: integer;
-
-    function getResMem: integer;
     function getTarget: TTexTarget;
-    function getTexArray: boolean;
     procedure SetName(const Value: string);
-    function getImgDescr: PImageDesc;
     procedure setTexMatrix(const Value: TMatrix);
-    procedure setData(const Value: Pointer);
 
     procedure setGenMipMaps(const Value: boolean);
+    function getImageFormat: TImageFormat;
 
   public
 
-    constructor CreateOwned(aOwner: TObject = nil);
+    constructor CreateOwned(aImageHolder: TImageHolder; aOwner: TObject = nil);
 
-    property ImageDescriptor: PImageDesc read getImgDescr;
+    property ImageHolder: TImageHolder read FImageDescriptor;
+    property ImageFormat: TImageFormat read getImageFormat;
     property Updates: TTextureUpdates read FUpdates write FUpdates;
 
     property Disabled: boolean read FDisabled write FDisabled;
+    property Target: TTexTarget read getTarget;
     property Name: string read FName write SetName;
     property MapTargets: TMapTargets read FMapTargets write FMapTargets;
     property TextureMode: TTextureMode read FTextureMode write FTextureMode;
     property Matrix: TMatrix read FTexMatrix write setTexMatrix;
     property MatrixChanged: boolean read FTexMatrixChanged;
     property TwoSides: boolean read FTwoSides write FTwoSides;
-
-    // Image Descriptors
-    property Target: TTexTarget read getTarget;
-    property Format: cardinal read getFormat;
-    property InternalFormat: cardinal read getIFormat;
-    property ColorFormat: cardinal read getCFormat;
-
-    property DataType: cardinal read getDType;
-    property Width: integer read getWidth;
-    property Height: integer read getHeight;
-    property Depth: integer read getDepth;
-
-    property ElementSize: integer read getElmSize;
-    property DataSize: integer read getDataSize;
-    property ReservedMem: integer read getResMem;
-    property Data: Pointer read getData write setData;
-    property Levels: integer read getLevels;
-    property Compressed: boolean read getCompressed;
-    property CubeMap: boolean read getCubeMap;
-    property TextureArray: boolean read getTexArray;
-    property LODS[Index: integer]: TImageLevelDesc read getImgLod;
-
-    property GenerateMipMaps: boolean read getGenMipMaps write setGenMipMaps;
+    property GenerateMipMaps: boolean read FGenerateMipMaps write setGenMipMaps;
   end;
 
   TCustomBlending = class(TBaseRenderResource)
@@ -489,6 +521,21 @@ Type
 
     property NormalScale: single read FNormalScale write FNormalScale;
 
+  end;
+
+  TMaterialList = class (TObjectsDictionary)
+  private
+    function getItemObj(index: integer): TMaterialObject;
+  public
+    destructor Destroy; override;
+
+    function AddMaterial(const aItem: TMaterialObject): integer;
+    function GetMaterial(aKey: TGUID): TMaterialObject; overload;
+    function GetMaterial(aName: string): TMaterialObject; overload;
+
+    procedure RemoveMaterial(const aItem: TMaterialObject);
+
+    property Materials[index: integer]: TMaterialObject read getItemObj; default;
   end;
 
   TBufferObject = class(TBaseRenderResource)
@@ -697,11 +744,9 @@ Type
 
     MaterialObject: TMaterialObject;
 
-    constructor CreateFrom(const aVertexObject: TVertexObject;
-      const aGUID: TGUID); overload;
+    constructor CreateFrom(const aVertexObject: TVertexObject; const aGUID: TGUID); overload;
     constructor CreateFrom(const aVertexObject: TVertexObject); overload;
-    constructor CreateFrom(const aVertexObject: TVertexObject;
-      aName: string); overload;
+    constructor CreateFrom(const aVertexObject: TVertexObject; aName: string); overload;
 
     property VertexObject: TVertexObject read FVertexObject;
     property Extents: TExtents read FExtents;
@@ -716,6 +761,9 @@ Type
     function getCount: integer;
   public
     constructor Create;
+    constructor CreateFrom(aMesh: TMesh); overload;
+    constructor CreateFrom(aVertexObject: TVertexObject); overload;
+
     destructor Destroy; override;
     function AddNewMesh(aVertexObject: TVertexObject): TMesh;
 
@@ -723,28 +771,67 @@ Type
     property Count: integer read getCount;
   end;
 
-  TListOfMeshList =  TDataList<TMeshList>;
+  TLodFunction = function (aDistance: single): integer;
 
-  { TODO : Заменить "Lods: TDataList<TMeshList>" на библиотеку ЛОДов
-    с возможностью задавать закон смены ЛОДов, события на выбор ЛОДа и ограничения
-    на минимальный/максимальный ЛОД.
-    - Реализовать функцию GetMeshLod с выборкой по расстоянию из библиотеки ЛОДов.
+  TLoD = class
+    LoD: TMeshList;
+    Distance: single;
+    constructor Create(aLoD: TMeshList; aDistance: single);
+  end;
+
+  TLodsDataList = TDataList<TLoD>;
+
+  { TODO : Реализовать закон смены ЛОДов + функцию GetMeshLod с выборкой
+           по расстоянию из библиотеки ЛОДов.
   }
+
+  TLODsController = class (TPersistentResource)
+  private
+    FList: TLodsDataList;
+    FLodFunction: TLodFunction;
+    FConstant, FLinear, FQuadric: single;
+    FMinLod, FMaxLod: integer;
+    function getLod(Index: integer): TLod;
+    function getCount: integer;
+  public
+    constructor Create(aBaseLod: TMeshList);
+    destructor Destroy; override;
+
+    procedure SetLodEquation(aConstant, aLinear, aQuadric: single);
+    procedure SetLodRange(aMinLod, aMaxLod: integer);
+
+    function GetMeshLod(const aLod: integer): TMeshList; overload;
+    function GetMeshLod(const aDistance: single): TMeshList; overload;
+
+    function AddLod(aLoD: TMeshList; aDistance: single): integer; overload;
+    function AddLod(aLoD: TLoD): integer; overload;
+
+    property onGetLod: TLodFunction read FLodFunction write FLodFunction;
+    property LODS[Index: integer]: TLod read getLod; default;
+    property Count: integer read getCount;
+
+  end;
+
   TMeshObject = class(TBaseRenderResource)
   private
-    FLods: TListOfMeshList;
+    FLods: TLODsController;
     FOccluder: TMeshList;
     FCollider: TTriangleList;
     FExtents: TExtents;
+    function getMeshes: TMeshList;
   public
     FriendlyName: string;
 
     constructor Create; override;
+    constructor CreateFrom(aMesh: TMeshList); overload;
+    constructor CreateFrom(aMesh: TMesh); overload;
     destructor Destroy; override;
-    function GetMeshLod(const aLod: integer): TMeshList; overload;
-    // function GetMeshLod(const aDistance: single): TMeshList; overload;
-    // Вся работа с мешами через список ЛОДов
-    property LODS: TListOfMeshList read FLods;
+
+    function SetMesh(aMesh: TMeshList): integer; overload;
+    function SetMesh(aMesh: TMesh): integer; overload;
+
+    property Meshes: TMeshList read getMeshes;
+    property LODS: TLODsController read FLods;
     property Occluder: TMeshList read FOccluder;
     property Collider: TTriangleList read FCollider;
   end;
@@ -763,8 +850,6 @@ Type
   end;
 
   { TODO : Доработать структуру отображаемого объекта сцены.
-    Вопрос: Есть ли смысл делать Лоды на уровне объектов сцены?
-    Переделать работу с MeshObjects на запрос ЛОДа
   }
   TSceneObject = class(TMovableObject)
   private
@@ -779,51 +864,89 @@ Type
     property MeshObjects: TMeshObjectsList read FMeshObjects;
   end;
 
-  { TODO : Заменить TList'ы на адекватные библиотки (материалов, источников света, объектов) }
-  TSceneGraph = class(TSceneItemList)
-    // Решить вопрос с камерой (списком камер) - где хранятся, как используются
-    // Решить вопрос со скриптовым рендером - добавить вместе с камерами в корень графа?
-    // Или передавать их в рендер через ProcessScene(Scene, Camera, Target, Script)?
-    // Реализовать удаление используемых объектом ресурсов при уничтожении графа, подсчет ссылок?
+
+  TTexturesList = TDataList<TTexture>;
+  TImageHolders = TDataList<TImageHolder>;
+
+  TRenderBufferAttachment = record
+    Texture: TTexture;
+    Format: TRenderBufferFormat;
+    Mode: TBufferMode;
+  end;
+
+  TFrameBuffer = class (TPersistentResource)
   private
-    FItemsList: TList;
-    // List of TBaseSceneItem and TSceneObject(TBaseSceneItem)
-    FLights: TList; // List of TLightSource
-    FMaterials: TList; // List of TMaterialObjct
-    function getItem(Index: integer): TBaseSceneItem;
-    function getCount: integer;
-    function getLight(Index: integer): TLightSource;
-    function getLightCount: integer;
-    function getMatCount: integer;
-    function getMaterial(Index: integer): TMaterialObject;
+    FReadBackBuffers: TImageHolders;
+    FRenderBuffers: TRenderBuffers;
+    FDepthBuffer: TRenderBufferAttachment;
+    FStencilBuffer: TRenderBufferAttachment;
+    FDepthStencilBuffer: TRenderBufferAttachment;
+    FColorAttachments: TTexturesList;
+
+    FActive: boolean;
+    FMultisample: TMultisampleFormat;
+
+    FSize: vec2i;
+
+    procedure SetActive(const Value: boolean);
+    procedure SetMultisample(const Value: TMultisampleFormat);
   public
+
     constructor Create;
     destructor Destroy; override;
 
-    function AddItem(aItem: TBaseSceneItem): integer;
-    function AddLight(aLight: TLightSource): integer;
+    procedure SetSize(aSize: vec2i);
+    procedure AttachRenderBuffer(aFormat: TRenderBufferFormat; aMode: TBufferMode = bmBuffer);
+    procedure AttachColor(aTexture: TTexture);
+    function GetTexture(aRenderBuffer: TRenderBuffer): TTexture; overload;
+    function GetTexture(aAttachmentSlot: cardinal): TTexture; overload;
 
-    function AddMaterial(aMat: TMaterialObject): integer;
-    function AddNewMaterial(aName: string): TMaterialObject;
+    procedure ResetColorAttachments;
+    procedure ResetRenderBuffers;
+    procedure ResetReedBackBuffers;
 
-    property Items[index: integer]: TBaseSceneItem read getItem; default;
-    property Lights[index: integer]: TLightSource read getLight;
-    property LightsCount: integer read getLightCount;
+    property RenderBuffers: TRenderBuffers read FRenderBuffers;
+    property ReadBackBuffers: TImageHolders read FReadBackBuffers;
+    property Active: boolean read FActive write SetActive;
+    property Multisample: TMultisampleFormat read FMultisample write SetMultisample;
 
-    property Materials[index: integer]: TMaterialObject read getMaterial;
-    property MaterialsCount: integer read getMatCount;
-
-    property Count: integer read getCount;
   end;
 
-  { TODO : Перенести класс TWorldSpace в модуль uWorldSpace }
-  TWorldSpace = class(TBaseRenderResource)
+  TSceneCamera = class(TMovableObject)
   private
-    FCameras: TList; // List of Cameras
-    FScripts: TList; // List of lua scripts?
-    FGraphs: TList; // List of TSceneGraph
-    FTimerActions: TList; // List of timer events
+    FViewMatrix: TMatrix;
+    FProjMatrix: TMatrix;
+    FRenderTarget: TFrameBuffer;
+    FViewPortSize: vec2i;
+    FFoV: single;
+    FzNear: single;
+    FzFar: single;
+    FViewTarget: TMovableObject;
 
+    procedure SetFoV(const Value: single);
+    procedure SetProjMatrix(const Value: TMatrix);
+    procedure SetRenderTarget(const Value: TFrameBuffer);
+    procedure SetViewMatrix(const Value: TMatrix);
+    procedure SetViewPortSize(const Value: vec2i);
+    procedure SetViewTarget(const Value: TMovableObject);
+    procedure SetzFar(const Value: single);
+    procedure SetzNear(const Value: single);
+    procedure RebuildProjMatrix;
+    procedure RebuildViewMatrix;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
+  public
+    constructor Create; override;
+
+    property ViewPortSize: vec2i read FViewPortSize write SetViewPortSize;
+    property ViewTarget: TMovableObject read FViewTarget write SetViewTarget;
+    property FoV: single read FFoV write SetFoV;
+    property zNear: single read FzNear write SetzNear;
+    property zFar: single read FzFar write SetzFar;
+    property ViewMatrix: TMatrix read FViewMatrix write SetViewMatrix;
+    property ProjMatrix: TMatrix read FProjMatrix write SetProjMatrix;
+    property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
   end;
 
 var
@@ -1086,103 +1209,16 @@ begin
   FName := Value;
 end;
 
-// TImageDescriptors
-
-function TTexture.getCFormat: cardinal;
+function TTexture.getImageFormat: TImageFormat;
 begin
-  result := FImageDescriptor.ColorFormat;
-end;
-
-function TTexture.getCompressed: boolean;
-begin
-  result := FImageDescriptor.Compressed;
-end;
-
-function TTexture.getCubeMap: boolean;
-begin
-  result := FImageDescriptor.CubeMap;
-end;
-
-function TTexture.getData: Pointer;
-begin
-  result := FImageDescriptor.Data;
-end;
-
-function TTexture.getDataSize: integer;
-begin
-  result := FImageDescriptor.DataSize
-end;
-
-function TTexture.getDType: cardinal;
-begin
-  result := FImageDescriptor.DataType;
-end;
-
-function TTexture.getElmSize: integer;
-begin
-  result := FImageDescriptor.ElementSize;
-end;
-
-function TTexture.getFormat: cardinal;
-begin
-  result := FImageDescriptor.ColorFormat;
-end;
-
-function TTexture.getDepth: integer;
-begin
-  result := FImageDescriptor.Depth;
-end;
-
-function TTexture.getHeight: integer;
-begin
-  result := FImageDescriptor.Height;
-end;
-
-function TTexture.getWidth: integer;
-begin
-  result := FImageDescriptor.Width;
-end;
-
-function TTexture.getIFormat: cardinal;
-begin
-  result := FImageDescriptor.InternalFormat;
-end;
-
-function TTexture.getImgDescr: PImageDesc;
-begin
-  result := @FImageDescriptor;
-end;
-
-function TTexture.getImgLod(Index: integer): TImageLevelDesc;
-begin
-  assert((index >= 0) and (index <= high(FImageDescriptor.LODS)),
-    'Lod index [' + inttostr(Index) + '] out of Range');
-  result := FImageDescriptor.LODS[index];
-end;
-
-function TTexture.getLevels: integer;
-begin
-  result := FImageDescriptor.Levels;
-end;
-
-function TTexture.getResMem: integer;
-begin
-  result := FImageDescriptor.ReservedMem;
-end;
-
-function TTexture.getTexArray: boolean;
-begin
-  result := FImageDescriptor.TextureArray;
+  if assigned(FImageDescriptor)
+  then result:=FImageDescriptor.ImageFormat
+  else result:=$FFFFFFFF;
 end;
 
 function TTexture.getTarget: TTexTarget;
 begin
   result := FTarget;
-end;
-
-procedure TTexture.setData(const Value: Pointer);
-begin
-  FImageDescriptor.Data := Value;
 end;
 
 procedure TTexture.setGenMipMaps(const Value: boolean);
@@ -1197,18 +1233,36 @@ begin
   FTexMatrixChanged := true;
 end;
 
-constructor TTexture.CreateOwned(aOwner: TObject);
+constructor TTexture.CreateOwned(aImageHolder: TImageHolder; aOwner: TObject);
 begin
+  assert(assigned(aImageHolder),'Image holder is not assigned!');
   Create;
   FTexMatrixChanged := false;
   Owner := aOwner;
-end;
+  FImageDescriptor := aImageHolder;
+  aImageHolder.Subscribe(Self);
 
-function TTexture.getGenMipMaps: boolean;
-begin
-  result := FGenerateMipMaps;
+  case FImageDescriptor.ImageType of
+    itBitmap: begin
+      FTarget := ttTexture2D;
+      if FImageDescriptor.Height <= 1 then FTarget := ttTexture1D;
+      if FImageDescriptor.Depth > 1 then FTarget := ttTexture3D;
+    end;
+    itBitmapArray: begin
+      if FImageDescriptor.Height <= 1 then FTarget := tt1DArray
+      else FTarget := tt2DArray;
+    end;
+    itVolume: begin
+      FTarget := ttTexture3D;
+    end;
+    itCubemap: begin
+      FTarget := ttCubemap;
+    end;
+    itCubemapArray: begin
+      FTarget := ttCubemapArray;
+    end;
+  end;
 end;
-
 
 { TTextureSampler }
 
@@ -1974,9 +2028,25 @@ end;
 constructor TMeshObject.Create;
 begin
   inherited;
-  FLods := TListOfMeshList.Create;
+  FLods := TLODsController.Create(nil);
   FOccluder := TMeshList.Create;
   FCollider := TTriangleList.Create;
+end;
+
+constructor TMeshObject.CreateFrom(aMesh: TMeshList);
+begin
+  inherited Create;
+  FOccluder := TMeshList.Create;
+  FCollider := TTriangleList.Create;
+  FLods := TLODsController.Create(aMesh);
+end;
+
+constructor TMeshObject.CreateFrom(aMesh: TMesh);
+begin
+  inherited Create;
+  FOccluder := TMeshList.Create;
+  FCollider := TTriangleList.Create;
+  FLods := TLODsController.Create(TMeshList.CreateFrom(aMesh));
 end;
 
 destructor TMeshObject.Destroy;
@@ -1987,17 +2057,19 @@ begin
   inherited;
 end;
 
-function TMeshObject.GetMeshLod(const aLod: integer): TMeshList;
+function TMeshObject.getMeshes: TMeshList;
 begin
-  if (FLods.Count = 0) or (aLod < 0) then
-  begin
-    result := nil;
-    exit;
-  end;
-  if aLod < FLods.Count then
-    result := FLods[aLod]
-  else
-    result := FLods[FLods.Count - 1];
+  result:=FLods.GetMeshLod(0);
+end;
+
+function TMeshObject.SetMesh(aMesh: TMeshList): integer;
+begin
+
+end;
+
+function TMeshObject.SetMesh(aMesh: TMesh): integer;
+begin
+
 end;
 
 { TRegisteredResource }
@@ -2036,7 +2108,7 @@ end;
 
 function TMeshList.AddNewMesh(aVertexObject: TVertexObject): TMesh;
 begin
-  result := TMesh.CreateFrom(aVertexObject);
+  result := TMesh.CreateFrom(aVertexObject,'VertexObject'+inttostr(FList.Count));
   FList.Add(result);
 end;
 
@@ -2044,6 +2116,17 @@ constructor TMeshList.Create;
 begin
   inherited;
   FList := TList.Create;
+end;
+
+constructor TMeshList.CreateFrom(aMesh: TMesh);
+begin
+  Create;
+  FList.Add(aMesh);
+end;
+
+constructor TMeshList.CreateFrom(aVertexObject: TVertexObject);
+begin
+  CreateFrom(TMesh.CreateFrom(aVertexObject, 'VertexObject'+inttostr(FList.Count)));
 end;
 
 destructor TMeshList.Destroy;
@@ -2070,6 +2153,7 @@ begin
   Create;
   GUID := aGUID;
   FriendlyName := '';
+  LocalMatrix := TMatrix.IdentityMatrix;
 end;
 
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject);
@@ -2077,6 +2161,7 @@ begin
   Create;
   CreateGUID(GUID);
   FriendlyName := '';
+  LocalMatrix := TMatrix.IdentityMatrix;
 end;
 
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject; aName: string);
@@ -2084,6 +2169,7 @@ begin
   Create;
   CreateGUID(GUID);
   FriendlyName := aName;
+  LocalMatrix := TMatrix.IdentityMatrix;
 end;
 
 { TShaderProgram }
@@ -2293,7 +2379,7 @@ function TMaterialObject.AddNewTexture(aName: string): TTexture;
 begin
   if assigned(FTexture) and (FTexture.Owner = Self) then
     FTexture.Free;
-  FTexture := TTexture.CreateOwned(Self);
+  FTexture := TTexture.CreateOwned(nil, Self);
   FTexture.Name := aName;
   FUseTexture := true;
   result := FTexture;
@@ -2583,75 +2669,6 @@ begin
   inherited;
 end;
 
-{ TSceneGraph }
-
-function TSceneGraph.AddItem(aItem: TBaseSceneItem): integer;
-begin
-  result := FItemsList.Add(aItem);
-end;
-
-function TSceneGraph.AddLight(aLight: TLightSource): integer;
-begin
-  result := FLights.Add(aLight);
-end;
-
-function TSceneGraph.AddMaterial(aMat: TMaterialObject): integer;
-begin
-  result := FMaterials.Add(aMat);
-end;
-
-function TSceneGraph.AddNewMaterial(aName: string): TMaterialObject;
-var
-  aMat: TMaterialObject;
-begin
-  { TODO : Проверить на существование в библиотеке материала с таким именем }
-  aMat := TMaterialObject.Create;
-  aMat.Name := aName;
-  result := aMat;
-end;
-
-constructor TSceneGraph.Create;
-begin
-  FItemsList := TList.Create;
-  FLights := TList.Create;
-end;
-
-destructor TSceneGraph.Destroy;
-begin
-  FreeObjectList(FItemsList);
-  inherited;
-end;
-
-function TSceneGraph.getCount: integer;
-begin
-  result := FItemsList.Count;
-end;
-
-function TSceneGraph.getItem(Index: integer): TBaseSceneItem;
-begin
-  result := TBaseSceneItem(FItemsList[index]);
-end;
-
-function TSceneGraph.getLight(Index: integer): TLightSource;
-begin
-  result := FLights[Index];
-end;
-
-function TSceneGraph.getLightCount: integer;
-begin
-  result := FLights.Count;
-end;
-
-function TSceneGraph.getMatCount: integer;
-begin
-  result := FMaterials.Count;
-end;
-
-function TSceneGraph.getMaterial(Index: integer): TMaterialObject;
-begin
-  result := TMaterialObject(FMaterials[index]);
-end;
-
 { TAttribList }
 
 function TAttribList.ExtractAttrib(aSemantic: TAttribType): Boolean;
@@ -2730,150 +2747,731 @@ end;
 
 { TImageSampler }
 
-constructor TImageSampler.Create;
+class function TImageSampler.CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean): TImageHolder;
 begin
+  result:=TImageHolder.Create(aFormatCode, itBitmap);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=1;
+  result.Allocate(aMipmapping);
+end;
+
+class function TImageSampler.CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aMipmapping: boolean): TImageHolder;
+begin
+  result:=TImageHolder.Create(aFormatCode, itBitmapArray);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=aDepth;
+  result.Allocate(aMipmapping);
+end;
+
+class function TImageSampler.CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result:=TImageHolder.Create(aFormatCode, itCubemapArray);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=6;
+  result.Allocate(aMipmapping);
+end;
+
+class function TImageSampler.CreateCubeMapArray(aFormatCode: cardinal; aWidth,
+  aHeight, aDepth: integer; aMipmapping: boolean): TImageHolder;
+begin
+  result:=TImageHolder.Create(aFormatCode, itCubemapArray);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=6*aDepth;
+  result.Allocate(aMipmapping);
+end;
+
+class function TImageSampler.CreateDepth32Texture(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_Depth32, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateDepthStencilTexture(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_Depth24Stencil8, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateFloat32Texture2D(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_Red32F, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateRGBA32fTexture2D(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_RGBA32F, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateRGBA8Texture2D(aWidth, aHeight: integer;
+  aMipmapping: boolean): TImageHolder;
+begin
+  result := CreateBitmap(IF_RGBA8UI, aWidth, aHeight, aMipmapping);
+end;
+
+class function TImageSampler.CreateVolume(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aMipmapping: boolean): TImageHolder;
+begin
+  result:=TImageHolder.Create(aFormatCode, itVolume);
+  result.Width:=aWidth;
+  result.Height:=aHeight;
+  result.Depth:=aDepth;
+  result.Allocate(aMipmapping);
+end;
+
+{ TImageHolder }
+
+procedure TImageHolder.Allocate(aWithMipmaps: boolean);
+var size: cardinal;
+begin
+  if assigned(FData) then exit;
+  if FImageFormat = $FFFFFFFF then exit;
+
+  size := TImageFormatSelector.GetMemSize(FImageFormat, FWidth, FHeight, FDepth, FLevels>1);
+  FDataSize := size;
+  FReservedMem := size;
+
+  getmem(FData,FReservedMem);
+  if aWithMipmaps then
+    FillLodsStructure(FImageFormat,FWidth, FHeight,FDepth,isTextureArray);
+end;
+
+constructor TImageHolder.Create;
+begin
+  inherited;
+  FImageFormat:=$FFFFFFFF;
+  FImageType:=itBitmap;
+
+  FElementSize:=-1;
+  FDataSize:=-1;
+  FReservedMem:=-1;
+  FData:=nil;
+  FWidth:=-1;
+  FHeight:=-1;
+  FDepth:=-1;
+  FLevels:=-1;
+  FCompressed:=false;
+
+  FLayers := TImageLayers.Create;
+  FLayers.Add(@FLODS);
+end;
+
+constructor TImageHolder.Create(aFormatCode: cardinal; aImageType: TImageType);
+var size: cardinal;
+begin
+  Create;
+  FImageFormat := aFormatCode;
+  setImageType(aImageType);
+end;
+
+procedure TImageHolder.Deallocate;
+begin
+  if assigned(FData) then begin
+    FreeMem(FData); FData := nil;
+    FElementSize:=-1;
+    FDataSize:=-1;
+    FReservedMem:=-1;
+  end;
+
+end;
+
+destructor TImageHolder.Destroy;
+begin
+  Deallocate;
   inherited;
 end;
 
-constructor TImageSampler.CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
-var size: cardinal;
+procedure TImageHolder.DiscardLods;
 begin
-  if not aMipmapping then FImageDescriptor.Levels := 1
-  else FillLodsStructure(aFormatCode, aWidth, aHeight, 1, false);
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 1, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.TextureArray := false;
-  FImageDescriptor.CubeMap := false;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := 1;
+  FLevels := 1;
 end;
 
-constructor TImageSampler.CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight,
-  aDepth: integer; aMipmapping: boolean);
-var size: cardinal;
-begin
-  if not aMipmapping then begin
-    FImageDescriptor.Levels := 1;
-  end else begin
-    FillLodsStructure(aFormatCode, aWidth, aHeight, aDepth, true);
-  end;
-  FImageDescriptor.TextureArray := true;
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, aDepth, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.CubeMap := false;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := aDepth;
-end;
-
-constructor TImageSampler.CreateCubeMap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean);
-var size: cardinal;
-begin
-  if not aMipmapping then begin
-    FImageDescriptor.Levels := 1;
-  end else begin
-    FillLodsStructure(aFormatCode, aWidth, aHeight, 6, true);
-  end;
-  FImageDescriptor.TextureArray := false;
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 6, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.CubeMap := true;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := 6;
-end;
-
-constructor TImageSampler.CreateCubeMapArray(aFormatCode: cardinal; aWidth,
-  aHeight, aDepth: integer; aMipmapping: boolean);
-var size: cardinal;
-begin
-  if not aMipmapping then begin
-    FImageDescriptor.Levels := 1;
-  end else begin
-    FillLodsStructure(aFormatCode, aWidth, aHeight, 6*aDepth, true);
-  end;
-  FImageDescriptor.TextureArray := true;
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, 6*aDepth, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.CubeMap := true;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := 6*aDepth;
-end;
-
-constructor TImageSampler.CreateVolume(aFormatCode: cardinal; aWidth, aHeight,
-  aDepth: integer; aMipmapping: boolean);
-var size: cardinal;
-begin
-  if not aMipmapping then begin
-    FImageDescriptor.Levels := 1;
-  end else begin
-    FillLodsStructure(aFormatCode, aWidth, aHeight, aDepth, false);
-  end;
-  FImageDescriptor.TextureArray := false;
-  size := TImageFormatSelector.GetMemSize(aFormatCode, aWidth, aHeight, aDepth, aMipmapping);
-  getmem(FImageDescriptor.Data, size);
-  FImageDescriptor.DataSize := size;
-  FImageDescriptor.ReservedMem := size;
-  FImageDescriptor.ElementSize := TImageFormatSelector.GetPixelSize(aFormatCode);
-  FImageDescriptor.Compressed := TImageFormatBits.isCompressedFormat(aFormatCode);
-  FImageDescriptor.CubeMap := false;
-  FImageDescriptor.Width := aWidth;
-  FImageDescriptor.Height := aHeight;
-  FImageDescriptor.Depth := aDepth;
-end;
-
-procedure TImageSampler.FillLodsStructure(aFormatCode: cardinal;
-  aWidth, aHeight, aDepth: integer; aArray: boolean);
+procedure TImageHolder.FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aArray: boolean);
 var i,j, offs, size: integer;
     w,h,d,layers: integer;
-
 begin
-  FImageDescriptor.Levels :=
-    TImageFormatSelector.GetMipmapsCount(max(aWidth, max(aHeight, aDepth)));
+  assert(assigned(FData), 'Allocate image memory first!');
+  FLevels := TImageFormatSelector.GetMipmapsCount(max(aWidth, max(aHeight, aDepth)));
   offs := 0; w := aWidth; h := aHeight; d := aDepth;
   if aArray then layers := aDepth else layers := 1;
 
-  for i := 0 to FImageDescriptor.Levels - 1 do begin
-    FImageDescriptor.LODS[i].Width := w;
-    FImageDescriptor.LODS[i].Height := h;
+  for i := 0 to FLevels - 1 do begin
+    FLODS[i].Width := w;
+    FLODS[i].Height := h;
     if not aArray then begin
-      FImageDescriptor.LODS[i].Depth := d;
-      FImageDescriptor.LODS[i].Offset := offs;
-      FImageDescriptor.LODS[i].Size :=
-        TImageFormatSelector.GetMemSize(aFormatCode, w, h, d, false);
-      setlength(FImageDescriptor.LODS[i].LayersOffset, 0);
+      FLODS[i].Depth := d;
+      FLODS[i].Offset := offs;
+      FLODS[i].Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, d, false);
+//      setlength(FLODS[i].LayersOffset, 0);
     end else begin
-      FImageDescriptor.LODS[i].Depth := 1;
-      FImageDescriptor.LODS[i].Offset := offs;
+      FLODS[i].Depth := 1;
+      FLODS[i].Offset := offs;
       Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, 1, false);
-      FImageDescriptor.LODS[i].Size := Size * Layers;
-      setlength(FImageDescriptor.LODS[i].LayersOffset, layers);
-      for j := 0 to layers-1 do begin
-        FImageDescriptor.LODS[i].LayersOffset[j] := offs + Size * j;
-      end;
+      FLODS[i].Size := Size * Layers;
+//      setlength(FLODS[i].LayersOffset, layers);
+//      for j := 0 to layers-1 do FLODS[i].LayersOffset[j] := offs + Size * j;
     end;
 
-    offs := offs + FImageDescriptor.LODS[i].Size;
-    w := max(1,w shr 2); h := max(1, h shr 2); d := max(1, d shr 2);
+    offs := offs + FLODS[i].Size;
+    w := max(1,w shr 1); h := max(1, h shr 1); d := max(1, d shr 1);
   end;
+end;
+
+function TImageHolder.getBitmapState: boolean;
+begin
+   if FImageType in [itBitmap, itBitmapArray]
+   then result:=true else result:=false;
+end;
+
+function TImageHolder.getCubeMapState: boolean;
+begin
+   if FImageType in [itCubemap, itCubemapArray]
+   then result:=true else result:=false;
+end;
+
+function TImageHolder.getDataSize: integer;
+begin
+  if FImageFormat<>$FFFFFFFF then result:=FDataSize else result:=-1;
+end;
+
+function TImageHolder.getImageLod(Index: integer): PImageLevelDesc;
+begin
+  assert((Index>=0) and (Index<FLevels), 'Lod Index out of range');
+  result := @FLODS[Index];
+end;
+
+function TImageHolder.getTextureArrayState: boolean;
+begin
+   if FImageType in [itBitmapArray, itCubemapArray]
+   then result:=true else result:=false;
+end;
+
+function TImageHolder.getVolumeState: boolean;
+begin
+   if FImageType in [itVolume]
+   then result:=true else result:=false;
+end;
+
+procedure TImageHolder.LoadFromStream(aStream: TStream);
+begin
+  assert(false, 'Not implemented yet :(');
+end;
+
+procedure TImageHolder.LoadImageFromFile(aFileName: string);
+var stream: TFileSTream;
+begin
+  stream:=TFileSTream.Create(aFileName, fmOpenRead);
+  LoadImageFromStream(stream);
+  stream.free;
+end;
+
+procedure TImageHolder.LoadImageFromStream(aStream: TStream);
+begin
+  assert(false, 'No one image format supported!');
+end;
+
+procedure TImageHolder.SaveImageToFile(aFileName, ImageFormat: string);
+var stream: TFileSTream;
+begin
+  stream:=TFileSTream.Create(aFileName, fmOpenWrite);
+  SaveImageToStream(stream);
+  stream.free;
+end;
+
+procedure TImageHolder.SaveImageToStream(aStream: TStream; ImageFormat: string);
+begin
+  assert(false, 'No one image format supported!');
+end;
+
+procedure TImageHolder.SaveToStream(aStream: TStream);
+begin
+  assert(false, 'Not implemented yet :(');
+end;
+
+procedure TImageHolder.setDepth(const Value: integer);
+begin
+  FDepth := Value; Deallocate;
+end;
+
+procedure TImageHolder.setHeight(const Value: integer);
+begin
+  FHeight := Value; Deallocate;
+end;
+
+procedure TImageHolder.setImageFormat(const Value: cardinal);
+begin
+  FImageFormat := Value;
+  Deallocate;
+  if FImageFormat <> $FFFFFFFF then begin
+    FElementSize := TImageFormatSelector.GetPixelSize(FImageFormat);
+    FCompressed := TImageFormatBits.isCompressedFormat(FImageFormat);
+  end else begin
+    FCompressed := false;
+    FElementSize := -1;
+  end;
+end;
+
+procedure TImageHolder.setImageType(const Value: TImageType);
+begin
+  if FImageType <> Value then Deallocate;
+  FImageType := Value;
+  case Value of
+    itVolume: FLevels := 1;
+    itBitmap: FDepth := 1;
+    itBitmapArray: FLevels := 1;
+    itCubemap: FDepth := 6;
+  end;
+
+end;
+
+procedure TImageHolder.setWidth(const Value: integer);
+begin
+  FWidth := Value; Deallocate;
+end;
+
+constructor TImageHolder.CreateFromStream(aStream: TStream);
+begin
+  assert(false, 'Not implemented yet :(');
+end;
+
+function TImageHolder.CreateTexture: TTexture;
+begin
+  assert(FDataSize > 0, 'Allocate image first!');
+  result := TTexture.CreateOwned(self);
+end;
+
+{ TMaterialList }
+
+function TMaterialList.AddMaterial(const aItem: TMaterialObject): integer;
+begin
+  result:=AddKey(aItem.GUID, aItem);
+end;
+
+destructor TMaterialList.Destroy;
+var i: integer;
+    obj: TMaterialObject;
+begin
+  for i:=0 to Count-1 do begin
+    obj := getItemObj(i);
+    if obj.Owner = self then  obj.Free;
+  end;
+
+  inherited;
+end;
+
+function TMaterialList.getItemObj(index: integer): TMaterialObject;
+begin
+  result:=TMaterialObject(FItems[Index].Value);
+end;
+
+function TMaterialList.GetMaterial(aKey: TGUID): TMaterialObject;
+begin
+   result:=TMaterialObject(GetValue(aKey));
+end;
+
+function TMaterialList.GetMaterial(aName: string): TMaterialObject;
+var i: integer;
+    mi: TMaterialObject;
+begin
+  for i:=0 to FCount-1 do begin
+    mi:=TMaterialObject(FItems[i].Value);
+    if mi.FName=aName then begin
+      result:=mi; exit;
+    end;
+  end; result:=nil;
+end;
+
+procedure TMaterialList.RemoveMaterial(const aItem: TMaterialObject);
+var i: integer;
+    mi: TMaterialObject;
+begin
+  for i:=0 to FCount-1 do begin
+    mi:=TMaterialObject(FItems[i].Value);
+    if mi=aItem then begin
+      FItems[i].Key:=-1; FItems[i].KeyName:='';
+      FItems[i].KeyGUID := TGUIDEx.Empty;
+      FItems[i].Value:=nil; exit;
+    end;
+  end;
+end;
+
+{ TLightsList }
+
+function TLightsList.AddLight(const aItem: TLightSource): integer;
+begin
+  result:=AddKey(aItem.GUID, aItem);
+end;
+
+destructor TLightsList.Destroy;
+var i: integer;
+    obj: TLightSource;
+begin
+  for i:=0 to Count-1 do begin
+    obj := getItemObj(i);
+    if obj.Owner = self then  obj.Free;
+  end;
+  inherited;
+end;
+
+function TLightsList.getItemObj(index: integer): TLightSource;
+begin
+  result:=TLightSource(FItems[Index].Value);
+end;
+
+function TLightsList.GetLight(aName: string): TLightSource;
+var i: integer;
+    li: TLightSource;
+begin
+  for i:=0 to FCount-1 do begin
+    li:=TLightSource(FItems[i].Value);
+    if li.FName=aName then begin
+      result:=li; exit;
+    end;
+  end; result:=nil;
+end;
+
+function TLightsList.GetLight(aKey: TGUID): TLightSource;
+begin
+  result:=TLightSource(GetValue(aKey));
+end;
+
+procedure TLightsList.RemoveLight(const aItem: TLightSource);
+var i: integer;
+    li: TLightSource;
+begin
+  for i:=0 to FCount-1 do begin
+    li:=TLightSource(FItems[i].Value);
+    if li=aItem then begin
+      FItems[i].Key:=-1; FItems[i].KeyName:='';
+      FItems[i].KeyGUID := TGUIDEx.Empty;
+      FItems[i].Value:=nil; exit;
+    end;
+  end;
+end;
+
+{ TSceneCamera }
+
+constructor TSceneCamera.Create;
+begin
+  inherited;
+  FViewMatrix := TMatrix.IdentityMatrix;
+  FProjMatrix := TMatrix.IdentityMatrix;
+  FRenderTarget := nil;
+  FViewPortSize[0]:=256;
+  FViewPortSize[1]:=256;
+  FFoV := 60;
+  FzNear := 0.1;
+  FzFar := 100;
+  FViewTarget := nil;
+  RebuildProjMatrix;
+  RebuildViewMatrix;
+end;
+
+procedure TSceneCamera.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  if sender = FViewTarget then
+    case Msg of
+      NM_WorldMatrixChanged: RebuildViewMatrix;
+      NM_ObjectDestroyed: FViewTarget := nil;
+    end;
+  if sender = Owner then
+    case Msg of
+      NM_WorldMatrixChanged: begin
+        UpdateWorldMatrix; RebuildViewMatrix;
+      end;
+      NM_ObjectDestroyed: UpdateWorldMatrix;
+    end;
+  inherited;
+end;
+
+procedure TSceneCamera.RebuildProjMatrix;
+begin
+  if FFoV = 0 then
+    FProjMatrix := TMatrix.OrthoMatrix(0,FViewPortSize[0],0,FViewPortSize[1],FzNear, FzFar)
+  else
+    FProjMatrix := TMatrix.PerspectiveMatrix(FFov,FViewPortSize[0]/FViewPortSize[1],FzNear, FzFar);
+end;
+
+procedure TSceneCamera.RebuildViewMatrix;
+begin
+  if WorldMatrixUpdated then UpdateWorldMatrix;
+  if assigned(FViewTarget) then
+    FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
+  else
+    FViewMatrix := TMatrix.LookAtMatrix(Position,Direction,Up);
+end;
+
+procedure TSceneCamera.SetFoV(const Value: single);
+begin
+  FFoV := Value;
+  RebuildProjMatrix;
+end;
+
+procedure TSceneCamera.SetProjMatrix(const Value: TMatrix);
+begin
+  FProjMatrix := Value;
+end;
+
+procedure TSceneCamera.SetRenderTarget(const Value: TFrameBuffer);
+begin
+  if assigned(FRenderTarget) and (FRenderTarget.Owner = self)
+  then FRenderTarget.Free;
+
+  FRenderTarget := Value;
+  if assigned(FRenderTarget) then FRenderTarget.SetSize(FViewPortSize);
+end;
+
+procedure TSceneCamera.SetViewMatrix(const Value: TMatrix);
+begin
+  FViewMatrix := Value;
+  WorldMatrixUpdated := true;
+end;
+
+procedure TSceneCamera.SetViewPortSize(const Value: vec2i);
+begin
+  FViewPortSize := Value;
+  if assigned(FRenderTarget) then FRenderTarget.SetSize(Value);
+end;
+
+procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
+begin
+  FViewTarget := Value;
+  if assigned(FViewTarget) then begin
+    FViewTarget.Subscribe(self);
+    if WorldMatrixUpdated then UpdateWorldMatrix;
+    FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up);
+  end;
+end;
+
+procedure TSceneCamera.SetzFar(const Value: single);
+begin
+  FzFar := Value;
+  RebuildProjMatrix;
+end;
+
+procedure TSceneCamera.SetzNear(const Value: single);
+begin
+  FzNear := Value;
+  RebuildProjMatrix;
+end;
+
+{ TFrameBuffer }
+
+function TFrameBuffer.GetTexture(aRenderBuffer: TRenderBuffer): TTexture;
+begin
+  case aRenderBuffer of
+    rbDepth: if FDepthBuffer.Mode = bmTexture
+      then result := FDepthBuffer.Texture
+      else result := nil;
+    rbStencil: if FStencilBuffer.Mode = bmTexture
+      then result := FStencilBuffer.Texture
+      else result := nil;
+    rbDepthStencil: if FDepthStencilBuffer.Mode = bmTexture
+      then result := FDepthStencilBuffer.Texture
+      else result := nil;
+    else result := nil;
+  end;
+end;
+
+procedure TFrameBuffer.AttachColor(aTexture: TTexture);
+begin
+  FColorAttachments.Add(aTexture);
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TFrameBuffer.AttachRenderBuffer(aFormat: TRenderBufferFormat; aMode: TBufferMode);
+var buffptr: ^TRenderBufferAttachment;
+begin
+  case aFormat of
+    rbDepth16, rbDepth24, rbDepth32: begin
+        buffptr := @FDepthBuffer;
+          if aMode<>bmNone then include(FRenderBuffers,rbDepth)
+          else exclude(FRenderBuffers,rbDepth);
+      end;
+    rbStencil1b, rbStencil4b, rbStencil8b, rbStencil16b: begin
+        buffptr := @FStencilBuffer;
+          if aMode<>bmNone then include(FRenderBuffers,rbStencil)
+          else exclude(FRenderBuffers,rbStencil);
+      end;
+    rbDepth24Stencil8, rbDepth32FStencil8: begin
+        buffptr := @FDepthStencilBuffer;
+          if aMode<>bmNone then include(FRenderBuffers,rbDepthStencil)
+          else exclude(FRenderBuffers,rbDepthStencil);
+      end;
+    else assert(false, 'Unknown render buffer format!');
+  end;
+
+  buffptr.Mode := aMode;
+  buffptr.Format := aFormat;
+  if assigned(buffptr.Texture) then buffptr.Texture.Free;
+  buffptr.Texture := nil;
+
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+constructor TFrameBuffer.Create;
+begin
+    inherited Create;
+
+    FReadBackBuffers := TImageHolders.Create;
+    FRenderBuffers := [];
+    FDepthBuffer.Mode := bmNone;
+    FDepthBuffer.Texture := nil;
+    FStencilBuffer.Mode := bmNone;
+    FStencilBuffer.Texture := nil;
+    FDepthStencilBuffer.Mode := bmNone;
+    FDepthStencilBuffer.Texture :=nil;
+    FColorAttachments := TTexturesList.Create;
+
+    FActive := false;
+    FMultisample := MSNone;
+
+end;
+
+destructor TFrameBuffer.Destroy;
+begin
+  ResetColorAttachments;
+  ResetRenderBuffers;
+  ResetReedBackBuffers;
+
+  FColorAttachments.Free;
+  FReadBackBuffers.Free;
+  inherited;
+end;
+
+function TFrameBuffer.GetTexture(aAttachmentSlot: cardinal): TTexture;
+begin
+  if (aAttachmentSlot < FColorAttachments.Count)
+  then result := FColorAttachments[aAttachmentSlot]
+  else result := nil;
+end;
+
+procedure TFrameBuffer.ResetColorAttachments;
+begin
+  FColorAttachments.Clear;
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TFrameBuffer.ResetReedBackBuffers;
+begin
+  FReadBackBuffers.Clear;
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TFrameBuffer.ResetRenderBuffers;
+begin
+  FRenderBuffers:=[];
+  FDepthBuffer.Mode:=bmNone;
+  if assigned(FDepthBuffer.Texture) then FDepthBuffer.Texture.Free;
+  FStencilBuffer.Mode:=bmNone;
+  if assigned(FStencilBuffer.Texture) then FStencilBuffer.Texture.Free;
+  FDepthStencilBuffer.Mode:=bmNone;
+  if assigned(FDepthStencilBuffer.Texture) then FDepthStencilBuffer.Texture.Free;
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TFrameBuffer.SetActive(const Value: boolean);
+begin
+  FActive := Value;
+end;
+
+procedure TFrameBuffer.SetMultisample(const Value: TMultisampleFormat);
+begin
+  FMultisample := Value;
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+procedure TFrameBuffer.SetSize(aSize: vec2i);
+begin
+  FSize := aSize;
+  DispatchMessage(NM_ResourceChanged);
+end;
+
+{ TLODsController }
+
+function TLODsController.AddLod(aLoD: TMeshList; aDistance: single): integer;
+begin
+  result := FList.Add(TLod.Create(aLod,aDistance));
+end;
+
+function TLODsController.AddLod(aLoD: TLoD): integer;
+begin
+  result := FList.Add(aLod);
+end;
+
+constructor TLODsController.Create(aBaseLod: TMeshList);
+begin
+  inherited Create;
+  FList := TLodsDataList.Create;
+  FList.Add(TLod.Create(aBaseLod, 0));
+  FMinLod := 0; FMaxLod := high(Integer);
+end;
+
+destructor TLODsController.Destroy;
+begin
+  FList.Free;
+  inherited;
+end;
+
+function TLODsController.getCount: integer;
+begin
+  result := FList.Count;
+end;
+
+function TLODsController.getLod(Index: integer): TLod;
+begin
+  result := FList[min(Index,FList.Count-1)];
+end;
+
+function TLODsController.GetMeshLod(const aLod: integer): TMeshList;
+var n: integer;
+begin
+  n := max(aLod, FMinLod);
+  n := min(n,FMaxLod);
+  if n<FList.Count then result := FList[n].LoD
+  else result:=nil;
+end;
+
+function TLODsController.GetMeshLod(const aDistance: single): TMeshList;
+var i: integer;
+begin
+  if assigned(FLodFunction) then begin
+    i:=FLodFunction(aDistance);
+    i:=max(FMinLod,i); i:=min(FMaxLod,i);
+    result:=FList[i].LoD;
+  end else begin
+    for i:= FList.Count-1 downto 0 do begin
+      if FList[i].Distance <= aDistance then begin
+        result:=FList[i].LoD; exit;
+      end;
+    end;
+    result:=FList[0].LoD;
+  end;
+end;
+
+procedure TLODsController.SetLodEquation(aConstant, aLinear, aQuadric: single);
+begin
+  FConstant:=aConstant; FLinear:=aLinear; FQuadric:=aQuadric;
+end;
+
+procedure TLODsController.SetLodRange(aMinLod, aMaxLod: integer);
+begin
+  FMinLod := aMinLod; FMaxLod := aMaxLod;
+end;
+
+{ TLoD }
+
+constructor TLoD.Create(aLoD: TMeshList; aDistance: single);
+begin
+  LoD:=aLod; Distance:=aDistance;
 end;
 
 initialization

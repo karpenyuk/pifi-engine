@@ -366,7 +366,7 @@ const
 function Vector( aX,aY: Float; aZ: Float = 0; aW: Float = 0 ): Vec4;
 function Vec3Make( aX,aY: Float; aZ: Float = 0 ): Vec3;
 function Vec2Make( aX,aY: Float ): Vec2;
-
+function Vec2iMake( aX,aY: Int): Vec2i;
 //procedure NegateVector(var aVec: vec3);
 
 
@@ -396,10 +396,14 @@ end;
 
 function Vec2Make( aX,aY: Float ): Vec2;
 begin
-
   result[0] := aX;
   result[1] := aY;
+end;
 
+function Vec2iMake( aX,aY: Int): Vec2i;
+begin
+  result[0] := aX;
+  result[1] := aY;
 end;
 
 {procedure NegateVector(var aVec: vec3);

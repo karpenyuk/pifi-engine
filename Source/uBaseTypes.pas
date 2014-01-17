@@ -21,6 +21,9 @@ Type
   PByteArray = ^TByteArray;
   TByteArray = array[0..32767] of Byte;
 
+  PFloatArray = ^TFloatArray;
+  TFloatArray = array[0..32767] of single;
+
   TIntegerArray = array of Integer;
 
 //  TPtrList = TDataList<pointer>;
@@ -94,32 +97,19 @@ Type
   end;
   PTextureDesc = ^TTextureDesc;
 
+  TImageType = (itBitmap, itBitmapArray, itVolume, itCubemap, itCubemapArray);
+
   TImageLevelDesc = record
     Width: Integer;
     Height: Integer;
     Depth: Integer;
     Offset: LongWord;
     Size: integer;
-    LayersOffset: array of LongWord;
   end;
+  PImageLevelDesc = ^TImageLevelDesc;
 
-  TImageDesc = record
-    InternalFormat: cardinal;
-    ColorFormat: cardinal;
-    DataType: cardinal;
-
-    ElementSize: integer;
-    DataSize: integer;
-    ReservedMem: integer;
-    Data: pointer;
-    Width, Height, Depth, Levels: integer;
-    LODS: array[0..15] of TImageLevelDesc;
-    Compressed: boolean;
-    CubeMap: boolean;
-    TextureArray: boolean;
-    procedure Free;
-  end;
-  PImageDesc = ^TImageDesc;
+  TImageLods = array[0..32] of TImageLevelDesc;
+  PImageLods = ^TImageLods;
 
   TApiVersion = record
     GAPI: (avGL, avDX, avES, avCanvas);
@@ -184,6 +174,17 @@ Type
 
   TTriangleBoundaryArray = array of TTriangleBoundary;
 
+  TColor = record
+    Red, Green, Blue, Alpha: single;
+  end;
+
+  TLightModels = (lmNone, lmGouraud, lmPhong, lmBlinn, lmLambert, lmDeferred);
+  TColorReplacing = (crDisable, crEmission, crAmbient, crDiffuse, crSpecular,
+    crAmbientAndDiffuse);
+
+  TMaterialType = (mtFFP, mtShader);
+  TLightStyle = (lsSpot, lsOmni, lsParallel, lsDirectional);
+
   //Логика использования шейдеров рендером вершинных объектов
   //slDisableShader - деактивировать активный шейдер и не использовать собственный
   //slUseActiveShader - использовать активный шейдер вместо собственного
@@ -202,6 +203,18 @@ Type
 
   //Приоритет использования шейдера, если назначены оба или один не доступен
   TShaderUsagePriority = (spUseOwnShaderFirst, spUseActiveShaderFirst);
+
+//FBO types
+  TRenderBuffer = (rbDepth, rbStencil, rbDepthStencil);
+  TRenderBuffers = set of TRenderBuffer;
+  TBufferMode = (bmNone, bmBuffer, bmTexture);
+  TDepthPrecision = (dpDefault, dp16, dp24, dp32);
+  TStencilPrecision = (spDefault, sp1bit, sp4bits, sp8bits, sp16bits);
+  TRenderBufferFormat = (rbDepth16, rbDepth24, rbDepth32,
+    rbStencil1b, rbStencil4b, rbStencil8b, rbStencil16b,
+    rbDepth24Stencil8, rbDepth32FStencil8);
+  TMultisampleFormat = (MSNone, MSAA2, MSAA4, MSAA8);
+  TMRTTarget = (tgTexture, tgDepth, tgDepthStencil, tgMRT0, tgMRT1, tgMRT2, tgMRT3);
 
 const
   CValueSizes: array[TValueType] of byte = (1, 2, 4, 4, 4, 8);
@@ -246,13 +259,5 @@ const
   NM_ObjectDestroyed = 10201;
 
 implementation
-
-procedure TImageDesc.Free;begin
-  if Assigned(Data) then
-  begin
-    FreeMem(Data);
-    Data := nil;
-  end;
-end;
 
 end.

@@ -11,15 +11,6 @@ uses Classes, uPersistentClasses, uVMath, uLists, uMiscUtils, {ImageLoader,}
 
 Type
 
-  TRenderBuffer = (rbDepth, rbStencil);
-  TRenderBuffers = set of TRenderBuffer;
-  TBufferMode = (bmNone, bmBuffer, bmTexture);
-  TDepthPrecision = (dpDefault, dp16, dp24, dp32);
-  TStencilPrecision = (spDefault, sp1bit, sp4bits, sp8bits, sp16bits);
-  TMultisampleFormat = (MSAA2, MSAA4, MSAA8);
-  TMRTTarget = (tgTexture, tgDepth, tgDepthStencil, tgMRT0, tgMRT1,
-    tgMRT2, tgMRT3);
-
   // Base GL Resource
   TGLBaseResource = class(TBaseRenderResource)
     Owner: TObject;
@@ -34,7 +25,7 @@ Type
     Precision: GLEnum;
   end;
 
-  TAttachments = record
+  TFBOAttachments = record
     Textures: TList;
     DepthBuffer: TFBORenderTarget;
     StencilBuffer: TFBORenderTarget;
@@ -44,6 +35,13 @@ Type
   TFBOTarget = record
     Texture: TGLTextureObject;
     TargetTo: TMRTTarget;
+  end;
+
+  TGLTextureFormatDescriptor = record
+    InternalFormat: cardinal;
+    BaseFormat: cardinal;
+    PixelFormat: cardinal;
+    Compressed: boolean;
   end;
 
   TGLBufferObject = class(TGLBaseResource)
@@ -393,26 +391,40 @@ Type
   private
     FTexId: cardinal;
     FpboId: cardinal;
-    FImageDesc: PImageDesc;
+    FPBOInit: boolean;
+    FImageHolder: TImageHolder;
+    FFormatDescr: TGLTextureFormatDescriptor;
     FTexDesc: PTextureDesc;
     FTarget: TTexTarget;
     FTextureObject: TTexture;
     FTextureSampler: TTextureSampler;
     FGenerateMipMaps: boolean;
+    FHandle: GLuint64;
+
+    function getInternalFormat: cardinal;
+    function getColorFormat: cardinal;
+    function getDataType: cardinal;
+    function getHandle: GLuint64;
+
   public
     constructor Create; override;
-    constructor CreateFrom(const aTarget: TTexTarget; const aImageDesc: PImageDesc;
+    constructor CreateFrom(const aTarget: TTexTarget; const aImageHolder: TImageHolder;
       const aTexDesc: PTextureDesc = nil); overload;
     constructor CreateFrom(const aTexture: TTexture); overload;
 
     destructor Destroy; override;
 
-    procedure UploadTexture(Data: pointer; Size: cardinal);
+    procedure UploadTexture(aData: pointer = nil; aLevel: integer = -1);
 
     property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
 
     property Id: cardinal read FTexId;
     property Target: TTexTarget read FTarget;
+    property Handle: GLuint64 read getHandle;
+
+    property InternalFormat: cardinal read getInternalFormat;
+    property ColorFormat: cardinal read getColorFormat;
+    property DataType: cardinal read getDataType;
     property GenerateMipMaps: boolean read FGenerateMipMaps write FGenerateMipMaps;
   end;
 
@@ -420,7 +432,7 @@ Type
   private
     FBOId: GLUInt;
     FMSFBOId: GLUInt;
-    FAttachments: TAttachments;
+    FAttachments: TFBOAttachments;
     FRenderBuffers: TRenderBuffers;
     FReadBackBuffers: TList;
     FWidth, FHeight: integer;
@@ -474,13 +486,6 @@ Type
     property Active: boolean read FActive write FActive;
     property DeactivateAfter: boolean read FDeactivate write FDeactivate;
     property Handle: cardinal read FBOId;
-  end;
-
-  TGLTextureFormatDescriptor = record
-    InternalFormat: cardinal;
-    BaseFormat: cardinal;
-    PixelFormat: cardinal;
-    Compressed: boolean;
   end;
 
   TGLTextureFormatSelector = class (TAbstractPixelFormatSelector<TGLTextureFormatDescriptor>)
@@ -673,11 +678,9 @@ procedure TGLBufferObject.BindRange(AsTarget: TBufferType; Index: cardinal;
 begin
   assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
   if AsTarget in [btAtomicCounter, btTransformFeedback, btUniform,
-    btShaderStorage] then
-  begin
+    btShaderStorage] then begin
     glBindBufferRange(CBufferTypes[AsTarget], Index, FBuffId, Offset, Size);
-  end
-  else
+  end else
     assert(false, 'Bind Range not supported for this buffer type!');
 end;
 
@@ -698,8 +701,7 @@ end;
 
 function TGLBufferObject.Map(AccessType: cardinal): pointer;
 begin
-  if FLocked then
-  begin
+  if FLocked then begin
     result := FMappedPointer;
     exit;
   end;
@@ -710,11 +712,9 @@ begin
   result := FMappedPointer;
 end;
 
-function TGLBufferObject.MapRange(AccessType, Offset, Length: cardinal)
-  : pointer;
+function TGLBufferObject.MapRange(AccessType, Offset, Length: cardinal): pointer;
 begin
-  if FLocked then
-  begin
+  if FLocked then begin
     result := FMappedPointer;
     exit;
   end;
@@ -728,27 +728,23 @@ end;
 
 procedure TGLBufferObject.Notify(Sender: TObject; Msg: cardinal;
   Params: pointer);
-var
-  buff: TBufferObject;
+var buff: TBufferObject;
 begin
   inherited;
   case Msg of
     NM_ResourceChanged:
-      if Sender.ClassType = TBufferObject then
-      begin
+      if Sender.ClassType = TBufferObject then begin
         buff := TBufferObject(Sender);
         if buff.Size = FSize then
           Upload(buff.Data, buff.Size, 0)
-        else
-        begin
+        else begin
           glDeleteBuffers(1, @FBuffId);
           glGenBuffers(1, @FBuffId);
           Allocate(buff.Size, buff.Data);
         end;
       end;
     NM_ObjectDestroyed:
-      if Sender = FBuffer then
-      begin
+      if Sender = FBuffer then begin
         FBuffer := nil;
         glDeleteBuffers(1, @FBuffId);
       end;
@@ -763,8 +759,7 @@ end;
 
 procedure TGLBufferObject.UnMap;
 begin
-  if not FLocked then
-    exit;
+  if not FLocked then exit;
   glUnmapBuffer(CBufferTypes[FBuffType]);
   glBindBuffer(CBufferTypes[FBuffType], 0);
   FLocked := false;
@@ -787,8 +782,7 @@ end;
 destructor TGLBufferObject.Destroy;
 begin
   glDeleteBuffers(1, @FBuffId);
-  if assigned(FBuffer) then
-    FBuffer.UnSubscribe(self);
+  if assigned(FBuffer) then FBuffer.UnSubscribe(self);
   inherited;
 end;
 
@@ -1284,7 +1278,8 @@ begin
     result := FShaderId;
     exit;
   end;
-  glProgramParameteri(FShaderId, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+  if GL_ARB_get_program_binary then
+    glProgramParameteri(FShaderId, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
   LinkError := false;
   glLinkProgram(FShaderId);
   glGetProgramiv(FShaderId, GL_LINK_STATUS, @val);
@@ -1324,6 +1319,13 @@ var
   pLog: PAnsiChar;
 begin
   LoadingError := false;
+  if not GL_ARB_get_program_binary then begin
+    FLinked := false;
+    result := 0;
+    assert(false, 'Program binary not supported!');
+    exit;
+  end;
+
   glProgramBinary(FShaderId, Format, Binary, Size);
   glGetProgramiv(FShaderId, GL_LINK_STATUS, @Status);
   FLog := FLog + 'Loading Program ' + inttostr(FShaderId);
@@ -1770,32 +1772,35 @@ begin
   inherited Create;
   glGenTextures(1, @FTexId);
   glGenBuffers(1, @FpboId);
+  FPBOInit := false;
   FTarget := ttTexture2D;
   FTextureSampler := nil;
   FTextureObject := nil;
-  FImageDesc:=nil;
+  FImageHolder:=nil;
   FTexDesc:=nil;
   FGenerateMipMaps := false;
+  FHandle := 0;
 end;
 
 constructor TGLTextureObject.CreateFrom(const aTarget: TTexTarget;
-  const aImageDesc: PImageDesc; const aTexDesc: PTextureDesc);
+  const aImageHolder: TImageHolder; const aTexDesc: PTextureDesc);
 begin
   Create;
-  glGenTextures(1, @FTexId);
-  glGenBuffers(1, @FpboId);
   FTexDesc := aTexDesc;
-  FImageDesc := aImageDesc;
+  FImageHolder:= aImageHolder;
+  if assigned(FImageHolder) then
+    FFormatDescr := TGLTextureFormatSelector.GetTextureFormat(FImageHolder.ImageFormat);
   FTarget := aTarget;
 end;
 
 constructor TGLTextureObject.CreateFrom(const aTexture: TTexture);
 begin
   Create;
-  glGenTextures(1, @FTexId);
-  glGenBuffers(1, @FpboId);
-  FImageDesc := aTexture.ImageDescriptor;
+  FImageHolder := aTexture.ImageHolder;
+  if assigned(FImageHolder) then
+    FFormatDescr := TGLTextureFormatSelector.GetTextureFormat(FImageHolder.ImageFormat);
   FTarget := aTexture.Target;
+  FTextureObject := aTexture;
 end;
 
 destructor TGLTextureObject.Destroy;
@@ -1803,32 +1808,106 @@ begin
   glBindTexture(CTexTargets[FTarget], 0);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+{  if GL_ARB_bindless_texture then
+    glMakeTextureHandleNonResidentARB(FHandle);
+}
   glDeleteTextures(1, @FTexId);
   glDeleteBuffers(1, @FpboId);
   inherited;
 end;
 
-procedure TGLTextureObject.UploadTexture(Data: pointer; Size: cardinal);
+function TGLTextureObject.getColorFormat: cardinal;
 begin
-  assert(assigned(FImageDesc),'Image descriptor is not assigned!');
-  with FImageDesc^ do
-  begin
+  result := FFormatDescr.BaseFormat;
+end;
+
+function TGLTextureObject.getDataType: cardinal;
+begin
+  result := FFormatDescr.PixelFormat;
+end;
+
+function TGLTextureObject.getHandle: GLuint64;
+begin
+(* if GL_ARB_bindless_texture then begin
+    FHandle := glGetTextureHandleARB(FTexId);
+    glMakeTextureHandleResidentARB(FHandle);
+  end;
+*)
+  result := FHandle;
+end;
+
+function TGLTextureObject.getInternalFormat: cardinal;
+begin
+  result := FFormatDescr.InternalFormat;
+end;
+
+procedure TGLTextureObject.UploadTexture(aData: pointer; aLevel: integer);
+var i,sl,el: integer;
+    dataptr: pointer;
+begin
+  assert(assigned(FImageHolder),'Image holder is not assigned!');
+
+  with FImageHolder, FFormatDescr do begin
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, FpboId);
     glBindTexture(CTexTargets[FTarget], FTexId);
-    case FTarget of
-      ttTexture1D:
-        glTexImage1D(CTexTargets[FTarget], 0, InternalFormat, Width, 0,
-          ColorFormat, DataType, nil);
-      ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
-        glTexImage2D(CTexTargets[FTarget], 0, InternalFormat, Width, Height, 0,
-          ColorFormat, DataType, nil);
-      ttTexture3D:
-        glTexImage3D(CTexTargets[FTarget], 0, InternalFormat, Width, Height,
-          Depth, 0, ColorFormat, DataType, nil);
+      glPixelStorei ( GL_UNPACK_ALIGNMENT,   1 );
+      glPixelStorei ( GL_UNPACK_ROW_LENGTH,  0 );
+      glPixelStorei ( GL_UNPACK_SKIP_ROWS,   0 );
+      glPixelStorei ( GL_UNPACK_SKIP_PIXELS, 0 );
+      glPixelStorei ( GL_PACK_ALIGNMENT,   1 );
+      glPixelStorei ( GL_PACK_ROW_LENGTH,  0 );
+      glPixelStorei ( GL_PACK_SKIP_ROWS,   0 );
+      glPixelStorei ( GL_PACK_SKIP_PIXELS, 0 );
+
+    if not FPBOInit then begin
+       glBufferData(GL_PIXEL_UNPACK_BUFFER, DataSize, nil, GL_STREAM_DRAW);
+       FPBOInit := true;
+    end;
+      //t := glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+      //Move(Data^,t^,DataSize);
+      //glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+
+    if assigned(aData) then
+      glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, aData)
+    else
+      glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, Data);
+
+    { TODO : Replace direct loading texture data to PBO }
+//    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    if aLevel = -1 then begin sl :=0; el := LevelsCount-1; end
+    else begin sl := aLevel; el := aLevel; end;
+    for i := sl to el do begin
+//      if assigned(aData) then dataptr := aData
+//      else dataptr := pointer(cardinal(Data)+LODS[i].Offset);
+      DataPtr := nil;
+      if not Compressed then begin
+        case FTarget of
+          ttTexture1D:
+            glTexImage1D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, 0,
+              BaseFormat, PixelFormat, DataPtr);
+          ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
+            glTexImage2D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, LODS[i].Height, 0,
+              BaseFormat, PixelFormat, DataPtr);
+          ttTexture3D:
+            glTexImage3D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, LODS[i].Height,
+              LODS[i].Depth, 0, BaseFormat, PixelFormat, DataPtr);
+        end;
+      end else begin
+        //Upload compressed image
+        case FTarget of
+          ttTexture1D: glCompressedTexImage1D(GL_TEXTURE_1D, i, InternalFormat, LODS[i].Width,
+            0, LODS[i].Size, DataPtr);
+          ttTexture2D: glCompressedTexImage2D(GL_TEXTURE_2D, i, InternalFormat, LODS[i].Width,
+            LODS[i].Height, 0, LODS[i].Size, DataPtr);
+          ttTexture3D: glCompressedTexImage3D(GL_TEXTURE_2D, i, InternalFormat, LODS[i].Width, LODS[i].Height,
+            LODS[i].Depth, 0, LODS[i].Size, DataPtr);
+        end;
+      end;
     end;
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    if assigned(FTextureObject) and FTextureObject.GenerateMipMaps then
-      glGenerateMipmap(CTexTargets[FTarget]);
+    if assigned(FTextureObject) and FTextureObject.GenerateMipMaps
+    //and (FImageHolder.LevelsCount <= 1)
+    then glGenerateMipmap(CTexTargets[FTarget]);
     glBindTexture(CTexTargets[FTarget], 0);
   end;
 end;
@@ -2331,18 +2410,14 @@ var
 begin
 
   FBTarget := GL_FRAMEBUFFER;
-  for i := 0 to FReadBackBuffers.Count - 1 do
-  begin
+  for i := 0 to FReadBackBuffers.Count - 1 do begin
     n := integer(FReadBackBuffers[i]);
-    if n < FAttachments.Textures.Count then
-    begin
+    if n < FAttachments.Textures.Count then begin
       tex := FAttachments.Textures[n];
-      if assigned(tex) then
-      begin
+      if assigned(tex) then begin
         glReadBuffer(GL_COLOR_ATTACHMENT0 + n);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, tex.FpboId);
-        glReadPixels(0, 0, FWidth, FHeight, tex.FImageDesc.ColorFormat,
-          tex.FImageDesc.DataType, nil);
+        glReadPixels(0, 0, FWidth, FHeight, tex.ColorFormat, tex.DataType, nil);
       end;
     end;
   end;
@@ -2352,47 +2427,38 @@ begin
   glBindFramebuffer(FBTarget, 0);
   glReadBuffer(GL_BACK);
   glDrawBuffer(GL_BACK);
-  with FAttachments do
-  begin
-    for i := 0 to Textures.Count - 1 do
-    begin
+  with FAttachments do begin
+    for i := 0 to Textures.Count - 1 do begin
       tex := Textures[i];
-      if assigned(tex) and tex.GenerateMipMaps then
-      begin
+      if assigned(tex) and tex.GenerateMipMaps then begin
         glBindTexture(CTexTargets[tex.Target], tex.Id);
         glGenerateMipmap(CTexTargets[tex.Target]);
         glBindTexture(CTexTargets[tex.Target], 0);
       end;
     end;
-    if DepthBuffer.Mode = bmTexture then
-    begin
+    if DepthBuffer.Mode = bmTexture then begin
       tex := DepthBuffer.Texture;
-      if assigned(tex) and tex.GenerateMipMaps then
-      begin
+      if assigned(tex) and tex.GenerateMipMaps then begin
         glBindTexture(CTexTargets[tex.Target], tex.Id);
         glGenerateMipmap(CTexTargets[tex.Target]);
         glBindTexture(CTexTargets[tex.Target], 0);
       end;
     end;
-    if StencilBuffer.Mode = bmTexture then
-    begin
+    if StencilBuffer.Mode = bmTexture then begin
       tex := StencilBuffer.Texture;
-      if assigned(tex) and tex.GenerateMipMaps then
-      begin
+      if assigned(tex) and tex.GenerateMipMaps then begin
         glBindTexture(CTexTargets[tex.Target], tex.Id);
         glGenerateMipmap(CTexTargets[tex.Target]);
         glBindTexture(CTexTargets[tex.Target], 0);
       end;
     end;
   end;
-  if FDeactivate then
-    FActive := false;
+  if FDeactivate then FActive := false;
 end;
 
 procedure TGLFrameBufferObject.SetReadBackBuffer(const ColorBufers
   : array of GLUInt);
-var
-  i: integer;
+var i: integer;
 begin
   FReadBackBuffers.Clear;
   for i := 0 to Length(ColorBufers) - 1 do
@@ -2424,17 +2490,14 @@ begin
   glDeleteFramebuffers(1, @FBOId);
   glDeleteFramebuffers(1, @FMSFBOId);
   FReadBackBuffers.Clear;
-  with FAttachments do
-  begin
+  with FAttachments do begin
     Textures.Clear;
     glDeleteRenderbuffers(1, @DepthBuffer.BuffId);
     glDeleteRenderbuffers(1, @StencilBuffer.BuffId);
     glDeleteRenderbuffers(1, @DepthStencilBuffer.BuffId);
   end;
-  with FAttachments do
-  begin
-    if ResetConfig then
-    begin
+  with FAttachments do begin
+    if ResetConfig then begin
       DepthBuffer.Mode := bmNone;
       StencilBuffer.Mode := bmNone;
       DepthStencilBuffer.Mode := bmNone;
@@ -2484,8 +2547,7 @@ var
   i: integer;
 begin
   for i := 0 to Length(FubNames) - 1 do
-    if FubNames[i] = aName then
-    begin
+    if FubNames[i] = aName then begin
       result := FubOffsets[i];
       exit;
     end;
@@ -2521,8 +2583,7 @@ begin
     GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, @FubIndices[0]);
   glGetActiveUniformsiv(aProgram, FUniformsCount, @FubIndices[0],
     GL_UNIFORM_OFFSET, @FubOffsets[0]);
-  for j := 0 to FUniformsCount - 1 do
-  begin
+  for j := 0 to FUniformsCount - 1 do begin
     glGetActiveUniformName(aProgram, FubIndices[j], 256, @len, cbuff);
     if bl <= 0 then
       FubNames[j] := copy(cbuff, 0, len)
@@ -2570,11 +2631,9 @@ var
   i: integer;
   ubo: TGLUniformBlock;
 begin
-  for i := 0 to FItems.Count - 1 do
-  begin
+  for i := 0 to FItems.Count - 1 do begin
     ubo := FItems[i];
-    if ubo.BlockName = aName then
-    begin
+    if ubo.BlockName = aName then begin
       result := ubo;
       exit;
     end;
@@ -2623,8 +2682,7 @@ begin
   if aCheck then
   begin
     for i := 0 to FStackTop do
-      if FFreeRooms[i] = index then
-        exit;
+      if FFreeRooms[i] = index then exit;
   end;
   inc(FStackTop);
   FFreeRooms[FStackTop] := Index;
@@ -2927,12 +2985,12 @@ begin
   result.PixelFormat := GL_SHORT; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R16I; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG16I; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB16I; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB16I; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA16I; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA16I; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R16; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16; BaseFormat := GL_BGRA; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;
@@ -2942,12 +3000,12 @@ begin
   result.PixelFormat := GL_INT; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R32I; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG32I; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB32I; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB32I; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R32I; BaseFormat := GL_RED_INTEGER; end;
+    bfRG: begin InternalFormat := GL_RG32I; BaseFormat := GL_RG_INTEGER; end;
+    bfRGB: begin InternalFormat := GL_RGB32I; BaseFormat := GL_RGB_INTEGER; end;
+    bfBGR: begin InternalFormat := GL_RGB32I; BaseFormat := GL_BGR_INTEGER; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_RGBA_INTEGER; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32I; BaseFormat := GL_BGRA_INTEGER; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;
@@ -2972,12 +3030,12 @@ begin
   result.PixelFormat := GL_UNSIGNED_SHORT; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R16UI; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG16UI; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB16UI; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB16UI; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA16UI; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA16UI; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R16; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG16; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB16; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB16; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA16; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA16; BaseFormat := GL_BGRA; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;
@@ -2987,12 +3045,12 @@ begin
   result.PixelFormat := GL_UNSIGNED_INT; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R32UI; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG32UI; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R32UI; BaseFormat := GL_RED_INTEGER; end;
+    bfRG: begin InternalFormat := GL_RG32UI; BaseFormat := GL_RG_INTEGER; end;
+    bfRGB: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_RGB_INTEGER; end;
+    bfBGR: begin InternalFormat := GL_RGB32UI; BaseFormat := GL_BGR_INTEGER; end;
+    bfRGBA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_RGBA_INTEGER; end;
+    bfBGRA: begin InternalFormat := GL_RGBA32UI; BaseFormat := GL_BGRA_INTEGER; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;
@@ -3002,12 +3060,12 @@ begin
   result.PixelFormat := GL_UNSIGNED_BYTE; result.Compressed:=false;
   with result do
   case aFormat of
-    bfRed: begin InternalFormat := GL_R8UI; BaseFormat := GL_RED; end;
-    bfRG: begin InternalFormat := GL_RG8UI; BaseFormat := GL_RG; end;
-    bfRGB: begin InternalFormat := GL_RGB8UI; BaseFormat := GL_RGB; end;
-    bfBGR: begin InternalFormat := GL_RGB8UI; BaseFormat := GL_BGR; end;
-    bfRGBA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_RGBA; end;
-    bfBGRA: begin InternalFormat := GL_RGBA8UI; BaseFormat := GL_BGRA; end;
+    bfRed: begin InternalFormat := GL_R8; BaseFormat := GL_RED; end;
+    bfRG: begin InternalFormat := GL_RG8; BaseFormat := GL_RG; end;
+    bfRGB: begin InternalFormat := GL_RGB8; BaseFormat := GL_RGB; end;
+    bfBGR: begin InternalFormat := GL_RGB8; BaseFormat := GL_BGR; end;
+    bfRGBA: begin InternalFormat := GL_RGBA8; BaseFormat := GL_RGBA; end;
+    bfBGRA: begin InternalFormat := GL_RGBA8; BaseFormat := GL_BGRA; end;
     else assert(false, 'Unsupported pixel format, try another selector');
   end;
 end;

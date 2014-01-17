@@ -6,13 +6,15 @@ uses uMiscUtils;
 
 Type
 
+  TImageFormat = cardinal;
+
   TBaseImageFormat = (bfRed, bfRG, bfRGB, bfBGR, bfRGBA, bfBGRA, bfDepth,
     bfDepthStencil, bfCompressed, bfSpecial);
 
   TImagePixelFormat = (pfUByte, pfByte, pfUShort, pfShort, pfUInt, pfInt, pfFloat16, pfFloat,
     pfUB332, pfUS565, pfUS4444, pfUS5551, pfUI8888, pfUI1010102, pfI1010102,
     pfUS1555Rev, pfUB233Rev, pfUS565Rev, pfUS4444Rev, pfUI8888Rev, pfUI2101010Rev,
-    pfI2101010Rev, pfI5999, pfI5999Rev, pfUI24_8, pfI10F11F11F, pfI10F11F11FRev);
+    pfI2101010Rev, pfI5999, pfI5999Rev, pfUI24_8, pfI10F11F11F, pfI10F11F11FRev, pfF32UB8);
 
   TDepthStencilFormat = (dfDepth16, dfDepth24, dfDepth32, dfDepth32F,
     dfStencilIndex8, dfDepth24Stencil8, dfDepth32FStencil8);
@@ -91,6 +93,10 @@ Type
   //Bits 10-12 - Special format index (0..7)
   //Bits 13-15 - Compressed format index (0..7)
   TImageFormatBits = class
+    //Return Base Format flag
+    class function isBaseFormat(aFormat: cardinal): boolean;
+    //Return Float format flag
+    class function isFloatFormat(aFormat: cardinal): boolean;
     //Return compressed flag
     class function isCompressedFormat(aFormat: cardinal): boolean;
     //Retund Depth/Stencil flag
@@ -102,6 +108,8 @@ Type
     class function GetBaseFormat(aFormat: cardinal): TBaseImageFormat;
     //Return Pixel Format from format bits
     class function GetPixelFormat(aFormat: cardinal): TImagePixelFormat;
+    //Return Bits count per pixel from format bits
+    class function GetBPP(aFormat: cardinal): byte;
     //Return Depth/Stencil format
     class function GetDepthStencilFormat(aFormat: cardinal): TDepthStencilFormat;
     //Return Special format
@@ -111,8 +119,12 @@ Type
 
     //Set base format bits
     class procedure SetBaseFormat(var aFormat: cardinal; aValue: TBaseImageFormat);
+    //Set reverse format bit
+    class procedure SetReversFormat(var aFormat: cardinal; aValue: boolean);
     //Set pixel format bits
     class procedure SetPixelFormat(var aFormat: cardinal; aValue: TImagePixelFormat);
+    //Set Bits count per component
+    class procedure SetBitsDepth(var aFormat: cardinal; aValue: byte; aFloat: boolean = false);
     //Set depth/stencil format bits
     class procedure SetDepthStencilFormat(var aFormat: cardinal; aValue: TDepthStencilFormat);
     //Set special format bits
@@ -122,14 +134,88 @@ Type
   end;
 
 const
+  CComponentsCount: array[TBaseImageFormat] of byte =
+    (1,2,3,3,4,4,1,1,1,1);
   CBasePixelSize: array[TImagePixelFormat] of byte =
-    (1,1,2,2,4,4,2,4,1,2,2,2,4,4,4,2,1,2,2,4,4,4,4,4,4,4,4);
+    (1,1,2,2,4,4,2,4,1,2,2,2,4,4,4,2,1,2,2,4,4,4,4,4,4,4,4,5);
   CDepthStencilSize: array[TDepthStencilFormat] of byte =
-    (2,3,4,4,1,4,5);
+    (2,4,4,4,1,4,5);
   CCompressedPixelSize: array[TS3TCCompressedFormats] of byte =
     (8,8,8,8,16,16,16,16);
   CSpecialFormatPixelSize: array[TImageSpecialFormat] of byte =
     (1, 2, 2, 4, 4, 4, 4);
+
+//Format constants
+  IF_UNKNOWN             = $FFFFFFFF;
+  IF_Red8I		 = 8;
+  IF_Red8UI		 = 0;
+  IF_Red16I		 = 40;
+  IF_Red16UI		 = 32;
+  IF_Red32I		 = 72;
+  IF_Red32UI		 = 64;
+  IF_Red16F		 = 48;
+  IF_Red32F		 = 80;
+  IF_RG8I		 = 9;
+  IF_RG8UI		 = 1;
+  IF_RG16I		 = 41;
+  IF_RG16UI		 = 33;
+  IF_RG32I		 = 73;
+  IF_RG32UI		 = 65;
+  IF_RG16F		 = 49;
+  IF_RG32F		 = 81;
+  IF_RGB8I		 = 10;
+  IF_RGB8UI		 = 2;
+  IF_RGB16I		 = 42;
+  IF_RGB16UI		 = 34;
+  IF_RGB32I		 = 74;
+  IF_RGB32UI		 = 66;
+  IF_RGB16F		 = 50;
+  IF_RGB32F		 = 82;
+  IF_BGR8I		 = 14;
+  IF_BGR8UI		 = 6;
+  IF_BGR16I		 = 46;
+  IF_BGR16UI		 = 38;
+  IF_BGR32I		 = 78;
+  IF_BGR32UI		 = 70;
+  IF_BGR16F		 = 54;
+  IF_BGR32F		 = 86;
+  IF_RGBA8I		 = 11;
+  IF_RGBA8UI		 = 3;
+  IF_RGBA16I		 = 43;
+  IF_RGBA16UI		 = 35;
+  IF_RGBA32I		 = 75;
+  IF_RGBA32UI		 = 67;
+  IF_RGBA16F		 = 51;
+  IF_RGBA32F		 = 83;
+  IF_BGRA8I		 = 15;
+  IF_BGRA8UI		 = 7;
+  IF_BGRA16I		 = 47;
+  IF_BGRA16UI		 = 39;
+  IF_BGRA32I		 = 79;
+  IF_BGRA32UI		 = 71;
+  IF_BGRA16F		 = 55;
+  IF_BGRA32F		 = 87;
+  IF_Depth16		 = 24;
+  IF_Depth24		 = 56;
+  IF_Depth32		 = 88;
+  IF_StencilIndex8	 = 280;
+  IF_Depth24Stencil8	 = 312;
+  IF_Depth32FStencil8	 = 472;
+  IF_R3G3B2		 = 224;
+  IF_RGB565		 = 1248;
+  IF_RGB5A1		 = 2272;
+  IF_RGB10A2		 = 3296;
+  IF_RGB10A2UI		 = 4320;
+  IF_R11FG11FB10F	 = 5344;
+  IF_RGB9E5		 = 6368;
+  IF_RGB_DXT1		 = 128;
+  IF_SRGB_DXT1		 = 8320;
+  IF_RGBA_DXT1		 = 16512;
+  IF_SRGBA_DXT1		 = 24704;
+  IF_RGBA_DXT3		 = 32896;
+  IF_SRGBA_DXT3		 = 41088;
+  IF_RGBA_DXT5		 = 49280;
+  IF_SRGBA_DXT5		 = 57472;
 
 implementation
 
@@ -162,6 +248,7 @@ begin
     end;
   end else begin
     case aDepthBit of
+       0: dsFormat := dfStencilIndex8;
       24: dsFormat := dfDepth24Stencil8;
       32: dsFormat := dfDepth32FStencil8;
       else assert(false, 'Unsupported DepthStencil format!');
@@ -178,6 +265,7 @@ begin
   Format := 0;
   TImageFormatBits.SetBaseFormat(Format, aPixelFormat);
   TImageFormatBits.SetPixelFormat(Format, pfFloat16);
+  TImageFormatBits.SetBitsDepth(Format, 16);
   result := format;
 end;
 
@@ -188,6 +276,7 @@ begin
   Format := 0;
   TImageFormatBits.SetBaseFormat(Format, aPixelFormat);
   TImageFormatBits.SetPixelFormat(Format, pfFloat);
+  TImageFormatBits.SetBitsDepth(Format, 32);
   result := format;
 end;
 
@@ -198,6 +287,7 @@ begin
   Format := 0;
   TImageFormatBits.SetBaseFormat(Format, aPixelFormat);
   TImageFormatBits.SetPixelFormat(Format, pfShort);
+  TImageFormatBits.SetBitsDepth(Format, 16);
   result := format;
 end;
 
@@ -208,6 +298,7 @@ begin
   Format := 0;
   TImageFormatBits.SetBaseFormat(Format, aPixelFormat);
   TImageFormatBits.SetPixelFormat(Format, pfInt);
+  TImageFormatBits.SetBitsDepth(Format, 32);
   result := format;
 end;
 
@@ -218,6 +309,7 @@ begin
   Format := 0;
   TImageFormatBits.SetBaseFormat(Format, aPixelFormat);
   TImageFormatBits.SetPixelFormat(Format, pfByte);
+  TImageFormatBits.SetBitsDepth(Format, 8);
   result := format;
 end;
 
@@ -228,6 +320,7 @@ begin
   Format := 0;
   TImageFormatBits.SetBaseFormat(Format, aPixelFormat);
   TImageFormatBits.SetPixelFormat(Format, pfUByte);
+  TImageFormatBits.SetBitsDepth(Format, 8);
   result := format;
 end;
 
@@ -238,6 +331,7 @@ begin
   Format := 0;
   TImageFormatBits.SetBaseFormat(Format, aPixelFormat);
   TImageFormatBits.SetPixelFormat(Format, pfUShort);
+  TImageFormatBits.SetBitsDepth(Format, 16);
   result := format;
 end;
 
@@ -248,6 +342,7 @@ begin
   Format := 0;
   TImageFormatBits.SetBaseFormat(Format, aPixelFormat);
   TImageFormatBits.SetPixelFormat(Format, pfUInt);
+  TImageFormatBits.SetBitsDepth(Format, 32);
   result := format;
 end;
 
@@ -294,6 +389,43 @@ begin
     3: if rev then result := bfBGRA else result := bfRGBA;
     else assert(false, 'Unknown color format');
   end;
+end;
+
+class procedure TImageFormatBits.SetBitsDepth(var aFormat: cardinal;
+  aValue: byte; aFloat: boolean);
+begin
+  if not isBaseFormat(aFormat) then exit;
+  //Reset Bits
+  aFormat := aFormat and $FFFFFF9F;
+  //Bits 5,6 - Bits per component: 0 - 8, 1 - 16, 2 - 32, 3 - extended
+  case aValue of
+    8: aFormat := aFormat + 0;
+    16: aFormat := aFormat + 32;
+    32: begin
+        aFormat := aFormat + 64;
+        if aFloat then
+          aFormat := (aFormat and $FFFFFF7F) + 128
+        else
+          aFormat := aFormat and $FFFFFF7F;
+    end
+    else assert(false, 'Unsupported bits depth');
+  end;
+end;
+
+class function TImageFormatBits.GetBPP(aFormat: cardinal): byte;
+const
+   bpñ: array[0..3] of byte = (8, 16, 32, 0);
+begin
+  //Bits 5,6 - Bits per component: 0 - 8, 1 - 16, 2 - 32, 3 - extended
+  if isDepthStencilFormat(aFormat) then
+    result := CDepthStencilSize[GetDepthStencilFormat(aFormat)] * 8
+  else if isSpecialFormat(aFormat) then
+    result := CSpecialFormatPixelSize[GetSpecialFormat(aFormat)] * 8
+  else if isCompressedFormat(aFormat) then
+    result := CCompressedPixelSize[GetCompressedFormat(aFormat)] * 8
+  else
+    result := bpñ[(aFormat and 96) shr 5] *
+      CComponentsCount[GetBaseFormat(aFormat)];
 end;
 
 class function TImageFormatBits.GetCompressedFormat(
@@ -355,8 +487,8 @@ begin
         temp := (aFormat and 96) shr 5;
         case temp of
           0: result := pfUByte;
-          1: result := pfUInt; //pfUI24_8?
-          2: result := pfUInt;
+          1: result := pfUI24_8;
+          2: result := pfF32UB8;
           else assert(false, 'Unsupported pixel format!');
         end;
       end;
@@ -417,6 +549,15 @@ begin
   result := TImageSpecialFormat(temp);
 end;
 
+class function TImageFormatBits.isBaseFormat(aFormat: cardinal): boolean;
+begin
+  result := false;
+  if isCompressedFormat(aFormat) then exit;
+  if isDepthStencilFormat(aFormat) then exit;
+  if isSpecialFormat(aFormat) then exit;
+  result := true;
+end;
+
 class function TImageFormatBits.isCompressedFormat(aFormat: cardinal): boolean;
 var temp: cardinal;
 begin
@@ -430,6 +571,13 @@ var temp: cardinal;
 begin
   temp := (aFormat and 24) shr 3;
   result := temp = 3;
+end;
+
+class function TImageFormatBits.isFloatFormat(aFormat: cardinal): boolean;
+begin
+  result := ((aFormat and 16) = 16)
+    or (((aFormat and 128) = 128) and not isCompressedFormat(aFormat)
+        and not isSpecialFormat(aFormat));
 end;
 
 class function TImageFormatBits.isSpecialFormat(aFormat: cardinal): boolean;
@@ -513,17 +661,28 @@ begin
     aFormat := aFormat + 0; //UInt format flag
     //set bits per componet
     if aValue in [pfUByte, pfUB332, pfUB233Rev, pfUI8888, pfUI8888Rev]
-    then aFormat := aFormat + 0; //8 bits per component
-    if aValue in [pfUShort, pfUS4444Rev, pfUS565, pfUS565Rev,
-      pfUS4444, pfUS5551, pfUS1555Rev]
-    then aFormat := aFormat + 32 //16 bits per component
-    else aFormat := aFormat + 64 //32 bits per component
+    then aFormat := aFormat + 0 //8 bits per component
+    else
+      if aValue in [pfUShort, pfUS4444Rev, pfUS565, pfUS565Rev,
+        pfUS4444, pfUS5551, pfUS1555Rev]
+      then aFormat := aFormat + 32 //16 bits per component
+      else aFormat := aFormat + 64 //32 bits per component
   end else if aValue in [pfByte, pfShort, pfInt, pfI1010102, pfI2101010Rev, pfI5999,
     pfI5999Rev] then begin
     aFormat := aFormat + 8;
-  end else if aValue in [pfFloat16, pfFloat, pfI10F11F11F, pfI10F11F11FRev] then begin
-    aFormat := aFormat + 16 + 128;
-  end;
+  end else if aValue = pfFloat16 then aFormat :=aFormat + 48
+    else begin // in [pfFloat, pfI10F11F11F, pfI10F11F11FRev] then begin
+      aFormat := aFormat + 80;
+    end;
+end;
+
+class procedure TImageFormatBits.SetReversFormat(var aFormat: cardinal;
+  aValue: boolean);
+var temp: cardinal;
+begin
+  temp := $FFFFFFFB;
+  if aValue then aFormat := (aFormat and temp) + 4
+  else aFormat := aFormat and temp;
 end;
 
 class procedure TImageFormatBits.SetSpecialFormat(var aFormat: cardinal;
@@ -610,7 +769,8 @@ begin
         if TImageFormatBits.isSpecialFormat(aFormatBits) then
           size := size + GetMemSize(TImageFormatBits.GetSpecialFormat(aFormatBits),w,h,d)
         else
-          size := size + GetMemSize(TImageFormatBits.GetPixelFormat(aFormatBits),w,h,d);
+          size := size + GetMemSize(TImageFormatBits.GetPixelFormat(aFormatBits),w,h,d) *
+            CComponentsCount[TImageFormatBits.GetBaseFormat(aFormatBits)];
     w := w div 2; h:= h div 2; d:= d div 2;
   until (not aMipMapping) or (w+h+d = 0);
   result := size;
@@ -620,10 +780,10 @@ class function TAbstractPixelFormatSelector<T>.GetMipmapsCount(
   Size: integer): byte;
 var s: integer;
 begin
-  result := 1; s := size;
+  result := 0; s := size;
   while s > 0 do begin
-    result := result +1;
-    s := s shr 2;
+    result := result + 1;
+    s := s shr 1;
   end;
 end;
 
@@ -639,7 +799,8 @@ begin
         if TImageFormatBits.isSpecialFormat(aPixelFormatBits) then
           result := GetPixelSize(TImageFormatBits.GetSpecialFormat(aPixelFormatBits))
         else
-          result := GetPixelSize(TImageFormatBits.GetPixelFormat(aPixelFormatBits));
+          result := GetPixelSize(TImageFormatBits.GetPixelFormat(aPixelFormatBits))*
+            CComponentsCount[TImageFormatBits.GetBaseFormat(aPixelFormatBits)];
 end;
 
 end.
