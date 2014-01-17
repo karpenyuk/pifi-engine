@@ -1,6 +1,6 @@
-#version 150
+#version 430
 
-invariant in vec3 in_Position;
+in vec3 in_Position;
 uniform mat4 ModelMatrix;
 uniform mat4 ViewProjectionMatrix;
 out vec4 AbsolutePosition;
