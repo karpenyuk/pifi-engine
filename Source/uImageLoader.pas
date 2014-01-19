@@ -371,6 +371,14 @@ begin
     SetDDSFormat(dds);
     assert(FImageFormat <> IF_UNKNOWN, 'Unsupported dds format!');
     ImageFormat := FImageFormat;
+    FImageType := itBitmap;
+
+    // Yar: may also need to specify TextureArray and CubeMapArray
+    //      FOURCC_DX10 support them
+    if FDepth > 0 then
+      FImageType := itVolume;
+    if CubeMap then
+      FImageType := itCubemap;
 
     if Compressed then
       buffsize:=ReservCompMem(ElementSize,self)
