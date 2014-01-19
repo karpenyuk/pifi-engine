@@ -342,6 +342,7 @@ Type
     procedure SaveImageToFile(aFileName: string; ImageFormat: string = '');
 
     procedure DiscardLods;
+    procedure VolumeToArray;
 
     property ImageFormat: cardinal read FImageFormat write setImageFormat;
     property ImageType: TImageType read FImageType write setImageType;
@@ -3035,6 +3036,14 @@ end;
 procedure TImageHolder.setWidth(const Value: integer);
 begin
   FWidth := Value; Deallocate;
+end;
+
+procedure TImageHolder.VolumeToArray;
+begin
+  if FImageType = itVolume then
+  begin
+    FImageType := itBitmapArray;
+  end;
 end;
 
 constructor TImageHolder.CreateFromStream(aStream: TStream);
