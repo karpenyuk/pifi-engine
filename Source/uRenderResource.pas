@@ -2841,7 +2841,9 @@ begin
 
   getmem(FData,FReservedMem);
   if aWithMipmaps then
-    FillLodsStructure(FImageFormat,FWidth, FHeight,FDepth,isTextureArray);
+    FillLodsStructure(FImageFormat,FWidth, FHeight,FDepth,isTextureArray)
+  else
+    DiscardLods;
 end;
 
 constructor TImageHolder.Create;
@@ -2886,12 +2888,18 @@ end;
 destructor TImageHolder.Destroy;
 begin
   Deallocate;
+  FLayers.Destroy;
   inherited;
 end;
 
 procedure TImageHolder.DiscardLods;
 begin
   FLevels := 1;
+  FLODS[0].Width := FWidth;
+  FLODS[0].Height := FHeight;
+  FLODS[0].Depth := FDepth;
+  FLODS[0].Offset := 0;
+  FLODS[0].Size := FDataSize;
 end;
 
 procedure TImageHolder.FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight,

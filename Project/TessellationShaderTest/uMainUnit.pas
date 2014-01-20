@@ -70,6 +70,8 @@ var
   glWallTex, glStructTex, glDisplaceTex, glNormalTex: TGLTextureObject;
   VDA1, VDA2: IVectorDataAccess;
 
+  LeftOff: TDataList<TImageHolder>;
+
   DecalPositonSize: array [0 .. MAX_DECALS - 1] of TVector;
   DecalNormal: array [0 .. MAX_DECALS - 1] of TVector;
   DecalBinormal: array [0 .. MAX_DECALS - 1] of TVector;
@@ -210,10 +212,19 @@ begin
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+var
+  i: integer;
 begin
   glFinish;
-
   GLViewer1.OnRender := nil;
+  glWallSampler.Destroy;
+  glStructSampler.Destroy;
+  glDisplaceSampler.Destroy;
+  glWallTex.Destroy;
+  glStructTex.Destroy;
+  glDisplaceTex.Destroy;
+  glNormalTex.Destroy;
+
   GLViewer1.Context.Deactivate;
   Mesh.Attribs[0].Destroy;
   Mesh.Attribs[0].Destroy;
@@ -228,11 +239,16 @@ begin
   WallSampler.Destroy;
   StructSampler.Destroy;
   DisplaceSampler.Destroy;
+
+  for I := 0 to LeftOff.Count-1 do
+      LeftOff[i].Destroy;
+  LeftOff.Destroy;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   GLViewer1.Context.DebugContext := true;
+  LeftOff := TDataList<TImageHolder>.Create;
 end;
 
 procedure TForm1.GLViewer1CanResize(Sender: TObject; var NewWidth,
@@ -270,6 +286,7 @@ begin
   glWallSampler:=TGLTextureSampler.CreateFrom(WallSampler);
 
   imgLoader := TImageLoader.Create();
+  LeftOff.Add(imgLoader);
   imgLoader.LoadImageFromFile(path + 'Wall.dds');
   imgLoader.VolumeToArray;
 
@@ -279,27 +296,6 @@ begin
   glWallTex := TGLTextureObject.CreateFrom(WallTex);
   glWallTex.TextureSampler := WallSampler;
   glWallTex.UploadTexture;
-  //imgLoader.Destroy;
-
-{  glGenTextures(1, @WallTexId);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, WallTexId);
-  glTextureParameterfEXT(
-    WallTexId,
-    GL_TEXTURE_2D_ARRAY,
-    GL_GENERATE_MIPMAP_SGIS,
-    GL_TRUE);
-  glTextureParameterfEXT(WallTexId, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S,
-    GL_REPEAT);
-  glTextureParameterfEXT(WallTexId, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T,
-    GL_REPEAT);
-  glTextureParameterfEXT(WallTexId, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER,
-    GL_LINEAR);
-  glTextureParameterfEXT(WallTexId, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,
-    GL_LINEAR_MIPMAP_LINEAR);
-  glTextureImage3DEXT(WallTexId, GL_TEXTURE_2D_ARRAY, 0, img.InternalFormat,
-    img.Width, img.Height, img.Depth, 0, img.ColorFormat, img.DataType,
-    img.Data);
-  FreeMem(img.Data); }
 
 
   StructSampler:=TTextureSampler.Create;
@@ -310,13 +306,14 @@ begin
 
   r8Image:=TImageSampler.CreateBitmap(
     TImageFormatSelector.CreateUInt8(bfRed), 532, 0, false);
+  LeftOff.Add(r8Image);
   StructTex := TTexture.CreateOwned(r8Image);
   StructTex.GenerateMipMaps := false;
   WallStruct :=  StructTex.ImageHolder.Data;
   WallStruct[0] := 0; // Wallpaper
-  for I := 1 to 20 do
-      WallStruct[I] := 1 + I and 1; // Plaster
-  for I := 21 to 21 + 120 do // Halfbreak 1
+  for I := 1 to 20 do              // Plaster
+      WallStruct[I] := 1 + I and 1;
+  for I := 21 to 21 + 120 do       // Halfbreak 1
       WallStruct[I] := 3;
   for I := 22 + 120 to 21 + 130 do // Seam
       WallStruct[I] := 4;
@@ -334,20 +331,6 @@ begin
   glStructTex := TGLTextureObject.CreateFrom(StructTex);
   glStructTex.TextureSampler := StructSampler;
   glStructTex.UploadTexture;
-  //r8Image.Destroy;
-
-
-{  glGenTextures(1, @StructTexId);
-  glBindTexture(GL_TEXTURE_1D, StructTexId);
-  glTextureParameterfEXT(StructTexId, GL_TEXTURE_1D, GL_TEXTURE_WRAP_S,
-    GL_CLAMP_TO_EDGE);
-  glTextureParameterfEXT(StructTexId, GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER,
-    GL_NEAREST);
-  glTextureParameterfEXT(StructTexId, GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER,
-    GL_NEAREST);
-  glTextureImage1DEXT(StructTexId, GL_TEXTURE_1D, 0, GL_R8, Length(WallStruct),
-    0, GL_RED, GL_UNSIGNED_BYTE, @WallStruct[0]);    }
-
 
   DisplaceSampler:=TTextureSampler.Create;
   DisplaceSampler.WrapS := twRepeat;
@@ -357,6 +340,7 @@ begin
   glDisplaceSampler:=TGLTextureSampler.CreateFrom(DisplaceSampler);
 
   imgLoader := TImageLoader.Create();
+  LeftOff.Add(imgLoader);
   imgLoader.LoadImageFromFile(path + 'Damage_Displacement.dds');
 
   DisplaceTex := imgLoader.CreateTexture();
@@ -365,25 +349,10 @@ begin
   glDisplaceTex := TGLTextureObject.CreateFrom(DisplaceTex);
   glDisplaceTex.TextureSampler := DisplaceSampler;
   glDisplaceTex.UploadTexture;
-  //imgLoader.Destroy;
-
-{  glGenTextures(1, @DisplaceTexId);
-  glBindTexture(GL_TEXTURE_2D, DisplaceTexId);
-  glTextureParameterfEXT(DisplaceTexId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-    GL_REPEAT);
-  glTextureParameterfEXT(DisplaceTexId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-    GL_REPEAT);
-  glTextureParameterfEXT(DisplaceTexId, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-    GL_LINEAR);
-  glTextureParameterfEXT(DisplaceTexId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-    GL_LINEAR);
-  glTextureImage2DEXT(DisplaceTexId, GL_TEXTURE_2D, 0, img.InternalFormat,
-    img.Width, img.Height, 0, img.ColorFormat, img.DataType,
-    img.Data);
-  FreeMem(img.Data);  }
 
 
   imgLoader := TImageLoader.Create();
+  LeftOff.Add(imgLoader);
   imgLoader.LoadImageFromFile(path + 'Damage_Normal.dds');
 
   NormalTex := imgLoader.CreateTexture();
@@ -392,27 +361,6 @@ begin
   glNormalTex:= TGLTextureObject.CreateFrom(NormalTex);
   glNormalTex.TextureSampler := WallSampler;
   glNormalTex.UploadTexture;
-  //imgLoader.Destroy;
-
-{  glGenTextures(1, @NormalTexId);
-  glBindTexture(GL_TEXTURE_2D, NormalTexId);
-  glTextureParameterfEXT(
-    NormalTexId,
-    GL_TEXTURE_2D,
-    GL_GENERATE_MIPMAP_SGIS,
-    GL_TRUE);
-  glTextureParameterfEXT(NormalTexId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-    GL_REPEAT);
-  glTextureParameterfEXT(NormalTexId, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-    GL_REPEAT);
-  glTextureParameterfEXT(NormalTexId, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-    GL_LINEAR);
-  glTextureParameterfEXT(NormalTexId, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-    GL_LINEAR_MIPMAP_LINEAR);
-  glTextureImage2DEXT(NormalTexId, GL_TEXTURE_2D, 0, img.InternalFormat,
-    img.Width, img.Height, 0, img.ColorFormat, img.DataType,
-    img.Data);
-  FreeMem(img.Data); }
 
   Shader1 := TGLSLShaderProgram.Create;
 

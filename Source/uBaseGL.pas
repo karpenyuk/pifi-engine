@@ -1888,7 +1888,7 @@ begin
           ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
             glTexImage2D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, LODS[i].Height, 0,
               BaseFormat, PixelFormat, DataPtr);
-          ttTexture3D:
+          ttTexture3D, tt2DArray:
             glTexImage3D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, LODS[i].Height,
               LODS[i].Depth, 0, BaseFormat, PixelFormat, DataPtr);
         end;
@@ -2793,14 +2793,13 @@ end;
 
 constructor TGLTextureSampler.Create;
 begin
-  inherited;
-  FSamplerId := 0;
   CreateFrom(TTextureSampler.Create);
   FTextureSampler.Owner:=self;
 end;
 
 constructor TGLTextureSampler.CreateFrom(aSampler: TTextureSampler);
 begin
+  inherited Create;
   FTextureSampler := aSampler;
   FSamplerId := 0;
   if GL_ARB_sampler_objects then begin
