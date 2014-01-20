@@ -12,8 +12,8 @@ uses
 
 const
   CEps = 1.-5;
-  CEps2 = 1.e-30;
-  CEps3 = 1.e-40;
+  CEps2 = 1.0e-30;
+  CEps3 = 1.0e-40;
   CPi = 3.14159265358979323;
   CPi2 = CPi * 2;
   CPiD2 = CPi / 2;
