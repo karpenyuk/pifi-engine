@@ -11,7 +11,7 @@ uses
 
 
 const
-  CEps = 1.-5;
+  CEps = 1.0e-5;
   CEps2 = 1.0e-30;
   CEps3 = 1.0e-40;
   CPi = 3.14159265358979323;

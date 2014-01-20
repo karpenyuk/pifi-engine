@@ -90,7 +90,7 @@ unit jpegdec;
 interface
 
 uses
-  Windows, SysUtils, Graphics;
+  WinApi.Windows, SysUtils, VCL.Graphics;
 
 type
   /// error codes returned by JpegDecode()

@@ -24,6 +24,15 @@
 			<Projects Include="ColladaImportTest\ColladaImportTest.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="TessellationShaderTest\TesselationShaderTest.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="TexturingTest\TexturingDemo.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SceneGraphTest\SceneGraphDemo.dproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -95,14 +104,41 @@
 		<Target Name="ColladaImportTest:Make">
 			<MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj" Targets="Make"/>
 		</Target>
+		<Target Name="TesselationShaderTest">
+			<MSBuild Projects="TessellationShaderTest\TesselationShaderTest.dproj"/>
+		</Target>
+		<Target Name="TesselationShaderTest:Clean">
+			<MSBuild Projects="TessellationShaderTest\TesselationShaderTest.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="TesselationShaderTest:Make">
+			<MSBuild Projects="TessellationShaderTest\TesselationShaderTest.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="TexturingDemo">
+			<MSBuild Projects="TexturingTest\TexturingDemo.dproj"/>
+		</Target>
+		<Target Name="TexturingDemo:Clean">
+			<MSBuild Projects="TexturingTest\TexturingDemo.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="TexturingDemo:Make">
+			<MSBuild Projects="TexturingTest\TexturingDemo.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="SceneGraphDemo">
+			<MSBuild Projects="SceneGraphTest\SceneGraphDemo.dproj"/>
+		</Target>
+		<Target Name="SceneGraphDemo:Clean">
+			<MSBuild Projects="SceneGraphTest\SceneGraphDemo.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="SceneGraphDemo:Make">
+			<MSBuild Projects="SceneGraphTest\SceneGraphDemo.dproj" Targets="Make"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="xProject;ComputeShaderProj;GeometryShaders;RBTreeTest;FreetypeTest;NotifyTest;ColladaImportTest"/>
+			<CallTarget Targets="xProject;ComputeShaderProj;GeometryShaders;RBTreeTest;FreetypeTest;NotifyTest;ColladaImportTest;TesselationShaderTest;TexturingDemo;SceneGraphDemo"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="xProject:Clean;ComputeShaderProj:Clean;GeometryShaders:Clean;RBTreeTest:Clean;FreetypeTest:Clean;NotifyTest:Clean;ColladaImportTest:Clean"/>
+			<CallTarget Targets="xProject:Clean;ComputeShaderProj:Clean;GeometryShaders:Clean;RBTreeTest:Clean;FreetypeTest:Clean;NotifyTest:Clean;ColladaImportTest:Clean;TesselationShaderTest:Clean;TexturingDemo:Clean;SceneGraphDemo:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="xProject:Make;ComputeShaderProj:Make;GeometryShaders:Make;RBTreeTest:Make;FreetypeTest:Make;NotifyTest:Make;ColladaImportTest:Make"/>
+			<CallTarget Targets="xProject:Make;ComputeShaderProj:Make;GeometryShaders:Make;RBTreeTest:Make;FreetypeTest:Make;NotifyTest:Make;ColladaImportTest:Make;TesselationShaderTest:Make;TexturingDemo:Make;SceneGraphDemo:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>

@@ -13,7 +13,8 @@ uses
   Messages,
   Types,
   Classes,
-  dglOpenGL;
+  dglOpenGL,
+  uBaseTypes;
 
 const
   cMaxUpdateTime = 1 / 5000;
@@ -32,13 +33,11 @@ type
     procedure Execute; override;
   end;
 
-
-  TRenderEvent = procedure (Sender: TObject; aFrameTime: double) of object;
-  TResizeEvent = procedure (Sender: TObject; aWidth, aHeight: integer) of object;
-
   TGLWindow = class
   private
     FKeys: array [0..255] of boolean;
+    FButtons: TMouseButtons;
+    FMouseX,FMouseY: integer;
     FActive: boolean;
     FisRendering: boolean;
     FFullScreen: boolean;
@@ -52,6 +51,11 @@ type
     FonRender: TRenderEvent;
     FonInitialize: TNotifyEvent;
     FonResize: TResizeEvent;
+    FOnMouseDown: TMouseEvent;
+    FOnMouseMove: TMouseEvent;
+    FOnMouseUp: TMouseEvent;
+    FOnKeyDown: TKeyEvent;
+    FOnKeyUp: TKeyEvent;
     procedure setActive(const Value: boolean);
     procedure KillGLWindow;
     function InitGL: boolean;
@@ -65,6 +69,7 @@ type
     procedure SetonRender(const Value: TRenderEvent);
     procedure SetonInitialize(const Value: TNotifyEvent);
     procedure SetonResize(const Value: TResizeEvent);
+    function getButton(index: TMouseButton): boolean;
   public
     constructor Create;
     destructor Destroy; override;
@@ -78,6 +83,7 @@ type
     property Active: boolean read FActive write setActive;
     property isRendering: boolean read FisRendering;
     property Keys[index: integer]: boolean read getKey write setKey;
+    property Buttons[index: TMouseButton]: boolean read getButton;
     property VSync: boolean read getVSync write setVSync;
     property Caption: string read FCaption write setCaption;
     property FrameTime: double read getFrameTime;
@@ -85,6 +91,12 @@ type
     property onRender: TRenderEvent read FonRender write SetonRender;
     property onInitialize: TNotifyEvent read FonInitialize write SetonInitialize;
     property onResize: TResizeEvent read FonResize write SetonResize;
+    property onKeyDown: TKeyEvent read FOnKeyDown write FOnKeyDown;
+    property onKeyUp: TKeyEvent read FOnKeyUp write FOnKeyUp;
+    property onMouseDown: TMouseEvent read FOnMouseDown write FOnMouseDown;
+    property onMouseUp: TMouseEvent read FOnMouseUp write FOnMouseUp;
+    property onMouseMove: TMouseEvent read FOnMouseMove write FOnMouseMove;
+
 
   end;
 
@@ -170,12 +182,17 @@ begin
   end;
   FisRendering := true;
   glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT);
-  if assigned(FonRender) then FonRender(self, FFrameTime);
   FFrameTime:=gettime;
+  if assigned(FonRender) then FonRender(self, FFrameTime);
   FisRendering := false;
   err := glGetError;
   assert( err = GL_NO_ERROR, 'OpenGL Error: '+inttostr(err));
-  FFrameTime:=gettime-FFrameTime;
+  FFrameTime:=(gettime-FFrameTime)*1000;
+end;
+
+function TGLWindow.getButton(index: TMouseButton): boolean;
+begin
+  result := index in FButtons;
 end;
 
 function TGLWindow.getFrameTime: double;
@@ -222,25 +239,28 @@ var
   pfd: pixelformatdescriptor;
   dmScreenSettings: Devmode;
 begin
+  FillChar(FKeys,Sizeof(FKeys),0);
+  FButtons := [];
+  FMouseX := -1; FMouseY := -1;
   FCaption := Title;
-  FWidth:=Width;
-  FHeight:=Height;
+  FWidth := Width;
+  FHeight := Height;
   FFullScreen := FullScreen;
   FFrameTime:=-1;
   if FullScreen then begin
-      ZeroMemory( @dmScreenSettings, sizeof(dmScreenSettings) );
-      with dmScreensettings do begin
-          dmSize := sizeof(dmScreenSettings);
-          dmPelsWidth  := width;
-	        dmPelsHeight := height;
-          dmBitsPerPel := 32;
-          dmFields     := DM_BITSPERPEL or DM_PELSWIDTH or DM_PELSHEIGHT;
-      end;
-      if (ChangeDisplaySettings(dmScreenSettings, CDS_FULLSCREEN))<>DISP_CHANGE_SUCCESSFUL then begin
-          if MessageBox(0,'This FullScreen Mode Is Not Supported. Use Windowed Mode Instead?',
-            'GLWindow',MB_YESNO or MB_ICONEXCLAMATION)= IDYES then FullScreen:=false
-          else assert(false,'Program Will Now Close.');
-      end;
+    ZeroMemory( @dmScreenSettings, sizeof(dmScreenSettings) );
+    with dmScreensettings do begin
+      dmSize := sizeof(dmScreenSettings);
+      dmPelsWidth  := width;
+      dmPelsHeight := height;
+      dmBitsPerPel := 32;
+      dmFields     := DM_BITSPERPEL or DM_PELSWIDTH or DM_PELSHEIGHT;
+    end;
+    if (ChangeDisplaySettings(dmScreenSettings, CDS_FULLSCREEN))<>DISP_CHANGE_SUCCESSFUL then begin
+      if MessageBox(0,'This FullScreen Mode Is Not Supported. Use Windowed Mode Instead?',
+        'GLWindow',MB_YESNO or MB_ICONEXCLAMATION)= IDYES then FullScreen:=false
+      else assert(false,'Program Will Now Close.');
+    end;
   end;
 
   if FWnd<>0 then KillGLWindow;
@@ -401,33 +421,52 @@ begin
       end;
     end;
   end;
+  res:=0;
   case message.Msg of
    WM_CREATE: begin
        SetWindowLong (FWnd, GWL_USERDATA, Integer(PCreateStruct(Message.LParam).lpCreateParams));
        Active:=true;
-       Res := 0;
     end;
     WM_ACTIVATE: begin
       if (Hiword(Message.wParam)=0) then Active:=true
       else Active:=false;
-      Res:=0;
     end;
     WM_CLOSE: begin
       Active:=false;
       PostQuitMessage(0);
-      res:=0
     end;
     WM_KEYDOWN: begin
       FKeys[Message.wParam] := TRUE;
-      res:=0;
+      if assigned(FOnKeyDown) then FOnKeyDown(self,Message.wParam);
     end;
     WM_KEYUP: begin
     	FKeys[Message.wParam] := FALSE;
-      res:=0;
+      if assigned(FOnKeyUp) then FOnKeyUp(self,Message.wParam);
     end;
+    WM_LBUTTONDOWN,
+    WM_RBUTTONDOWN,
+    WM_MBUTTONDOWN: begin
+      if message.Msg = WM_LBUTTONDOWN then include(FButtons,mbLeft);
+      if message.Msg = WM_RBUTTONDOWN then include(FButtons,mbRight);
+      if message.Msg = WM_MBUTTONDOWN then include(FButtons,mbMiddle);
+      if assigned(FOnMouseDown) then FOnMouseDown(self, FMouseX, FMouseY, FButtons);
+    end;
+    WM_LBUTTONUP,
+    WM_RBUTTONUP,
+    WM_MBUTTONUP: begin
+      if message.Msg = WM_LBUTTONUP then exclude(FButtons,mbLeft);
+      if message.Msg = WM_RBUTTONUP then exclude(FButtons,mbRight);
+      if message.Msg = WM_MBUTTONUP then exclude(FButtons,mbRight);
+      if assigned(FOnMouseUp) then FOnMouseUp(self, FMouseX, FMouseY, FButtons);
+    end;
+    WM_MOUSEMOVE: begin
+      FMouseX := SMALLINT( Message.lParam and $FFFF);
+      FMouseY := SMALLINT( (Message.lParam shr 16) and $FFFF);
+      if assigned(FOnMouseMove) then FOnMouseMove(self, FMouseX, FMouseY, FButtons);
+    end;
+
     WM_SIZE: begin
     	DoResize(LOWORD(Message.lParam),HIWORD(Message.lParam));
-      res:=0;
     end
     else begin
     	Res := DefWindowProc(FWnd, message.Msg, Message.wParam, Message.lParam);

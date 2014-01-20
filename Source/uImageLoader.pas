@@ -8,7 +8,7 @@ interface
 
 uses
   {$IFDEF FPC}LCLType,LCLIntf,{$ENDIF}
-  {$IFDEF MSWINDOWS}Windows,{$ENDIF} Graphics, Classes,{$IFNDEF FPC} JPEG,{$ENDIF} SysUtils,
+  {$IFDEF MSWINDOWS}Windows,{$ENDIF} Classes,{$IFNDEF FPC} {$ENDIF} SysUtils,
   {$IFNDEF FPC} jpegdec,{$ENDIF}
   uMiscUtils, uBaseTypes, uRenderResource, uImageFormats;
 

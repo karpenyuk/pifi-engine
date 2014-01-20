@@ -19,7 +19,7 @@ object Form2: TForm2
     Width = 733
     Height = 425
     OnRender = GLViewer1Render
-    OnContextReady = GLViewer1ContextReady
+    onContextReady = GLViewer1ContextReady
     Align = alClient
     OnMouseDown = GLViewer1MouseDown
     OnMouseMove = GLViewer1MouseMove

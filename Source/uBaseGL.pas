@@ -170,13 +170,16 @@ Type
      Key: integer;
      KeyName: ansistring;
      Value: integer;
+     Info: TUniformInfo;
     end;
 
     FCount: integer;
   public
     constructor Create;
-    procedure AddKey(const Key: ansistring; Value: integer);
-    function getValue(const Key: ansistring): integer;
+    function AddKey(const Key: ansistring; Value: integer): PUniformInfo;
+    function GetValue(const Key: ansistring): integer;
+    procedure SetInfo(const Key: ansistring; const Info: TUniformInfo);
+    function GetInfo(const Key: ansistring): PUniformInfo;
   end;
 
   TGLUniformBlock = class
@@ -236,10 +239,8 @@ Type
     procedure FreeSlot(const Index: integer; aCheck: boolean = false);
     function isExists(const aData: pointer): integer;
     procedure WriteToPool(const Index: integer; Data: pointer);
-    function BindUBO(const Index: integer; const aUBO: TGLUniformBlock)
-      : integer;
+    function BindUBO(const Index: integer; const aUBO: TGLUniformBlock): integer;
     procedure UnBindUBO(const Index: integer; const aUBO: TGLUniformBlock);
-
   end;
 
   TUBOList = class
@@ -271,8 +272,7 @@ Type
     FActiveAttribs: integer;
     FActiveUniformsBlocks: integer;
     function getShaderId: cardinal;
-    function GetUniformLocation(ShaderId: cardinal;
-      const Name: ansistring): integer;
+    function GetUniformLocation(ShaderId: cardinal; const Name: ansistring): integer;
     procedure QueryProgramInfo;
   public
     property Id: cardinal read getShaderId;
@@ -292,10 +292,8 @@ Type
     procedure SetFragDataLocation(Index: cardinal; Name: ansistring);
     procedure SetAttribLocation(Index: cardinal; Name: ansistring);
     function LinkShader: cardinal;
-    function ProgramBinary(Binary: pointer; Size: integer; Format: GLEnum)
-      : cardinal;
-    procedure GetProgramBinary(var Binary: pointer; var Size: integer;
-      var Format: GLEnum);
+    function ProgramBinary(Binary: pointer; Size: integer; Format: GLEnum): cardinal;
+    procedure GetProgramBinary(var Binary: pointer; var Size: integer; var Format: GLEnum);
 
     procedure Apply;
     procedure UnApply;
@@ -1069,19 +1067,20 @@ begin
   end;
 end;
 
-procedure TUniformList.AddKey(const Key: ansistring; Value: integer);
-var
-  iKey, i: integer;
+function TUniformList.AddKey(const Key: ansistring; Value: integer): PUniformInfo;
+var iKey, i: integer;
 begin
   iKey := StringHashKey(Key);
   for i := 0 to FCount - 1 do
-    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then
+    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then begin
+      result:=@FItems[i].Info;
       exit;
-  if FCount >= Length(FItems) then
-    setlength(FItems, FCount * 2);
+    end;
+  if FCount >= Length(FItems) then setlength(FItems, FCount * 2);
   FItems[FCount].Key := iKey;
   FItems[FCount].KeyName := Key;
   FItems[FCount].Value := Value;
+  result:=@FItems[FCount].Info;
   inc(FCount);
 end;
 
@@ -1091,18 +1090,40 @@ begin
   FCount := 0;
 end;
 
-function TUniformList.getValue(const Key: ansistring): integer;
-var
-  iKey, i: integer;
+function TUniformList.GetInfo(const Key: ansistring): PUniformInfo;
+var iKey, i: integer;
 begin
   iKey := StringHashKey(Key);
   for i := 0 to FCount - 1 do
-    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then
-    begin
+    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then begin
+      result := @FItems[i].Info;
+      exit;
+    end;
+  result:=nil;
+end;
+
+function TUniformList.getValue(const Key: ansistring): integer;
+var iKey, i: integer;
+begin
+  iKey := StringHashKey(Key);
+  for i := 0 to FCount - 1 do
+    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then begin
       result := FItems[i].Value;
       exit;
     end;
   result := -2;
+end;
+
+procedure TUniformList.SetInfo(const Key: ansistring; const Info: TUniformInfo);
+var iKey, i: integer;
+begin
+  iKey := StringHashKey(Key);
+  for i := 0 to FCount - 1 do
+    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then begin
+      FItems[i].Info := Info;
+      exit;
+    end;
+  assert(false, 'Uniform "'+key+'" not found');
 end;
 
 { TShaderProgram }
@@ -1357,14 +1378,22 @@ begin
 end;
 
 procedure TGLSLShaderProgram.QueryProgramInfo;
-var
-  i: integer;
+var i,n,l: integer;
+    pName: PAnsiChar;
+    ui: PUniformInfo;
 begin
   glGetProgramiv(FShaderId, GL_ACTIVE_ATTRIBUTES, @FActiveAttribs);
   glGetProgramiv(FShaderId, GL_ACTIVE_UNIFORMS, @FActiveUniforms);
   glGetProgramiv(FShaderId, GL_ACTIVE_UNIFORM_BLOCKS, @FActiveUniformsBlocks);
   for i := 0 to FActiveUniformsBlocks - 1 do
     FUBOList.AddUBO(TGLUniformBlock.Create(FShaderId, i));
+  GetMem(pName, 255);
+  for i := 0 to FActiveUniforms - 1 do begin
+    glGetActiveUniformName(FShaderId,i,255,@n,pName);
+    ui:=FUniforms.AddKey(ansistring(pName),i);
+    ui.Shader:=FShaderId; ui.Name:=ansistring(pName);
+    glGetActiveUniform(FShaderId,i,0,l,ui.Size,ui.ValueType,nil);
+  end;
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
@@ -1808,9 +1837,8 @@ begin
   glBindTexture(CTexTargets[FTarget], 0);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-{  if GL_ARB_bindless_texture then
+  if GL_ARB_bindless_texture then
     glMakeTextureHandleNonResidentARB(FHandle);
-}
   glDeleteTextures(1, @FTexId);
   glDeleteBuffers(1, @FpboId);
   inherited;
@@ -1828,11 +1856,10 @@ end;
 
 function TGLTextureObject.getHandle: GLuint64;
 begin
-(* if GL_ARB_bindless_texture then begin
+  if GL_ARB_bindless_texture then begin
     FHandle := glGetTextureHandleARB(FTexId);
     glMakeTextureHandleResidentARB(FHandle);
   end;
-*)
   result := FHandle;
 end;
 
@@ -1873,9 +1900,11 @@ begin
       glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, DataSize, Data);
 
     { TODO : Replace direct loading texture data to PBO }
-//    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    if aLevel = -1 then begin sl :=0; el := LevelsCount-1; end
+    //glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    if aLevel =-1 then begin sl :=0; el := LevelsCount-1; end
     else begin sl := aLevel; el := aLevel; end;
+    if el<sl then el := sl;
+    
     for i := sl to el do begin
 //      if assigned(aData) then dataptr := aData
 //      else dataptr := pointer(cardinal(Data)+LODS[i].Offset);

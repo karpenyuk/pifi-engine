@@ -7,7 +7,7 @@ uses
   Windows,
 {$ENDIF} Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, uGLViewer, uBaseGL, uBaseTypes, uVMath, dglOpenGL, ExtCtrls,
-  uPrimitives, uMiscUtils, uRenderResource, uBaseRenders, uGLRenders;
+  uPrimitives, uMiscUtils, uRenderResource, uBaseRenders, uGLRenders, uImageFormats;
 
 type
   TForm2 = class(TForm)
@@ -104,6 +104,8 @@ var
   ver: TApiVersion;
   path: string;
 begin
+  showmessage(inttohex(TImageFormatSelector.CreateInt8(bfRGBA),4));
+
   // Checking OpenGL Version
   with GLViewer1.Context do
     if (MaxMajorVersion < 4) or (MaxMinorVersion < 2) then begin

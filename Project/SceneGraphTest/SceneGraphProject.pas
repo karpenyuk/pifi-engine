@@ -28,7 +28,9 @@ type
     { Private declarations }
     MX, MY: Integer;
     FDemoScene: TDemoScene;
+    FState: boolean;
     procedure GL1xDebugRender(const Mesh: TGLVertexObject; const Model: TMatrix);
+    procedure setmaterial(state: boolean);
   public
     { Public declarations }
   end;
@@ -46,6 +48,11 @@ var
 
   Render: TBaseRender;
   SceneGraph: TSceneGraph;
+  counter: integer = 0;
+  dummy: integer = 0;
+  cv: integer = 0;
+  log: tstringlist;
+  dt: double = 0;
 
 implementation
 
@@ -142,6 +149,8 @@ begin
   SceneGraph := TSceneGraph.Create;
 
   FDemoScene:=TDemoScene.Create;
+
+  log:=tstringlist.Create;
 end;
 
 procedure TForm2.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
@@ -166,6 +175,8 @@ end;
 procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   GLViewer1.OnRender := nil;
+  log.Add(inttostr(Dummy));
+  log.SaveToFile('e:\fps.txt');
 end;
 
 procedure TForm2.GL1xDebugRender(const Mesh: TGLVertexObject;
@@ -226,7 +237,11 @@ begin
 end;
 
 procedure TForm2.GLViewer1Render(Sender: TObject);
+var i: integer;
+    state: boolean;
+    t: double;
 begin
+  dt:=dt + glviewer1.DeltaTime;
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
   { //Со временем здесь будет полноценный ренедер сцены
@@ -245,16 +260,57 @@ begin
     // TGLStaticRender.RenderVertexObject(box,slUseActiveShader, spUseActiveShaderFirst);
     glActiveTexture(GL_TEXTURE0);
 
-    Box.RenderVO;
+//    Box.RenderVO;
+
+  t:=GetTime;
+  state:=true;
+
+  for i:=0 to 5000 do begin
+    //setmaterial(true);
+    glEnable(GL_COLOR_MATERIAL);
+    inc(Dummy); state := false;
+//    glDisable(GL_DEPTH_TEST);
+  end;
+
     Quad.RenderVO;
-    Sphere.RenderVO;
-    Teapod.RenderVO();
+//    glFlush;
+
+  t:=GetTime-t;
+if state then log.Add(floattostr(t)+inttostr(Dummy));
+
+  inc(cv);
+  if cv = 10 then begin
+    inc(Counter); cv := 0;
+    log.Add(floattostr(1.0/(dt/20)));
+    dt:=0;
+//    glviewer1.ResetFPSCounter;
+  end;
+
+//    Sphere.RenderVO;
+//    Teapod.RenderVO();
   end else begin
     GL1xDebugRender(Quad, Model);
     GL1xDebugRender(Sphere, Model);
     GL1xDebugRender(Box, Model);
     GL1xDebugRender(Teapod, Model);
   end;
+  if counter >=1000 then close;
+end;
+
+procedure TForm2.setmaterial(state: boolean);
+begin
+  if (state) then begin
+    if (not FState) then begin
+      glEnable(GL_COLOR_MATERIAL);
+      FState := true;
+    end
+  end else begin
+    if (FState) then begin
+      glDisable(GL_COLOR_MATERIAL);
+      FState := false;
+    end;
+  end;
+
 end;
 
 procedure TForm2.Timer1Timer(Sender: TObject);

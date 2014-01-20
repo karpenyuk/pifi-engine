@@ -204,6 +204,8 @@ Type
   //Приоритет использования шейдера, если назначены оба или один не доступен
   TShaderUsagePriority = (spUseOwnShaderFirst, spUseActiveShaderFirst);
 
+  TUsageLogic = (useOnce, useAlways);
+
 //FBO types
   TRenderBuffer = (rbDepth, rbStencil, rbDepthStencil);
   TRenderBuffers = set of TRenderBuffer;
@@ -215,6 +217,30 @@ Type
     rbDepth24Stencil8, rbDepth32FStencil8);
   TMultisampleFormat = (MSNone, MSAA2, MSAA4, MSAA8);
   TMRTTarget = (tgTexture, tgDepth, tgDepthStencil, tgMRT0, tgMRT1, tgMRT2, tgMRT3);
+
+  //Animation & interpolation types
+  TAnimationEvent = (aeStarted, aeStoped, aeFinished, aeReplayed, aeEndReached, aeRestarted);
+  TAnimationEventProc = procedure (Sender: TObject; aEvent: TAnimationEvent);
+  TPlaybackState = (psStop, psReset, psLoop, psReverse);
+  TAnimationState = (asWaiting, asPlaying, asPaused, asStoped, asFinished);
+
+  TEasingType = (etLinear, etInQuad, etOutQuad, etInOutQuad,
+    etInCubic, etOutCubic, etInOutCubic, etInQuart, etOutQuart, etInOutQuart,
+    etInQuint, etOutQuint, etInOutQuint, etInSine, etOutSine, etInOutSine,
+    etInExpo, etOutExpo, etInOutExpo, etInCirc, etOutCirc, etInOutCirc,
+    etInElastic, etOutElastic, etInOutElastic, etInBack, etOutBack, etInOutBack,
+    etInBounce, etOutBounce, etInOutBounce);
+
+  //Window events procs
+  TMouseButton = (mbLeft, mbRight, mbMiddle);
+  TMouseButtons = set of TMouseButton;
+
+  TRenderEvent = procedure (Sender: TObject; aFrameTime: double) of object;
+  TResizeEvent = procedure (Sender: TObject; aWidth, aHeight: integer) of object;
+
+  TKeyEvent = procedure (Sender: TObject; Key: byte) of object;
+  TMouseEvent = procedure (Sender: TObject; X,Y: integer; Buttons: TMouseButtons) of object;
+
 
 const
   CValueSizes: array[TValueType] of byte = (1, 2, 4, 4, 4, 8);

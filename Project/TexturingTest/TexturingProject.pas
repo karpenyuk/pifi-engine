@@ -8,7 +8,7 @@ uses
 {$ENDIF} Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, uGLViewer, uBaseGL, uBaseTypes, uVMath, dglOpenGL, ExtCtrls,
   uPrimitives, uMiscUtils, uRenderResource, uBaseRenders, uGLRenders,
-  uLists, uImageFormats, uImageLoader;
+  uLists, uImageFormats, uImageLoader, uWorldSpace;
 
 type
   TForm2 = class(TForm)

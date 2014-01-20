@@ -27,7 +27,8 @@ uses
   uGenericsRBTree in '..\..\Source\uGenericsRBTree.pas',
   uDataAccess in '..\..\Source\uDataAccess.pas',
   uImageFormats in '..\..\Source\uImageFormats.pas',
-  uImageLoader in '..\..\Source\uImageLoader.pas';
+  uImageLoader in '..\..\Source\uImageLoader.pas',
+  uWorldSpace in '..\..\Source\uWorldSpace.pas';
 
 begin
   Application.Initialize;
