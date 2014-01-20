@@ -7,7 +7,7 @@
 
 interface
 
-uses {$IFDEF MSWINDOWS} Windows,{$ENDIF} Classes, Types, uVMath;
+uses {$IFDEF MSWINDOWS} WinApi.Windows,{$ENDIF} Classes, Types, uVMath;
 const
    BufSize = 10240; { Load input data in chunks of BufSize Bytes. }
    LineLen = 100;   { Allocate memory for the current line in chunks
@@ -1043,7 +1043,7 @@ end;
 procedure QueryPerformanceCounter(var val: Int64);
 {$IFDEF MSWINDOWS}
 begin
-  Windows.QueryPerformanceCounter(val);
+  WinApi.Windows.QueryPerformanceCounter(val);
 end;
 {$ENDIF}
 {$IFDEF UNIX}
@@ -1063,7 +1063,7 @@ end;
 function QueryPerformanceFrequency(var val: Int64): Boolean;
 {$IFDEF MSWINDOWS}
 begin
-  Result := Boolean(Windows.QueryPerformanceFrequency(val));
+  Result := Boolean(WinApi.Windows.QueryPerformanceFrequency(val));
 end;
 {$ENDIF}
 {$IFDEF UNIX}

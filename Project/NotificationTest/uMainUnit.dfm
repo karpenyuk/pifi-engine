@@ -20,7 +20,7 @@ object Form1: TForm1
     Width = 577
     Height = 489
     OnRender = GLViewer1Render
-    OnContextReady = GLViewer1ContextReady
+    onContextReady = GLViewer1ContextReady
   end
   object Button1: TButton
     Left = 8

@@ -1,4 +1,7 @@
 ﻿{ TODO :
+  UniformObject:
+   -
+
   - Добавить манипуляцию мешами через скелетку:
   MeshObjectList.Hierarchy - связь между отдельными MeshObject через установку
   матриц трансформации их корневых костей.
@@ -19,7 +22,7 @@ interface
 
 uses
   SysUtils, Classes, uLists, uVMath, uMiscUtils, uBaseTypes, uBaseClasses,
-  uGenericsRBTree, uPersistentClasses, uDataAccess, uImageFormats;
+  uGenericsRBTree, uPersistentClasses, uDataAccess, uImageFormats, uInterpolators;
 
 const
   cDiffuseColor: vec4 = (0.8, 0.8, 0.8, 1);
@@ -39,6 +42,18 @@ Type
     procedure RegisterResource(const aResource: TBaseRenderResource);
     procedure UnRegisterResource(const aResource: TBaseRenderResource);
   end;
+
+  TShaderProgram = class;
+
+
+  TUniformInfo = record
+    Shader: cardinal;
+    Index: integer;
+    Name: ansistring;
+    Size: integer;
+    ValueType: cardinal;
+  end;
+  PUniformInfo = ^TUniformInfo;
 
   TShaderProgram = class(TBaseRenderResource)
   private
@@ -71,6 +86,20 @@ Type
 
     constructor CreateOwned(aOwner: TObject = nil);
   end;
+
+  TUniformObject<T> = class(TBaseRenderResource);
+
+  TFloatUniform = TUniformObject<single>;
+  TVec2Uniform = TUniformObject<vec2>;
+  TVec3Uniform = TUniformObject<vec3>;
+  TVec4Uniform = TUniformObject<vec4>;
+  TIntUniform = TUniformObject<integer>;
+  TInt2Uniform = TUniformObject<vec2i>;
+  TInt3Uniform = TUniformObject<vec3i>;
+  TInt4Uniform = TUniformObject<vec4i>;
+  TMat2Uniform = TUniformObject<mat2>;
+  TMat3Uniform = TUniformObject<mat3>;
+  TMat4Uniform = TUniformObject<mat4>;
 
   TColorVectorClass = class
   private
@@ -308,6 +337,7 @@ Type
 
     procedure Deallocate;
     procedure FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
+    procedure FillZeroLod(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aArray: boolean);
     procedure setImageFormat(const Value: cardinal);
   private
     function getDataSize: integer;
@@ -2841,7 +2871,9 @@ begin
 
   getmem(FData,FReservedMem);
   if aWithMipmaps then
-    FillLodsStructure(FImageFormat,FWidth, FHeight,FDepth,isTextureArray);
+    FillLodsStructure(FImageFormat,FWidth, FHeight,FDepth,isTextureArray)
+  else
+    FillZeroLod(FImageFormat,FWidth, FHeight,FDepth,isTextureArray);
 end;
 
 constructor TImageHolder.Create;
@@ -2857,7 +2889,7 @@ begin
   FWidth:=-1;
   FHeight:=-1;
   FDepth:=-1;
-  FLevels:=-1;
+  FLevels:=1;
   FCompressed:=false;
 
   FLayers := TImageLayers.Create;
@@ -2923,6 +2955,31 @@ begin
 
     offs := offs + FLODS[i].Size;
     w := max(1,w shr 1); h := max(1, h shr 1); d := max(1, d shr 1);
+  end;
+end;
+
+procedure TImageHolder.FillZeroLod(aFormatCode: cardinal; aWidth, aHeight,
+  aDepth: integer; aArray: boolean);
+var i,j, offs, size: integer;
+    w,h,d,layers: integer;
+begin
+  assert(assigned(FData), 'Allocate image memory first!');
+  FLevels := 1;
+  offs := 0; w := aWidth; h := aHeight; d := aDepth;
+  if aArray then layers := aDepth else layers := 1;
+
+  i := 0;
+  FLODS[i].Width := w;
+  FLODS[i].Height := h;
+  if not aArray then begin
+    FLODS[i].Depth := d;
+    FLODS[i].Offset := offs;
+    FLODS[i].Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, d, false);
+  end else begin
+    FLODS[i].Depth := 1;
+    FLODS[i].Offset := offs;
+    Size := TImageFormatSelector.GetMemSize(aFormatCode, w, h, 1, false);
+    FLODS[i].Size := Size * Layers;
   end;
 end;
 
@@ -3492,3 +3549,4 @@ finalization
 vRegisteredResource.Free;
 
 end.
+

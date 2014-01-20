@@ -29,7 +29,9 @@ uses
   uImageFormats in '..\..\Source\uImageFormats.pas',
   uImageLoader in '..\..\Source\uImageLoader.pas',
   SceneConstructor in 'SceneConstructor.pas',
-  uWorldSpace in '..\..\Source\uWorldSpace.pas';
+  uWorldSpace in '..\..\Source\uWorldSpace.pas',
+  uEffectsPipeline in '..\..\Source\uEffectsPipeline.pas',
+  uInterpolators in '..\..\Source\uInterpolators.pas';
 
 begin
   Application.Initialize;

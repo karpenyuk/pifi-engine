@@ -84,6 +84,7 @@
 			<DCCReference Include="..\..\Source\uDataAccess.pas"/>
 			<DCCReference Include="..\..\Source\uImageFormats.pas"/>
 			<DCCReference Include="..\..\Source\uImageLoader.pas"/>
+			<DCCReference Include="..\..\Source\uWorldSpace.pas"/>
 			<None Include="TexturingTest.inc"/>
 			<None Include="TexturingTest_Spec.inc"/>
 			<None Include="TexturingTest_Comp.inc"/>

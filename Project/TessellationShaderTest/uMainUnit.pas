@@ -4,7 +4,7 @@ interface
 
 uses
   Classes, Graphics,
-  Controls, Forms, Dialogs, uGLViewer,{$IFDEF FPC}ExtCtrls{$ELSE}Vcl.ExtCtrls{$ENDIF};
+  Controls, Forms, Dialogs, uGLViewer,{$IFDEF FPC}ExtCtrls{$ELSE}ExtCtrls{$ENDIF};
 
 {$POINTERMATH ON}
 
