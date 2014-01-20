@@ -232,14 +232,14 @@ Type
     etInBounce, etOutBounce, etInOutBounce);
 
   //Window events procs
-  TMouseButton = (mbLeft, mbRight, mbMiddle);
-  TMouseButtons = set of TMouseButton;
+  TCMouseButton = (mbLeft, mbRight, mbMiddle);
+  TCMouseButtons = set of TCMouseButton;
 
   TRenderEvent = procedure (Sender: TObject; aFrameTime: double) of object;
   TResizeEvent = procedure (Sender: TObject; aWidth, aHeight: integer) of object;
 
   TKeyEvent = procedure (Sender: TObject; Key: byte) of object;
-  TMouseEvent = procedure (Sender: TObject; X,Y: integer; Buttons: TMouseButtons) of object;
+  TMouseEvent = procedure (Sender: TObject; X,Y: integer; Buttons: TCMouseButtons) of object;
 
 
 const

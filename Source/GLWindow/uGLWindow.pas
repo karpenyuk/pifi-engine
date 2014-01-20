@@ -36,7 +36,7 @@ type
   TGLWindow = class
   private
     FKeys: array [0..255] of boolean;
-    FButtons: TMouseButtons;
+    FButtons: TCMouseButtons;
     FMouseX,FMouseY: integer;
     FActive: boolean;
     FisRendering: boolean;
@@ -69,7 +69,7 @@ type
     procedure SetonRender(const Value: TRenderEvent);
     procedure SetonInitialize(const Value: TNotifyEvent);
     procedure SetonResize(const Value: TResizeEvent);
-    function getButton(index: TMouseButton): boolean;
+    function getButton(index: TCMouseButton): boolean;
   public
     constructor Create;
     destructor Destroy; override;
@@ -83,7 +83,7 @@ type
     property Active: boolean read FActive write setActive;
     property isRendering: boolean read FisRendering;
     property Keys[index: integer]: boolean read getKey write setKey;
-    property Buttons[index: TMouseButton]: boolean read getButton;
+    property Buttons[index: TCMouseButton]: boolean read getButton;
     property VSync: boolean read getVSync write setVSync;
     property Caption: string read FCaption write setCaption;
     property FrameTime: double read getFrameTime;
@@ -190,7 +190,7 @@ begin
   FFrameTime:=(gettime-FFrameTime)*1000;
 end;
 
-function TGLWindow.getButton(index: TMouseButton): boolean;
+function TGLWindow.getButton(index: TCMouseButton): boolean;
 begin
   result := index in FButtons;
 end;
