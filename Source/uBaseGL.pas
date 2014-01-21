@@ -1378,7 +1378,7 @@ begin
 end;
 
 procedure TGLSLShaderProgram.QueryProgramInfo;
-var i,n,l: integer;
+var i,n,l,loc: integer;
     pName: PAnsiChar;
     ui: PUniformInfo;
 begin
@@ -1390,7 +1390,8 @@ begin
   GetMem(pName, 255);
   for i := 0 to FActiveUniforms - 1 do begin
     glGetActiveUniformName(FShaderId,i,255,@n,pName);
-    ui:=FUniforms.AddKey(ansistring(pName),i);
+    loc := glGetUniformLocation(FShaderId, pName);
+    ui:=FUniforms.AddKey(ansistring(pName),loc);
     ui.Shader:=FShaderId; ui.Name:=ansistring(pName);
     glGetActiveUniform(FShaderId,i,0,l,ui.Size,ui.ValueType,nil);
   end;
