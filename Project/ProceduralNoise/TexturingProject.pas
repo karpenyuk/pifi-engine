@@ -12,8 +12,8 @@ type
     procedure ContextReady(Sender: TObject);
     procedure SceneRender(Sender: TObject; Delta: double);
     procedure onResize(Sender: TObject; NewWidth,NewHeight: Integer);
-    procedure onMouseDown(Sender: TObject; X,Y: integer; Buttons: TMouseButtons);
-    procedure onMouseMove(Sender: TObject; X,Y: integer; Buttons: TMouseButtons);
+    procedure onMouseDown(Sender: TObject; X,Y: integer; Buttons: TCMouseButtons);
+    procedure onMouseMove(Sender: TObject; X,Y: integer; Buttons: TCMouseButtons);
   private
     { Private declarations }
     MX, MY: Integer;
@@ -68,13 +68,13 @@ begin
 end;
 
 procedure TDemo.onMouseDown(Sender: TObject; X, Y: integer;
-  Buttons: TMouseButtons);
+  Buttons: TCMouseButtons);
 begin
   MX := X;  MY := Y;
 end;
 
 procedure TDemo.onMouseMove(Sender: TObject; X, Y: integer;
-  Buttons: TMouseButtons);
+  Buttons: TCMouseButtons);
 begin
   if mbLeft in Buttons then
   begin
