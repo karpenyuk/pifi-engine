@@ -1872,6 +1872,7 @@ end;
 procedure TGLTextureObject.UploadTexture(aData: pointer; aLevel: integer);
 var i,sl,el: integer;
     dataptr: pointer;
+    glTarget: cardinal;
 begin
   assert(assigned(FImageHolder),'Image holder is not assigned!');
 
@@ -1905,32 +1906,37 @@ begin
     if aLevel =-1 then begin sl :=0; el := LevelsCount-1; end
     else begin sl := aLevel; el := aLevel; end;
     if el<sl then el := sl;
-    
+
     for i := sl to el do begin
-//      if assigned(aData) then dataptr := aData
-//      else dataptr := pointer(cardinal(Data)+LODS[i].Offset);
-      DataPtr := nil;
+      DataPtr := pointer(LODS[i].Offset);
+      glTarget := CTexTargets[FTarget];
       if not Compressed then begin
         case FTarget of
           ttTexture1D:
-            glTexImage1D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, 0,
+            glTexImage1D(glTarget, i, InternalFormat, LODS[i].Width, 0,
               BaseFormat, PixelFormat, DataPtr);
-          ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ:
-            glTexImage2D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, LODS[i].Height, 0,
+          ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ, tt1DArray:
+            glTexImage2D(glTarget, i, InternalFormat, LODS[i].Width,
+              LODS[i].Height, 0,
               BaseFormat, PixelFormat, DataPtr);
           ttTexture3D, tt2DArray:
-            glTexImage3D(CTexTargets[FTarget], i, InternalFormat, LODS[i].Width, LODS[i].Height,
+            glTexImage3D(glTarget, i, InternalFormat, LODS[i].Width,
+              LODS[i].Height,
               LODS[i].Depth, 0, BaseFormat, PixelFormat, DataPtr);
         end;
       end else begin
-        //Upload compressed image
+        // Upload compressed image
         case FTarget of
-          ttTexture1D: glCompressedTexImage1D(GL_TEXTURE_1D, i, InternalFormat, LODS[i].Width,
-            0, LODS[i].Size, DataPtr);
-          ttTexture2D: glCompressedTexImage2D(GL_TEXTURE_2D, i, InternalFormat, LODS[i].Width,
-            LODS[i].Height, 0, LODS[i].Size, DataPtr);
-          ttTexture3D: glCompressedTexImage3D(GL_TEXTURE_2D, i, InternalFormat, LODS[i].Width, LODS[i].Height,
-            LODS[i].Depth, 0, LODS[i].Size, DataPtr);
+          ttTexture1D:
+            glCompressedTexImage1D(glTarget, i, InternalFormat, LODS[i].Width,
+              0, LODS[i].Size, DataPtr);
+          ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ, tt1DArray:
+            glCompressedTexImage2D(glTarget, i, InternalFormat, LODS[i].Width,
+              LODS[i].Height, 0, LODS[i].Size, DataPtr);
+          ttTexture3D, tt2DArray:
+            glCompressedTexImage3D(glTarget, i, InternalFormat, LODS[i].Width,
+              LODS[i].Height,
+              LODS[i].Depth, 0, LODS[i].Size, DataPtr);
         end;
       end;
     end;
