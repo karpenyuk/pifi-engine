@@ -33,6 +33,8 @@ type
     procedure Execute; override;
   end;
 
+  TOnDebugMessage = procedure(const AMessage: string) of object;
+
   TGLWindow = class
   private
     FKeys: array [0..255] of boolean;
@@ -46,6 +48,8 @@ type
     FRC: HGLRC;
     FWidth, FHeight: integer;
     FColorBits, FDepthBits, FStensilBits, FAALevel : byte;
+    FForwardContext, FDebugContext: boolean;
+    FMajorVersion, FMinorVersion: integer;
     FCaption: string;
     FFrameTime: double;
     FonRender: TRenderEvent;
@@ -56,9 +60,12 @@ type
     FOnMouseUp: TMouseEvent;
     FOnKeyDown: TKeyEvent;
     FOnKeyUp: TKeyEvent;
+    FOnDebugMessage: TOnDebugMessage;
     procedure setActive(const Value: boolean);
     procedure KillGLWindow;
+    procedure GetOGLVersion;
     function InitGL: boolean;
+    function InitContext: boolean;
     procedure WindProc(var Message: TMessage);
     function getKey(index: integer): boolean;
     procedure setKey(index: integer; const Value: boolean);
@@ -70,12 +77,14 @@ type
     procedure SetonInitialize(const Value: TNotifyEvent);
     procedure SetonResize(const Value: TResizeEvent);
     function getButton(index: TCMouseButton): boolean;
+    procedure SetOnDebugMessage(const Value: TOnDebugMessage);
   public
     constructor Create;
     destructor Destroy; override;
     procedure CreateWindow(Title: Pchar; width, height: integer;
       FullScreen: boolean);
-    procedure SetPixelFormatBits(ColorBits, DepthBits, StensilBits, AALevel: byte);
+    procedure SetPixelFormatBits(ColorBits, DepthBits, StensilBits, AALevel: byte;
+      aForwardContext, aDebugContext: boolean);
     procedure DoResize(Width, Height: integer);
     procedure SwapBuffer;
     procedure DrawGLScene;
@@ -85,11 +94,14 @@ type
     property Keys[index: integer]: boolean read getKey write setKey;
     property Buttons[index: TCMouseButton]: boolean read getButton;
     property VSync: boolean read getVSync write setVSync;
+    property ForwardContext: boolean read FForwardContext;
+    property DebugContext: boolean read FDebugContext;
     property Caption: string read FCaption write setCaption;
     property FrameTime: double read getFrameTime;
 
     property onRender: TRenderEvent read FonRender write SetonRender;
     property onInitialize: TNotifyEvent read FonInitialize write SetonInitialize;
+    property OnDebugMessage: TOnDebugMessage read FOnDebugMessage write SetOnDebugMessage;
     property onResize: TResizeEvent read FonResize write SetonResize;
     property onKeyDown: TKeyEvent read FOnKeyDown write FOnKeyDown;
     property onKeyUp: TKeyEvent read FOnKeyUp write FOnKeyUp;
@@ -101,6 +113,9 @@ type
   end;
 
 implementation
+
+uses
+  uLists;
 
 var
   UtilWindowClass: TWndClass = (
@@ -154,6 +169,66 @@ begin
     WindowRect.Bottom-WindowRect.Top, 0, 0, HInstance, nil);
   if Assigned(AMethod) then
     SetWindowLong(Result, GWL_WNDPROC, Longint(MakeObjectInstance(AMethod)));
+end;
+
+function ParseDebug(aSource, aType, aId, aSeverity: cardinal;
+  const aMess: ansistring): ansistring;
+var
+  t: ansistring;
+begin
+  case aSource of
+    GL_DEBUG_SOURCE_API_ARB:
+      t := 'OpenGL';
+    GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:
+      t := 'Windows';
+    GL_DEBUG_SOURCE_SHADER_COMPILER_ARB:
+      t := 'Shader Compiler';
+    GL_DEBUG_SOURCE_THIRD_PARTY_ARB:
+      t := 'Third Party';
+    GL_DEBUG_SOURCE_APPLICATION_ARB:
+      t := 'Application';
+    GL_DEBUG_SOURCE_OTHER_ARB:
+      t := 'Other';
+  end;
+  Result := 'Source: ' + t + '; ';
+
+  case aType of
+    GL_DEBUG_TYPE_ERROR_ARB:
+      t := 'Error';
+    GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB:
+      t := 'Deprecated behavior';
+    GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:
+      t := 'Undefined behavior';
+    GL_DEBUG_TYPE_PORTABILITY_ARB:
+      t := 'Portability';
+    GL_DEBUG_TYPE_PERFORMANCE_ARB:
+      t := 'Performance';
+    GL_DEBUG_TYPE_OTHER_ARB:
+      t := 'Other';
+  end;
+  Result := Result + 'Type: ' + t + '; ';
+
+  case aSeverity of
+    GL_DEBUG_SEVERITY_HIGH_ARB:
+      t := 'High';
+    GL_DEBUG_SEVERITY_MEDIUM_ARB:
+      t := 'Medium';
+    GL_DEBUG_SEVERITY_LOW_ARB:
+      t := 'Low';
+  end;
+  Result := Result + 'Severity: ' + t + '; ';
+  Result := Result + 'Message: ' + aMess;
+end;
+
+procedure GLDebugCallback(source : GLEnum; type_ : GLEnum; id : GLUInt;
+             severity : GLUInt; length : GLsizei;
+             const message_ : PGLCHar; userParam : PGLvoid);
+{$IFDEF MSWINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
+var
+  window: TGLWindow absolute userParam;
+begin
+  if Assigned(userParam) and Assigned(window.FOnDebugMessage) then
+    window.FOnDebugMessage(string(ParseDebug(Source, type_, id, severity, message_)));
 end;
 
 { TGLWindow }
@@ -211,16 +286,126 @@ begin
   result := boolean(wglGetSwapIntervalEXT);
 end;
 
+procedure TGLWindow.GetOGLVersion;
+var
+  AnsiBuffer: ansistring;
+  Buffer: String;
+
+  procedure TrimAndSplitVersionString(Buffer: String; var Max, Min: integer);
+  var
+    Separator: integer;
+  begin
+    try
+      Separator := Pos('.', Buffer);
+      if (Separator > 1) and (Separator < length(Buffer)) and
+        (AnsiChar(Buffer[Separator - 1]) in ['0' .. '9']) and
+        (AnsiChar(Buffer[Separator + 1]) in ['0' .. '9']) then
+      begin
+        Dec(Separator);
+        while (Separator > 0) and
+          (AnsiChar(Buffer[Separator]) in ['0' .. '9']) do
+          Dec(Separator);
+        Delete(Buffer, 1, Separator);
+        Separator := Pos('.', Buffer) + 1;
+        while (Separator <= length(Buffer)) and
+          (AnsiChar(Buffer[Separator]) in ['0' .. '9']) do
+          inc(Separator);
+        Delete(Buffer, Separator, 255);
+        Separator := Pos('.', Buffer);
+        Max := StrToInt(copy(Buffer, 1, Separator - 1));
+        Min := StrToInt(copy(Buffer, Separator + 1, 1));
+      end
+      else
+        Abort;
+    except
+      Min := 0;
+      Max := 0;
+    end;
+  end;
+
+begin
+  AnsiBuffer := glGetString(GL_VERSION);
+  Buffer := String(AnsiBuffer);
+  TrimAndSplitVersionString(Buffer, FMajorVersion, FMinorVersion);
+end;
+
 function TGLWindow.InitGL: boolean;
 begin
-  glShadeModel(GL_SMOOTH);
+  if not FForwardContext then
+  begin
+    glShadeModel(GL_SMOOTH);
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+  end;
   glClearColor(0.0, 0.0, 0.0, 0.0);
   glClearDepth(1.0);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
-  glHint(GL_PERSPECTIVE_CORRECTION_HINT,GL_NICEST);
   if assigned(FonInitialize) then FonInitialize(self);
   Result:=true;
+end;
+
+function TGLWindow.InitContext: boolean;
+type
+  TPixelFormatAttribList = array [0 .. 14] of integer;
+const
+  PIXELFORMATATTRIBLIST: TPixelFormatAttribList = (WGL_DRAW_TO_WINDOW_ARB,
+    GL_True, WGL_SUPPORT_OPENGL_ARB, GL_True, WGL_DOUBLE_BUFFER_ARB, GL_True,
+    WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB, WGL_COLOR_BITS_ARB, 32,
+    WGL_DEPTH_BITS_ARB, 24, WGL_STENCIL_BITS_ARB, 8, 0);
+var
+  iPixelFormatAttribList: TPixelFormatAttribList;
+  iPixelFormat, iNumFormats: integer;
+  pfd: TPixelFormatDescriptor;
+  RC: HGLRC;
+  list: TIntegerList;
+begin
+  Result := False;
+  DeactivateRenderingContext;
+
+  iPixelFormatAttribList := PIXELFORMATATTRIBLIST;
+  iPixelFormatAttribList[9] := FColorBits;
+  iPixelFormatAttribList[11] := FDepthBits;
+  iPixelFormatAttribList[13] := FStensilBits;
+  wglChoosePixelFormatARB(FDC, @iPixelFormatAttribList, nil, 1,
+    @iPixelFormat, @iNumFormats);
+  if not SetPixelFormat(FDC, iPixelFormat, @pfd) then
+    exit;
+  list := TIntegerList.Create;
+  list.Add(WGL_CONTEXT_MAJOR_VERSION_ARB); list.Add(FMajorVersion);
+  list.Add(WGL_CONTEXT_MINOR_VERSION_ARB); list.Add(FMinorVersion);
+
+  if FDebugContext then
+  begin
+    list.Add(WGL_CONTEXT_FLAGS_ARB); list.Add(WGL_CONTEXT_DEBUG_BIT_ARB);
+  end;
+
+  list.Add(WGL_CONTEXT_PROFILE_MASK_ARB);
+  if FForwardContext then
+    list.Add(WGL_CONTEXT_CORE_PROFILE_BIT_ARB)
+  else
+    list.Add(WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB);
+
+  RC := wglCreateContextAttribsARB(FDC, 0, list.GetItemAddr(0));
+  if (RC <> 0) then begin
+    ActivateRenderingContext(FDC, RC);
+    if (not wglMakeCurrent(FDC, RC)) then begin
+      FForwardContext := false;
+      FDebugContext := false;
+      wglMakeCurrent(FDC, FRC);
+      assert(false,'Cant''t activate the GL rendering context.');
+      exit;
+    end;
+    wglDeleteContext(FRC);
+    FRC := RC;
+    Result := True;
+  end;
+
+  if Result and FDebugContext then
+  begin
+    glDebugMessageCallbackARB(GLDebugCallback, Self);
+    glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nil, true);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+  end;
 end;
 
 constructor TGLWindow.Create;
@@ -229,6 +414,8 @@ begin
   FDepthBits:=24;
   FStensilBits:=8;
   FAALevel:=0;
+  FForwardContext := False;
+  FDebugContext := False;
   FFrameTime:=-1;
 end;
 
@@ -281,6 +468,7 @@ begin
     cRedBits:= 8;
     cRedShift:= 0;
     cGreenBits:= 8;
+    cGreenShift:= 0;
     cBlueBits:= 8;
     cBlueShift:= 0;
     cAlphaBits:= 8;
@@ -323,6 +511,10 @@ begin
       KillGLWindow();
       assert(false,'Cant''t activate the GL rendering context.');
   end;
+
+  GetOGLVersion;
+  InitContext();
+
   ShowWindow(FWnd,SW_SHOW);
   SetForegroundWindow(FWnd);
   SetFocus(FWnd);
@@ -375,6 +567,11 @@ begin
   FKeys[index] := Value;
 end;
 
+procedure TGLWindow.SetOnDebugMessage(const Value: TOnDebugMessage);
+begin
+  FOnDebugMessage := Value;
+end;
+
 procedure TGLWindow.SetonInitialize(const Value: TNotifyEvent);
 begin
   FonInitialize := Value;
@@ -391,13 +588,16 @@ begin
 end;
 
 procedure TGLWindow.SetPixelFormatBits(ColorBits, DepthBits, StensilBits,
-  AALevel: byte);
+  AALevel: byte; aForwardContext, aDebugContext: boolean);
 begin
   FColorBits:=ColorBits;
   FDepthBits:=DepthBits;
   FStensilBits:=StensilBits;
   FAALevel:=AALevel;
-  CreateWindow(pChar(FCaption),FWidth, Fheight, FFullScreen);
+  FForwardContext := aForwardContext;
+  FDebugContext := aDebugContext;
+  if FWnd <> 0 then
+    CreateWindow(pChar(FCaption),FWidth, Fheight, FFullScreen);
 end;
 
 procedure TGLWindow.setVSync(const Value: boolean);
