@@ -49,7 +49,7 @@ begin
       end;
       if glwnd.keys[VK_F2] then begin
         glwnd.Keys[VK_F2] := false;
-        glwnd.SetPixelFormatBits(32,32,0,0);
+        glwnd.SetPixelFormatBits(32,24,0,0, true, true);
       end;
       if glwnd.keys[VK_SPACE] then begin
         glwnd.Keys[VK_SPACE] := false;
