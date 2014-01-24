@@ -1908,7 +1908,10 @@ begin
     if el<sl then el := sl;
 
     for i := sl to el do begin
-      DataPtr := pointer(LODS[i].Offset);
+      if Assigned(aData) then
+        DataPtr := aData
+      else
+        DataPtr := pointer(LODS[i].Offset);
       glTarget := CTexTargets[FTarget];
       if not Compressed then begin
         case FTarget of
