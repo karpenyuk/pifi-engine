@@ -1899,7 +1899,7 @@ begin
     if aLevel =-1 then begin sl :=0; el := LevelsCount-1; end else begin
       if aLevelsCount=1 then begin sl := aLevel; el := aLevel; end
       else if (aLevel =-1) or (aLevelsCount<1) then begin sl :=0; el := LevelsCount-1; end
-      else begin sl := aLevel; el := sl+aLevelsCount; end;
+      else begin sl := aLevel; el := sl+aLevelsCount-1; end;
     end;
     if el<sl then el := sl;
 
