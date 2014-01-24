@@ -459,33 +459,17 @@ begin
     assert(false,'Window creation error.');
   end;
 
+  FillChar(pfd, SizeOf(pfd), $00);
+
   with pfd do begin
     nSize:= SizeOf( PIXELFORMATDESCRIPTOR );
     nVersion:= 1;
     dwFlags:= PFD_DRAW_TO_WINDOW or PFD_SUPPORT_OPENGL or PFD_DOUBLEBUFFER;
     iPixelType:= PFD_TYPE_RGBA;
     cColorBits:= FColorBits;
-    cRedBits:= 8;
-    cRedShift:= 0;
-    cGreenBits:= 8;
-    cGreenShift:= 0;
-    cBlueBits:= 8;
-    cBlueShift:= 0;
-    cAlphaBits:= 8;
-    cAlphaShift:= 0;
-    cAccumBits:= 0;
-    cAccumRedBits:= 0;
-    cAccumGreenBits:= 0;
-    cAccumBlueBits:= 0;
-    cAccumAlphaBits:= 0;
     cDepthBits:= FDepthBits;
     cStencilBits:= FStensilBits;
-    cAuxBuffers:= 0;
     iLayerType:= PFD_MAIN_PLANE;
-    bReserved:= 0;
-    dwLayerMask:= 0;
-    dwVisibleMask:= 0;
-    dwDamageMask:= 0;
   end;
   FDC := GetDC(FWnd);
   if FDC=0 then begin
