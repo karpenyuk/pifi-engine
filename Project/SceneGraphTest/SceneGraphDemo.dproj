@@ -25,7 +25,7 @@
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
-		<PropertyGroup Condition="'$(Platform)'=='Win32' and '$(Cfg_2)'=='true' or '$(Cfg_2_Win32)'!=''">
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
 			<Cfg_2_Win32>true</Cfg_2_Win32>
 			<CfgParent>Cfg_2</CfgParent>
 			<Cfg_2>true</Cfg_2>
@@ -59,35 +59,12 @@
 			<DCC_UnitSearchPath>..\..\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 		</PropertyGroup>
 		<ItemGroup>
-			<DelphiCompile Include="SceneGraphDemo.dpr">
+			<DelphiCompile Include="$(MainSource)">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
 			<DCCReference Include="SceneGraphProject.pas">
 				<Form>Form2</Form>
 			</DCCReference>
-			<DCCReference Include="..\..\Source\uPrimitives.pas"/>
-			<DCCReference Include="..\..\Source\uBaseClasses.pas"/>
-			<DCCReference Include="..\..\Source\uBaseGL.pas"/>
-			<DCCReference Include="..\..\Source\uLists.pas"/>
-			<DCCReference Include="..\..\Source\uVMath.pas"/>
-			<DCCReference Include="..\..\Source\uBaseTypes.pas"/>
-			<DCCReference Include="..\..\Source\uRenderResource.pas"/>
-			<DCCReference Include="..\..\Source\uGLRenders.pas"/>
-			<DCCReference Include="..\..\Source\uMiscUtils.pas"/>
-			<DCCReference Include="..\..\Source\jpegdec.pas"/>
-			<DCCReference Include="..\..\Source\GLViewer\dglOpenGL.pas"/>
-			<DCCReference Include="..\..\Source\GLViewer\uGLViewer.pas"/>
-			<DCCReference Include="..\..\Source\uMath.pas"/>
-			<DCCReference Include="..\..\Source\uBaseRenders.pas"/>
-			<DCCReference Include="..\..\Source\uShaderGen.pas"/>
-			<DCCReference Include="..\..\Source\uGenericsRBTree.pas"/>
-			<DCCReference Include="..\..\Source\uDataAccess.pas"/>
-			<DCCReference Include="..\..\Source\uImageFormats.pas"/>
-			<DCCReference Include="..\..\Source\uImageLoader.pas"/>
-			<DCCReference Include="SceneConstructor.pas"/>
-			<DCCReference Include="..\..\Source\uWorldSpace.pas"/>
-			<DCCReference Include="..\..\Source\uEffectsPipeline.pas"/>
-			<DCCReference Include="..\..\Source\uInterpolators.pas"/>
 			<BuildConfiguration Include="Debug">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
