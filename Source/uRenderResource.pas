@@ -2178,6 +2178,7 @@ constructor TMesh.CreateFrom(const aVertexObject: TVertexObject;
   const aGUID: TGUID);
 begin
   Create;
+  FVertexObject := aVertexObject; // Возможно надо добавить Subscribe(aVertexObject)
   GUID := aGUID;
   FriendlyName := '';
   LocalMatrix := TMatrix.IdentityMatrix;
@@ -2186,7 +2187,7 @@ end;
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject);
 begin
   Create;
-  CreateGUID(GUID);
+  FVertexObject := aVertexObject;
   FriendlyName := '';
   LocalMatrix := TMatrix.IdentityMatrix;
 end;
@@ -2194,7 +2195,7 @@ end;
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject; aName: string);
 begin
   Create;
-  CreateGUID(GUID);
+  FVertexObject := aVertexObject;
   FriendlyName := aName;
   LocalMatrix := TMatrix.IdentityMatrix;
 end;

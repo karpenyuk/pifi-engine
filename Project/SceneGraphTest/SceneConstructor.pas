@@ -13,10 +13,13 @@ type
     FSceneGraph: TSceneGraph;
     FSceneObject: TSceneObject;
     FMaterial: TMaterialObject;
+    FLight: TLightSource;
 
     procedure CreateScene;
   public
     constructor Create;
+    destructor Destroy; override;
+
     procedure SetSize(aWidth, aHeight: integer);
     property SceneGraph: TSceneGraph read FSceneGraph;
   end;
@@ -56,6 +59,7 @@ begin
 
   FSceneObject:=TSceneObject.Create;
   FSceneObject.MeshObjects.AddMeshObject(MeshObject);
+  FSceneGraph.AddItem(FSceneObject);
 
   // Create material which use shader
   FMaterial := TMaterialObject.Create;
@@ -69,11 +73,25 @@ begin
   finally
     sl.Free;
   end;
+  FSceneGraph.AddMaterial(FMaterial);
 
   for i := 0 to MeshList.Count - 1 do
     MeshList[i].MaterialObject := FMaterial;
 
+  FLight := TLightSource.Create;
+  FLight.Position.SetVector(2, 3, 10);
+  FSceneGraph.AddLight(FLight);
+
   FSceneGraph.Camera.FoV:=60;
+end;
+
+destructor TDemoScene.Destroy;
+begin
+  FSceneGraph.Destroy;
+  FSceneObject.Destroy;
+  FMaterial.Destroy;
+  FLight.Destroy;
+  inherited;
 end;
 
 procedure TDemoScene.SetSize(aWidth, aHeight: integer);

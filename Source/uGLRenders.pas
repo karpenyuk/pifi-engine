@@ -229,7 +229,7 @@ var i: integer;
     Render: TBaseSubRender;
 begin
   for i:=0 to FRegisteredSubRenders.Count-1 do begin
-    render:=TBaseSubRender(FRegisteredSubRenders);
+    render:=TBaseSubRender(FRegisteredSubRenders[i]);
     { TODO : Реализовать выбор "наилучшего" из зарегистрированных рендеров }
     if render.isSupported(Res.ClassType) then begin
        render.ProcessResource(res); exit;
@@ -413,7 +413,7 @@ var idx: integer;
     Node: PRBNode;
     res: TBaseRenderResource;
 begin
-  idx:=FSupportedResources.IndexOf(Resource);
+  idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx <0 then exit;
 
   //Resource exists?
@@ -439,7 +439,7 @@ var idx: integer;
     Node: PRBNode;
 begin
   inherited;
-  idx:=FSupportedResources.IndexOf(Resource);
+  idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx < 0 then begin result:=nil; exit; end;
   //assert(idx>=0,'Unsupported resource: "'+Resource.ClassName+'"!');
 
@@ -511,7 +511,7 @@ var idx: integer;
     Node: PRBNode;
 begin
   inherited;
-  result:=nil; idx:=FSupportedResources.IndexOf(Resource);
+  result:=nil; idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx < 0 then exit;
 
   if isInnerResource(Resource.ClassType) then begin
@@ -692,7 +692,7 @@ begin
   Create;
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
   FSceneObject:=aSceneObject;
-  setlength(FMeshObjects, aSceneObject.MeshObjects.Count-1);
+  setlength(FMeshObjects, aSceneObject.MeshObjects.Count);
   for i:=0 to aSceneObject.MeshObjects.Count-1 do begin
     FMeshObjects[i]:=TGLMeshObject(aOwner.GetOrCreateResource(aSceneObject.MeshObjects[i]));
   end;
