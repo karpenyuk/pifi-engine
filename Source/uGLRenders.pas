@@ -204,7 +204,7 @@ begin
   inherited;
   { TODO :
     Реализовать сравнение состояний текущей библиотеки и предыдущего
-    снимка (через хэш библиотеки илирассілку уведомлений?)
+    снимка (через хэш библиотеки или рассылку уведомлений?)
     Делать вычитку ресурсов только при несовпадении хэша. }
 
   //создаем ресурсы для всех материалов сцены
@@ -240,13 +240,15 @@ end;
 procedure TGLRender.ProcessScene(const aScene: TSceneGraph);
 var i: integer;
     SceneItem: TBaseSceneItem;
+    res: TGLBaseResource;
 begin
   //Подготавливаем ресурсы сцены
   PrepareResources(aScene);
   //Обрабатываем объекты сцены (подготовка + рендеринг)
   for i:=0 to aScene.Count-1 do begin
     SceneItem:=aScene[i];
-    ProcessResource(SceneItem);
+    res := FResourceManager.GetOrCreateResource(SceneItem);
+    ProcessResource(res);
   end;
 end;
 
