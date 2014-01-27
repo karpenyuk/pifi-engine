@@ -86,72 +86,80 @@ var vt,ft: ansistring;
 begin
   result:=TShaderProgram.Create;
   vt:=
-'#version 420'+#13+#10 +
-'layout(location = 0) in vec3 in_Position;'+#13+#10 +
-'layout(location = 1) in vec3 in_Normal;'+#13+#10 +
-'layout(location = 2) in vec2 in_TexCoord;'+#13+#10 +
+'#version 420'+#13#10 +
+'layout(location = 0) in vec3 in_Position;'+#13#10 +
+'layout(location = 1) in vec3 in_Normal;'+#13#10 +
+'layout(location = 2) in vec2 in_TexCoord;'+#13#10 +
 
-'uniform mat4 MVP;'+#13+#10 +
-'uniform mat4 ModelView;'+#13+#10 +
-'uniform mat4 Projection;'+#13+#10 +
+'struct Transform'+#13#10 +
+'{'+#13#10 +
+'     mat4 ModelView;'+#13#10 +
+'     mat4 Projection;'+#13#10 +
+'     mat4 ModelViewProjection;'+#13#10 +
+ '};'+#13#10 +
 
-'struct Light'+#13+#10 +
-'{'+#13+#10 +
-'    vec4    position;'+#13+#10 +
-'    vec4    ambient;'+#13+#10 +
-'    vec4    diffuse;'+#13+#10 +
-'    vec4    specular;'+#13+#10 +
-'    float   constant_attenuation;'+#13+#10 +
-'    float   linear_attenuation;'+#13+#10 +
-'    float   quadratic_attenuation;'+#13+#10 +
-'    vec3    spot_direction;'+#13+#10 +
-'    float   spot_cutoff;'+#13+#10 +
-'    float   spot_exponent;'+#13+#10 +
-'};'+#13+#10 +
+'layout(std140) uniform Transforms'+#13#10 +
+'{'+#13#10 +
+'    Transform transform;'+#13#10 +
+'} transforms;'+#13#10 +
 
-'layout(std140) uniform Lights'+#13+#10 +
-'{'+#13+#10 +
-'    Light light;'+#13+#10 +
-'} lights;'+#13+#10 +
+'struct Light'+#13#10 +
+'{'+#13#10 +
+'    vec4    position;'+#13#10 +
+'    vec4    ambient;'+#13#10 +
+'    vec4    diffuse;'+#13#10 +
+'    vec4    specular;'+#13#10 +
+'    float   constant_attenuation;'+#13#10 +
+'    float   linear_attenuation;'+#13#10 +
+'    float   quadratic_attenuation;'+#13#10 +
+'    vec3    spot_direction;'+#13#10 +
+'    float   spot_cutoff;'+#13#10 +
+'    float   spot_exponent;'+#13#10 +
+'};'+#13#10 +
 
-'layout(std140) uniform Material'+#13+#10 +
-'{'+#13+#10 +
-'    vec4    ambient;'+#13+#10 +
-'    vec4    diffuse;'+#13+#10 +
-'    vec4    specular;'+#13+#10 +
-'    vec4    emissive;'+#13+#10 +
-'    float   shininess;'+#13+#10 +
-'} material;'+#13+#10 +
+'layout(std140) uniform Lights'+#13#10 +
+'{'+#13#10 +
+'    Light light;'+#13#10 +
+'} lights;'+#13#10 +
 
-'out vec2 TexCoord;'+#13+#10 +
-'out vec3 Normal;'+#13+#10 +
+'layout(std140) uniform Material'+#13#10 +
+'{'+#13#10 +
+'    vec4    ambient;'+#13#10 +
+'    vec4    diffuse;'+#13#10 +
+'    vec4    specular;'+#13#10 +
+'    vec4    emissive;'+#13#10 +
+'    float   shininess;'+#13#10 +
+'} material;'+#13#10 +
 
-'void main(void)'+#13+#10 +
-'{'+#13+#10 +
-'	gl_Position = MVP*vec4(in_Position, 1.0);'+#13+#10 +
-'	TexCoord = in_TexCoord;'+#13+#10 +
-'	Normal = in_Normal;'+#13+#10 +
-'	vec4 nm = MVP * vec4(Normal, 0.0);'+#13+#10 +
-'	vec4 pos = ModelView * vec4(in_Position, 1.0);'+#13+#10 +
-'	vec3 lightDir = vec3(lights.light.position.xyz - pos.xyz);'+#13+#10 +
-'	vec3 eyeVec = -pos.xyz;'+#13+#10 +
-'	vec4 final_color = lights.light.ambient * material.ambient;'+#13+#10 +
-'	vec3 N = normalize(nm.xyz);'+#13+#10 +
-'	vec3 L = normalize(lightDir);'+#13+#10 +
-'	float lambertTerm = max (dot(N,L), 0.0);'+#13+#10 +
-'	vec3 E = normalize(eyeVec);'+#13+#10 +
-'	vec3 R = reflect(-L, N);'+#13+#10 +
-'	float pf = pow( max(dot(R, E), 0.0), material.shininess );'+#13+#10 +
-'	final_color += lights.light.diffuse * material.diffuse * lambertTerm;'+#13+#10 +
-'	final_color += material.specular * lights.light.specular * pf;'+#13+#10 +
-'	gl_FrontColor = final_color;'+#13+#10 +
+'out vec2 TexCoord;'+#13#10 +
+'out vec3 Normal;'+#13#10 +
+
+'void main(void)'+#13#10 +
+'{'+#13#10 +
+'	gl_Position = transforms.transform.ModelViewProjection * vec4(in_Position, 1.0);'+#13#10 +
+'	TexCoord = in_TexCoord;'+#13#10 +
+'	Normal = in_Normal;'+#13#10 +
+'	vec4 nm = transforms.transform.ModelViewProjection * vec4(Normal, 0.0);'+#13#10 +
+'	vec4 pos = transforms.transform.ModelView * vec4(in_Position, 1.0);'+#13#10 +
+'	vec3 lightDir = vec3(lights.light.position.xyz - pos.xyz);'+#13#10 +
+'	vec3 eyeVec = -pos.xyz;'+#13#10 +
+'	vec4 final_color = lights.light.ambient * material.ambient;'+#13#10 +
+'	vec3 N = normalize(nm.xyz);'+#13#10 +
+'	vec3 L = normalize(lightDir);'+#13#10 +
+'	float lambertTerm = max (dot(N,L), 0.0);'+#13#10 +
+'	vec3 E = normalize(eyeVec);'+#13#10 +
+'	vec3 R = reflect(-L, N);'+#13#10 +
+'	float pf = pow( max(dot(R, E), 0.0), material.shininess );'+#13#10 +
+'	final_color += lights.light.diffuse * material.diffuse * lambertTerm;'+#13#10 +
+'	final_color += material.specular * lights.light.specular * pf;'+#13#10 +
+'	gl_FrontColor = final_color;'+#13#10 +
 '}';
   ft:=
-'#version 330'+#13+#10 +
-'in vec2 TexCoord; layout(location = 0) out vec4 FragColor;'+#13+#10 +
-'void main()'+#13+#10 +
-'{'+#13+#10 +
-'  FragColor = vec4(TexCoord,0.0,1.0);'+#13+#10 +
+'#version 330'+#13#10 +
+'in vec2 TexCoord; layout(location = 0) out vec4 FragColor;'+#13#10 +
+'void main()'+#13#10 +
+'{'+#13#10 +
+'  FragColor = vec4(TexCoord,0.0,1.0);'+#13#10 +
 '}';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
