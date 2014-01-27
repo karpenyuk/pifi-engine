@@ -98,6 +98,12 @@ Type
   private
     FSceneObject: TSceneObject;
     FMeshObjects: array of TGLMeshObject;
+    { Блок с матрицами трансформаций
+    FUBO: TGLUniformBlock;
+    FBlockBuffer: TGLBufferObjectsPool;
+    FIdexInPool: integer;
+    FUBOData: pointer;   }
+    procedure UpdateUBO;
   public
     constructor CreateFrom(aOwner: TGLResources; aSceneObject: TSceneObject);
   end;
@@ -571,7 +577,7 @@ var bi: integer;
 begin
   if assigned(FShader) then begin
     FShader.Apply; vActiveShader:=FShader; end else exit;
-  if assigned(FUBO) then begin
+  if assigned(FUBO) and Assigned(FBlockBuffer) then begin
     bi:=FBlockBuffer.BindUBO(FIdexInPool,FUBO);
     glUniformBlockBinding(FShader.Id, FUBO.BlockIndex, bi);
   end;
@@ -625,7 +631,7 @@ end;
 procedure TGLMaterial.UnApply;
 begin
   if assigned(FShader) then begin FShader.UnApply; vActiveShader:=nil; end else exit;
-  if assigned(FUBO) then begin
+  if assigned(FUBO) and assigned(FBlockBuffer) then begin
     FBlockBuffer.UnBindUBO(FIdexInPool,FUBO);
     glUniformBlockBinding(FShader.Id, FUBO.BlockIndex, 0);
   end;

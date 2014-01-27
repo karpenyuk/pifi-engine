@@ -271,6 +271,7 @@ Type
     FActiveUniforms: integer;
     FActiveAttribs: integer;
     FActiveUniformsBlocks: integer;
+    FStructureChanged: boolean;
     function getShaderId: cardinal;
     function GetUniformLocation(ShaderId: cardinal; const Name: ansistring): integer;
     procedure QueryProgramInfo;
@@ -1130,6 +1131,8 @@ end;
 
 procedure TGLSLShaderProgram.Apply;
 begin
+  if FStructureChanged then
+    exit;
   if not FLinked then
     exit;
   if vActiveShader <> Self then
@@ -1182,6 +1185,7 @@ begin
     FreeMem(pLog, val);
     setlength(FDetachList, Length(FDetachList) + 1);
     FDetachList[high(FDetachList)] := Shader;
+    FStructureChanged := true;
   end;
 end;
 
@@ -1199,6 +1203,7 @@ end;
 constructor TGLSLShaderProgram.CreateFrom(const aShaderProgram: TShaderProgram);
 var
   st: TShaderType;
+  txt: ansistring;
   i: integer;
 begin
   Create;
@@ -1208,8 +1213,11 @@ begin
       ProgramBinary(Data, Size, Format)
   else
   begin
-    for st := stVertex to stCompute do
-      AttachShader(st, aShaderProgram[st]);
+    for st := stVertex to stCompute do begin
+      txt := aShaderProgram[st];
+      if Length(txt) > 0 then
+        AttachShader(st, txt);
+    end;
     if aShaderProgram.FragDataBindPos.Location >= 0 then
       with aShaderProgram.FragDataBindPos do
         SetFragDataLocation(Location, Name);
@@ -1294,6 +1302,9 @@ var
   pLog: PAnsiChar;
   LinkError: boolean;
 begin
+  // Turnoff changes in any case (even if linking will failed)
+  FStructureChanged := False;
+
   if (FShaderId > 0) and FLinked then
   begin
     result := FShaderId;
@@ -1339,6 +1350,7 @@ var
   LoadingError: boolean;
   pLog: PAnsiChar;
 begin
+  FStructureChanged := false;
   LoadingError := false;
   if not GL_ARB_get_program_binary then begin
     FLinked := false;
@@ -1743,12 +1755,8 @@ begin
   begin
     FShader.Apply;
     ActiveShader := Shader.Id;
-  end
-  else
-  begin
-    glUseProgram(0);
-    ActiveShader := 0;
   end;
+
   if FStructureChanged and (ActiveShader = 0) then
     exit;
   if FStructureChanged then
