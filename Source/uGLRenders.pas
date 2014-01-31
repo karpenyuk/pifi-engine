@@ -38,11 +38,9 @@ Type
     FTex: array of TGLTextureObject;
     FBlend: TCustomBlending;
     FShader: TGLSLShaderProgram;
-    FUBO: TGLUniformBlock;
-    FBlockBuffer: TGLBufferObjectsPool;
     FIdexInPool: integer;
-    FUBOData: pointer;
-    procedure UpdateUBO;
+    FStructureChanged: boolean;
+    procedure UpdateUBO(aPool: TGLBufferObjectsPool);
   public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
     procedure Apply;
@@ -55,11 +53,9 @@ Type
   TGLLight = class (TGLBaseResource)
   private
     FLight: TLightSource;
-    FUBO: TGLUniformBlock;
-    FBlockBuffer: TGLBufferObjectsPool;
     FIdexInPool: integer;
-    FUBOData: pointer;
-    procedure UpdateUBO;
+    FStructureChanged: boolean;
+    procedure UpdateUBO(aPool: TGLBufferObjectsPool);
   public
     LightSphereRadius: single;
 
@@ -98,17 +94,22 @@ Type
   private
     FSceneObject: TSceneObject;
     FMeshObjects: array of TGLMeshObject;
-    { Блок с матрицами трансформаций
-    FUBO: TGLUniformBlock;
-    FBlockBuffer: TGLBufferObjectsPool;
     FIdexInPool: integer;
-    FUBOData: pointer;   }
-    procedure UpdateUBO;
+    FStructureChanged: boolean;
+    procedure UpdateUBO(aPool: TGLBufferObjectsPool);
   public
     constructor CreateFrom(aOwner: TGLResources; aSceneObject: TSceneObject);
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+    procedure Apply;
+    procedure UnApply;
   end;
 
   TGLStaticRender = class (TBaseSubRender)
+  private
+    FTransfPool: TGLBufferObjectsPool;
+    FLightPool: TGLBufferObjectsPool;
+    FMaterialPool: TGLBufferObjectsPool;
   public
     function isSupported(const aClassType: TClass): boolean; override;
     procedure ProcessResource(const Resource: TBaseRenderResource); override;
@@ -119,6 +120,11 @@ Type
       aShaderUsagePriority: TShaderUsagePriority = spUseOwnShaderFirst);
 
     constructor Create;
+    destructor Destroy; override;
+
+    property TransformationsPool: TGLBufferObjectsPool read FTransfPool;
+    property LightsPool: TGLBufferObjectsPool read FLightPool;
+    property MaterialsPool: TGLBufferObjectsPool read FMaterialPool;
   end;
 
   TGLResources = class (TBaseSubRender)
@@ -274,6 +280,17 @@ end;
 constructor TGLStaticRender.Create;
 begin
   inherited Create;
+  FTransfPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*6, 2000);
+  FLightPool := TGLBufferObjectsPool(SizeOf(vec4)*6, 1000);
+  FMaterialPool := TGLBufferObjectsPool(SizeOf(vec4)*5, 100);
+end;
+
+destructor TGLStaticRender.Destroy;
+begin
+  FTransfPool.Destroy;
+  FLightPool.Destroy;
+  FMaterialPool.Destroy;
+  inherited;
 end;
 
 function TGLStaticRender.isSupported(const aClassType: TClass): boolean;
@@ -574,12 +591,22 @@ end;
 
 procedure TGLMaterial.Apply;
 var bi: integer;
+    tb, lb: TGLUniformBlock;
 begin
   if assigned(FShader) then begin
     FShader.Apply; vActiveShader:=FShader; end else exit;
   if assigned(FUBO) and Assigned(FBlockBuffer) then begin
     bi:=FBlockBuffer.BindUBO(FIdexInPool,FUBO);
     glUniformBlockBinding(FShader.Id, FUBO.BlockIndex, bi);
+  end;
+  tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubTransforms].Name);
+  if assigned(tb) then begin
+    bi:=FBlockBuffer.BindUBO(FIdexInPool,tb);
+    glUniformBlockBinding(FShader.Id, tb.BlockIndex, bi);
+  end;
+  if assigned(vActiveLightBlock) then begin
+    bi:=FBlockBuffer.BindUBO(FIdexInPool,vActiveLightBlock);
+    glUniformBlockBinding(FShader.Id, vActiveLightBlock.BlockIndex, bi);
   end;
 end;
 
@@ -591,32 +618,21 @@ begin
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
   Owner:=aOwner; FMaterialObject:=aMat;
   FMaterialObject.Subscribe(self);
-  FBlockBuffer:=nil; FIdexInPool:=-1; FUBOData:=nil;
+  FIdexInPool:=-1;
 
   FShader:=TGLSLShaderProgram(aOwner.GetOrCreateResource(FMaterialObject.Shader));
-  if assigned (FShader) then
-    Fubo:=FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubMaterial].Name);
-  if (not assigned(vMaterialPool)) then begin
-    if assigned(FUBO) then vMaterialPool:=TGLPoolBuffers.Create(Fubo.BlockSize);
-  end else if assigned(FUBO) then begin
-    getmem(FUBOData, FUBO.BlockSize); UpdateUBO;
-    if not vMaterialPool.isExists(FUBOData, FBlockBuffer, FIdexInPool)
-    then vMaterialPool.GetSlot(FBlockBuffer, FIdexInPool);
-  end;
-
   FBlend:=FMaterialObject.Blending;
   setlength(FTex,FMaterialObject.TexCount);
   for i:=0 to FMaterialObject.TexCount-1 do begin
     FTex[i]:=TGLTextureObject(aOwner.GetOrCreateResource(FMaterialObject.TextureSlot[i]));
   end;
+
+  FStructureChanged := true;
 end;
 
 destructor TGLMaterial.Destroy;
 begin
-  if assigned(FBlockBuffer) then begin
-    FBlockBuffer.FreeSlot(FIdexInPool);
-    freemem(FUBOData, FUBO.BlockSize);
-  end;
+  FShader.Destroy;
   inherited;
 end;
 
@@ -624,49 +640,39 @@ procedure TGLMaterial.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   inherited;
   case Msg of
-    NM_ResourceChanged: if Sender = FMaterialObject then UpdateUBO;
+    NM_ResourceChanged: if Sender = FMaterialObject then FStructureChanged := true;
   end;
 end;
 
 procedure TGLMaterial.UnApply;
 begin
   if assigned(FShader) then begin FShader.UnApply; vActiveShader:=nil; end else exit;
-  if assigned(FUBO) and assigned(FBlockBuffer) then begin
-    FBlockBuffer.UnBindUBO(FIdexInPool,FUBO);
-    glUniformBlockBinding(FShader.Id, FUBO.BlockIndex, 0);
-  end;
+//    glUniformBlockBinding(FShader.Id, FUBO.BlockIndex, 0);
 end;
 
-procedure TGLMaterial.UpdateUBO;
+procedure TGLMaterial.UpdateUBO(aPool: TGLBufferObjectsPool);
 var offs: integer;
-    p: pointer;
+    p: PByte;
 begin
-  //Fill Uniform Buffer Object Data
+  if not FStructureChanged then
+    exit;
+
+  if FIdexInPool < 0 then
+    FIdexInPool := aPool.GetFreeSlotIndex();
+
+  p := aPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+    aPool.OffsetByIndex(FIdexInPool), SizeOf(vec4)*5);
+
+  // Fill Uniform Buffer Object Data
   with FMaterialObject.Material.Properties do begin
-    offs:=FUBO.OffsetByName(CUBOMatPropertySemantics[umAmbient]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(AmbientColor.ColorAsAddress^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOMatPropertySemantics[umDiffuse]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(DiffuseColor.ColorAsAddress^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOMatPropertySemantics[umSpecular]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(SpecularColor.ColorAsAddress^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOMatPropertySemantics[umEmissive]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(EmissionColor.ColorAsAddress^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOMatPropertySemantics[umShininess]);
-    p:=pointer(integer(FUBOData)+offs);
+    move(AmbientColor.ColorAsAddress^,p^,16); inc(p, 16);
+    move(DiffuseColor.ColorAsAddress^,p^,16); inc(p, 16);
+    move(SpecularColor.ColorAsAddress^,p^,16); inc(p, 16);
+    move(EmissionColor.ColorAsAddress^,p^,16); inc(p, 16);
     move(Shininess,p^,4);
   end;
-  FBlockBuffer.WriteToPool(FIdexInPool, FUBOData);
-  //FBlockBuffer.BindUBO(FIdexInPool,FUBO);
-  //glUniformBlockBinding (_phongProgram, uniformBlockIndex, 1);
-
+  aPool.Buffer.UnMap;
+  FStructureChanged := false;
 end;
 
 { TGLMeshObject }
@@ -693,6 +699,11 @@ end;
 
 { TGLSceneObject }
 
+procedure TGLSceneObject.Apply;
+begin
+
+end;
+
 constructor TGLSceneObject.CreateFrom(aOwner: TGLResources;
   aSceneObject: TSceneObject);
 var i: integer;
@@ -700,9 +711,21 @@ begin
   Create;
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
   FSceneObject:=aSceneObject;
+  aSceneObject.Subscribe(self);
+  FIdexInPool := -1;
+  FStructureChanged := true;
   setlength(FMeshObjects, aSceneObject.MeshObjects.Count);
   for i:=0 to aSceneObject.MeshObjects.Count-1 do begin
     FMeshObjects[i]:=TGLMeshObject(aOwner.GetOrCreateResource(aSceneObject.MeshObjects[i]));
+  end;
+end;
+
+procedure TGLSceneObject.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  inherited;
+  case Msg of
+    NM_ResourceChanged: if Sender = FSceneObject then FStructureChanged := true;
   end;
 end;
 
@@ -764,17 +787,69 @@ begin
   end;
 end;
 
+procedure TGLSceneObject.UnApply;
+begin
+
+end;
+
+procedure TGLSceneObject.UpdateUBO(aPool: TGLBufferObjectsPool);
+var
+    p: pointer;
+begin
+  if not FStructureChanged then
+    exit;
+
+  if FIdexInPool < 0 then
+    FIdexInPool := aPool.GetFreeSlotIndex();
+
+  p := aPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+    aPool.OffsetByIndex(FIdexInPool), SizeOf(mat4)*6);
+
+  // Fill Uniform Buffer Object Data
+  with FSceneObject do begin
+    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(FSceneObject. ViewMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+  end;
+  aPool.Buffer.UnMap;
+  FStructureChanged := False;
+
+  //Fill Uniform Buffer Object Data
+  with FSceneObject do begin
+    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utModel]);
+    p:=pointer(integer(FUBOData)+offs);
+    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
+
+    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utView]);
+    p:=pointer(integer(FUBOData)+offs);
+    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
+
+    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utProjection]);
+    p:=pointer(integer(FUBOData)+offs);
+    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
+
+    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utModelView]);
+    p:=pointer(integer(FUBOData)+offs);
+    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
+
+    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utViewProjection]);
+    p:=pointer(integer(FUBOData)+offs);
+    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
+
+    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utModelViewProjection]);
+    p:=pointer(integer(FUBOData)+offs);
+    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
+  end;
+  FBlockBuffer.WriteToPool(FIdexInPool, FUBOData);
+end;
+
 { TGLLight }
 
 procedure TGLLight.Apply;
-var bi: integer;
 begin
-  if not assigned(vActiveShader) then exit;
 
-  if assigned(FUBO) then begin
-    bi:=FBlockBuffer.BindUBO(FIdexInPool,FUBO);
-    glUniformBlockBinding(vActiveShader.Id, FUBO.BlockIndex, bi);
-  end;
 end;
 
 constructor TGLLight.CreateFrom(aOwner: TGLResources; const aLight: TLightSource);
@@ -783,27 +858,13 @@ begin
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
   Owner:=aOwner; FLight:=aLight;
   FLight.Subscribe(self);
-  FBlockBuffer:=nil; FIdexInPool:=-1; FUBOData:=nil;
-
-{  FShader:=TGLSLShaderProgram(aOwner.GetOrCreateResource(FMaterialObject.Shader));
-  if assigned (FShader) then
-    Fubo:=FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubLights].Name);
-  if (not assigned(vMaterialPool)) then begin
-    if assigned(FUBO) then vLightPool:=TGLPoolBuffers.Create(Fubo.BlockSize);
-  end else if assigned(FUBO) then begin
-    getmem(FUBOData, FUBO.BlockSize); UpdateUBO;
-    if not vLightPool.isExists(FUBOData, FBlockBuffer, FIdexInPool)
-    then vLightPool.GetSlot(FBlockBuffer, FIdexInPool);
-  end;
-}
+  FIdexInPool:=-1;
+  FStructureChanged := True;
 end;
 
 destructor TGLLight.Destroy;
 begin
-  if assigned(FBlockBuffer) then begin
-    FBlockBuffer.FreeSlot(FIdexInPool);
-    freemem(FUBOData, FUBO.BlockSize);
-  end;
+  // Need to add slot freeing in Lights pool
   inherited;
 end;
 
@@ -811,85 +872,54 @@ procedure TGLLight.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   inherited;
   case Msg of
-    NM_ResourceChanged: if Sender = FLight then UpdateUBO;
+    NM_ResourceChanged: if Sender = FLight then FStructureChanged := true;
   end;
 end;
 
 procedure TGLLight.UnApply;
 begin
-  if not assigned(vActiveShader) then exit;
-  if assigned(FUBO) then begin
-    FBlockBuffer.UnBindUBO(FIdexInPool,FUBO);
-    glUniformBlockBinding(vActiveShader.Id, FUBO.BlockIndex, 0);
-  end;
+
 end;
 
-procedure TGLLight.UpdateUBO;
-var offs: integer;
-    p: pointer;
+procedure TGLLight.UpdateUBO(aPool: TGLBufferObjectsPool);
+var
+    p: PByte;
 begin
-  //Fill Uniform Buffer Object Data
+  if not FStructureChanged then
+    exit;
+
+  if FIdexInPool < 0 then
+    FIdexInPool := aPool.GetFreeSlotIndex();
+
+  p := aPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+    aPool.OffsetByIndex(FIdexInPool), SizeOf(vec4)*6);
+
+  // Fill Uniform Buffer Object Data
   with FLight do begin
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulAmbient]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(Ambient.ColorAsAddress^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulDiffuse]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(Diffuse.ColorAsAddress^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulSpecular]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(Specular.ColorAsAddress^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulSceneColor]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(SceneColor.ColorAsAddress^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulSpotDirection]);
-    p:=pointer(integer(FUBOData)+offs);
+    move(Position.GetAddr^,p^,16); inc(p, 16);
+    move(Ambient.ColorAsAddress^,p^,16); inc(p, 16);
+    move(Diffuse.ColorAsAddress^,p^,16); inc(p, 16);
+    move(Specular.ColorAsAddress^,p^,16); inc(p, 16);
+    move(ConstAttenuation,p^,4); inc(p, 4);
+    move(LinearAttenuation,p^,4); inc(p, 4);
+    move(QuadraticAttenuation,p^,4); inc(p, 4);
+    move(SpotCutOff,p^,4); inc(p, 4);
+    move(SpotExponent,p^,4); inc(p, 4);
+    move(SceneColor.ColorAsAddress^,p^,16); inc(p, 16);
     move(SpotDirection.GetAddr^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulPosition]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(Position.GetAddr^,p^,16);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulSpotExponent]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(SpotExponent,p^,4);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulSpotCutOff]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(SpotCutOff,p^,4);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulConstAttenuation]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(ConstAttenuation,p^,4);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulLinearAttenuation]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(LinearAttenuation,p^,4);
-
-    offs:=FUBO.OffsetByName(CUBOLightPropertySemantics[ulQuadraticAttenuation]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(QuadraticAttenuation,p^,4);
   end;
-  FBlockBuffer.WriteToPool(FIdexInPool, FUBOData);
-  //FBlockBuffer.BindUBO(FIdexInPool,FUBO);
-  //glUniformBlockBinding (_phongProgram, uniformBlockIndex, 1);
+  aPool.Buffer.UnMap;
+  FStructureChanged := False;
 end;
 
 initialization
 
   vGLRender:=TGLRender.Create;
   vRegisteredRenders.RegisterRender(vGLRender);
-//  vMaterialPool:=TGLPoolBuffers.Create(CLightUBOSize,true,-1);
 
 finalization
   vRegisteredRenders.UnRegisterRender(vGLRender);
   vGLRender.Free;
-  if assigned(vMaterialPool) then vMaterialPool.Free;
-  if assigned(vLightsPool) then vLightsPool.Free;
 end.
 //Projected Sphere radius
 //radius * cot(fov / 2) / Z * ViewerSize
