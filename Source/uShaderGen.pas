@@ -91,17 +91,29 @@ begin
 'layout(location = 1) in vec3 in_Normal;'+#13#10 +
 'layout(location = 2) in vec2 in_TexCoord;'+#13#10 +
 
-'struct Transform'+#13#10 +
+'struct ObjectTransform'+#13#10 +
 '{'+#13#10 +
-'     mat4 ModelView;'+#13#10 +
-'     mat4 Projection;'+#13#10 +
-'     mat4 ModelViewProjection;'+#13#10 +
+'     mat4 World;'+#13#10 +
+'     mat4 WorldInv;'+#13#10 +
+'     mat4 WorldNormal;'+#13#10 +
  '};'+#13#10 +
 
-'layout(std140) uniform Transforms'+#13#10 +
+ 'struct CameraTransform'+#13#10 +
 '{'+#13#10 +
-'    Transform transform;'+#13#10 +
-'} transforms;'+#13#10 +
+'     mat4 View;'+#13#10 +
+'     mat4 Projection;'+#13#10 +
+'     mat4 ViewProjection;'+#13#10 +
+ '};'+#13#10 +
+
+'layout(std140) uniform ObjectTransforms'+#13#10 +
+'{'+#13#10 +
+'    ObjectTransform transform;'+#13#10 +
+'} object;'+#13#10 +
+
+'layout(std140) uniform CameraTransforms'+#13#10 +
+'{'+#13#10 +
+'    CameraTransform transform;'+#13#10 +
+'} camera;'+#13#10 +
 
 'struct Light'+#13#10 +
 '{'+#13#10 +
@@ -112,9 +124,9 @@ begin
 '    float   constant_attenuation;'+#13#10 +
 '    float   linear_attenuation;'+#13#10 +
 '    float   quadratic_attenuation;'+#13#10 +
-'    vec3    spot_direction;'+#13#10 +
 '    float   spot_cutoff;'+#13#10 +
 '    float   spot_exponent;'+#13#10 +
+'    vec3    spot_direction;'+#13#10 +
 '};'+#13#10 +
 
 'layout(std140) uniform Lights'+#13#10 +
@@ -129,18 +141,20 @@ begin
 '    vec4    specular;'+#13#10 +
 '    vec4    emissive;'+#13#10 +
 '    float   shininess;'+#13#10 +
+'    vec3    padding;'+#13#10 +
 '} material;'+#13#10 +
 
 'out vec2 TexCoord;'+#13#10 +
 'out vec3 Normal;'+#13#10 +
+'out vec3 Color;'+#13#10 +
 
 'void main(void)'+#13#10 +
 '{'+#13#10 +
-'	gl_Position = transforms.transform.ModelViewProjection * vec4(in_Position, 1.0);'+#13#10 +
+'	vec4 pos = object.transform.World * vec4(in_Position, 1.0);'+#13#10 +
+'	gl_Position = camera.transform.ViewProjection * pos;'+#13#10 +
 '	TexCoord = in_TexCoord;'+#13#10 +
 '	Normal = in_Normal;'+#13#10 +
-'	vec4 nm = transforms.transform.ModelViewProjection * vec4(Normal, 0.0);'+#13#10 +
-'	vec4 pos = transforms.transform.ModelView * vec4(in_Position, 1.0);'+#13#10 +
+'	vec4 nm = object.transform.WorldNormal * vec4(Normal, 0.0);'+#13#10 +
 '	vec3 lightDir = vec3(lights.light.position.xyz - pos.xyz);'+#13#10 +
 '	vec3 eyeVec = -pos.xyz;'+#13#10 +
 '	vec4 final_color = lights.light.ambient * material.ambient;'+#13#10 +
@@ -156,10 +170,12 @@ begin
 '}';
   ft:=
 '#version 330'+#13#10 +
-'in vec2 TexCoord; layout(location = 0) out vec4 FragColor;'+#13#10 +
+'in vec2 TexCoord;'+#13#10 +
+'in vec3 Color;'+#13#10 +
+'layout(location = 0) out vec4 FragColor;'+#13#10 +
 'void main()'+#13#10 +
 '{'+#13#10 +
-'  FragColor = vec4(TexCoord,0.0,1.0);'+#13#10 +
+'  FragColor = vec4(Color, 1.0);'+#13#10 +
 '}';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
