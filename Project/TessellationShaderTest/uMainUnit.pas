@@ -20,10 +20,8 @@ type
     procedure GLViewer1ContextReady(Sender: TObject);
     procedure GLViewer1CanResize(Sender: TObject; var NewWidth,
       NewHeight: Integer; var Resize: Boolean);
-    procedure GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,
-      Y: Integer);
-    procedure GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
+    procedure GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,Y: Integer);
+    procedure GLViewer1MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure GLViewer1Render(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -335,8 +333,8 @@ begin
   DisplaceSampler:=TTextureSampler.Create;
   DisplaceSampler.WrapS := twRepeat;
   DisplaceSampler.WrapT := twRepeat;
-  DisplaceSampler.minFilter := mnLinear;
-  DisplaceSampler.magFilter := mgLinear;
+  DisplaceSampler.minFilter := mnNearest;
+  DisplaceSampler.magFilter := mgNearest;
   glDisplaceSampler:=TGLTextureSampler.CreateFrom(DisplaceSampler);
 
   imgLoader := TImageLoader.Create();
