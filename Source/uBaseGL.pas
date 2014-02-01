@@ -223,6 +223,7 @@ Type
   private
     FBuffer: TGLBufferObject;
     FFreeRooms: TIntegerList;
+    FObjectSize: integer;
     FBuffSize: integer;
     FUsedCount: integer;
     FUBOSize: integer;
@@ -241,6 +242,8 @@ Type
     procedure WriteToPool(const Index: integer; Data: pointer);
     function BindUBO(const Index: integer; const aUBO: TGLUniformBlock): integer;
     procedure UnBindUBO(const Index: integer; const aUBO: TGLUniformBlock);
+
+    property ObjectSize: integer read FObjectSize;
   end;
 
   TUBOList = class
@@ -2708,6 +2711,7 @@ var
 begin
   inherited Create;
   FUsedCount := 0;
+  FObjectSize := aObjectSize;
   FBuffSize := aObjectsCount;
   FUBOSize := aObjectSize;
   FBuffer := TGLBufferObject.Create(btUniform);
