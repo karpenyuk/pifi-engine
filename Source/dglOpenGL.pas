@@ -1046,6 +1046,7 @@ var
   GL_AMD_debug_output,
   GL_AMD_transform_feedback3_lines_triangles,
   GL_AMD_depth_clamp_separate,
+  GL_AMD_multi_draw_indirect,
   GL_EXT_422_pixels,
   GL_EXT_abgr,
   GL_EXT_bgra,
@@ -19473,6 +19474,7 @@ begin
   GL_AMD_debug_output := Int_CheckExtension(Buffer, 'GL_AMD_debug_output');
   GL_AMD_transform_feedback3_lines_triangles := Int_CheckExtension(Buffer, 'GL_AMD_transform_feedback3_lines_triangles');
   GL_AMD_depth_clamp_separate := Int_CheckExtension(Buffer, 'GL_AMD_depth_clamp_separate');
+  GL_AMD_multi_draw_indirect := Int_CheckExtension(Buffer, 'GL_AMD_multi_draw_indirect');
   // 4.3
   GL_AMD_pinned_memory := Int_CheckExtension(Buffer, 'GL_AMD_pinned_memory');
   GL_AMD_stencil_operation_extended := Int_CheckExtension(Buffer, 'GL_AMD_stencil_operation_extended');

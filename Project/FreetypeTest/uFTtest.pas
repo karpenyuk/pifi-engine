@@ -74,6 +74,7 @@ type
       var NewWidth, NewHeight: Integer; var Resize: Boolean);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure GLViewer1Render(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
     MX, MY: Integer;
@@ -147,6 +148,12 @@ begin
   GLViewer1.Context.Deactivate;
 end;
 
+procedure TForm5.FormCreate(Sender: TObject);
+begin
+  GLViewer1.Context.DebugContext := true;
+  GLViewer1.Context.ForwardContext := true;
+end;
+
 procedure TForm5.GenIndirectBuffer;
 var
   pos: TVec2List;
@@ -179,23 +186,6 @@ begin
     end;
   end;
   SetLength(Commands, P);
-
-//  Indi := TVertexObject.Create;
-//
-//  Attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name, 2,
-//    vtFloat, 0, btArray);
-//  Attr.Buffer.Allocate(V.Size, V.Data);
-//  Attr.Buffer.SetDataHandler(V);
-//  Attr.SetAttribSemantic(atVertex);
-//  Indi.AddAttrib(Attr, True);
-//
-//  IndiObject := TGLVertexObject.CreateFrom(Indi);
-//  IndiObject.Shader := Shader2;
-//  IndiObject.Build(Shader2.Id);
-//
-//  IndiBuffer := TBufferObject.Create(btDrawIndirect);
-//  IndiBuffer.Allocate(SizeOf(batch), @batch);
-//  IndiGLBuffer := TGLBufferObject.CreateFrom(IndiBuffer);
 
   Changed := False;
 end;
@@ -326,6 +316,7 @@ end;
 procedure TForm5.GLViewer1Render(Sender: TObject);
 var
   MV, MVP: TMatrix;
+  i: integer;
 begin
   if Changed then
     GenIndirectBuffer;
@@ -348,12 +339,16 @@ begin
     Shader2.SetUniform('Origin', TVector.Make(0, Height - 60).Vec2);
     glBindVertexArray(FontGLMesh.VAOid);
     glVertexAttribDivisor(4, 1);
-//    IndiGLBuffer.Bind;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, FontGLMesh.IndiceId);
     glVertexAttrib3f(3, 1, 1, 1);
-//    glDrawElements(GL_TRIANGLES, Commands[0].count, GL_UNSIGNED_INT, Pointer(Commands[0].firstIndex*SizeOf(Integer)));
-    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, @Commands[0], Length(Commands), 0);
-//    IndiGLBuffer.UnBindBuffer;
+    if GL_AMD_multi_draw_indirect then // workaround for AMD driver bug
+    begin
+      for i := 0 to High(Commands) do
+        glDrawElementsInstancedBaseInstance(GL_TRIANGLES, Commands[i].count, GL_UNSIGNED_INT,
+          pointer(Commands[i].firstIndex*SizeOf(GLint)), Commands[i].primCount, Commands[i].baseInstance);
+    end
+    else
+      glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, @Commands[0], Length(Commands), 0);
     glBindVertexArray(0);
     Shader2.UnApply;
     glEnable(GL_DEPTH_TEST);
