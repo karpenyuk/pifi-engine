@@ -13,6 +13,8 @@ type
     FRoot: TSceneCamera;
     FLights: TLightsList;
     FMaterials: TMaterialList;
+    FCameras: TCamerasList;
+
     function getItem(Index: integer): TBaseSceneItem;
     function getCount: integer;
     function getLight(Index: integer): TLightSource;
@@ -90,6 +92,7 @@ begin
   FRoot := TSceneCamera.Create;
   FMaterials:=TMaterialList.Create;
   FLights := TLightsList.Create;
+  FCameras := TCamerasList.Create;
 end;
 
 destructor TSceneGraph.Destroy;
@@ -97,6 +100,7 @@ begin
   FRoot.Free;
   FMaterials.Free;
   FLights.Free;
+  FCameras.Free;
   inherited;
 end;
 
