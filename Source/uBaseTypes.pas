@@ -18,6 +18,10 @@ Type
   PtrUInt = NativeUInt;
 {$ENDIF}
 
+{$IFDEF ANDROID}
+  Ansistring = string;
+{$ENDIF}
+
   PByteArray = ^TByteArray;
   TByteArray = array[0..32767] of Byte;
 
