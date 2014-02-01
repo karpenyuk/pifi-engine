@@ -281,8 +281,8 @@ constructor TGLStaticRender.Create;
 begin
   inherited Create;
   FTransfPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*6, 2000);
-  FLightPool := TGLBufferObjectsPool(SizeOf(vec4)*6, 1000);
-  FMaterialPool := TGLBufferObjectsPool(SizeOf(vec4)*5, 100);
+  FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000);
+  FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
 end;
 
 destructor TGLStaticRender.Destroy;
