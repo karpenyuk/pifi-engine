@@ -7,7 +7,8 @@
 
 interface
 
-uses {$IFDEF MSWINDOWS} WinApi.Windows,{$ENDIF} Classes, Types, uVMath;
+uses {$IFDEF MSWINDOWS} WinApi.Windows,{$ENDIF} Classes, Types,
+     {$IFDEF ANDROID}System.SysUtils,{$ENDIF}uVMath;
 const
    BufSize = 10240; { Load input data in chunks of BufSize Bytes. }
    LineLen = 100;   { Allocate memory for the current line in chunks
@@ -20,6 +21,9 @@ Type
   TWordArray = array[0..15] of Word;
   PWordArray = ^TWordArray;
 
+{$IFDEF ANDROID}
+  AnsiString = string;
+{$ENDIF}
 
   TTextFileParser = class
   private
@@ -51,7 +55,7 @@ Type
   end;
 
 { TBits class }
-
+{$IFNDEF ANDROID}
   TIntegerBits = class
   private
     FSize: Integer;
@@ -68,6 +72,7 @@ Type
     property Bits[Index: Integer]: Boolean read GetBit write SetBit; default;
     property Size: Integer read FSize write SetSize;
   end;
+{$ENDIF}
 
 { TGUIDEx record }
 
@@ -84,9 +89,12 @@ Type
 
 
 function StringHashKey(const name: string): Integer;
+{$IFNDEF ANDROID}
 function BufferHash(const Buffer; Count: integer): word;
+{$ENDIF}
+function GetHashFromBuff(const Buffer; Count: Integer): Word; {$IFNDEF ANDROID}assembler;{$ENDIF}
+
 function HashKey(const v : vec4; hashSize : Integer) : Integer;
-function GetHashFromBuff(const Buffer; Count: Integer): Word; assembler;
 function GetLongHash(const aValue: string): LongInt; overload; inline;
 function GetLongHash(aValue: Pbyte; aLength: integer): LongInt; overload; inline;
 
@@ -109,7 +117,9 @@ function StrToBool(const Str: string): Boolean;
 function FloatToStr(x: double; width: byte=10; decimals: byte=6): string;
 function IntToStr(x:integer):string;
 function Int64ToStr(x:Int64):string;
+
 function IntToHex( aVal: Integer; aDigits: Integer ): String;
+
 function Vector4ToStr(x: TVector): string;
 function Vector3ToStr(x: TVector): string;
 function BoolToStr(aValue: Boolean): string;
@@ -137,7 +147,9 @@ procedure QueryPerformanceCounter(var val: Int64);
 {: Returns the frequency of the counter used by QueryPerformanceCounter.<p>
    Return value is in ticks per second (Hz), returns False if no precision
    counter is available. }
+{$IFDEF MSWINDOWS}
 function QueryPerformanceFrequency(var val: Int64): Boolean;
+{$ENDIF}
 
 implementation
 
@@ -149,6 +161,7 @@ uses
   sysutils;
 {$ENDIF}
 
+{$IFNDEF ANDROID}
 function BufferHash(const Buffer; Count: integer): word; assembler;
 asm
         MOV     ECX,EDX
@@ -160,6 +173,7 @@ asm
         DEC     ECX
         JNE     @@1
 end;
+{$ENDIF}
 
 function min(a,b: integer): integer; overload;
 begin if a<b then result:=a else result:=b; end;
@@ -217,7 +231,11 @@ var
 begin
   Result := Str;
   for i := 1 to Length(Str) do
-    if AnsiChar(Result[i]) in ['A'..'Z'] then
+{$IFDEF ANDROID}
+    if CharInSet(Result[i],['A'..'Z']) then
+{$ELSE}
+    if Result[i] in ['A'..'Z'] then
+{$ENDIF}
       Result[i] := Chr(Ord(Result[i]) + 32);
 end;
 
@@ -246,17 +264,16 @@ begin
 end;
 
 function FloatToStr(x: double; width: byte=10; decimals: byte=6): string;
-var
-  S: ShortString;
+var s: string;
 begin
   str(x:width:decimals,S);
   Result := string(S);
 end;
 
 function IntToStr(x:integer):string;
-var s: ansistring;
+var s: string;
 begin
-   str(x,s); result:=string(s);
+   str(x,s); result:=s;
 end;
 
 function Int64ToStr(x:Int64):string;
@@ -400,6 +417,7 @@ end;
 //
 // CvtInt
 //
+{$IFNDEF ANDROID}
 procedure CvtInt;
 asm
         OR      CL,CL
@@ -443,12 +461,12 @@ asm
         MOV     [ESI],AL
 @D5:
 end;
-
+{$ENDIF}
 //
 // IntToHex
 //
 
-
+{$IFNDEF ANDROID}
 function IntToHex( aVal: Integer; aDigits: Integer ): String;
 {$IFDEF FPC}
 begin
@@ -473,6 +491,12 @@ asm
         POP     ESI
 {$ENDIF}
 end;
+{$ELSE}
+function IntToHex( aVal: Integer; aDigits: Integer ): String;
+begin
+  result := System.SysUtils.IntToHex(aVal, aDigits);
+end;
+{$ENDIF}
 
 function HashKey(const v : vec4; hashSize : Integer) : Integer;
 begin
@@ -493,6 +517,7 @@ begin
   end;
 end;
 
+{$IFNDEF ANDROID}
 function GetHashFromBuff(const Buffer; Count: Integer): Word; assembler;
 asm
         MOV     ECX,EDX
@@ -504,6 +529,21 @@ asm
         DEC     ECX
         JNE     @@1
 end;
+{$ELSE}
+function GetHashFromBuff(const Buffer; Count: Integer): Word;
+var
+  LResult: UInt32;
+  I: Integer;
+begin
+  LResult := 0;
+  for I := 0 to Count - 1 do
+  begin
+    LResult := (LResult shl 5) or (LResult shr 27); //ROL Result, 5
+    LResult := LResult xor UInt32(PByteArray(Buffer)[I]);
+  end;
+  Result := LResult mod $FFFF;
+end;
+{$ENDIF}
 
 function GetLongHash(const aValue: string): LongInt; overload; inline;
 var
@@ -761,6 +801,7 @@ type
   PBitArray = ^TBitArray;
   TBitArray = array[0..4096] of TBitSet;
 
+{$IFNDEF ANDROID}
 destructor TIntegerBits.Destroy;
 begin
   SetSize(0);
@@ -878,6 +919,7 @@ procedure TIntegerBits.ResetBits;
 begin
   if FSize>0 then FillChar(FBits^, FFullMemSize, 0);
 end;
+{$ENDIF}
 
 procedure QuickSort(var A: array of Integer);
   procedure Sort(var A: array of Integer; iLo, iHi: Integer);
@@ -1041,35 +1083,28 @@ end;
 {$ENDIF}
 
 procedure QueryPerformanceCounter(var val: Int64);
-{$IFDEF MSWINDOWS}
+{$IFDEF UNIX}
+var tz: timeval;
+{$ENDIF}
 begin
+{$IFDEF MSWINDOWS}
   WinApi.Windows.QueryPerformanceCounter(val);
-end;
 {$ENDIF}
 {$IFDEF UNIX}
-var
-  tz: timeval;
-begin
   fpgettimeofday(@tz, nil);
   val := tz.tv_sec - vProgStartSecond;
   val := val * 1000000;
   val := val + tz.tv_usec;
-end;
 {$ENDIF}
+end;
+
 
 // QueryPerformanceFrequency
 //
-
-function QueryPerformanceFrequency(var val: Int64): Boolean;
 {$IFDEF MSWINDOWS}
+function QueryPerformanceFrequency(var val: Int64): Boolean;
 begin
   Result := Boolean(WinApi.Windows.QueryPerformanceFrequency(val));
-end;
-{$ENDIF}
-{$IFDEF UNIX}
-begin
-  val := 1000000;
-  Result := True;
 end;
 {$ENDIF}
 
