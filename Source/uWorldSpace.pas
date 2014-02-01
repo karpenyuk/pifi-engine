@@ -13,6 +13,8 @@ type
     FRoot: TSceneCamera;
     FLights: TLightsList;
     FMaterials: TMaterialList;
+    FCameras: TCamerasList;
+
     function getItem(Index: integer): TBaseSceneItem;
     function getCount: integer;
     function getLight(Index: integer): TLightSource;
