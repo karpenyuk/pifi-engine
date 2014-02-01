@@ -138,7 +138,7 @@ Type
     property Alpha: single read getAlpha write setAlpha;
   end;
 
-  TLightSource = class(TBaseRenderResource)
+  TLightSource = class(TMovableObject)
   private
     FEnabled: boolean;
     FLightStyle: TLightStyle;
@@ -146,7 +146,6 @@ Type
     FSpotDirection: TVector;
     FSpotCutOff: single;
     FSpotExponent: single;
-    FPosition: TVector;
     FAmbient: TColorVectorClass;
     FDiffuse: TColorVectorClass;
     FSpecular: TColorVectorClass;
@@ -161,7 +160,6 @@ Type
     destructor Destroy; override;
 
     property SpotDirection: TVector read FSpotDirection write FSpotDirection;
-    property Position: TVector read FPosition write FPosition;
     property LightStyle: TLightStyle read FLightStyle write FLightStyle;
     property LightModel: TLightModels read FLightModel write FLightModel;
     property SpotCutOff: single read FSpotCutOff write FSpotCutOff;
@@ -1182,6 +1180,7 @@ end;
 constructor TLightSource.Create;
 begin
   inherited;
+  Position := Vector(0, 0, 1, 0);
   FAmbient := TColorVectorClass.Create;
   FDiffuse := TColorVectorClass.Create;
   FSpecular := TColorVectorClass.Create;
@@ -1190,7 +1189,6 @@ begin
   FDiffuse.ColorVector := Vector(1, 1, 1, 1);
   FSpecular.ColorVector := Vector(1, 1, 1, 1);
   FSceneColor.ColorVector := Vector(0.2, 0.2, 0.2, 1);
-  FPosition := Vector(0, 0, 1, 0);
   FSpotDirection := Vector(0, 0, -1, 0);
   FSpotExponent := 0;
   FSpotCutOff := 180;
