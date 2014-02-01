@@ -25,7 +25,7 @@ type
     procedure AddToCollector;
     procedure RemoveFromCollector;
   public
-    constructor Create;
+    constructor Create; virtual;
     destructor Destroy; override;
     procedure Subscribe(Subscriber: TNotifiableObject); virtual;
     procedure UnSubscribe(Subscriber: TNotifiableObject); virtual;
