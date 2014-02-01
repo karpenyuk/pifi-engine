@@ -280,16 +280,16 @@ end;
 constructor TGLStaticRender.Create;
 begin
   inherited Create;
-  FTransfPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*6, 2000);
-  FLightPool := TGLBufferObjectsPool(SizeOf(vec4)*6, 1000);
-  FMaterialPool := TGLBufferObjectsPool(SizeOf(vec4)*5, 100);
+//  FTransfPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*6, 2000);
+//  FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000);
+//  FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
 end;
 
 destructor TGLStaticRender.Destroy;
 begin
-  FTransfPool.Destroy;
-  FLightPool.Destroy;
-  FMaterialPool.Destroy;
+//  FTransfPool.Destroy;
+//  FLightPool.Destroy;
+//  FMaterialPool.Destroy;
   inherited;
 end;
 
@@ -595,7 +595,7 @@ var bi: integer;
 begin
   if assigned(FShader) then begin
     FShader.Apply; vActiveShader:=FShader; end else exit;
-  if assigned(FUBO) and Assigned(FBlockBuffer) then begin
+{  if assigned(FUBO) and Assigned(FBlockBuffer) then begin
     bi:=FBlockBuffer.BindUBO(FIdexInPool,FUBO);
     glUniformBlockBinding(FShader.Id, FUBO.BlockIndex, bi);
   end;
@@ -607,7 +607,7 @@ begin
   if assigned(vActiveLightBlock) then begin
     bi:=FBlockBuffer.BindUBO(FIdexInPool,vActiveLightBlock);
     glUniformBlockBinding(FShader.Id, vActiveLightBlock.BlockIndex, bi);
-  end;
+  end;    }
 end;
 
 constructor TGLMaterial.CreateFrom(aOwner: TGLResources;
@@ -794,7 +794,7 @@ end;
 
 procedure TGLSceneObject.UpdateUBO(aPool: TGLBufferObjectsPool);
 var
-    p: pointer;
+    p: PByte;
 begin
   if not FStructureChanged then
     exit;
@@ -808,41 +808,13 @@ begin
   // Fill Uniform Buffer Object Data
   with FSceneObject do begin
     move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
-    move(FSceneObject. ViewMatrix.GetAddr^,p^,64); inc(p, 64);
-    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
-    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
-    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+//    move(FSceneObject. ViewMatrix.GetAddr^,p^,64); inc(p, 64);
+//    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+//    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+//    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
   end;
   aPool.Buffer.UnMap;
   FStructureChanged := False;
-
-  //Fill Uniform Buffer Object Data
-  with FSceneObject do begin
-    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utModel]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
-
-    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utView]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
-
-    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utProjection]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
-
-    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utModelView]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
-
-    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utViewProjection]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
-
-    offs:=FUBO.OffsetByName(CUBOTransPropertySemantics[utModelViewProjection]);
-    p:=pointer(integer(FUBOData)+offs);
-    move(ModelMatrix.GetAddr^, p^, SizeOf(Mat4));
-  end;
-  FBlockBuffer.WriteToPool(FIdexInPool, FUBOData);
 end;
 
 { TGLLight }
