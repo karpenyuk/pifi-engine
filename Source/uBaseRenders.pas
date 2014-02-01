@@ -17,17 +17,23 @@ Type
     rpParticlesRender);
   TRenderPurposes = set of TRenderPurpose;
 
+  TBaseRender = class;
+
   TBaseSubRender = class (TNotifiableObject)
   protected
+    FOwner: TBaseRender;
     FSupportedResources: TList; //List of Render Resource Class types
     FRequiredAPIVersion: TApiVersion;
     FRenderPurpose: TRenderPurposes;
   public
     constructor Create;
+    constructor CreateOwned(aRender: TBaseRender); virtual;
     destructor Destroy; override;
 
     function isSupported(const aClassType: TClass): boolean; virtual;
     procedure ProcessResource(const Resource: TBaseRenderResource); virtual; abstract;
+
+    property Owner: TBaseRender read FOwner;
   end;
 
   TBaseRender = class  (TNotifiableObject)
@@ -143,7 +149,13 @@ end;
 
 constructor TBaseSubRender.Create;
 begin
+  Assert(False, 'Must be used CreateOwned instead Create!');
+end;
+
+constructor TBaseSubRender.CreateOwned(aRender: TBaseRender);
+begin
   inherited Create;
+  FOwner := aRender;
   FSupportedResources:=TList.Create;
   FRenderPurpose:=[rpUnknown];
 end;
