@@ -34,6 +34,9 @@ Type
   private
   protected
     FRegisteredSubRenders: TList;  //List of TBaseSubRender
+    FMaterials: TMaterialList;
+    FLights: TLightsList;
+    FCameras: TCamerasList;
     procedure UploadResource(const Res: TBaseRenderResource); virtual; abstract;
     procedure ProcessResource(const Res: TBaseRenderResource); virtual; abstract;
 //    procedure ProcessMeshObjects(const aMeshObjects: TMeshObjectsList); virtual; abstract;
@@ -84,11 +87,18 @@ constructor TBaseRender.Create;
 begin
   inherited Create;
   FRegisteredSubRenders:=TList.Create;
+  FMaterials := TMaterialList.Create;
+  FLights := TLightsList.Create;
+  FCameras := TCamerasList.Create;
+
 end;
 
 destructor TBaseRender.Destroy;
 begin
   FreeObjectList(FRegisteredSubRenders);
+  FMaterials.Free;
+  FLights.Free;
+  FCameras.Free;
   inherited;
 end;
 
