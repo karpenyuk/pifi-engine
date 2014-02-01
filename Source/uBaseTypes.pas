@@ -145,7 +145,7 @@ Type
     Location: integer;
   end;
 
-  TUniformBlocksType = (ubTransforms, ubMaterial, ubLights, ubUnknown);
+  TUniformBlocksType = (ubCamera, ubObject, ubMaterial, ubLights, ubUnknown);
   TUBOMaterialProperties = (umAmbient, umDiffuse, umSpecular, umEmissive, umShininess);
   TUBOLightProperties = (ulAmbient, ulDiffuse, ulSpecular, ulSceneColor,
     ulSpotDirection, ulSpotCutOff, ulSpotExponent, ulPosition, ulConstAttenuation,
@@ -266,10 +266,11 @@ const
 
   CUBOSemantics: array[TUniformBlocksType] of TAttribSemantic =
     (
-      (Name: 'Transforms'; Location: 1),
-      (Name: 'Material'; Location: 2),
-      (Name: 'Lights'; Location: 3),
-      (Name: ''; Location: 4)
+      (Name: 'Cameras'; Location: 1),
+      (Name: 'Objects'; Location: 2),
+      (Name: 'Material'; Location: 3),
+      (Name: 'Lights'; Location: 4),
+      (Name: ''; Location: 5)
     );
   CUBOMatPropertySemantics: array [TUBOMaterialProperties] of ansistring =
     ('ambient', 'diffuse', 'specular', 'emissive', 'shininess');
