@@ -91,29 +91,29 @@ begin
 'layout(location = 1) in vec3 in_Normal;'+#13#10 +
 'layout(location = 2) in vec2 in_TexCoord;'+#13#10 +
 
-'struct ObjectTransform'+#13#10 +
+'struct Object'+#13#10 +
 '{'+#13#10 +
 '     mat4 World;'+#13#10 +
 '     mat4 WorldInv;'+#13#10 +
 '     mat4 WorldNormal;'+#13#10 +
  '};'+#13#10 +
 
- 'struct CameraTransform'+#13#10 +
+ 'struct Camera'+#13#10 +
 '{'+#13#10 +
 '     mat4 View;'+#13#10 +
 '     mat4 Projection;'+#13#10 +
 '     mat4 ViewProjection;'+#13#10 +
  '};'+#13#10 +
 
-'layout(std140) uniform ObjectTransforms'+#13#10 +
+'layout(std140) uniform Objects'+#13#10 +
 '{'+#13#10 +
-'    ObjectTransform transform;'+#13#10 +
-'} object;'+#13#10 +
+'    Object object;'+#13#10 +
+'} objects;'+#13#10 +
 
-'layout(std140) uniform CameraTransforms'+#13#10 +
+'layout(std140) uniform Cameras'+#13#10 +
 '{'+#13#10 +
-'    CameraTransform transform;'+#13#10 +
-'} camera;'+#13#10 +
+'    Camera camera;'+#13#10 +
+'} cameras;'+#13#10 +
 
 'struct Light'+#13#10 +
 '{'+#13#10 +
@@ -150,11 +150,11 @@ begin
 
 'void main(void)'+#13#10 +
 '{'+#13#10 +
-'	vec4 pos = object.transform.World * vec4(in_Position, 1.0);'+#13#10 +
-'	gl_Position = camera.transform.ViewProjection * pos;'+#13#10 +
+'	vec4 pos = objects.object.World * vec4(in_Position, 1.0);'+#13#10 +
+'	gl_Position = cameras.camera.ViewProjection * pos;'+#13#10 +
 '	TexCoord = in_TexCoord;'+#13#10 +
 '	Normal = in_Normal;'+#13#10 +
-'	vec4 nm = object.transform.WorldNormal * vec4(Normal, 0.0);'+#13#10 +
+'	vec4 nm = objects.object.WorldNormal * vec4(Normal, 0.0);'+#13#10 +
 '	vec3 lightDir = vec3(lights.light.position.xyz - pos.xyz);'+#13#10 +
 '	vec3 eyeVec = -pos.xyz;'+#13#10 +
 '	vec4 final_color = lights.light.ambient * material.ambient;'+#13#10 +

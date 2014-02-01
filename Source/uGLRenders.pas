@@ -14,6 +14,8 @@ Type
 
   TGLResources = class;
 
+  TGLRender = class;
+
   TGLPoolBuffers = class
   private
     FBuffers: TList;
@@ -43,7 +45,7 @@ Type
     procedure UpdateUBO(aPool: TGLBufferObjectsPool);
   public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
-    procedure Apply;
+    procedure Apply(aRender: TGLRender);
     procedure UnApply;
 
     constructor CreateFrom(aOwner: TGLResources; const aMat: TMaterialObject);
@@ -101,15 +103,13 @@ Type
     constructor CreateFrom(aOwner: TGLResources; aSceneObject: TSceneObject);
 
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
-    procedure Apply;
+    procedure Apply(aRender: TGLRender);
     procedure UnApply;
   end;
 
   TGLStaticRender = class (TBaseSubRender)
   private
-    FTransfPool: TGLBufferObjectsPool;
-    FLightPool: TGLBufferObjectsPool;
-    FMaterialPool: TGLBufferObjectsPool;
+    function getRender: TGLRender;
   public
     function isSupported(const aClassType: TClass): boolean; override;
     procedure ProcessResource(const Resource: TBaseRenderResource); override;
@@ -120,11 +120,8 @@ Type
       aShaderUsagePriority: TShaderUsagePriority = spUseOwnShaderFirst);
 
     constructor Create;
-    destructor Destroy; override;
 
-    property TransformationsPool: TGLBufferObjectsPool read FTransfPool;
-    property LightsPool: TGLBufferObjectsPool read FLightPool;
-    property MaterialsPool: TGLBufferObjectsPool read FMaterialPool;
+    property Render: TGLRender read getRender;
   end;
 
   TGLResources = class (TBaseSubRender)
@@ -140,12 +137,18 @@ Type
     procedure FreeResource(const Resource: TBaseRenderResource);
     procedure ProcessResource(const Res: TBaseRenderResource); override;
 
-    constructor Create;
+    constructor CreateOwned(aRender: TBaseRender); override;
     destructor Destroy; override;
   end;
 
 
   TGLRender = class (TBaseRender)
+  private
+    FCameraPool: TGLBufferObjectsPool;
+    FObjectPool: TGLBufferObjectsPool;
+    FLightPool: TGLBufferObjectsPool;
+    FMaterialPool: TGLBufferObjectsPool;
+    FIdexInPool: integer;
   protected
     FResourceManager: TGLResources;
 
@@ -165,6 +168,10 @@ Type
       const aExtents: TExtents): boolean; override;
     procedure ProcessScene(const aScene: TSceneGraph); override;
 
+    property CameraPool: TGLBufferObjectsPool read FCameraPool;
+    property ObjectPool: TGLBufferObjectsPool read FObjectPool;
+    property LightPool: TGLBufferObjectsPool read FLightPool;
+    property MaterialPool: TGLBufferObjectsPool read FMaterialPool;
   end;
 
 var
@@ -178,10 +185,6 @@ var
 
   vActiveShader: TGLSLShaderProgram = nil;
 
-const
-  CMaterialUBOSize = 80;
-  CLightUBOSize = 112;
-
 { TGLRender }
 
 function TGLRender.CheckVisibility(const aFrustum: TFrustum;
@@ -193,12 +196,17 @@ end;
 constructor TGLRender.Create;
 begin
   inherited;
-  RegisterSubRender(TGLStaticRender.Create);
-  FResourceManager:=TGLResources.Create;
+  RegisterSubRender(TGLStaticRender.CreateOwned(Self));
+  FResourceManager:=TGLResources.CreateOwned(Self);
+  FIdexInPool := -1;
 end;
 
 destructor TGLRender.Destroy;
 begin
+  FCameraPool.Free;
+  FObjectPool.Free;
+  FLightPool.Free;
+  FMaterialPool.Free;
   FResourceManager.Free;
   inherited;
 end;
@@ -209,9 +217,11 @@ begin
 end;
 
 procedure TGLRender.PrepareResources(const aScene: TSceneGraph);
-var i: integer;
+var i: integer; p: PByte;
     SceneItem: TBaseSceneItem;
     res: TBaseRenderResource;
+    glres: TGLBaseResource;
+    vp: mat4;
 begin
   inherited;
   { TODO :
@@ -219,20 +229,54 @@ begin
     снимка (через хэш библиотеки или рассылку уведомлений?)
     Делать вычитку ресурсов только при несовпадении хэша. }
 
+  if not Assigned(FObjectPool) then begin
+    FCameraPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*4, 8);
+    FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*4, 2000);
+    FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000);
+    FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
+  end;
+
+  if FIdexInPool < 0 then
+    FIdexInPool := FCameraPool.GetFreeSlotIndex();
+
+  p := FCameraPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+    FCameraPool.OffsetByIndex(FIdexInPool), SizeOf(mat4)*3);
+
+  // Fill Uniform Buffer Object Data
+  with aScene.Camera do begin
+    move(ModelMatrix.GetAddr^,p^,16); inc(p, 16);
+    move(ProjMatrix.GetAddr^,p^,16); inc(p, 16);
+    vp := (ModelMatrix * ProjMatrix).Matrix4;
+    move(vp,p^,16);
+  end;
+  FCameraPool.Buffer.UnMap;
+  glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubCamera].Location,
+    FCameraPool.Buffer.Id, FCameraPool.OffsetByIndex(FIdexInPool), FCameraPool.ObjectSize);
+
   //создаем ресурсы для всех материалов сцены
   for i:=0 to aScene.MaterialsCount-1 do begin
     res:=aScene.Materials[i];
-    FResourceManager.GetOrCreateResource(res);
+    glres := FResourceManager.GetOrCreateResource(res);
+    // обновляем даные в видеопамяти
+    TGLMaterial(glres).UpdateUBO(FMaterialPool);
   end;
   //создаем ресурсы для всех источников света сцены
   for i:=0 to aScene.LightsCount-1 do begin
     res:=aScene.Lights[i];
-    FResourceManager.GetOrCreateResource(res);
+    glres := FResourceManager.GetOrCreateResource(res);
+    // обновляем даные в видеопамяти
+    TGLLight(glres).UpdateUBO(FLightPool);
+    // ВРЕМЕННО!
+    glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubLights].Location,
+      FLightPool.Buffer.Id, FLightPool.OffsetByIndex(FIdexInPool),
+      FLightPool.ObjectSize);
   end;
   //создаем ресурсы для всех объектов сцены
   for i:=0 to aScene.Count-1 do begin
     SceneItem:=aScene[i];
-    FResourceManager.GetOrCreateResource(SceneItem);
+    glres := FResourceManager.GetOrCreateResource(SceneItem);
+    // обновляем даные в видеопамяти
+    TGLSceneObject(glres).UpdateUBO(FObjectPool);
   end;
 end;
 
@@ -280,17 +324,12 @@ end;
 constructor TGLStaticRender.Create;
 begin
   inherited Create;
-//  FTransfPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*6, 2000);
-//  FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000);
-//  FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
 end;
 
-destructor TGLStaticRender.Destroy;
+
+function TGLStaticRender.getRender: TGLRender;
 begin
-//  FTransfPool.Destroy;
-//  FLightPool.Destroy;
-//  FMaterialPool.Destroy;
-  inherited;
+  Result := TGLRender(Owner);
 end;
 
 function TGLStaticRender.isSupported(const aClassType: TClass): boolean;
@@ -306,12 +345,13 @@ var i,j: integer;
 begin
   if Resource.ClassType = TGLSceneObject then
     with TGLSceneObject(Resource) do begin
+      Apply(Render);
       //рендерим объект сцены с применением материалов
       for i:=0 to length(FMeshObjects)-1 do begin
         MeshObject:=FMeshObjects[i];
         for j:=0 to length(MeshObject.FLods[0])-1 do begin
           Mesh:=MeshObject.FLods[0,j];
-          Mesh.FMaterialObject.Apply;
+          Mesh.FMaterialObject.Apply(Render);
           Mesh.FVertexObject.RenderVO();
           Mesh.FMaterialObject.UnApply;
         end;
@@ -380,10 +420,10 @@ end;
 
 { TGLResources }
 
-constructor TGLResources.Create;
+constructor TGLResources.CreateOwned(aRender: TBaseRender);
 var i: integer;
 begin
-  inherited Create;
+  inherited CreateOwned(aRender);
   FSupportedResources.Clear;
   //Registering supported resources
 
@@ -393,6 +433,7 @@ begin
 
   FSupportedResources.Add(TMeshObject);
   FSupportedResources.Add(TMaterialObject);
+  FSupportedResources.Add(TLightSource);
   FSupportedResources.Add(TSceneObject);
 
   //Inner resources
@@ -589,25 +630,33 @@ end;
 
 { TGLMaterial }
 
-procedure TGLMaterial.Apply;
-var bi: integer;
-    tb, lb: TGLUniformBlock;
+procedure TGLMaterial.Apply(aRender: TGLRender);
+var
+    tb: TGLUniformBlock;
 begin
   if assigned(FShader) then begin
     FShader.Apply; vActiveShader:=FShader; end else exit;
-{  if assigned(FUBO) and Assigned(FBlockBuffer) then begin
-    bi:=FBlockBuffer.BindUBO(FIdexInPool,FUBO);
-    glUniformBlockBinding(FShader.Id, FUBO.BlockIndex, bi);
+
+  tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubCamera].Name);
+  if Assigned(tb) then begin
+    glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubCamera].Location);
   end;
-  tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubTransforms].Name);
-  if assigned(tb) then begin
-    bi:=FBlockBuffer.BindUBO(FIdexInPool,tb);
-    glUniformBlockBinding(FShader.Id, tb.BlockIndex, bi);
+
+  tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubObject].Name);
+  if Assigned(tb) then begin
+    glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubObject].Location);
   end;
-  if assigned(vActiveLightBlock) then begin
-    bi:=FBlockBuffer.BindUBO(FIdexInPool,vActiveLightBlock);
-    glUniformBlockBinding(FShader.Id, vActiveLightBlock.BlockIndex, bi);
-  end;    }
+
+  tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubLights].Name);
+  if Assigned(tb) then begin
+    glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubLights].Location);
+  end;
+
+  tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubMaterial].Name);
+  if Assigned(tb) then begin
+    aRender.MaterialPool.BindUBO(FIdexInPool, tb);
+    glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubMaterial].Location);
+  end;
 end;
 
 constructor TGLMaterial.CreateFrom(aOwner: TGLResources;
@@ -651,7 +700,7 @@ begin
 end;
 
 procedure TGLMaterial.UpdateUBO(aPool: TGLBufferObjectsPool);
-var offs: integer;
+var
     p: PByte;
 begin
   if not FStructureChanged then
@@ -699,9 +748,11 @@ end;
 
 { TGLSceneObject }
 
-procedure TGLSceneObject.Apply;
+procedure TGLSceneObject.Apply(aRender: TGLRender);
 begin
-
+  glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubObject].Location,
+    aRender.ObjectPool.Buffer.Id, aRender.ObjectPool.OffsetByIndex(FIdexInPool),
+    aRender.ObjectPool.ObjectSize);
 end;
 
 constructor TGLSceneObject.CreateFrom(aOwner: TGLResources;
@@ -803,15 +854,13 @@ begin
     FIdexInPool := aPool.GetFreeSlotIndex();
 
   p := aPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
-    aPool.OffsetByIndex(FIdexInPool), SizeOf(mat4)*6);
+    aPool.OffsetByIndex(FIdexInPool), aPool.ObjectSize);
 
   // Fill Uniform Buffer Object Data
   with FSceneObject do begin
-    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
-//    move(FSceneObject. ViewMatrix.GetAddr^,p^,64); inc(p, 64);
-//    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
-//    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
-//    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(InvWorldMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(WorldMatrix.Normalize.GetAddr^,p^,64);
   end;
   aPool.Buffer.UnMap;
   FStructureChanged := False;
@@ -864,7 +913,7 @@ begin
     FIdexInPool := aPool.GetFreeSlotIndex();
 
   p := aPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
-    aPool.OffsetByIndex(FIdexInPool), SizeOf(vec4)*6);
+    aPool.OffsetByIndex(FIdexInPool), aPool.ObjectSize);
 
   // Fill Uniform Buffer Object Data
   with FLight do begin

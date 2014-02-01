@@ -60,6 +60,7 @@ begin
   FMaterial := TMaterialObject.Create;
   shader := TConfigShader.UBOParamShader();
   FMaterial.AttachShader(shader);
+  FMaterial.AddNewMaterial('first');
   FSceneGraph.AddMaterial(FMaterial);
 
   for i := 0 to MeshList.Count - 1 do

@@ -24,6 +24,7 @@ type
     procedure GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
     MX, MY: Integer;
@@ -47,6 +48,11 @@ implementation
 
 {$R *.dfm}
 
+
+procedure TForm2.FormCreate(Sender: TObject);
+begin
+  GLViewer1.Context.DebugContext := true;
+end;
 
 procedure TForm2.GLViewer1CanResize(Sender: TObject; var NewWidth,
   NewHeight: Integer; var Resize: Boolean);
@@ -117,10 +123,6 @@ begin
   if assigned(Render) then begin
     Render.ProcessScene(FDemoScene.SceneGraph); exit;
   end;
-
-//  Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
-//  Shader1.SetUniform('ModelView', mvp.Matrix4);
-//  Shader1.SetUniform('tex', 0);
 
   t := GetTime;
 
