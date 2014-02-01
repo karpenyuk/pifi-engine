@@ -7,7 +7,11 @@
 interface
 
 uses Classes, uPersistentClasses, uVMath, uLists, uMiscUtils, {ImageLoader,}
-  uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, dglOpenGL;
+  uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, 
+  {$IFDEF ANDROID}
+  Androidapi.Egl, Androidapi.Gles2, Androidapi.Gles2ext;
+  {$ELSE}dglOpenGL;{$ENDIF}
+
 
 Type
 
