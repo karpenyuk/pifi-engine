@@ -47,6 +47,8 @@ type
   TPersistentResource = class(TNotifiableObject)
   private
     FOwner: TObject;
+    FOrder: integer;
+    class var Counter: integer;
     procedure setOwner(const Value: TObject);
   protected
     procedure WriteString(const s: string; const stream: TStream);
@@ -69,6 +71,7 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
     property Owner: TObject read FOwner write setOwner;
+    property Order: integer read FOrder;
   end;
 
   TPersistentResClass = class of TPersistentResource;
@@ -85,6 +88,8 @@ begin
   CreateGuid(GUID);
   Version := 1;
   FOwner := nil;
+  FOrder := Counter;
+  Inc(Counter);
   inherited;
 end;
 
@@ -242,15 +247,16 @@ var
   I: Integer;
   list: TList;
 begin
-  if Assigned(FGarbageCollector) then
-  begin
-    list := FGarbageCollector;
-    FGarbageCollector := nil;
-    for I := list.Count - 1 downto 0 do
-      if Assigned(list[I]) then
-        TObject(list[I]).Destroy;
-    list.Destroy;
-  end;
+// Comented to findout memory leaks
+//  if Assigned(FGarbageCollector) then
+//  begin
+//    list := FGarbageCollector;
+//    FGarbageCollector := nil;
+//    for I := list.Count - 1 downto 0 do
+//      if Assigned(list[I]) then
+//        TObject(list[I]).Destroy;
+//    list.Destroy;
+//  end;
 end;
 
 procedure TNotifiableObject.DispatchMessage(Msg: Cardinal; Params: pointer);
