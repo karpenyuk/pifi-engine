@@ -249,6 +249,9 @@ begin
   FZRotationAngle:=0;
 
   FPosition:= vtW;
+  FDirection := vtX;
+  FUp := vtZ;
+  FLeft := vtNY;
   FScale:= 1;
   Parent:=nil;
   UpdateWorldMatrix;

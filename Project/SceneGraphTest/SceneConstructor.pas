@@ -71,7 +71,7 @@ begin
   FSceneGraph.AddLight(FLight);
 
   FSceneGraph.Camera.FoV:=60;
-  //FSceneGraph.Camera.Position.SetVector(0, 200, 0);
+  FSceneGraph.Camera.MoveObject(15, 0, 0);
 end;
 
 destructor TDemoScene.Destroy;

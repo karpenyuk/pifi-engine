@@ -246,7 +246,7 @@ begin
 
   // Fill Uniform Buffer Object Data
   with aScene.Camera do begin
-    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
     move(ProjMatrix.GetAddr^,p^,64); inc(p, 64);
     vp := (ModelMatrix * ProjMatrix).Matrix4;
     move(vp,p^,64);
@@ -313,7 +313,7 @@ end;
 function TGLRender.UpdateWorldMatrix(const MovableObject: TMovableObject;
   UseMatrix: TTransforms): TMatrix;
 begin
-  result:=inherited;
+  result:= inherited UpdateWorldMatrix(MovableObject, UseMatrix);
 end;
 
 procedure TGLRender.UploadResource(const Res: TBaseRenderResource);

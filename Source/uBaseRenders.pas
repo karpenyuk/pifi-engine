@@ -120,12 +120,15 @@ end;
 
 function TBaseRender.UpdateWorldMatrix(const MovableObject: TMovableObject; UseMatrix: TTransforms): TMatrix;
 var wm, pm: TMatrix;
+    hasParent: boolean;
 begin
 
+  hasParent := false;
   if (MovableObject.Parent<>nil) and ((ttParent in UseMatrix) or (ttAll in UseMatrix)) then begin
    if not MovableObject.Parent.WorldMatrixUpdated then
      MovableObject.parent.UpdateWorldMatrix;
    pm:=MovableObject.parent.WorldMatrix;
+   hasParent := true;
   end;
 
   wm.SetIdentity;
@@ -141,7 +144,8 @@ begin
   if (ttRotation in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.RotationMatrix;
   if (ttPosition in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.TranslationMatrix;
 
-  wm:=wm * pm;
+  if hasParent then
+    wm:=wm * pm;
   result:= wm;
 end;
 

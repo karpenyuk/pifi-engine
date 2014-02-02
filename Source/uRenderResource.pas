@@ -941,7 +941,6 @@ Type
 
   TSceneCamera = class(TMovableObject)
   private
-    FViewMatrix: TMatrix;
     FProjMatrix: TMatrix;
     FRenderTarget: TFrameBuffer;
     FViewPortSize: vec2i;
@@ -953,7 +952,6 @@ Type
     procedure SetFoV(const Value: single);
     procedure SetProjMatrix(const Value: TMatrix);
     procedure SetRenderTarget(const Value: TFrameBuffer);
-    procedure SetViewMatrix(const Value: TMatrix);
     procedure SetViewPortSize(const Value: vec2i);
     procedure SetViewTarget(const Value: TMovableObject);
     procedure SetzFar(const Value: single);
@@ -971,7 +969,6 @@ Type
     property FoV: single read FFoV write SetFoV;
     property zNear: single read FzNear write SetzNear;
     property zFar: single read FzFar write SetzFar;
-    property ViewMatrix: TMatrix read FViewMatrix write SetViewMatrix;
     property ProjMatrix: TMatrix read FProjMatrix write SetProjMatrix;
     property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
   end;
@@ -3236,8 +3233,8 @@ end;
 constructor TSceneCamera.Create;
 begin
   inherited;
-  FViewMatrix := TMatrix.IdentityMatrix;
   FProjMatrix := TMatrix.IdentityMatrix;
+  Direction := TVector.MakeTmp(vtY);
   FRenderTarget := nil;
   FViewPortSize[0]:=256;
   FViewPortSize[1]:=256;
@@ -3278,9 +3275,9 @@ procedure TSceneCamera.RebuildViewMatrix;
 begin
   if WorldMatrixUpdated then UpdateWorldMatrix;
   if assigned(FViewTarget) then
-    FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
+    ModelMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
   else
-    FViewMatrix := TMatrix.LookAtMatrix(Position,Direction,Up);
+    ModelMatrix := TMatrix.LookAtMatrix(Position,Direction,Up);
 end;
 
 procedure TSceneCamera.SetFoV(const Value: single);
@@ -3303,12 +3300,6 @@ begin
   if assigned(FRenderTarget) then FRenderTarget.SetSize(FViewPortSize);
 end;
 
-procedure TSceneCamera.SetViewMatrix(const Value: TMatrix);
-begin
-  FViewMatrix := Value;
-  WorldMatrixUpdated := true;
-end;
-
 procedure TSceneCamera.SetViewPortSize(const Value: vec2i);
 begin
   FViewPortSize := Value;
@@ -3321,7 +3312,7 @@ begin
   if assigned(FViewTarget) then begin
     FViewTarget.Subscribe(self);
     if WorldMatrixUpdated then UpdateWorldMatrix;
-    FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up);
+    ModelMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up);
   end;
 end;
 

@@ -146,7 +146,7 @@ begin
 
 'out vec2 TexCoord;'+#13#10 +
 'out vec3 Normal;'+#13#10 +
-'out vec3 Color;'+#13#10 +
+'out vec4 Color;'+#13#10 +
 
 'void main(void)'+#13#10 +
 '{'+#13#10 +
@@ -166,16 +166,16 @@ begin
 '	float pf = pow( max(dot(R, E), 0.0), material.shininess );'+#13#10 +
 '	final_color += lights.light.diffuse * material.diffuse * lambertTerm;'+#13#10 +
 '	final_color += material.specular * lights.light.specular * pf;'+#13#10 +
-'	gl_FrontColor = final_color;'+#13#10 +
+'	Color = final_color;'+#13#10 +
 '}';
   ft:=
 '#version 330'+#13#10 +
 'in vec2 TexCoord;'+#13#10 +
-'in vec3 Color;'+#13#10 +
+'in vec4 Color;'+#13#10 +
 'layout(location = 0) out vec4 FragColor;'+#13#10 +
 'void main()'+#13#10 +
 '{'+#13#10 +
-'  FragColor = vec4(Color, 1.0);'+#13#10 +
+'  FragColor = Color;'+#13#10 +
 '}';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
