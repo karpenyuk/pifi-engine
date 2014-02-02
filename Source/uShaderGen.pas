@@ -105,12 +105,12 @@ begin
 '     mat4 ViewProjection;'+#13#10 +
  '};'+#13#10 +
 
-'layout(std140) uniform Objects'+#13#10 +
+'layout(std140, location = 2) uniform Objects'+#13#10 +
 '{'+#13#10 +
 '    Object object;'+#13#10 +
 '} objects;'+#13#10 +
 
-'layout(std140) uniform Cameras'+#13#10 +
+'layout(std140, location = 1) uniform Cameras'+#13#10 +
 '{'+#13#10 +
 '    Camera camera;'+#13#10 +
 '} cameras;'+#13#10 +
@@ -129,12 +129,12 @@ begin
 '    vec3    spot_direction;'+#13#10 +
 '};'+#13#10 +
 
-'layout(std140) uniform Lights'+#13#10 +
+'layout(std140, location = 4) uniform Lights'+#13#10 +
 '{'+#13#10 +
 '    Light light;'+#13#10 +
 '} lights;'+#13#10 +
 
-'layout(std140) uniform Material'+#13#10 +
+'layout(std140, location = 3) uniform Material'+#13#10 +
 '{'+#13#10 +
 '    vec4    ambient;'+#13#10 +
 '    vec4    diffuse;'+#13#10 +

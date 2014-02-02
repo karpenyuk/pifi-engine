@@ -11,6 +11,7 @@ uses
   SceneGraphProject in 'SceneGraphProject.pas';
 
 begin
+  ReportMemoryLeaksOnShutdown := True;
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TForm2, Form2);

@@ -117,6 +117,7 @@ var
   t: double;
 begin
   dt := dt + GLViewer1.DeltaTime;
+  glClearColor(0.2, 0.2, 0.2, 1.0);
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
   //Со временем здесь будет полноценный ренедер сцены

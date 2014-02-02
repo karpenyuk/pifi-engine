@@ -805,7 +805,6 @@ begin
   FPfdChanged := False;
   FGLRCx := wglCreateContext(DeviceContext);
   ActivateRenderingContext(DeviceContext, FGLRCx);
-  DeactivateRenderingContext;
   FPfdChanged := False;
   if FForwardContext then
   begin
@@ -835,7 +834,6 @@ begin
   FGLRCx := glXCreateNewContext(FDisplay, FFBConfigs[0], GLX_RGBA_TYPE,
     nil, true);
   ActivateRenderingContext(FDisplay, DeviceContext, FGLRCx);
-  DeactivateRenderingContext(FDisplay);
   FPfdChanged := False;
   if FForwardContext then
   begin
@@ -1232,6 +1230,8 @@ begin
 end;
 
 procedure TGLContext.InitializeContext(aDC: HDC);
+const
+  DEBUGMSG: ansistring = 'End of context initialization';
 var
   temp: HGLRC;
 {$IFDEF Linux}
@@ -1250,19 +1250,13 @@ begin
   FGLRCx := wglCreateContext(DeviceContext);
   ActivateRenderingContext(DeviceContext, FGLRCx);
   GetOGLVersion;
-  DeactivateRenderingContext;
-  if FForwardContext then
-  begin
-    temp := FGLRCx;
-    if InitForwardContext then begin
-      wglDeleteContext(temp);
-      Activate;
-    end else begin
-      FForwardContext := False;
-      FDebugContext := False;
-      FGLRCx := temp;
-      Activate;
-    end;
+  temp := FGLRCx;
+  if InitForwardContext then begin
+    wglDeleteContext(temp);
+  end else begin
+    FForwardContext := False;
+    FDebugContext := False;
+    FGLRCx := temp;
   end;
 {$ENDIF}
 {$IFDEF Linux}
@@ -1292,22 +1286,20 @@ begin
     nil, true);
   ActivateRenderingContext(FDisplay, FDC, FGLRCx);
   GetOGLVersion;
-  FForwardContext := true;
-  DeactivateRenderingContext(FDisplay);
-  if FForwardContext then
+  temp := FGLRCx;
+  if InitForwardContext then
+    glXDestroyContext(FDisplay, temp)
+  else
   begin
-    temp := FGLRCx;
-    if InitForwardContext then
-      glXDestroyContext(FDisplay, temp)
-    else
-    begin
-      FForwardContext := False;
-      FDebugContext := False;
-      FGLRCx := temp;
-      Activate;
-    end;
+    FForwardContext := False;
+    FDebugContext := False;
+    FGLRCx := temp;
   end;
 {$ENDIF}
+  if GL_GREMEDY_frame_terminator and GL_GREMEDY_string_marker then begin
+    StringMarkerGREMEDY(Length(DEBUGMSG), @DEBUGMSG);
+    FrameTerminatorGREMEDY();
+  end;
 end;
 
 {$IFDEF Linux}

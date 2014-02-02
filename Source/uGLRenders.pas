@@ -124,10 +124,12 @@ Type
     property Render: TGLRender read getRender;
   end;
 
+  TResourceTree = GRedBlackTree<TBaseRenderResource, TGLBaseResource>;
+
   TGLResources = class (TBaseSubRender)
   private
-    FResList: array of TRBTree;
-    FInnerResource: TRBTree;
+    FResList: array of TResourceTree;
+    FInnerResource: TResourceTree;
     function isInnerResource(const aClassType: TClass): boolean;
     function GetResource(const Resource: TBaseRenderResource): TGLBaseResource;
   public
@@ -230,8 +232,8 @@ begin
     Делать вычитку ресурсов только при несовпадении хэша. }
 
   if not Assigned(FObjectPool) then begin
-    FCameraPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*4, 8);
-    FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*4, 2000);
+    FCameraPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 8);
+    FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 2000);
     FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000);
     FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
   end;
@@ -240,14 +242,14 @@ begin
     FIdexInPool := FCameraPool.GetFreeSlotIndex();
 
   p := FCameraPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
-    FCameraPool.OffsetByIndex(FIdexInPool), SizeOf(mat4)*3);
+    FCameraPool.OffsetByIndex(FIdexInPool), FCameraPool.ObjectSize);
 
   // Fill Uniform Buffer Object Data
   with aScene.Camera do begin
-    move(ModelMatrix.GetAddr^,p^,16); inc(p, 16);
-    move(ProjMatrix.GetAddr^,p^,16); inc(p, 16);
+    move(ModelMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(ProjMatrix.GetAddr^,p^,64); inc(p, 64);
     vp := (ModelMatrix * ProjMatrix).Matrix4;
-    move(vp,p^,16);
+    move(vp,p^,64);
   end;
   FCameraPool.Buffer.UnMap;
   glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubCamera].Location,
@@ -420,6 +422,11 @@ end;
 
 { TGLResources }
 
+function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
+begin
+  Result := CompareInteger(Item1.Order, Item2.Order);
+end;
+
 constructor TGLResources.CreateOwned(aRender: TBaseRender);
 var i: integer;
 begin
@@ -443,66 +450,60 @@ begin
   FSupportedResources.Add(TTexture);
   FSupportedResources.Add(TMesh);
 
-
   //Resource Tree for each of resource type, exclude inner resource
   setlength(FResList,FSupportedResources.Count - 4);
   for i := 0 to length(FResList)-1 do
-    FResList[i]:=TRBTree.Create(IntPtrComparer);
+    FResList[i]:= TResourceTree.Create(ResourceComparer, nil);
   //Inner resource list: TBufferObject, TAttribObject, TTexture, TMesh
-  FInnerResource:=TRBTree.Create(IntPtrComparer);
+  FInnerResource:=TResourceTree.Create(ResourceComparer, nil);
 
 end;
 
 destructor TGLResources.Destroy;
-var i: integer;
-    Node: PRBNode;
+var i, j: integer;
+    res: TBaseRenderResource;
+    glres: TGLBaseResource;
 begin
-  for i := 0 to length(FResList)-1 do begin
-    Node:=FResList[i].First;
-    while assigned(Node) do begin
-      if TGLBaseResource(Node.Data).Owner=self
-      then TGLBaseResource(Node.Data).Free;
-      TRBNode.RBInc(Node);
-    end; FResList[i].Free;
+  for i := 0 to high(FResList) do if FResList[i].Count > 0 then begin
+    res:=FResList[i].First;
+    FResList[i].Find(res, glres);
+    if glres.Owner=self then glres.Free;
+    for j := 1 to FResList[i].Count - 1 do
+      if FResList[i].NextKey(res, glres) and (glres.Owner=self) then glres.Free;
+    FResList[i].Free;
   end;
-  Node:=FInnerResource.First;
-  while assigned(Node) do begin
-    if TGLBaseResource(Node.Data).Owner=self
-    then TGLBaseResource(Node.Data).Free;
-    TRBNode.RBInc(Node);
-  end; FInnerResource.Free;
+  res:=FInnerResource.First;
+  FInnerResource.Find(res, glres);
+  if glres.Owner=self then glres.Free;
+  for j := 1 to FInnerResource.Count - 1 do
+    if FInnerResource.NextKey(res, glres) and (glres.Owner=self ) then glres.Free;
+  FInnerResource.Free;
   inherited;
 end;
 
 procedure TGLResources.FreeResource(const Resource: TBaseRenderResource);
 var idx: integer;
-    Node: PRBNode;
-    res: TBaseRenderResource;
+    glres: TGLBaseResource;
 begin
   idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx <0 then exit;
 
   //Resource exists?
   if isInnerResource(Resource.ClassType) then begin
-    Node:=FInnerResource.Find(Resource);
-    if assigned(Node) then begin
-      res:=TGLBaseResource(Node.Data); res.Free;
-      FInnerResource.Delete(Node);
+    if FInnerResource.Find(Resource, glres) then begin
+      //glres.Free;
+      FInnerResource.Delete(Resource);
     end;
-  end else begin
-    Node:=FResList[idx].Find(Resource);
-    if assigned(Node) then begin
-      res:=TGLBaseResource(Node.Data); res.Free;
-      FResList[idx].Delete(Node);
-    end;
+  end else if FResList[idx].Find(Resource, glres) then begin
+        //glres.Free;
+        FResList[idx].Delete(Resource);
   end;
-
 end;
 
 function TGLResources.GetOrCreateResource(
   const Resource: TBaseRenderResource): TGLBaseResource;
 var idx: integer;
-    Node: PRBNode;
+    glres: TGLBaseResource;
 begin
   inherited;
   idx:=FSupportedResources.IndexOf(Resource.ClassType);
@@ -516,53 +517,66 @@ begin
 
   if Resource.ClassType = TShaderProgram then begin
     //Create GLSL Shader program
-    Node:=FResList[idx].Add(Resource);
-    Node.Data:=TGLSLShaderProgram.CreateFrom(Resource as TShaderProgram);
-    TGLBaseResource(Node.Data).Owner:=self;
-    Result:=Node.Data; Resource.Subscribe(self); exit;
+    glres:=TGLSLShaderProgram.CreateFrom(Resource as TShaderProgram);
+    FResList[idx].Add(Resource, glres);
+    glres.Owner:=self;
+    Result:=glres;
+    Resource.Subscribe(self);
+    exit;
   end;
 
   if Resource.ClassType = TVertexObject then begin
     //Create Vertex object
-    Node:=FResList[idx].Add(Resource);
-    Node.Data:=TGLVertexObject.CreateFrom(Resource as TVertexObject);
-    TGLBaseResource(Node.Data).Owner:=self;
-    Result:=Node.Data; Resource.Subscribe(self); exit;
+    glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject);
+    FResList[idx].Add(Resource, glres);
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    exit(glres);
   end;
 
   if Resource.ClassType = TMesh then begin
     //Create Mesh
-    Node:=FInnerResource.Add(Resource);
-    Node.Data:=TGLMesh.CreateFrom(self, Resource as TMesh);
-    Result:=Node.Data; Resource.Subscribe(self); exit;
+    glres:=TGLMesh.CreateFrom(self, Resource as TMesh);
+    FInnerResource.Add(Resource, glres);
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    exit(glres);
   end;
 
   if Resource.ClassType = TMeshObject then begin
     //Create Mesh object
-    Node:=FResList[idx].Add(Resource);
-    Node.Data:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject);
-    Result:=Node.Data; Resource.Subscribe(self); exit;
+    glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject);
+    FResList[idx].Add(Resource, glres);
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    exit(glres);
   end;
 
   if Resource.ClassType = TSceneObject then begin
     //Create Scene object
-    Node:=FResList[idx].Add(Resource);
-    Node.Data:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject);
-    Result:=Node.Data; Resource.Subscribe(self); exit;
+    glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject);
+    FResList[idx].Add(Resource, glres);
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    exit(glres);
   end;
 
   if Resource.ClassType = TMaterialObject then begin
     //Create Material object
-    Node:=FResList[idx].Add(Resource);
-    Node.Data:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject);
-    Result:=Node.Data; Resource.Subscribe(self); exit;
+    glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject);
+    FResList[idx].Add(Resource, glres);
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    exit(glres);
   end;
 
   if Resource.ClassType = TLightSource then begin
     //Create Material object
-    Node:=FResList[idx].Add(Resource);
-    Node.Data:=TGLLight.CreateFrom(self, Resource as TLightSource);
-    Result:=Node.Data; Resource.Subscribe(self); exit;
+    glres:=TGLLight.CreateFrom(self, Resource as TLightSource);
+    FResList[idx].Add(Resource, glres);
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    exit(glres);
   end;
 
   if Resource.ClassType = TTexture then begin
@@ -574,20 +588,17 @@ end;
 function TGLResources.GetResource(
   const Resource: TBaseRenderResource): TGLBaseResource;
 var idx: integer;
-    Node: PRBNode;
+    glres: TGLBaseResource;
 begin
   inherited;
   result:=nil; idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx < 0 then exit;
 
   if isInnerResource(Resource.ClassType) then begin
-    Node:=FInnerResource.Find(Resource);
-    if assigned(Node) then begin result:=TGLBaseResource(Node.Data); end;
+    if FInnerResource.Find(Resource, glres) then exit(glres);
   end else begin
-    Node:=FResList[idx].Find(Resource);
-    if assigned(Node) then begin result:=TGLBaseResource(Node.Data); end;
+    if FResList[idx].Find(Resource, glres) then exit(glres);
   end;
-
 end;
 
 function TGLResources.isInnerResource(const aClassType: TClass): boolean;
@@ -681,7 +692,6 @@ end;
 
 destructor TGLMaterial.Destroy;
 begin
-  FShader.Destroy;
   inherited;
 end;
 
@@ -696,7 +706,6 @@ end;
 procedure TGLMaterial.UnApply;
 begin
   if assigned(FShader) then begin FShader.UnApply; vActiveShader:=nil; end else exit;
-//    glUniformBlockBinding(FShader.Id, FUBO.BlockIndex, 0);
 end;
 
 procedure TGLMaterial.UpdateUBO(aPool: TGLBufferObjectsPool);
