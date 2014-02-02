@@ -1294,6 +1294,8 @@ var
   GL_SUN_slice_accum,
   GL_SUN_triangle_list,
   GL_SUN_vertex,
+  GL_GREMEDY_frame_terminator,
+  GL_GREMEDY_string_marker,
 
   GL_WIN_phong_shading,
   GL_WIN_specular_fog,
@@ -14808,6 +14810,7 @@ procedure Read_GL_SUN_global_alpha;
 procedure Read_GL_SUN_mesh_array;
 procedure Read_GL_SUN_triangle_list;
 procedure Read_GL_SUN_vertex;
+procedure Read_GREMEDY;
 
 {$IFDEF DGL_WIN}
 procedure Read_WGL_ARB_buffer_region;
@@ -19763,6 +19766,10 @@ begin
   GL_SUN_slice_accum := Int_CheckExtension(Buffer, 'GL_SUN_slice_accum');
   GL_SUN_triangle_list := Int_CheckExtension(Buffer, 'GL_SUN_triangle_list');
   GL_SUN_vertex := Int_CheckExtension(Buffer, 'GL_SUN_vertex');
+
+  // === GREMEDY =================================================================
+  GL_GREMEDY_frame_terminator := Int_CheckExtension(Buffer, 'GL_GREMEDY_frame_terminator');
+  GL_GREMEDY_string_marker := Int_CheckExtension(Buffer, 'GL_GREMEDY_string_marker');
 
   // === WIN =====================================================================
   GL_WIN_phong_shading := Int_CheckExtension(Buffer, 'GL_WIN_phong_shading');
