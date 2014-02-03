@@ -1,4 +1,6 @@
-﻿ { TODO : Реализовать использование зарегистрированных рендеров и менеджеров ресурсов }
+﻿ { TODO : Реализовать использование зарегистрированных рендеров и менеджеров ресурсов
+          Оптимизировать бинд буфера объектов, убрать лишние переключения используя TMesh.IsIdentityMatrix
+ }
 unit uGLRenders;
 
 {$IFDEF FPC}
@@ -55,8 +57,8 @@ Type
   TGLLight = class (TGLBaseResource)
   private
     FLight: TLightSource;
-    FIdexInPool: integer;
     FStructureChanged: boolean;
+    FIdexInPool: integer;
     procedure UpdateUBO(aPool: TGLBufferObjectsPool);
   public
     LightSphereRadius: single;
@@ -79,8 +81,14 @@ Type
     FMesh: TMesh;
     FVertexObject: TGLVertexObject;
     FMaterialObject: TGLMaterial;
+    FMatrixChanged: boolean;
+    FIdexInPool: integer;
+    procedure UpdateUBO(aParent: TMovableObject; aPool: TGLBufferObjectsPool; aForceUpload: boolean);
   public
     constructor CreateFrom(aOwner: TGLResources; aMesh: TMesh);
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+    procedure Apply(aRender: TGLRender);
   end;
 
   TGLMeshObject = class (TGLBaseResource)
@@ -170,6 +178,8 @@ Type
       const aExtents: TExtents): boolean; override;
     procedure ProcessScene(const aScene: TSceneGraph); override;
 
+    procedure BindObjectBuffer(aPoolIndex: integer);
+
     property CameraPool: TGLBufferObjectsPool read FCameraPool;
     property ObjectPool: TGLBufferObjectsPool read FObjectPool;
     property LightPool: TGLBufferObjectsPool read FLightPool;
@@ -188,6 +198,13 @@ var
   vActiveShader: TGLSLShaderProgram = nil;
 
 { TGLRender }
+
+procedure TGLRender.BindObjectBuffer(aPoolIndex: integer);
+begin
+  glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubObject].Location,
+    FObjectPool.Buffer.Id, FObjectPool.OffsetByIndex(aPoolIndex),
+    FObjectPool.ObjectSize);
+end;
 
 function TGLRender.CheckVisibility(const aFrustum: TFrustum;
   const aExtents: TExtents): boolean;
@@ -355,6 +372,7 @@ begin
         MeshObject:=FMeshObjects[i];
         for j:=0 to length(MeshObject.FLods[0])-1 do begin
           Mesh:=MeshObject.FLods[0,j];
+          Mesh.Apply(Render);
           Mesh.FMaterialObject.Apply(Render);
           Mesh.FVertexObject.RenderVO();
           Mesh.FMaterialObject.UnApply;
@@ -631,14 +649,63 @@ end;
 
 { TGLMesh }
 
+procedure TGLMesh.Apply(aRender: TGLRender);
+begin
+  aRender.BindObjectBuffer(FIdexInPool);
+end;
+
 constructor TGLMesh.CreateFrom(aOwner: TGLResources; aMesh: TMesh);
 begin
   Create;
   assert(assigned(aOwner) and (aOwner is TGLResources),
     'Resource manager invalide or not assigned');
-  Owner:=aOwner; FMesh:=aMesh;
+  Owner:=aOwner;
+  FMesh:=aMesh;
+  FMesh.Subscribe(Self);
   FVertexObject:=TGLVertexObject(aOwner.GetOrCreateResource(FMesh.VertexObject));
   FMaterialObject:=TGLMaterial(aOwner.GetOrCreateResource(FMesh.MaterialObject));
+  FIdexInPool := -1;
+  FMatrixChanged := true;
+end;
+
+procedure TGLMesh.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  inherited;
+    case Msg of
+      NM_ObjectDestroyed: begin
+        Assert(Sender <> FMesh, 'You can not destroy the owner ahead of subscribers.');
+        FMesh.UnSubscribe(Self);
+        FMesh := nil;
+      end;
+      NM_WorldMatrixChanged: begin
+        if Sender = FMesh then
+          FMatrixChanged := true;
+      end;
+    end;
+end;
+
+procedure TGLMesh.UpdateUBO(aParent: TMovableObject; aPool: TGLBufferObjectsPool; aForceUpload: boolean);
+var
+    p: PByte;
+    mat: TMatrix;
+begin
+  if not (FMatrixChanged or aForceUpload) then
+    exit;
+
+  if FIdexInPool < 0 then
+    FIdexInPool := aPool.GetFreeSlotIndex();
+
+  p := aPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+    aPool.OffsetByIndex(FIdexInPool), aPool.ObjectSize);
+
+  // Calculate final world matrix
+  mat := FMesh.LocalMatrix * aParent.WorldMatrix;
+  // Fill Uniform Buffer Object Data
+  move(mat.GetAddr^, p^, 64); inc(p, 64);
+  move(mat.Invert.GetAddr^, p^,64); inc(p, 64);
+  move(mat.Normalize.GetAddr^, p^,64);
+  aPool.Buffer.UnMap;
+  FMatrixChanged := False;
 end;
 
 { TGLMaterial }
@@ -761,9 +828,7 @@ end;
 
 procedure TGLSceneObject.Apply(aRender: TGLRender);
 begin
-  glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubObject].Location,
-    aRender.ObjectPool.Buffer.Id, aRender.ObjectPool.OffsetByIndex(FIdexInPool),
-    aRender.ObjectPool.ObjectSize);
+  aRender.BindObjectBuffer(FIdexInPool);
 end;
 
 constructor TGLSceneObject.CreateFrom(aOwner: TGLResources;
@@ -855,28 +920,37 @@ begin
 end;
 
 procedure TGLSceneObject.UpdateUBO(aPool: TGLBufferObjectsPool);
-var
+var i, j: integer;
     p: PByte;
-    mat: TMatrix;
+    MeshObject: TGLMeshObject;
+    Mesh: TGLMesh;
 begin
-  if not FStructureChanged then
-    exit;
+  if FStructureChanged then
+  begin
+    if FIdexInPool < 0 then
+      FIdexInPool := aPool.GetFreeSlotIndex();
 
-  if FIdexInPool < 0 then
-    FIdexInPool := aPool.GetFreeSlotIndex();
+    p := aPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+      aPool.OffsetByIndex(FIdexInPool), aPool.ObjectSize);
 
-  p := aPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
-    aPool.OffsetByIndex(FIdexInPool), aPool.ObjectSize);
-
-  // Fill Uniform Buffer Object Data
-  with FSceneObject do begin
-    move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
-    move(InvWorldMatrix.GetAddr^,p^,64); inc(p, 64);
-    mat := WorldMatrix.Normalize;
-    mat.Row[3] := vecW;
-    move(mat.Matrix4, p^,64);
+    // Fill Uniform Buffer Object Data
+    with FSceneObject do begin
+      move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
+      move(InvWorldMatrix.GetAddr^,p^,64); inc(p, 64);
+      move(WorldMatrix.Normalize.GetAddr^, p^,64);
+    end;
+    aPool.Buffer.UnMap;
   end;
-  aPool.Buffer.UnMap;
+
+  // Update meshes local matrices
+  for i:=0 to length(FMeshObjects)-1 do begin
+    MeshObject:=FMeshObjects[i];
+    for j:=0 to length(MeshObject.FLods[0])-1 do begin
+      Mesh:=MeshObject.FLods[0,j];
+      Mesh.UpdateUBO(FSceneObject, aPool, FStructureChanged);
+    end;
+  end;
+
   FStructureChanged := False;
 end;
 

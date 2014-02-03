@@ -763,9 +763,12 @@ Type
     FExtents: TExtents;
     FbbPosition: vec3;
     FbbRadius: single;
+    FLocalMatrix: TMatrix;
+    FIdentityMatrix: boolean;
+    procedure SetLocalMatrix(const Value: TMatrix);
   public
     Visible: boolean;
-    LocalMatrix: TMatrix;
+
 
     FriendlyName: string;
 
@@ -779,6 +782,8 @@ Type
     property Extents: TExtents read FExtents;
     property bbPosition: vec3 read FbbPosition;
     property bbRadius: single read FbbRadius;
+    property LocalMatrix: TMatrix read FLocalMatrix write SetLocalMatrix;
+    property IsIdentityMatrix: boolean read FIdentityMatrix;
   end;
 
   TMeshList = class
@@ -2181,6 +2186,7 @@ begin
   GUID := aGUID;
   FriendlyName := '';
   LocalMatrix := TMatrix.IdentityMatrix;
+  FIdentityMatrix := true;
 end;
 
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject);
@@ -2189,6 +2195,7 @@ begin
   FVertexObject := aVertexObject;
   FriendlyName := '';
   LocalMatrix := TMatrix.IdentityMatrix;
+  FIdentityMatrix := true;
 end;
 
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject; aName: string);
@@ -2197,6 +2204,17 @@ begin
   FVertexObject := aVertexObject;
   FriendlyName := aName;
   LocalMatrix := TMatrix.IdentityMatrix;
+  FIdentityMatrix := true;
+end;
+
+procedure TMesh.SetLocalMatrix(const Value: TMatrix);
+begin
+  if FLocalMatrix <> Value then
+  begin
+    FLocalMatrix := Value;
+    FIdentityMatrix := FLocalMatrix.IsIdentity;
+    DispatchMessage(NM_WorldMatrixChanged);
+  end;
 end;
 
 { TShaderProgram }
