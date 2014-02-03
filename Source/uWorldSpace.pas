@@ -27,7 +27,7 @@ type
     function AddLight(aLight: TLightSource): integer;
     function GetLights: TLightsList;
 
-    function AddMaterial(aMat: TMaterialObject): integer;
+    function AddMaterial(aMat: TMaterialObject; aCapture: boolean=false): integer;
     function AddNewMaterial(aName: string): TMaterialObject;
     function GetMaterials: TMaterialList;
 
@@ -67,9 +67,10 @@ begin
   result := FLights.AddLight(aLight);
 end;
 
-function TSceneGraph.AddMaterial(aMat: TMaterialObject): integer;
+function TSceneGraph.AddMaterial(aMat: TMaterialObject; aCapture: boolean): integer;
 begin
   result := FMaterials.AddMaterial(aMat);
+  if aCapture then aMat.Owner:=self;
 end;
 
 function TSceneGraph.AddNewMaterial(aName: string): TMaterialObject;
