@@ -15,6 +15,7 @@ type
     FMaterial: TMaterialObject;
     FLight: TLightSource;
     FShader: TShaderProgram;
+    FMeshList: TMeshList;
     procedure CreateScene;
   public
     constructor Create;
@@ -39,16 +40,15 @@ end;
 
 procedure TDemoScene.CreateScene;
 var MeshObject: TMeshObject;
-    MeshList: TMeshList;
     i: integer;
 begin
-  MeshList:=TMeshList.Create;
-  MeshList.AddNewMesh(CreateBox(2, 1.5, 3.5)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
-  MeshList.AddNewMesh(CreateSphere(1, 16, 32)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(3,-3,+0.1));
-  MeshList.AddNewMesh(CreateTeapod(4));
-  MeshList.AddNewMesh(CreatePlane(3,3)).LocalMatrix:=TMatrix.RotationMatrix(Vector(1.0,0.0,0.0),Pi/180*90);
+  FMeshList:=TMeshList.Create;
+  FMeshList.AddNewMesh(CreateBox(2, 1.5, 3.5)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
+  FMeshList.AddNewMesh(CreateSphere(1, 16, 32)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(3,-3,+0.1));
+  FMeshList.AddNewMesh(CreateTeapod(4));
+  FMeshList.AddNewMesh(CreatePlane(3,3)).LocalMatrix:=TMatrix.RotationMatrix(Vector(1.0,0.0,0.0),Pi/180*90);
 
-  MeshObject:=TMeshObject.CreateFrom(MeshList);
+  MeshObject:=TMeshObject.CreateFrom(FMeshList);
 
 
   FSceneObject:=TSceneObject.Create;
@@ -62,8 +62,8 @@ begin
   FMaterial.AddNewMaterial('first');
   FSceneGraph.AddMaterial(FMaterial);
 
-  for i := 0 to MeshList.Count - 1 do
-    MeshList[i].MaterialObject := FMaterial;
+  for i := 0 to FMeshList.Count - 1 do
+    FMeshList[i].MaterialObject := FMaterial;
 
   FLight := TLightSource.Create;
   FLight.Position.SetVector(2, 10, 3);
@@ -82,6 +82,7 @@ begin
   FShader.Free;
   FMaterial.Free;
   FLight.Free;
+  FMeshList.Free;
   inherited;
 end;
 
