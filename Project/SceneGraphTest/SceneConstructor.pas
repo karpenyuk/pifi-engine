@@ -53,7 +53,7 @@ begin
 
 
   FSceneObject:=TSceneObject.Create;
-  FSceneObject.MeshObjects.AddMeshObject(MeshObject);
+  FSceneObject.MeshObjects.AddMeshObject(MeshObject,true);
   FSceneGraph.AddItem(FSceneObject);
 
   // Create material which use shader
@@ -71,16 +71,17 @@ begin
   FSceneGraph.AddLight(FLight);
 
   FSceneGraph.Camera.FoV:=60;
-  FSceneGraph.Camera.MoveObject(0, 0, -10);
+  FSceneGraph.Camera.MoveObject(0, -10, 0);
+
   FSceneGraph.Camera.ViewTarget := FSceneObject;
 end;
 
 destructor TDemoScene.Destroy;
 begin
-  FSceneGraph.Destroy;
-  FSceneObject.Destroy;
-  FMaterial.Destroy;
-  FLight.Destroy;
+  FSceneGraph.Free;
+  FSceneObject.Free;
+  FMaterial.Free;
+  FLight.Free;
   inherited;
 end;
 

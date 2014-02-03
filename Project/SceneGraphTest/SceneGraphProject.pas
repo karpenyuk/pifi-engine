@@ -106,6 +106,7 @@ end;
 procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   GLViewer1.OnRender := nil;
+  FDemoScene.Free;
   log.Add(inttostr(dummy));
   log.SaveToFile('e:\fps.txt');
 end;
