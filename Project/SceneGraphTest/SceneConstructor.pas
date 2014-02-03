@@ -14,7 +14,7 @@ type
     FSceneObject: TSceneObject;
     FMaterial: TMaterialObject;
     FLight: TLightSource;
-
+    FShader: TShaderProgram;
     procedure CreateScene;
   public
     constructor Create;
@@ -40,7 +40,6 @@ end;
 procedure TDemoScene.CreateScene;
 var MeshObject: TMeshObject;
     MeshList: TMeshList;
-    shader: TShaderProgram;
     i: integer;
 begin
   MeshList:=TMeshList.Create;
@@ -58,8 +57,8 @@ begin
 
   // Create material which use shader
   FMaterial := TMaterialObject.Create;
-  shader := TConfigShader.UBOParamShader();
-  FMaterial.AttachShader(shader);
+  FShader := TConfigShader.UBOParamShader();
+  FMaterial.AttachShader(FShader);
   FMaterial.AddNewMaterial('first');
   FSceneGraph.AddMaterial(FMaterial);
 
@@ -71,7 +70,7 @@ begin
   FSceneGraph.AddLight(FLight);
 
   FSceneGraph.Camera.FoV:=60;
-  FSceneGraph.Camera.MoveObject(0, -10, 0);
+  FSceneGraph.Camera.MoveObject(0, 0, -10);
 
   FSceneGraph.Camera.ViewTarget := FSceneObject;
 end;
@@ -80,6 +79,7 @@ destructor TDemoScene.Destroy;
 begin
   FSceneGraph.Free;
   FSceneObject.Free;
+  FShader.Free;
   FMaterial.Free;
   FLight.Free;
   inherited;
