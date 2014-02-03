@@ -6,7 +6,7 @@
 
 interface
 
-uses Classes, uPersistentClasses, uVMath, uLists, uMiscUtils, {ImageLoader,}
+uses Classes, uPersistentClasses, Math, uVMath, uLists, uMiscUtils, {ImageLoader,}
   uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, dglOpenGL;
 
 Type
@@ -224,7 +224,7 @@ Type
     FBuffer: TGLBufferObject;
     FFreeRooms: TIntegerList;
     FObjectSize: integer;
-    FBuffSize: integer;
+    FObjectsCount: integer;
     FUsedCount: integer;
     FUBOSize: integer;
     FStackTop: integer;
@@ -1685,7 +1685,7 @@ begin
     for i := 0 to FAttribs.Count - 1 do
     begin
       if Attribs[i].ElementSize > 0 then
-        ec := min(ec, Attribs[i].Buffer.Size div Attribs[i].ElementSize);
+        ec := uMiscUtils.min(ec, Attribs[i].Buffer.Size div Attribs[i].ElementSize);
     end;
     result := ec; FElementsCount := ec;
   end;
@@ -2708,14 +2708,17 @@ end;
 constructor TGLBufferObjectsPool.Create(aObjectSize, aObjectsCount: integer);
 var
   i: integer;
+  uniformBufferAlignSize: GLint;
+  uniformBufferMinSize: GLint;
 begin
   inherited Create;
   FUsedCount := 0;
+  glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, @uniformBufferAlignSize);
+  FUBOSize := Ceil(aObjectSize / uniformBufferAlignSize)*uniformBufferAlignSize;
+  FObjectsCount := aObjectsCount;
   FObjectSize := aObjectSize;
-  FBuffSize := aObjectsCount;
-  FUBOSize := aObjectSize;
   FBuffer := TGLBufferObject.Create(btUniform);
-  FBuffer.Allocate(aObjectSize * aObjectsCount, nil);
+  FBuffer.Allocate(FUBOSize * FObjectsCount, nil);
   FFreeRooms := TIntegerList.Create;
   FFreeRooms.Count := aObjectsCount;
   for i := 0 to aObjectsCount - 1 do
@@ -2765,7 +2768,7 @@ begin
     result := -1
   else
   begin
-    result := FFreeRooms[FStackTop] * FUBOSize;
+    result := FFreeRooms[FStackTop];
     dec(FStackTop);
     inc(FUsedCount);
   end;
@@ -2776,11 +2779,11 @@ var
   i, offs: integer;
   p: pointer;
 begin
-  for i := FStackTop + 1 to FBuffSize - 1 do
+  for i := FStackTop + 1 to FObjectsCount - 1 do
   begin
     offs := OffsetByIndex(FFreeRooms[i]);
     p := pointer(integer(FBuffer.Data) + offs);
-    if CompareMem(p, aData, FUBOSize) then
+    if CompareMem(p, aData, FObjectSize) then
     begin
       result := FFreeRooms[i];
       exit;
@@ -2794,7 +2797,7 @@ var
   p: pointer;
 begin
   p := FBuffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
-    OffsetByIndex(Index), FUBOSize);
+    OffsetByIndex(Index), FObjectSize);
   Move(Data^, p^, FUBOSize);
   FBuffer.UnMap;
 end;
