@@ -223,7 +223,7 @@ var i: integer; p: PByte;
     SceneItem: TBaseSceneItem;
     res: TBaseRenderResource;
     glres: TGLBaseResource;
-    vp: mat4;
+    mat: TMatrix;
 begin
   inherited;
   { TODO :
@@ -245,11 +245,13 @@ begin
     FCameraPool.OffsetByIndex(FIdexInPool), FCameraPool.ObjectSize);
 
   // Fill Uniform Buffer Object Data
+  mat := UpdateWorldMatrix(aScene.Camera);
   with aScene.Camera do begin
-    move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
+    //move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
+    move(mat.Matrix4, p^,64); inc(p, 64);
     move(ProjMatrix.GetAddr^,p^,64); inc(p, 64);
-    vp := (ModelMatrix * ProjMatrix).Matrix4;
-    move(vp,p^,64);
+    mat := mat * ProjMatrix;
+    move(mat.Matrix4, p^,64);
   end;
   FCameraPool.Buffer.UnMap;
   glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubCamera].Location,
@@ -855,6 +857,7 @@ end;
 procedure TGLSceneObject.UpdateUBO(aPool: TGLBufferObjectsPool);
 var
     p: PByte;
+    mat: TMatrix;
 begin
   if not FStructureChanged then
     exit;
@@ -869,7 +872,9 @@ begin
   with FSceneObject do begin
     move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
     move(InvWorldMatrix.GetAddr^,p^,64); inc(p, 64);
-    move(WorldMatrix.Normalize.GetAddr^,p^,64);
+    mat := WorldMatrix.Normalize;
+    mat.Row[3] := vecW;
+    move(mat.Matrix4, p^,64);
   end;
   aPool.Buffer.UnMap;
   FStructureChanged := False;
@@ -935,8 +940,8 @@ begin
     move(QuadraticAttenuation,p^,4); inc(p, 4);
     move(SpotCutOff,p^,4); inc(p, 4);
     move(SpotExponent,p^,4); inc(p, 4);
-    move(SceneColor.ColorAsAddress^,p^,16); inc(p, 16);
-    move(SpotDirection.GetAddr^,p^,16);
+    //move(SceneColor.ColorAsAddress^,p^,16); inc(p, 16);
+    move(SpotDirection.GetAddr^,p^,12);
   end;
   aPool.Buffer.UnMap;
   FStructureChanged := False;

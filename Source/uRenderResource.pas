@@ -964,6 +964,8 @@ Type
   public
     constructor Create; override;
 
+    procedure UpdateWorldMatrix(UseMatrix: TTransforms=[ttAll]); override;
+
     property ViewPortSize: vec2i read FViewPortSize write SetViewPortSize;
     property ViewTarget: TMovableObject read FViewTarget write SetViewTarget;
     property FoV: single read FFoV write SetFoV;
@@ -3273,11 +3275,11 @@ end;
 
 procedure TSceneCamera.RebuildViewMatrix;
 begin
-  if WorldMatrixUpdated then UpdateWorldMatrix;
   if assigned(FViewTarget) then
-    ModelMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
+    RotationMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
   else
-    ModelMatrix := TMatrix.LookAtMatrix(Position,Direction,Up);
+    RotationMatrix := TMatrix.LookAtMatrix(Position,Direction,Up);
+  RotationMatrix.Row[3] := VecW;
 end;
 
 procedure TSceneCamera.SetFoV(const Value: single);
@@ -3308,11 +3310,11 @@ end;
 
 procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
 begin
+  if Assigned(FViewTarget) then
+    UnSubscribe(FViewTarget);
   FViewTarget := Value;
   if assigned(FViewTarget) then begin
     FViewTarget.Subscribe(self);
-    if WorldMatrixUpdated then UpdateWorldMatrix;
-    ModelMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up);
   end;
 end;
 
@@ -3326,6 +3328,12 @@ procedure TSceneCamera.SetzNear(const Value: single);
 begin
   FzNear := Value;
   RebuildProjMatrix;
+end;
+
+procedure TSceneCamera.UpdateWorldMatrix(UseMatrix: TTransforms);
+begin
+  RebuildViewMatrix;
+  inherited;
 end;
 
 { TFrameBuffer }

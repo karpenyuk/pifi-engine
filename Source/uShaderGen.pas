@@ -86,7 +86,8 @@ var vt,ft: ansistring;
 begin
   result:=TShaderProgram.Create;
   vt:=
-'#version 420'+#13#10 +
+'#version 430'+#13#10 +
+'#extension GL_ARB_enhanced_layouts: enable'+#13#10 +
 'layout(location = 0) in vec3 in_Position;'+#13#10 +
 'layout(location = 1) in vec3 in_Normal;'+#13#10 +
 'layout(location = 2) in vec2 in_TexCoord;'+#13#10 +
@@ -163,7 +164,7 @@ begin
 '	float lambertTerm = max (dot(N,L), 0.0);'+#13#10 +
 '	vec3 E = normalize(eyeVec);'+#13#10 +
 '	vec3 R = reflect(-L, N);'+#13#10 +
-'	float pf = pow( max(dot(R, E), 0.0), material.shininess );'+#13#10 +
+'	float pf = max(pow( max(dot(R, E), 0.0), material.shininess ), 0.0);'+#13#10 +
 '	final_color += lights.light.diffuse * material.diffuse * lambertTerm;'+#13#10 +
 '	final_color += material.specular * lights.light.specular * pf;'+#13#10 +
 '	Color = final_color;'+#13#10 +

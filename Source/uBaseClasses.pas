@@ -154,7 +154,8 @@ Type
     procedure MoveUp(Step:single);
     //формирует матрицу поворота, при AbsoluteRotation=false модифицируется существующая
     procedure RotateObject(const Axis: TVector; Angle: single; AbsoluteRotation: boolean=true);
-    procedure RotateAround(const Pivot, Axis: TVector; Angle: single);
+    procedure RotateAround(const aPivot, Axis: TVector; Angle: single); overload;
+    procedure RotateAround(const aPivot, anUp: TVector; aPitchDelta, aTurnDelta: single); overload;
     procedure RotateAroundX(Angle: single; AbsoluteRotation: boolean=true);
     procedure RotateAroundY(Angle: single; AbsoluteRotation: boolean=true);
     procedure RotateAroundZ(Angle: single; AbsoluteRotation: boolean=true);
@@ -170,7 +171,7 @@ Type
     procedure MoveObject(Pos: TVector; AbsolutePos: boolean=true);overload;
     procedure MoveObject(x,y,z: single; AbsolutePos: boolean=true);overload;
     //перестраивается мировая матрица
-    procedure UpdateWorldMatrix(UseMatrix: TTransforms=[ttAll]);virtual;
+    procedure UpdateWorldMatrix(UseMatrix: TTransforms=[ttAll]); virtual;
     //Заменяет все матрицы трансформаций на единичные
     procedure ResetMatrices;
     //Заменяет модельную матрицу текущей мировой матрицей
@@ -404,6 +405,16 @@ begin
     UpdateWorldMatrix;
 end;
 
+procedure TMovableObject.RotateAround(const aPivot, anUp: TVector; aPitchDelta,
+  aTurnDelta: single);
+var p: TVector;
+begin
+  if not WorldMatrixUpdated then UpdateWorldMatrix;
+  p := Position;
+  p.RotateAround(aPivot, anUp, aPitchDelta, aTurnDelta);
+  MoveObject(p);
+end;
+
 procedure TMovableObject.RotateAroundX(Angle: single;
   AbsoluteRotation: boolean);
 var rm: TMatrix;
@@ -452,14 +463,14 @@ begin
   UpdateWorldMatrix;
 end;
 
-procedure TMovableObject.RotateAround(const Pivot, Axis: TVector; Angle: single);
+procedure TMovableObject.RotateAround(const aPivot, Axis: TVector; Angle: single);
 var np: TVector;
     mr,mp,mnp,m: TMatrix;
 begin
   mr:=TMatrix.RotationMatrix(Axis, Angle);
 
-  np:=-Pivot; np[3]:=1;
-  mp:=TMatrix.TranslationMatrix(Pivot);
+  np:=-aPivot; np[3]:=1;
+  mp:=TMatrix.TranslationMatrix(aPivot);
   mnp:=TMatrix.TranslationMatrix(np);
 
   //Поворот вокруг заданной точки
