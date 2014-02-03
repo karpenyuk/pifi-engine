@@ -281,6 +281,8 @@ Type
     class operator Explicit( m: Mat3 ): TMatrix;
     class operator Explicit( m: Mat4 ): TMatrix;
 
+    class operator Equal( m1, m2: TMatrix ): Bool;
+    class operator NotEqual( m1, m2: TMatrix ): Bool;
   end;
 
 
@@ -371,6 +373,9 @@ function Vec2iMake( aX,aY: Int): Vec2i;
 
 
 implementation
+
+uses
+  uMiscUtils;
 
 
 { regular }
@@ -1783,6 +1788,11 @@ begin
 end;
 
 
+class operator TMatrix.NotEqual(m1, m2: TMatrix): Bool;
+begin
+  Result := not CompareMem(@m1.F, @m2.F, SizeOf(mat4));
+end;
+
 //
 // TMatrix.SetNormalize
 //
@@ -2160,6 +2170,11 @@ begin
 
   result := m;
 
+end;
+
+class operator TMatrix.Equal(m1, m2: TMatrix): Bool;
+begin
+  Result := CompareMem(@m1.F, @m2.F, SizeOf(mat4));
 end;
 
 class operator TMatrix.Explicit( m: Mat4 ): TMatrix;
