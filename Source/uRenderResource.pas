@@ -872,13 +872,15 @@ Type
   private
     function getMeshObj(Index: integer): TMeshObject;
   public
-    function AddMeshObject(const aMeshObject: TMeshObject): integer;
+    function AddMeshObject(const aMeshObject: TMeshObject; aCapture: boolean = false): integer;
     function GetMeshObject(aKey: TGUID): TMeshObject; overload;
     function GetMeshObject(aFriendlyName: string): TMeshObject; overload;
 
     procedure RemoveMeshObject(const aMeshObject: TMeshObject);
 
     property MeshObjects[index: integer]: TMeshObject read getMeshObj; default;
+
+    destructor Destroy; override;
   end;
 
   { TODO : Доработать структуру отображаемого объекта сцены.
@@ -2647,10 +2649,24 @@ end;
 
 { TMeshObjectsList }
 
-function TMeshObjectsList.AddMeshObject(const aMeshObject: TMeshObject)
-  : integer;
+function TMeshObjectsList.AddMeshObject(const aMeshObject: TMeshObject;
+  aCapture: boolean): integer;
 begin
   result := AddKey(aMeshObject.GUID, aMeshObject);
+  if aCapture then aMeshObject.Owner:=self;
+end;
+
+destructor TMeshObjectsList.Destroy;
+var
+  i: integer;
+  mo: TMeshObject;
+begin
+  for i := 0 to FCount - 1 do begin
+    mo := TMeshObject(FItems[i].Value);
+    if mo.Owner=self then FreeAndNil(mo);
+  end;
+
+  inherited;
 end;
 
 function TMeshObjectsList.getMeshObj(Index: integer): TMeshObject;
@@ -2680,11 +2696,10 @@ var
   i: integer;
   mo: TMeshObject;
 begin
-  for i := 0 to FCount - 1 do
-  begin
+  for i := 0 to FCount - 1 do begin
     mo := TMeshObject(FItems[i].Value);
-    if mo = aMeshObject then
-    begin
+    if mo = aMeshObject then begin
+      if mo.Owner=self then FreeAndNil(mo);
       FItems[i].Key := -1;
       FItems[i].KeyName := '';
       FItems[i].KeyGUID := TGUIDEx.Empty;
