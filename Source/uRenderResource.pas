@@ -53,7 +53,6 @@ Type
 
   TShaderProgram = class(TBaseRenderResource)
   private
-    FOwner: TObject;
     FShaderText: array [stVertex .. stCompute] of ansistring;
     FBinary: TBinaryData;
     FFragDataBindPos: TAttribSemantic;
@@ -226,8 +225,6 @@ Type
 
   TMaterial = class(TBaseRenderResource)
   private
-    FOwner: TObject;
-
     FMaterialProperties: TMaterialProperties;
     FLightProperties: TLightSource;
     FColorReplacing: TColorReplacing;
@@ -1204,7 +1201,7 @@ end;
 constructor TMaterial.CreateOwned(aOwner: TObject);
 begin
   Create;
-  FOwner := aOwner;
+  Owner := aOwner;
   FMaterialProperties := TMaterialProperties.Create;
   FLightProperties := TLightSource.Create;
   FUseMaterial := true;
@@ -2226,7 +2223,7 @@ var
   st: TShaderType;
 begin
   inherited Create;
-  FOwner := aOwner;
+  Owner := aOwner;
   for st := Low(FShaderText) to high(FShaderText) do
     FShaderText[st] := '';
   FBinary.Size := 0;
@@ -2402,8 +2399,7 @@ end;
 
 function TMaterialObject.AddNewMaterial(aName: string): TMaterial;
 begin
-  if assigned(FMaterial) and (FMaterial.Owner = Self) then
-    FMaterial.Free;
+  if assigned(FMaterial) and (FMaterial.Owner = Self) then FMaterial.Free;
   FMaterial := TMaterial.CreateOwned(Self);
   FMaterial.Name := aName;
   FUseMaterial := true;
