@@ -14,6 +14,8 @@ Type
   // Base GL Resource
   TGLBaseResource = class(TBaseRenderResource)
     Owner: TObject;
+    BaseResource: TBaseRenderResource;
+    constructor Create; override;
   end;
 
   TGLTextureObject = class;
@@ -3168,6 +3170,15 @@ begin
           sFormat := TImageFormatBits.GetSpecialFormat(aFormat);
           result := CreateSpecial(sFormat);
         end else assert(false, 'Unsupported format!');
+end;
+
+{ TGLBaseResource }
+
+constructor TGLBaseResource.Create;
+begin
+  inherited Create;
+  Owner := nil;
+  BaseResource := nil;
 end;
 
 initialization

@@ -124,7 +124,7 @@ begin
 //{$IFDEF FPC}
  //   Dispose(y);
 //{$ELSE}
-    y.Destroy;
+    y.Free;
 //{$ENDIF}
   until x = nil;
 end;
@@ -323,7 +323,7 @@ begin
 //{$IFDEF FPC}
  //     Dispose(z);
 //{$ELSE}
-      z.Destroy;
+      z.Free;
 //{$ENDIF}
       //a jzombi: memory leak: if we don't put it in the tree, we shouldn't hold it in the memory
       exit;
@@ -611,9 +611,9 @@ begin
   begin
     z := y;
     y := y.Twin;
-    z.Destroy;
+    z.Free;
   end;
-  y.Destroy;
+  y.Free;
   Dec(FCount);
   if Assigned(FOnChange) then
     FOnChange(Self);
@@ -699,12 +699,14 @@ end;
 
 function GRedBlackTree< TKey, TValue >.GetFirst: TKey;
 begin
-  Result := FLeftMost.Key;
+  if assigned(FLeftMost) then Result := FLeftMost.Key
+  else result := TKey(nil);
 end;
 
 function GRedBlackTree< TKey, TValue >.GetLast: TKey;
 begin
-  Result := FRightMost.Key;
+  if assigned(FRightMost) then Result := FRightMost.Key
+  else result := TKey(nil);
 end;
 
 procedure GRedBlackTree< TKey, TValue >.ForEach(AProc: TForEachProc);

@@ -620,6 +620,7 @@ Type
       AType: TValueType = vtFloat; AStride: integer = 0;
       BuffType: TBufferType = btArray); virtual;
     constructor CreateClone(ASample: TAttribObject);
+    destructor Destroy; override;
 
     procedure Notify(Sender: TObject; Msg: Cardinal;
       Params: pointer = nil); override;
@@ -1627,6 +1628,13 @@ begin
   end;
 end;
 
+destructor TAttribObject.Destroy;
+begin
+  if assigned(FBuffer) then
+    if FBuffer.Owner=self then FBuffer.Free;
+  inherited;
+end;
+
 function TAttribObject.GetValue: TVector;
 begin
   Result := FValue;
@@ -1720,14 +1728,14 @@ begin
   inherited CreateAndSetup(AttrName, aSize, AType, AStride, BuffType);
   FBuffer := TBufferObject.Create(BuffType);
   FBuffer.Subscribe(Self);
+  FBuffer.Owner:=self;
 end;
 
 destructor TAttribBuffer.Destroy;
 begin
-  if Assigned(FBuffer) then
-  begin
+  if Assigned(FBuffer) then begin
     FBuffer.UnSubscribe(Self);
-    FBuffer.Destroy;
+    FBuffer.Free;
   end;
   inherited;
 end;
@@ -2161,7 +2169,7 @@ end;
 
 destructor TMeshList.Destroy;
 begin
-  FreeList(FList);
+  FreeObjectList(FList);
   inherited;
 end;
 

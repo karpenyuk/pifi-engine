@@ -145,6 +145,7 @@ Type
 
     function GetOrCreateResource(const Resource: TBaseRenderResource): TGLBaseResource;
     procedure FreeResource(const Resource: TBaseRenderResource);
+    procedure RemoveGLResource(const Resource: TBaseRenderResource);
     procedure ProcessResource(const Res: TBaseRenderResource); override;
 
     constructor CreateOwned(aRender: TBaseRender); override;
@@ -484,19 +485,26 @@ var i, j: integer;
     res: TBaseRenderResource;
     glres: TGLBaseResource;
 begin
-  for i := 0 to high(FResList) do if FResList[i].Count > 0 then begin
-    res:=FResList[i].First;
-    FResList[i].Find(res, glres);
-    if glres.Owner=self then glres.Free;
-    for j := 1 to FResList[i].Count - 1 do
-      if FResList[i].NextKey(res, glres) and (glres.Owner=self) then glres.Free;
+  for i := 0 to length(FResList)-1 do begin
+    if FResList[i].Count > 0 then begin
+      res:=FResList[i].First;
+      if assigned(res) then begin
+        if FResList[i].Find(res, glres)then begin
+          if glres.Owner=self then glres.Free;
+        end;
+        for j := 1 to FResList[i].Count - 1 do
+          if FResList[i].NextKey(res, glres) and (glres.Owner=self) then glres.Free;
+      end;
+    end;
     FResList[i].Free;
   end;
   res:=FInnerResource.First;
-  FInnerResource.Find(res, glres);
-  if glres.Owner=self then glres.Free;
-  for j := 1 to FInnerResource.Count - 1 do
-    if FInnerResource.NextKey(res, glres) and (glres.Owner=self ) then glres.Free;
+  if assigned(res) then begin
+    FInnerResource.Find(res, glres);
+    if glres.Owner=self then glres.Free;
+    for j := 1 to FInnerResource.Count - 1 do
+      if FInnerResource.NextKey(res, glres) and (glres.Owner=self ) then glres.Free;
+  end;
   FInnerResource.Free;
   inherited;
 end;
@@ -505,18 +513,20 @@ procedure TGLResources.FreeResource(const Resource: TBaseRenderResource);
 var idx: integer;
     glres: TGLBaseResource;
 begin
+  if not assigned(Resource) then exit;
+
   idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx <0 then exit;
 
   //Resource exists?
   if isInnerResource(Resource.ClassType) then begin
     if FInnerResource.Find(Resource, glres) then begin
-      //glres.Free;
       FInnerResource.Delete(Resource);
+      FreeAndNil(glres);
     end;
   end else if FResList[idx].Find(Resource, glres) then begin
-        //glres.Free;
-        FResList[idx].Delete(Resource);
+      FResList[idx].Delete(Resource);
+      FreeAndNil(glres);
   end;
 end;
 
@@ -550,6 +560,7 @@ begin
     glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
+    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -559,6 +570,7 @@ begin
     glres:=TGLMesh.CreateFrom(self, Resource as TMesh);
     FInnerResource.Add(Resource, glres);
     glres.Owner:=self;
+    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -568,6 +580,7 @@ begin
     glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
+    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -577,6 +590,7 @@ begin
     glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
+    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -586,6 +600,7 @@ begin
     glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
+    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -595,11 +610,13 @@ begin
     glres:=TGLLight.CreateFrom(self, Resource as TLightSource);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
+    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
 
   if Resource.ClassType = TTexture then begin
+    result := nil;
     exit;
   end;
 
@@ -636,7 +653,10 @@ begin
   res:=GetResource(TBaseRenderResource(Sender));
   if assigned(res) then begin
     case Msg of
-      NM_ObjectDestroyed: FreeResource(res);
+      NM_ObjectDestroyed: begin
+        if assigned(res.BaseResource) then
+          RemoveGLResource(res.BaseResource)
+      end;
     end;
   end;
 end;
@@ -645,6 +665,24 @@ procedure TGLResources.ProcessResource(const Res: TBaseRenderResource);
 begin
   inherited;
 
+end;
+
+procedure TGLResources.RemoveGLResource(const Resource: TBaseRenderResource);
+var idx: integer;
+    glres: TGLBaseResource;
+begin
+  if not assigned(Resource) then exit;
+
+  idx:=FSupportedResources.IndexOf(Resource.ClassType);
+  if idx <0 then exit;
+
+  //Resource exists?
+  if isInnerResource(Resource.ClassType) then begin
+    if FInnerResource.Find(Resource, glres) then
+      FInnerResource.Delete(Resource);
+  end else
+    if FResList[idx].Find(Resource, glres) then
+      FResList[idx].Delete(Resource);
 end;
 
 { TGLMesh }
@@ -659,9 +697,9 @@ begin
   Create;
   assert(assigned(aOwner) and (aOwner is TGLResources),
     'Resource manager invalide or not assigned');
-  Owner:=aOwner;
-  FMesh:=aMesh;
-  FMesh.Subscribe(Self);
+  Owner:=aOwner; FMesh:=aMesh;
+  BaseResource := aMesh;
+  FMesh.Subscribe(aOwner);
   FVertexObject:=TGLVertexObject(aOwner.GetOrCreateResource(FMesh.VertexObject));
   FMaterialObject:=TGLMaterial(aOwner.GetOrCreateResource(FMesh.MaterialObject));
   FIdexInPool := -1;
@@ -746,6 +784,7 @@ begin
   Create;
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
   Owner:=aOwner; FMaterialObject:=aMat;
+  BaseResource := aMat;
   FMaterialObject.Subscribe(self);
   FIdexInPool:=-1;
 
@@ -811,6 +850,7 @@ begin
   Create;
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
   FMeshObject:=aMeshObject;
+  BaseResource := aMeshObject;
   setlength(FLods, aMeshObject.Lods.Count);
   for i:=0 to aMeshObject.Lods.Count-1 do begin
     setlength(FLods[i], aMeshObject.Lods[i].LoD.Count);
@@ -838,6 +878,7 @@ begin
   Create;
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
   FSceneObject:=aSceneObject;
+  BaseResource := aSceneObject;
   aSceneObject.Subscribe(self);
   FIdexInPool := -1;
   FStructureChanged := true;
@@ -966,6 +1007,7 @@ begin
   Create;
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
   Owner:=aOwner; FLight:=aLight;
+  BaseResource := aLight;
   FLight.Subscribe(self);
   FIdexInPool:=-1;
   FStructureChanged := True;
