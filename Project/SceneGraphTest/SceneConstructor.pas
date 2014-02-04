@@ -12,7 +12,7 @@ type
   private
     FSceneGraph: TSceneGraph;
     FSceneObject: TSceneObject;
-    FMaterial: TMaterialObject;
+    FMaterial: array[0..3] of TMaterialObject;
     FLight: TLightSource;
     FShader: TShaderProgram;
     FMeshList: TMeshList;
@@ -40,7 +40,6 @@ end;
 
 procedure TDemoScene.CreateScene;
 var MeshObject: TMeshObject;
-    i: integer;
 begin
   FMeshList:=TMeshList.Create;
   FMeshList.AddNewMesh(CreateBox(2, 1.5, 3.5)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
@@ -50,23 +49,62 @@ begin
 
   MeshObject:=TMeshObject.CreateFrom(FMeshList);
 
-
   FSceneObject:=TSceneObject.Create;
   FSceneObject.MeshObjects.AddMeshObject(MeshObject,true);
   FSceneGraph.AddItem(FSceneObject);
 
   // Create material which use shader
-  FMaterial := TMaterialObject.Create;
-  FShader := TConfigShader.UBOParamShader();
-  FMaterial.AttachShader(FShader);
-  FMaterial.AddNewMaterial('first');
-  FSceneGraph.AddMaterial(FMaterial);
+  FShader := TConfigShader.GenForwardLightShader();
 
-  for i := 0 to FMeshList.Count - 1 do
-    FMeshList[i].MaterialObject := FMaterial;
+  FMaterial[0] := TMaterialObject.Create;
+  FMaterial[0].AttachShader(FShader);
+  with FMaterial[0].AddNewMaterial('Red') do begin
+     Properties.DiffuseColor.SetColor(165, 41, 0, 255);
+  end;
+  FMeshList[0].MaterialObject := FMaterial[0];
+  FSceneGraph.AddMaterial(FMaterial[0]);
+
+  FMaterial[1] := TMaterialObject.Create;
+  FMaterial[1].AttachShader(FShader);
+  with FMaterial[1].AddNewMaterial('Sphere') do begin
+     Properties.DiffuseColor.SetColor(5, 5, 5, 255);
+     Properties.SpecularColor.SetColor(127, 127, 127, 255);
+  end;
+  FMeshList[1].MaterialObject := FMaterial[1];
+  FSceneGraph.AddMaterial(FMaterial[1]);
+
+  FMaterial[1] := TMaterialObject.Create;
+  FMaterial[1].AttachShader(FShader);
+  with FMaterial[1].AddNewMaterial('Sphere') do begin
+    Properties.AmbientColor.SetColor(5, 5, 5, 255);
+     Properties.DiffuseColor.SetColor(5, 5, 5, 255);
+     Properties.SpecularColor.SetColor(127, 127, 127, 255);
+  end;
+  FMeshList[1].MaterialObject := FMaterial[1];
+  FSceneGraph.AddMaterial(FMaterial[1]);
+
+  FMaterial[2] := TMaterialObject.Create;
+  FMaterial[2].AttachShader(FShader);
+  with FMaterial[2].AddNewMaterial('Teapod') do begin
+     Properties.DiffuseColor.SetColor(221, 236, 192, 255);
+     Properties.SpecularColor.SetColor(250, 250, 250, 255);
+  end;
+  FMeshList[2].MaterialObject := FMaterial[2];
+  FSceneGraph.AddMaterial(FMaterial[2]);
+
+  FMaterial[3] := TMaterialObject.Create;
+  FMaterial[3].AttachShader(FShader);
+  with FMaterial[3].AddNewMaterial('Plane') do begin
+     Properties.DiffuseColor.SetColor(0, 0, 0, 255);
+     Properties.EmissionColor.SetColor(41, 165, 0, 255);
+  end;
+  FMeshList[3].MaterialObject := FMaterial[3];
+  FSceneGraph.AddMaterial(FMaterial[3]);
+
 
   FLight := TLightSource.Create;
   FLight.Position.SetVector(2, 10, 3);
+  FLight.Specular.SetColor(250, 250, 250, 255);
   FSceneGraph.AddLight(FLight);
 
   FSceneGraph.Camera.FoV:=60;
@@ -80,7 +118,10 @@ begin
   FSceneGraph.Free;
   FSceneObject.Free;
   FShader.Free;
-  FMaterial.Free;
+  FMaterial[0].Free;
+  FMaterial[1].Free;
+  FMaterial[2].Free;
+  FMaterial[3].Free;
   FLight.Free;
   FMeshList.Free;
   inherited;

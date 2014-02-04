@@ -2711,7 +2711,6 @@ constructor TGLBufferObjectsPool.Create(aObjectSize, aObjectsCount: integer);
 var
   i: integer;
   uniformBufferAlignSize: GLint;
-  uniformBufferMinSize: GLint;
 begin
   inherited Create;
   FUsedCount := 0;

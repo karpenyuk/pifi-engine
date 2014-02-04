@@ -265,7 +265,6 @@ begin
   // Fill Uniform Buffer Object Data
   mat := UpdateWorldMatrix(aScene.Camera, [ttModel]);
   with aScene.Camera do begin
-    //move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
     move(mat.GetAddr^, p^,64); inc(p, 64);
     move(ProjMatrix.GetAddr^,p^,64); inc(p, 64);
     mat := mat * ProjMatrix;
@@ -1035,6 +1034,7 @@ end;
 procedure TGLLight.UpdateUBO(aPool: TGLBufferObjectsPool);
 var
     p: PByte;
+    cos_cuoff: single;
 begin
   if not FStructureChanged then
     exit;
@@ -1047,6 +1047,7 @@ begin
 
   // Fill Uniform Buffer Object Data
   with FLight do begin
+    Position.MakePoint;
     move(Position.GetAddr^,p^,16); inc(p, 16);
     move(Ambient.ColorAsAddress^,p^,16); inc(p, 16);
     move(Diffuse.ColorAsAddress^,p^,16); inc(p, 16);
@@ -1054,7 +1055,8 @@ begin
     move(ConstAttenuation,p^,4); inc(p, 4);
     move(LinearAttenuation,p^,4); inc(p, 4);
     move(QuadraticAttenuation,p^,4); inc(p, 4);
-    move(SpotCutOff,p^,4); inc(p, 4);
+    cos_cuoff := Cos(Pi*SpotCutOff/180);
+    move(cos_cuoff,p^,4); inc(p, 4);
     move(SpotExponent,p^,4); inc(p, 4);
     //move(SceneColor.ColorAsAddress^,p^,16); inc(p, 16);
     move(SpotDirection.GetAddr^,p^,12);

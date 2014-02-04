@@ -1144,7 +1144,7 @@ begin
   FDiffuseColor.ColorVector := cDiffuseColor;
   FSpecularColor.ColorVector := cSpecularColor;
   FEmissionColor.ColorVector := cEmissiveColor;
-  FShininess := 0;
+  FShininess := 128;
   FName := '';
 end;
 
@@ -3335,7 +3335,7 @@ begin
   if assigned(FViewTarget) then
     ModelMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
   else
-    ModelMatrix := TMatrix.LookAtMatrix(Position,Position+Direction,Up);
+    ModelMatrix := TMatrix.LookAtMatrix(Position,Position + Direction,Up);
 end;
 
 procedure TSceneCamera.SetFoV(const Value: single);
