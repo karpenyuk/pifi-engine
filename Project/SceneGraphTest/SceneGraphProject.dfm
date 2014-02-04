@@ -13,6 +13,8 @@ object Form2: TForm2
   OldCreateOrder = True
   OnClose = FormClose
   OnCreate = FormCreate
+  OnMouseWheelDown = FormMouseWheelDown
+  OnMouseWheelUp = FormMouseWheelUp
   PixelsPerInch = 96
   TextHeight = 13
   object GLViewer1: TGLViewer

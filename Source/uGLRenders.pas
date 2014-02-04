@@ -263,13 +263,13 @@ begin
     FCameraPool.OffsetByIndex(FIdexInPool), FCameraPool.ObjectSize);
 
   // Fill Uniform Buffer Object Data
-  mat := UpdateWorldMatrix(aScene.Camera);
+  mat := UpdateWorldMatrix(aScene.Camera, [ttModel]);
   with aScene.Camera do begin
     //move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
-    move(mat.Matrix4, p^,64); inc(p, 64);
+    move(mat.GetAddr^, p^,64); inc(p, 64);
     move(ProjMatrix.GetAddr^,p^,64); inc(p, 64);
     mat := mat * ProjMatrix;
-    move(mat.Matrix4, p^,64);
+    move(mat.GetAddr^, p^,64);
   end;
   FCameraPool.Buffer.UnMap;
   glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubCamera].Location,

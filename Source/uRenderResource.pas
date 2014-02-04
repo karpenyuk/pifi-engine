@@ -970,6 +970,10 @@ Type
     constructor Create; override;
 
     procedure UpdateWorldMatrix(UseMatrix: TTransforms=[ttAll]); override;
+    {: Adjusts distance from camera to target by applying a ratio.
+       If ViewTarget is nil, nothing happens. This method helps in quickly
+       implementing camera controls. Only the camera's position is changed. }
+    procedure AdjustDistanceToTarget(distanceRatio: Single);
 
     property ViewPortSize: vec2i read FViewPortSize write SetViewPortSize;
     property ViewTarget: TMovableObject read FViewTarget write SetViewTarget;
@@ -3269,6 +3273,22 @@ end;
 
 { TSceneCamera }
 
+procedure TSceneCamera.AdjustDistanceToTarget(distanceRatio: Single);
+var
+  v: TVector;
+begin
+  if Assigned(FViewTarget) then
+  begin
+    UpdateWorldMatrix;
+    // calculate vector from target to camera in absolute coordinates
+    v := {Absolute}Position - FViewTarget.AbsolutePosition;
+    // ratio -> translation vector
+    v.SetScale(-(1 - distanceRatio));
+    v := v + {Absolute}Position;
+    MoveObject(v);
+  end;
+end;
+
 constructor TSceneCamera.Create;
 begin
   inherited;
@@ -3313,10 +3333,9 @@ end;
 procedure TSceneCamera.RebuildViewMatrix;
 begin
   if assigned(FViewTarget) then
-    RotationMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
+    ModelMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
   else
-    RotationMatrix := TMatrix.LookAtMatrix(Position,Direction,Up);
-  RotationMatrix.Row[3] := VecW;
+    ModelMatrix := TMatrix.LookAtMatrix(Position,Position+Direction,Up);
 end;
 
 procedure TSceneCamera.SetFoV(const Value: single);
@@ -3347,11 +3366,15 @@ end;
 
 procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
 begin
-  if Assigned(FViewTarget) then
-    UnSubscribe(FViewTarget);
-  FViewTarget := Value;
-  if assigned(FViewTarget) then begin
-    FViewTarget.Subscribe(self);
+  if Value <> FViewTarget then
+  begin
+    if Assigned(FViewTarget) then
+      UnSubscribe(FViewTarget);
+    FViewTarget := Value;
+    if assigned(FViewTarget) then begin
+      FViewTarget.Subscribe(self);
+    end;
+    RebuildViewMatrix;
   end;
 end;
 

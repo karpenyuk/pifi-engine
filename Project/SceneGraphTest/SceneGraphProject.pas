@@ -25,6 +25,10 @@ type
       Y: Integer);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
+    procedure FormMouseWheelDown(Sender: TObject; Shift: TShiftState;
+      MousePos: TPoint; var Handled: Boolean);
+    procedure FormMouseWheelUp(Sender: TObject; Shift: TShiftState;
+      MousePos: TPoint; var Handled: Boolean);
   private
     { Private declarations }
     MX, MY: Integer;
@@ -52,6 +56,18 @@ implementation
 procedure TForm2.FormCreate(Sender: TObject);
 begin
   GLViewer1.Context.DebugContext := true;
+end;
+
+procedure TForm2.FormMouseWheelDown(Sender: TObject; Shift: TShiftState;
+  MousePos: TPoint; var Handled: Boolean);
+begin
+  FDemoScene.SceneGraph.Camera.AdjustDistanceToTarget(1.1);
+end;
+
+procedure TForm2.FormMouseWheelUp(Sender: TObject; Shift: TShiftState;
+  MousePos: TPoint; var Handled: Boolean);
+begin
+  FDemoScene.SceneGraph.Camera.AdjustDistanceToTarget(1/1.1);
 end;
 
 procedure TForm2.GLViewer1CanResize(Sender: TObject; var NewWidth,
