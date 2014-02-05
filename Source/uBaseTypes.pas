@@ -183,7 +183,21 @@ Type
     crAmbientAndDiffuse);
 
   TMaterialType = (mtFFP, mtShader);
-  TLightStyle = (lsSpot, lsOmni, lsParallel, lsDirectional);
+
+  { Defines the various styles for lightsources.
+
+     lsSpot : a spot light, oriented and with a cutoff zone (note that if
+        cutoff is 180, the spot is rendered as an omni source)
+
+     lsOmni : an omnidirectionnal source, punctual and sending light in
+        all directions uniformously
+
+     lsParallel : a parallel light, oriented as the light source is (this
+        type of light can help speed up rendering)
+
+     lsParallelSpot : a parallel light with a cutoff where spot exponent define gain
+   }
+  TLightStyle = (lsSpot, lsOmni, lsParallel, lsParallelSpot);
 
   //Логика использования шейдеров рендером вершинных объектов
   //slDisableShader - деактивировать активный шейдер и не использовать собственный
