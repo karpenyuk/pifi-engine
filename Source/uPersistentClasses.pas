@@ -68,6 +68,7 @@ type
     procedure SaveToStream(s: TStream); virtual;
     procedure LoadFromStream(s: TStream); virtual;
     procedure SetGUID(GUIDString: string);
+    class function IsInner: boolean; virtual;
     constructor Create; virtual;
     destructor Destroy; override;
     property Owner: TObject read FOwner write setOwner;
@@ -98,6 +99,11 @@ begin
   Assert(FUpdateCount = 0);
   FUpdateCount := 0;
   inherited Destroy;
+end;
+
+class function TPersistentResource.IsInner: boolean;
+begin
+  Result := False;
 end;
 
 procedure TPersistentResource.LoadFromStream(s: TStream);
