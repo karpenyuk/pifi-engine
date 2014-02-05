@@ -51,12 +51,16 @@ Type
   end;
   PUniformInfo = ^TUniformInfo;
 
+  TBaseBuiltinUniform = class;
+  TBaseBuiltinUniformClass = class of TBaseBuiltinUniform;
+
   TShaderProgram = class(TBaseRenderResource)
   private
     FShaderText: array [stVertex .. stCompute] of ansistring;
     FBinary: TBinaryData;
     FFragDataBindPos: TAttribSemantic;
     FAttribsBindPos: array of TAttribSemantic;
+    FBuildinUniforms: TObjectList;
 
     function getShaderText(ShaderType: TShaderType): ansistring;
     procedure setShaderText(ShaderType: TShaderType; const Value: ansistring);
@@ -79,8 +83,25 @@ Type
     property AttribBinds[Index: integer]: TAttribSemantic read getAttr;
     property AttribBindsCount: integer read getAttrCount;
 
+    property BuildinUniforms: TObjectList read FBuildinUniforms;
+
     constructor CreateOwned(aOwner: TObject = nil);
+    destructor Destroy; override;
   end;
+
+  // Base class of automatic uniform setup
+  TBaseBuiltinUniform = class(TBaseRenderResource)
+  public
+    constructor CreateOwned(aOwner: TShaderProgram); virtual;
+    class function Name: string; virtual; abstract;
+    class function IsInner: boolean; override;
+  end;
+
+  TBuiltinUniformLightNumber = class(TBaseBuiltinUniform)
+  public
+    class function Name: string; override;
+  end;
+
 
   TUniformObject<T> = class(TBaseRenderResource);
 
@@ -429,6 +450,7 @@ Type
   public
 
     constructor CreateOwned(aImageHolder: TImageHolder; aOwner: TObject = nil);
+    class function IsInner: boolean; override;
 
     property ImageHolder: TImageHolder read FImageDescriptor;
     property ImageFormat: TImageFormat read getImageFormat;
@@ -577,6 +599,7 @@ Type
     Name: string;
     constructor Create(BuffType: TBufferType = btArray); reintroduce;
     destructor Destroy; override;
+    class function IsInner: boolean; override;
     procedure Notify(Sender: TObject; Msg: Cardinal;
       Params: pointer = nil); override;
 
@@ -621,6 +644,7 @@ Type
       BuffType: TBufferType = btArray); virtual;
     constructor CreateClone(ASample: TAttribObject);
     destructor Destroy; override;
+    class function IsInner: boolean; override;
 
     procedure Notify(Sender: TObject; Msg: Cardinal;
       Params: pointer = nil); override;
@@ -775,6 +799,7 @@ Type
     constructor CreateFrom(const aVertexObject: TVertexObject; const aGUID: TGUID); overload;
     constructor CreateFrom(const aVertexObject: TVertexObject); overload;
     constructor CreateFrom(const aVertexObject: TVertexObject; aName: string); overload;
+    class function IsInner: boolean; override;
 
     property VertexObject: TVertexObject read FVertexObject;
     property Extents: TExtents read FExtents;
@@ -1256,6 +1281,11 @@ begin
   result := FTarget;
 end;
 
+class function TTexture.IsInner: boolean;
+begin
+  result := true;
+end;
+
 procedure TTexture.setGenMipMaps(const Value: boolean);
 begin
   include(FUpdates, tuGenMipMaps);
@@ -1547,6 +1577,11 @@ begin
     Result := FSize;
 end;
 
+class function TBufferObject.IsInner: boolean;
+begin
+  result := true;
+end;
+
 procedure TBufferObject.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   if (Sender = FDataHandler) then
@@ -1670,6 +1705,11 @@ begin
     (FSemantic = AnObject.FSemantic)
   else
     Result := False;
+end;
+
+class function TAttribObject.IsInner: boolean;
+begin
+  result := true;
 end;
 
 procedure TAttribObject.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
@@ -2218,6 +2258,11 @@ begin
   FIdentityMatrix := true;
 end;
 
+class function TMesh.IsInner: boolean;
+begin
+  Result := true;
+end;
+
 procedure TMesh.SetLocalMatrix(const Value: TMatrix);
 begin
   if FLocalMatrix <> Value then
@@ -2241,6 +2286,16 @@ begin
   FBinary.Size := 0;
   FFragDataBindPos.Name := '';
   FFragDataBindPos.Location := -1;
+end;
+
+destructor TShaderProgram.Destroy;
+begin
+  if Assigned(FBuildinUniforms) then
+  begin
+    FBuildinUniforms.FreeObjects;
+    FBuildinUniforms.Free;
+  end;
+  inherited;
 end;
 
 function TShaderProgram.getAttr(Index: integer): TAttribSemantic;
@@ -3605,6 +3660,36 @@ end;
 constructor TLoD.Create(aLoD: TMeshList; aDistance: single);
 begin
   LoD:=aLod; Distance:=aDistance;
+end;
+
+{ TBuiltinUniformLightNumber }
+
+class function TBuiltinUniformLightNumber.Name: string;
+begin
+  Result := 'LightNumber';
+end;
+
+{ TBaseBuiltinUniform }
+
+constructor TBaseBuiltinUniform.CreateOwned(aOwner: TShaderProgram);
+var
+  i: integer;
+begin
+  Create;
+  Owner := aOwner;
+  if not assigned(aOwner.FBuildinUniforms) then
+    aOwner.FBuildinUniforms := TObjectList.Create
+  else
+    for I := 0 to aOwner.FBuildinUniforms.Count - 1 do
+      Assert(aOwner.FBuildinUniforms[i].ClassType <> ClassType,
+      'Dublicate builtin uniform');
+
+  aOwner.FBuildinUniforms.Add(Self);
+end;
+
+class function TBaseBuiltinUniform.IsInner: boolean;
+begin
+  Result := true;
 end;
 
 initialization

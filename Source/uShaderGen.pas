@@ -14,7 +14,7 @@ type
     Header, Input, Output, Impl, Exec: ansistring;
   end;
 
-  TConfigShader = class
+  ShaderGenerator = class
     class function UBOParamShader: TShaderProgram; static;
     class function GenForwardLightShader: TShaderProgram; static;
   end;
@@ -82,7 +82,7 @@ end;
 
 { TConfigShader }
 
-class function TConfigShader.GenForwardLightShader: TShaderProgram;
+class function ShaderGenerator.GenForwardLightShader: TShaderProgram;
 var vt,ft: ansistring;
 begin
   result:=TShaderProgram.Create;
@@ -168,6 +168,7 @@ begin
 'in vec3 WorldNormal;'+#13#10 +
 'in vec3 ViewDir;'+#13#10 +
 'layout(location = 0) out vec4 FragColor;'+#13#10 +
+'uniform int LightNumber = 0;'#10#13+
 
 'vec3 Normal;'+#13#10 +
 'vec3 CameraVector;'+#13#10 +
@@ -268,7 +269,6 @@ begin
 '  LightAmbient = vec4(0.0);'+#13#10 +
 '  LightDiffuse = vec4(0.0);'+#13#10 +
 '  LightSpecular = vec4(0.0);'+#13#10 +
-'  int LightNumber = 1;'+#13#10 +
 '    for (int I = 0; I < 8 && I < LightNumber; I++)'#10#13+
 '    {'#10#13+
 '        Light source = lights.light; //GetLight(I);'#10#13+
@@ -293,9 +293,10 @@ begin
 '}';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
+  TBuiltinUniformLightNumber.CreateOwned(Result);
 end;
 
-class function TConfigShader.UBOParamShader: TShaderProgram;
+class function ShaderGenerator.UBOParamShader: TShaderProgram;
 var vt,ft: ansistring;
 begin
   result:=TShaderProgram.Create;

@@ -1,4 +1,4 @@
-unit uPrimitives;
+﻿unit uPrimitives;
 
 {$IFDEF FPC}
   {$MODE Delphi}
@@ -16,6 +16,7 @@ function CreateSphere(Radius: Float; VSegments, HSegments: integer;
 function CreateBox(aWidth, aHeight, aDepth: Float): TVertexObject;
 function CreateCube(aSize: Float): TVertexObject;
 function CreateTeapod(aDivision: Integer = 9): TVertexObject;
+function CreateSprite(): TVertexObject;
 
 implementation
 
@@ -723,6 +724,38 @@ begin
         result.AddTriangle(GetIndex(J, I+1), GetIndex(J+1, I+1), GetIndex(J+1, I));
       end;
     end;
+end;
+
+function CreateSprite(): TVertexObject;
+var attr: TAttribBuffer;
+    Vertices: TVec2List;
+    TexCoords: TVec2List;
+begin
+  result:=TVertexObject.Create;
+  Vertices:=TVec2List.Create;
+  TexCoords:=TVec2List.Create;
+
+  Vertices.Add( Vec2Make( -0.5, -0.5)); TexCoords.Add( Vec2Make( 0, 0 ));
+  Vertices.Add( Vec2Make( -0.5, 0.5 ));  TexCoords.Add( Vec2Make( 0, 1 ));
+  Vertices.Add( Vec2Make( 0.5, 0.5 ));   TexCoords.Add( Vec2Make( 1, 1 ));
+  Vertices.Add( Vec2Make( 0.5, -0.5 ));  TexCoords.Add( Vec2Make( 1, 0 ));
+
+  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name,2,vtFloat,0);
+  attr.Buffer.Allocate(Vertices.Size, Vertices.Data);
+  attr.Buffer.SetDataHandler(Vertices);
+  attr.SetAttribSemantic(atVertex);
+  result.AddAttrib(attr,true);
+
+  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
+  attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
+  attr.Buffer.SetDataHandler(TexCoords);
+  attr.SetAttribSemantic(atTexCoord0);
+  result.AddAttrib(attr);
+  with result do begin
+    AddTriangle(0,1,3);
+    AddTriangle(3,1,2);
+  end;
+  result.FaceType:=ftTriangles;
 end;
 
 end.

@@ -1,5 +1,6 @@
 ﻿ { TODO : Реализовать использование зарегистрированных рендеров и менеджеров ресурсов
           Оптимизировать бинд буфера объектов, убрать лишние переключения используя TMesh.IsIdentityMatrix
+          Заменить глобальную переменную vActiveShader на состояние (свойство) рендера
  }
 unit uGLRenders;
 
@@ -36,12 +37,34 @@ Type
     procedure GetSlot(var aBufferPool: TGLBufferObjectsPool; var aSlotIndex: integer);
   end;
 
+  TGLBuiltinUniform = class(TGLBaseResource)
+  public
+    constructor CreateFrom(aOwner: TGLResources); virtual;
+    procedure Apply(aRender: TBaseRender); virtual; abstract;
+  end;
+
+  TGLUniformLightNumber = class(TGLBuiltinUniform)
+  public
+    procedure Apply(aRender: TBaseRender); override;
+  end;
+
+  // Trolface ;D
+  TGLSLShaderProgramExt = class(TGLSLShaderProgram)
+  private
+    FBuiltinUniforms: TObjectList;
+  public
+    constructor CreateFrom(aOwner: TGLResources; const aShaderProgram: TShaderProgram); overload;
+    destructor Destroy; override;
+
+    procedure Apply(aRender: TGLRender); overload;
+  end;
+
   TGLMaterial = class (TGLBaseResource)
   private
     FMaterialObject: TMaterialObject;
     FTex: array of TGLTextureObject;
     FBlend: TCustomBlending;
-    FShader: TGLSLShaderProgram;
+    FShader: TGLSLShaderProgramExt;
     FIdexInPool: integer;
     FStructureChanged: boolean;
     procedure UpdateUBO(aPool: TGLBufferObjectsPool);
@@ -138,7 +161,6 @@ Type
   private
     FResList: array of TResourceTree;
     FInnerResource: TResourceTree;
-    function isInnerResource(const aClassType: TClass): boolean;
     function GetResource(const Resource: TBaseRenderResource): TGLBaseResource;
   public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
@@ -193,9 +215,6 @@ var
 implementation
 
 var
-  vMaterialPool: TGLPoolBuffers = nil;
-  vLightsPool: TGLPoolBuffers = nil;
-
   vActiveShader: TGLSLShaderProgram = nil;
 
 { TGLRender }
@@ -282,6 +301,7 @@ begin
     TGLMaterial(glres).UpdateUBO(FMaterialPool);
   end;
   //создаем ресурсы для всех источников света сцены
+  FCurrentLightNumber := 1;
   for i:=0 to aScene.LightsCount-1 do begin
     res:=aScene.Lights[i];
     glres := FResourceManager.GetOrCreateResource(res);
@@ -469,9 +489,10 @@ begin
   FSupportedResources.Add(TAttribObject);
   FSupportedResources.Add(TTexture);
   FSupportedResources.Add(TMesh);
+  FSupportedResources.Add(TBuiltinUniformLightNumber);
 
   //Resource Tree for each of resource type, exclude inner resource
-  setlength(FResList,FSupportedResources.Count - 4);
+  setlength(FResList,FSupportedResources.Count - 5);
   for i := 0 to length(FResList)-1 do
     FResList[i]:= TResourceTree.Create(ResourceComparer, nil);
   //Inner resource list: TBufferObject, TAttribObject, TTexture, TMesh
@@ -518,7 +539,7 @@ begin
   if idx <0 then exit;
 
   //Resource exists?
-  if isInnerResource(Resource.ClassType) then begin
+  if Resource.IsInner then begin
     if FInnerResource.Find(Resource, glres) then begin
       FInnerResource.Delete(Resource);
       FreeAndNil(glres);
@@ -546,7 +567,7 @@ begin
 
   if Resource.ClassType = TShaderProgram then begin
     //Create GLSL Shader program
-    glres:=TGLSLShaderProgram.CreateFrom(Resource as TShaderProgram);
+    glres:=TGLSLShaderProgramExt.CreateFrom(Self, Resource as TShaderProgram);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
     Result:=glres;
@@ -559,7 +580,6 @@ begin
     glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
-    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -569,7 +589,6 @@ begin
     glres:=TGLMesh.CreateFrom(self, Resource as TMesh);
     FInnerResource.Add(Resource, glres);
     glres.Owner:=self;
-    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -579,7 +598,6 @@ begin
     glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
-    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -589,7 +607,15 @@ begin
     glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
-    Result:=glres;
+    Resource.Subscribe(self);
+    exit(glres);
+  end;
+
+  if Resource.ClassType = TBuiltinUniformLightNumber then begin
+    //Create uniform setter of LightNumber
+    glres:=TGLUniformLightNumber.CreateFrom(self);
+    FInnerResource.Add(Resource, glres);
+    glres.Owner:=self;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -599,7 +625,6 @@ begin
     glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
-    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -609,7 +634,6 @@ begin
     glres:=TGLLight.CreateFrom(self, Resource as TLightSource);
     FResList[idx].Add(Resource, glres);
     glres.Owner:=self;
-    Result:=glres;
     Resource.Subscribe(self);
     exit(glres);
   end;
@@ -630,17 +654,11 @@ begin
   result:=nil; idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx < 0 then exit;
 
-  if isInnerResource(Resource.ClassType) then begin
+  if Resource.IsInner then begin
     if FInnerResource.Find(Resource, glres) then exit(glres);
   end else begin
     if FResList[idx].Find(Resource, glres) then exit(glres);
   end;
-end;
-
-function TGLResources.isInnerResource(const aClassType: TClass): boolean;
-begin
-  result:=(aClassType = TBufferObject) or (aClassType = TAttribObject)
-    or (aClassType = TTexture) or (aClassType = TMesh);
 end;
 
 procedure TGLResources.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
@@ -676,7 +694,7 @@ begin
   if idx <0 then exit;
 
   //Resource exists?
-  if isInnerResource(Resource.ClassType) then begin
+  if Resource.IsInner then begin
     if FInnerResource.Find(Resource, glres) then
       FInnerResource.Delete(Resource);
   end else
@@ -752,7 +770,8 @@ var
     tb: TGLUniformBlock;
 begin
   if assigned(FShader) then begin
-    FShader.Apply; vActiveShader:=FShader; end else exit;
+    vActiveShader:=FShader;
+    FShader.Apply(aRender);  end else exit;
 
   tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubCamera].Name);
   if Assigned(tb) then begin
@@ -787,7 +806,7 @@ begin
   FMaterialObject.Subscribe(self);
   FIdexInPool:=-1;
 
-  FShader:=TGLSLShaderProgram(aOwner.GetOrCreateResource(FMaterialObject.Shader));
+  FShader:=TGLSLShaderProgramExt(aOwner.GetOrCreateResource(FMaterialObject.Shader));
   FBlend:=FMaterialObject.Blending;
   setlength(FTex,FMaterialObject.TexCount);
   for i:=0 to FMaterialObject.TexCount-1 do begin
@@ -1034,6 +1053,7 @@ end;
 procedure TGLLight.UpdateUBO(aPool: TGLBufferObjectsPool);
 var
     p: PByte;
+    pos: TVector;
     cos_cuoff: single;
 begin
   if not FStructureChanged then
@@ -1047,15 +1067,20 @@ begin
 
   // Fill Uniform Buffer Object Data
   with FLight do begin
-    Position.MakePoint;
-    move(Position.GetAddr^,p^,16); inc(p, 16);
+    pos := Position;
+    if LightStyle in [lsParallel, lsParallelSpot] then
+      pos.MakeAffine else pos.MakePoint;
+    move(pos.GetAddr^,p^,16); inc(p, 16);
     move(Ambient.ColorAsAddress^,p^,16); inc(p, 16);
     move(Diffuse.ColorAsAddress^,p^,16); inc(p, 16);
     move(Specular.ColorAsAddress^,p^,16); inc(p, 16);
     move(ConstAttenuation,p^,4); inc(p, 4);
     move(LinearAttenuation,p^,4); inc(p, 4);
     move(QuadraticAttenuation,p^,4); inc(p, 4);
-    cos_cuoff := Cos(Pi*SpotCutOff/180);
+    if LightStyle in [lsSpot, lsParallelSpot] then
+      cos_cuoff := Cos(Pi*SpotCutOff/180)
+    else
+      cos_cuoff := -1;
     move(cos_cuoff,p^,4); inc(p, 4);
     move(SpotExponent,p^,4); inc(p, 4);
     //move(SceneColor.ColorAsAddress^,p^,16); inc(p, 16);
@@ -1063,6 +1088,59 @@ begin
   end;
   aPool.Buffer.UnMap;
   FStructureChanged := False;
+end;
+
+{ TGLBuiltinUniform }
+
+constructor TGLBuiltinUniform.CreateFrom(aOwner: TGLResources);
+begin
+  Create;
+  Owner := aOwner;
+end;
+
+{ TGLUniformLightNumber }
+
+procedure TGLUniformLightNumber.Apply(aRender: TBaseRender);
+begin
+  Assert(vActiveShader <> nil);
+  vActiveShader.SetUniform('LightNumber', aRender.CurrentLightNumber);
+end;
+
+{ TGLSLShaderProgramExt }
+
+procedure TGLSLShaderProgramExt.Apply(aRender: TGLRender);
+var
+  i: integer;
+begin
+  Apply();
+  if Assigned(FBuiltinUniforms) then
+    for i := 0 to FBuiltinUniforms.Count - 1 do
+      TGLBuiltinUniform(FBuiltinUniforms[i]).Apply(aRender);
+end;
+
+constructor TGLSLShaderProgramExt.CreateFrom(aOwner: TGLResources;
+  const aShaderProgram: TShaderProgram);
+var
+  i: integer;
+  glres: TGLBaseResource;
+begin
+  CreateFrom(aShaderProgram);
+  Owner := aOwner;
+  if aShaderProgram.BuildinUniforms.Count > 0 then
+  begin
+    FBuiltinUniforms := TObjectList.Create;
+    for I := 0 to aShaderProgram.BuildinUniforms.Count - 1 do
+    begin
+      glres := aOwner.GetOrCreateResource(aShaderProgram.BuildinUniforms[I] as TBaseRenderResource);
+      FBuiltinUniforms.Add(glres);
+    end;
+  end;
+end;
+
+destructor TGLSLShaderProgramExt.Destroy;
+begin
+  FBuiltinUniforms.Free;
+  inherited;
 end;
 
 initialization

@@ -39,6 +39,7 @@ Type
   TBaseRender = class  (TNotifiableObject)
   private
   protected
+    FCurrentLightNumber: integer;
     FRegisteredSubRenders: TList;  //List of TBaseSubRender
     procedure UploadResource(const Res: TBaseRenderResource); virtual; abstract;
     procedure ProcessResource(const Res: TBaseRenderResource); virtual; abstract;
@@ -58,6 +59,9 @@ Type
     destructor Destroy; override;
 
     procedure RegisterSubRender(const SubRender: TBaseSubRender); virtual;
+
+    // Rendering states
+    property CurrentLightNumber: integer read FCurrentLightNumber;
   end;
 
   TRegisteredRenders = class (TNotifiableObject)

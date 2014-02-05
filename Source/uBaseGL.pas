@@ -301,7 +301,7 @@ Type
     function ProgramBinary(Binary: pointer; Size: integer; Format: GLEnum): cardinal;
     procedure GetProgramBinary(var Binary: pointer; var Size: integer; var Format: GLEnum);
 
-    procedure Apply;
+    procedure Apply; overload;
     procedure UnApply;
 
     procedure SetUniform(const Name: ansistring; const Value: array of TVector);
