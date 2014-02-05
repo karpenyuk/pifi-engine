@@ -82,7 +82,10 @@ Type
   end;
 
   TPtrList = TDataList<Pointer>;
-  TObjectList = TDataList<TObject>;
+  TObjectList = class(TDataList<TObject>)
+  public
+    procedure FreeObjects;
+  end;
 
   TIntegerList = class(TDataList<Integer>)
   public
@@ -1229,6 +1232,16 @@ end;
 procedure TAbstractDataList.Transform(const AMatrix: TMatrix);
 begin
   Assert(false);
+end;
+
+{ TObjectList }
+
+procedure TObjectList.FreeObjects;
+var
+  i: Integer;
+begin
+  for i := Count - 1 downto 0 do FItems[i].Free;
+  Clear;
 end;
 
 end.
