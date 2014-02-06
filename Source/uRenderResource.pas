@@ -71,6 +71,8 @@ Type
   public
     Name: string;
 
+    procedure AddBuildinUniform(anUniform: TBaseBuiltinUniform);
+
     function SetAttribBindPos(const aName: ansistring;
       const aLocation: integer): integer;
 
@@ -92,14 +94,13 @@ Type
   // Base class of automatic uniform setup
   TBaseBuiltinUniform = class(TBaseRenderResource)
   public
-    constructor CreateOwned(aOwner: TShaderProgram); virtual;
-    class function Name: string; virtual; abstract;
+    class function Name: ansistring; virtual; abstract;
     class function IsInner: boolean; override;
   end;
 
   TBuiltinUniformLightNumber = class(TBaseBuiltinUniform)
   public
-    class function Name: string; override;
+    class function Name: ansistring; override;
   end;
 
 
@@ -2275,6 +2276,13 @@ end;
 
 { TShaderProgram }
 
+procedure TShaderProgram.AddBuildinUniform(anUniform: TBaseBuiltinUniform);
+begin
+  if not assigned(FBuildinUniforms) then
+    FBuildinUniforms := TObjectList.Create;
+  FBuildinUniforms.Add(anUniform);
+end;
+
 constructor TShaderProgram.CreateOwned(aOwner: TObject);
 var
   st: TShaderType;
@@ -2290,11 +2298,7 @@ end;
 
 destructor TShaderProgram.Destroy;
 begin
-  if Assigned(FBuildinUniforms) then
-  begin
-    FBuildinUniforms.FreeObjects;
-    FBuildinUniforms.Free;
-  end;
+  FBuildinUniforms.Free;
   inherited;
 end;
 
@@ -3664,28 +3668,12 @@ end;
 
 { TBuiltinUniformLightNumber }
 
-class function TBuiltinUniformLightNumber.Name: string;
+class function TBuiltinUniformLightNumber.Name: ansistring;
 begin
   Result := 'LightNumber';
 end;
 
 { TBaseBuiltinUniform }
-
-constructor TBaseBuiltinUniform.CreateOwned(aOwner: TShaderProgram);
-var
-  i: integer;
-begin
-  Create;
-  Owner := aOwner;
-  if not assigned(aOwner.FBuildinUniforms) then
-    aOwner.FBuildinUniforms := TObjectList.Create
-  else
-    for I := 0 to aOwner.FBuildinUniforms.Count - 1 do
-      Assert(aOwner.FBuildinUniforms[i].ClassType <> ClassType,
-      'Dublicate builtin uniform');
-
-  aOwner.FBuildinUniforms.Add(Self);
-end;
 
 class function TBaseBuiltinUniform.IsInner: boolean;
 begin

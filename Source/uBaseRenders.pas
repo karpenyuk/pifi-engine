@@ -40,6 +40,7 @@ Type
   private
   protected
     FCurrentLightNumber: integer;
+    FCurrentGraph: TSceneGraph;
     FRegisteredSubRenders: TList;  //List of TBaseSubRender
     procedure UploadResource(const Res: TBaseRenderResource); virtual; abstract;
     procedure ProcessResource(const Res: TBaseRenderResource); virtual; abstract;
@@ -61,6 +62,7 @@ Type
     procedure RegisterSubRender(const SubRender: TBaseSubRender); virtual;
 
     // Rendering states
+    property CurrentGraph: TSceneGraph read FCurrentGraph;
     property CurrentLightNumber: integer read FCurrentLightNumber;
   end;
 

@@ -15,8 +15,12 @@ type
   end;
 
   ShaderGenerator = class
+  private
+    class var UniformLightNumber: TBuiltinUniformLightNumber;
+  public
     class function UBOParamShader: TShaderProgram; static;
     class function GenForwardLightShader: TShaderProgram; static;
+    class function GetUniformLightNumber: TBuiltinUniformLightNumber;
   end;
 
   TShaderMaterial = class
@@ -150,7 +154,7 @@ begin
 
 'layout(std140, binding = 4) uniform Lights'+#13#10 +
 '{'+#13#10 +
-'    Light light;'+#13#10 +
+'    Light light[8];'+#13#10 +
 '} lights;'+#13#10 +
 
 'layout(std140, binding = 3) uniform Material'+#13#10 +
@@ -271,7 +275,7 @@ begin
 '  LightSpecular = vec4(0.0);'+#13#10 +
 '    for (int I = 0; I < 8 && I < LightNumber; I++)'#10#13+
 '    {'#10#13+
-'        Light source = lights.light; //GetLight(I);'#10#13+
+'        Light source = lights.light[I]; //GetLight(I);'#10#13+
 '        if (source.position.w == 1.0)'#10#13+
 '        {'#10#13+
 '            if (source.spot_cutoff == -1.0){ pointLight(source); }'#10#13+
@@ -293,7 +297,14 @@ begin
 '}';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
-  TBuiltinUniformLightNumber.CreateOwned(Result);
+  result.AddBuildinUniform(GetUniformLightNumber);
+end;
+
+class function ShaderGenerator.GetUniformLightNumber: TBuiltinUniformLightNumber;
+begin
+  if not Assigned(UniformLightNumber) then
+    UniformLightNumber := TBuiltinUniformLightNumber.Create;
+  Result := UniformLightNumber;
 end;
 
 class function ShaderGenerator.UBOParamShader: TShaderProgram;
@@ -396,5 +407,11 @@ begin
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
 end;
+
+initialization
+
+finalization
+
+  ShaderGenerator.UniformLightNumber.Free;
 
 end.

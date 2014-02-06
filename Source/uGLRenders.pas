@@ -38,8 +38,10 @@ Type
   end;
 
   TGLBuiltinUniform = class(TGLBaseResource)
+  protected
+    FUniform: TBaseBuiltinUniform;
   public
-    constructor CreateFrom(aOwner: TGLResources); virtual;
+    constructor CreateFrom(aOwner: TGLResources; anUniform: TBaseBuiltinUniform); virtual;
     procedure Apply(aRender: TBaseRender); virtual; abstract;
   end;
 
@@ -174,6 +176,7 @@ Type
     destructor Destroy; override;
   end;
 
+  TLightResidentArray = array[0..7] of TGLLight;
 
   TGLRender = class (TBaseRender)
   private
@@ -182,12 +185,16 @@ Type
     FLightPool: TGLBufferObjectsPool;
     FMaterialPool: TGLBufferObjectsPool;
     FIdexInPool: integer;
+
+    FLightDynamicBuffer: TGLBufferObject;
+    FLightBufferResidents: TLightResidentArray;
   protected
     FResourceManager: TGLResources;
 
     procedure PrepareResources(const aScene: TSceneGraph);
     procedure UploadResource(const Res: TBaseRenderResource); override;
     procedure ProcessResource(const Res: TBaseRenderResource); override;
+    procedure ApplyLights(aLights: TObjectList);
 //    procedure ProcessMeshObjects(const aMeshObjects: TMeshObjectsList); override;
   public
     constructor Create;
@@ -218,6 +225,48 @@ var
   vActiveShader: TGLSLShaderProgram = nil;
 
 { TGLRender }
+
+procedure TGLRender.ApplyLights(aLights: TObjectList);
+var
+  i, j: integer;
+  isResident: boolean;
+  glLight: TGLLight;
+  newResident: TLightResidentArray;
+begin
+  FCurrentLightNumber := aLights.Count;
+  if FCurrentLightNumber = 0 then
+    exit;
+  // Lights number may be 1000 but 8 only active for each object
+  Assert(aLights.Count < Length(FLightBufferResidents), 'Too many lights!');
+  FillChar(newResident, SizeOf(newResident), 0);
+  glBindBuffer(GL_COPY_READ_BUFFER, FLightPool.Buffer.Id);
+  glBindBuffer(GL_COPY_WRITE_BUFFER, FLightDynamicBuffer.Id);
+  for i := 0 to aLights.Count - 1 do begin
+    glLight :=  TGLLight(aLights[i]);
+    isResident := false;
+    // Find lights which is already in buffer
+    for j := 0 to aLights.Count - 1 do begin
+      if glLight = FLightBufferResidents[j] then begin
+        isResident := true;
+        newResident[j] := glLight;
+        break;
+      end;
+    end;
+    // Fill free place in buffer
+    if not isResident then begin
+      for j := 0 to aLights.Count - 1 do begin
+        if newResident[j] = nil then begin
+          newResident[j] := glLight;
+          glCopyBufferSubData(GL_COPY_READ_BUFFER,
+            GL_COPY_WRITE_BUFFER, FLightPool.OffsetByIndex(glLight.FIdexInPool),
+            j * FLightPool.ObjectSize, FLightPool.ObjectSize);
+          break;
+        end;
+      end;
+    end;
+  end;
+  FLightBufferResidents := newResident;
+end;
 
 procedure TGLRender.BindObjectBuffer(aPoolIndex: integer);
 begin
@@ -273,6 +322,8 @@ begin
     FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 2000);
     FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000);
     FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
+    FLightDynamicBuffer := TGLBufferObject.Create(btUniform);
+    FLightDynamicBuffer.Allocate(8 * FLightPool.ObjectSize, nil);
   end;
 
   if FIdexInPool < 0 then
@@ -301,17 +352,15 @@ begin
     TGLMaterial(glres).UpdateUBO(FMaterialPool);
   end;
   //создаем ресурсы для всех источников света сцены
-  FCurrentLightNumber := 1;
   for i:=0 to aScene.LightsCount-1 do begin
     res:=aScene.Lights[i];
     glres := FResourceManager.GetOrCreateResource(res);
     // обновляем даные в видеопамяти
     TGLLight(glres).UpdateUBO(FLightPool);
-    // ВРЕМЕННО!
-    glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubLights].Location,
-      FLightPool.Buffer.Id, FLightPool.OffsetByIndex(FIdexInPool),
-      FLightPool.ObjectSize);
   end;
+  FLightDynamicBuffer.BindBase(CUBOSemantics[ubLights].Location);
+  // Clear resident light array to update it every frame
+  FillChar(FLightBufferResidents, SizeOf(FLightBufferResidents), 0);
   //создаем ресурсы для всех объектов сцены
   for i:=0 to aScene.Count-1 do begin
     SceneItem:=aScene[i];
@@ -339,6 +388,7 @@ var i: integer;
     SceneItem: TBaseSceneItem;
     res: TGLBaseResource;
 begin
+  FCurrentGraph := aScene;
   //Подготавливаем ресурсы сцены
   PrepareResources(aScene);
   //Обрабатываем объекты сцены (подготовка + рендеринг)
@@ -613,7 +663,7 @@ begin
 
   if Resource.ClassType = TBuiltinUniformLightNumber then begin
     //Create uniform setter of LightNumber
-    glres:=TGLUniformLightNumber.CreateFrom(self);
+    glres:=TGLUniformLightNumber.CreateFrom(self, Resource as TBaseBuiltinUniform);
     FInnerResource.Add(Resource, glres);
     glres.Owner:=self;
     Resource.Subscribe(self);
@@ -885,8 +935,20 @@ end;
 { TGLSceneObject }
 
 procedure TGLSceneObject.Apply(aRender: TGLRender);
+var
+  list: TObjectList;
+  i: Integer;
 begin
   aRender.BindObjectBuffer(FIdexInPool);
+  list := TObjectList.Create;
+  try
+    // Just add all lights
+    for i := 0 to aRender.CurrentGraph.LightsCount - 1 do
+      list.Add(aRender.FResourceManager.GetResource(aRender.CurrentGraph.Lights[i]));
+    aRender.ApplyLights(list);
+  finally
+    list.Free;
+  end;
 end;
 
 constructor TGLSceneObject.CreateFrom(aOwner: TGLResources;
@@ -1092,10 +1154,12 @@ end;
 
 { TGLBuiltinUniform }
 
-constructor TGLBuiltinUniform.CreateFrom(aOwner: TGLResources);
+constructor TGLBuiltinUniform.CreateFrom(aOwner: TGLResources;
+  anUniform: TBaseBuiltinUniform);
 begin
   Create;
   Owner := aOwner;
+  FUniform := anUniform;
 end;
 
 { TGLUniformLightNumber }
@@ -1103,7 +1167,7 @@ end;
 procedure TGLUniformLightNumber.Apply(aRender: TBaseRender);
 begin
   Assert(vActiveShader <> nil);
-  vActiveShader.SetUniform('LightNumber', aRender.CurrentLightNumber);
+  vActiveShader.SetUniform(FUniform.Name, aRender.CurrentLightNumber);
 end;
 
 { TGLSLShaderProgramExt }
