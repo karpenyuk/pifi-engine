@@ -176,18 +176,15 @@ Type
     destructor Destroy; override;
   end;
 
-  TLightResidentArray = array[0..7] of TGLLight;
-
   TGLRender = class (TBaseRender)
   private
     FCameraPool: TGLBufferObjectsPool;
     FObjectPool: TGLBufferObjectsPool;
     FLightPool: TGLBufferObjectsPool;
+    FLightIndices: TGLBufferObject;
     FMaterialPool: TGLBufferObjectsPool;
     FIdexInPool: integer;
 
-    FLightDynamicBuffer: TGLBufferObject;
-    FLightBufferResidents: TLightResidentArray;
   protected
     FResourceManager: TGLResources;
 
@@ -228,44 +225,20 @@ var
 
 procedure TGLRender.ApplyLights(aLights: TObjectList);
 var
-  i, j: integer;
-  isResident: boolean;
-  glLight: TGLLight;
-  newResident: TLightResidentArray;
+  i: integer;
+  p: PGLuint;
 begin
   FCurrentLightNumber := aLights.Count;
   if FCurrentLightNumber = 0 then
     exit;
-  // Lights number may be 1000 but 8 only active for each object
-  Assert(aLights.Count < Length(FLightBufferResidents), 'Too many lights!');
-  FillChar(newResident, SizeOf(newResident), 0);
-  glBindBuffer(GL_COPY_READ_BUFFER, FLightPool.Buffer.Id);
-  glBindBuffer(GL_COPY_WRITE_BUFFER, FLightDynamicBuffer.Id);
-  for i := 0 to aLights.Count - 1 do begin
-    glLight :=  TGLLight(aLights[i]);
-    isResident := false;
-    // Find lights which is already in buffer
-    for j := 0 to aLights.Count - 1 do begin
-      if glLight = FLightBufferResidents[j] then begin
-        isResident := true;
-        newResident[j] := glLight;
-        break;
-      end;
-    end;
-    // Fill free place in buffer
-    if not isResident then begin
-      for j := 0 to aLights.Count - 1 do begin
-        if newResident[j] = nil then begin
-          newResident[j] := glLight;
-          glCopyBufferSubData(GL_COPY_READ_BUFFER,
-            GL_COPY_WRITE_BUFFER, FLightPool.OffsetByIndex(glLight.FIdexInPool),
-            j * FLightPool.ObjectSize, FLightPool.ObjectSize);
-          break;
-        end;
-      end;
-    end;
+  p := FLightIndices.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+    0, FLightIndices.Size);
+  for I := 0 to aLights.Count - 1 do
+  begin
+    p^ := TGLLight(aLights[I]).FIdexInPool * 6;
+    inc(p);
   end;
-  FLightBufferResidents := newResident;
+  FLightIndices.UnMap;
 end;
 
 procedure TGLRender.BindObjectBuffer(aPoolIndex: integer);
@@ -294,6 +267,7 @@ begin
   FCameraPool.Free;
   FObjectPool.Free;
   FLightPool.Free;
+  FLightIndices.Free;
   FMaterialPool.Free;
   FResourceManager.Free;
   inherited;
@@ -320,10 +294,10 @@ begin
   if not Assigned(FObjectPool) then begin
     FCameraPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 8);
     FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 2000);
-    FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000);
+    FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000, btTexture);
+    FLightIndices := TGLBufferObject.Create(btShaderStorage);
+    FLightIndices.Allocate(8*SizeOf(GLuint), nil, GL_STREAM_READ);
     FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
-    FLightDynamicBuffer := TGLBufferObject.Create(btUniform);
-    FLightDynamicBuffer.Allocate(8 * FLightPool.ObjectSize, nil);
   end;
 
   if FIdexInPool < 0 then
@@ -358,9 +332,9 @@ begin
     // обновляем даные в видеопамяти
     TGLLight(glres).UpdateUBO(FLightPool);
   end;
-  FLightDynamicBuffer.BindBase(CUBOSemantics[ubLights].Location);
-  // Clear resident light array to update it every frame
-  FillChar(FLightBufferResidents, SizeOf(FLightBufferResidents), 0);
+  FLightIndices.BindBase(CUBOSemantics[ubLights].Location);
+  glActiveTexture(GL_TEXTURE0);
+  FLightPool.Buffer.BindTexture;
   //создаем ресурсы для всех объектов сцены
   for i:=0 to aScene.Count-1 do begin
     SceneItem:=aScene[i];

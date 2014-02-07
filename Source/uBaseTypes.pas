@@ -283,7 +283,7 @@ const
       (Name: 'Cameras'; Location: 1),
       (Name: 'Objects'; Location: 2),
       (Name: 'Material'; Location: 3),
-      (Name: 'Lights'; Location: 4),
+      (Name: 'LightIndices'; Location: 4),
       (Name: ''; Location: 5)
     );
   CUBOMatPropertySemantics: array [TUBOMaterialProperties] of ansistring =

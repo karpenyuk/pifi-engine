@@ -152,10 +152,10 @@ begin
 '    vec3    spot_direction;'+#13#10 +
 '};'+#13#10 +
 
-'layout(std140, binding = 4) uniform Lights'+#13#10 +
+'layout(std140, binding = 4) uniform LightIndices'+#13#10 +
 '{'+#13#10 +
-'    Light light[8];'+#13#10 +
-'} lights;'+#13#10 +
+'    int indices[8];'+#13#10 +
+'} lightIndices;'+#13#10 +
 
 'layout(std140, binding = 3) uniform Material'+#13#10 +
 '{'+#13#10 +
@@ -172,6 +172,7 @@ begin
 'in vec3 WorldNormal;'+#13#10 +
 'in vec3 ViewDir;'+#13#10 +
 'layout(location = 0) out vec4 FragColor;'+#13#10 +
+'layout(binding = 0) uniform samplerBuffer Lights;'+#13#10 +
 'uniform int LightNumber = 0;'#10#13+
 
 'vec3 Normal;'+#13#10 +
@@ -275,7 +276,21 @@ begin
 '  LightSpecular = vec4(0.0);'+#13#10 +
 '    for (int I = 0; I < 8 && I < LightNumber; I++)'#10#13+
 '    {'#10#13+
-'        Light source = lights.light[I]; //GetLight(I);'#10#13+
+'        int idx = lightIndices.indices[I];'#10#13+
+'        vec4 value;'#10#13+
+'        Light source;'#10#13+
+'        source.position = texelFetch(Lights, idx).rgba; idx++;'#10#13+
+'        source.ambient = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+'        source.diffuse = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+'        source.specular = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+'        value = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+'        source.constant_attenuation = value.r;'+#13#10 +
+'        source.linear_attenuation = value.g;'+#13#10 +
+'        source.quadratic_attenuation = value.b;'+#13#10 +
+'        source.spot_cutoff = value.a;'+#13#10 +
+'        value = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+'        source.spot_exponent = value.r;'+#13#10 +
+'        source.spot_direction = value.gba;'+#13#10 +
 '        if (source.position.w == 1.0)'#10#13+
 '        {'#10#13+
 '            if (source.spot_cutoff == -1.0){ pointLight(source); }'#10#13+

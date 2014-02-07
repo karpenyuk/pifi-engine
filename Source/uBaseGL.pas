@@ -50,6 +50,7 @@ Type
   private
     FBuffer: TBufferObject;
     FBuffId: cardinal;
+    FTexId: cardinal;
     FLastTarget: TBufferType;
     FLocked: boolean;
     FMappedPointer: pointer;
@@ -72,6 +73,7 @@ Type
     procedure Upload(NewData: pointer; aSize, aOffset: integer);
     procedure Download(DestPtr: pointer; aSize, aOffset: integer; aMapBuffer: boolean = true);
     procedure Bind; overload;
+    procedure BindTexture(aFormat: GLenum = GL_RGBA32F);
     procedure Bind(AsTarget: TBufferType); overload;
     procedure BindBase(Index: cardinal); overload;
     procedure BindBase(AsTarget: TBufferType; Index: cardinal); overload;
@@ -231,7 +233,7 @@ Type
     FUBOSize: integer;
     FStackTop: integer;
   public
-    constructor Create(aObjectSize: integer; aObjectsCount: integer = 10000);
+    constructor Create(aObjectSize: integer; aObjectsCount: integer; aBufferType: TBufferType = btUniform);
     destructor Destroy; override;
 
     property Buffer: TGLBufferObject read FBuffer;
@@ -688,6 +690,14 @@ begin
     assert(false, 'Bind Range not supported for this buffer type!');
 end;
 
+procedure TGLBufferObject.BindTexture(aFormat: GLenum);
+begin
+  if FTexId = 0 then
+    glGenTextures(1, @FTexId);
+  glBindTexture(GL_TEXTURE_BUFFER, FTexId);
+  glTexBuffer(GL_TEXTURE_BUFFER, aFormat, FBuffId);
+end;
+
 constructor TGLBufferObject.CreateFrom(const aBuffer: TBufferObject);
 begin
   Create(aBuffer.BufferType);
@@ -786,6 +796,8 @@ end;
 destructor TGLBufferObject.Destroy;
 begin
   glDeleteBuffers(1, @FBuffId);
+  if FTexId <> 0 then
+    glDeleteTextures(1, @FTexId);
   if assigned(FBuffer) then FBuffer.UnSubscribe(self);
   inherited;
 end;
@@ -2707,7 +2719,7 @@ begin
   result := CUBOSemantics[aUBO.BlockType].Location;
 end;
 
-constructor TGLBufferObjectsPool.Create(aObjectSize, aObjectsCount: integer);
+constructor TGLBufferObjectsPool.Create(aObjectSize, aObjectsCount: integer; aBufferType: TBufferType);
 var
   i: integer;
   uniformBufferAlignSize: GLint;
@@ -2718,7 +2730,7 @@ begin
   FUBOSize := Ceil(aObjectSize / uniformBufferAlignSize)*uniformBufferAlignSize;
   FObjectsCount := aObjectsCount;
   FObjectSize := aObjectSize;
-  FBuffer := TGLBufferObject.Create(btUniform);
+  FBuffer := TGLBufferObject.Create(aBufferType);
   FBuffer.Allocate(FUBOSize * FObjectsCount, nil);
   FFreeRooms := TIntegerList.Create;
   FFreeRooms.Count := aObjectsCount;
