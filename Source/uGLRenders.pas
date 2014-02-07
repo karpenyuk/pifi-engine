@@ -233,6 +233,7 @@ begin
     exit;
   p := FLightIndices.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
     0, FLightIndices.Size);
+  FillChar(p^, FLightIndices.Size, 0);
   for I := 0 to aLights.Count - 1 do
   begin
     p^ := TGLLight(aLights[I]).FIdexInPool * 6;
@@ -295,7 +296,7 @@ begin
     FCameraPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 8);
     FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 2000);
     FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000, btTexture);
-    FLightIndices := TGLBufferObject.Create(btShaderStorage);
+    FLightIndices := TGLBufferObject.Create(btUniform);
     FLightIndices.Allocate(8*SizeOf(GLuint), nil, GL_STREAM_READ);
     FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
   end;
@@ -326,7 +327,7 @@ begin
     TGLMaterial(glres).UpdateUBO(FMaterialPool);
   end;
   //создаем ресурсы для всех источников света сцены
-  for i:=0 to aScene.LightsCount-1 do begin
+  for i:= 0 to aScene.LightsCount - 1 do begin
     res:=aScene.Lights[i];
     glres := FResourceManager.GetOrCreateResource(res);
     // обновляем даные в видеопамяти

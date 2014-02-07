@@ -274,8 +274,7 @@ begin
 '  LightAmbient = vec4(0.0);'+#13#10 +
 '  LightDiffuse = vec4(0.0);'+#13#10 +
 '  LightSpecular = vec4(0.0);'+#13#10 +
-'    for (int I = 0; I < 8 && I < LightNumber; I++)'#10#13+
-'    {'#10#13+
+'    for (int I = 0; I < 8 && I < LightNumber; I++) {'#10#13+
 '        int idx = lightIndices.indices[I];'#10#13+
 '        vec4 value;'#10#13+
 '        Light source;'#10#13+

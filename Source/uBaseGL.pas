@@ -692,10 +692,11 @@ end;
 
 procedure TGLBufferObject.BindTexture(aFormat: GLenum);
 begin
-  if FTexId = 0 then
+  if FTexId = 0 then begin
     glGenTextures(1, @FTexId);
-  glBindTexture(GL_TEXTURE_BUFFER, FTexId);
-  glTexBuffer(GL_TEXTURE_BUFFER, aFormat, FBuffId);
+    glBindTexture(GL_TEXTURE_BUFFER, FTexId);
+  end;
+  glTextureBufferEXT(FTexId, GL_TEXTURE_BUFFER, aFormat, FBuffId);
 end;
 
 constructor TGLBufferObject.CreateFrom(const aBuffer: TBufferObject);
@@ -2726,8 +2727,13 @@ var
 begin
   inherited Create;
   FUsedCount := 0;
-  glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, @uniformBufferAlignSize);
-  FUBOSize := Ceil(aObjectSize / uniformBufferAlignSize)*uniformBufferAlignSize;
+  if aBufferType = btUniform then
+  begin
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, @uniformBufferAlignSize);
+    FUBOSize := Ceil(aObjectSize / uniformBufferAlignSize)*uniformBufferAlignSize;
+  end
+  else
+    FUBOSize := aObjectSize;
   FObjectsCount := aObjectsCount;
   FObjectSize := aObjectSize;
   FBuffer := TGLBufferObject.Create(aBufferType);
