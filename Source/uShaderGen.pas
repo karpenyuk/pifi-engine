@@ -92,7 +92,6 @@ begin
   result:=TShaderProgram.Create;
   vt:=
 '#version 430'+#13#10 +
-'#extension GL_ARB_enhanced_layouts: enable'+#13#10 +
 'layout(location = 0) in vec3 in_Position;'+#13#10 +
 'layout(location = 1) in vec3 in_Normal;'+#13#10 +
 'layout(location = 2) in vec2 in_TexCoord;'+#13#10 +
@@ -137,7 +136,6 @@ begin
 '}';
   ft :=
 '#version 430'+#13#10 +
-'#extension GL_ARB_enhanced_layouts: enable'+#13#10 +
 'struct Light'+#13#10 +
 '{'+#13#10 +
 '    vec4    position;'+#13#10 +
@@ -154,7 +152,7 @@ begin
 
 'layout(std140, binding = 4) uniform LightIndices'+#13#10 +
 '{'+#13#10 +
-'    int indices[8];'+#13#10 +
+'    ivec4 indices[8];'+#13#10 +
 '} lightIndices;'+#13#10 +
 
 'layout(std140, binding = 3) uniform Material'+#13#10 +
@@ -266,6 +264,32 @@ begin
     '    LightDiffuse += A.diffuse * nDotVP * spotAttenuation;'#10#13+
     '    LightSpecular += A.specular * nDotHV * spotAttenuation;'#10#13+
     '}'#10#13+
+    'void processLight(int idx) {'#10#13+
+    '    vec4 value;'#10#13+
+    '    Light source;'#10#13+
+    '    source.position = texelFetch(Lights, idx).rgba; idx++;'#10#13+
+    '    source.ambient = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+    '    source.diffuse = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+    '    source.specular = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+    '    value = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+    '    source.constant_attenuation = value.r;'+#13#10 +
+    '    source.linear_attenuation = value.g;'+#13#10 +
+    '    source.quadratic_attenuation = value.b;'+#13#10 +
+    '    source.spot_cutoff = value.a;'+#13#10 +
+    '    value = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
+    '    source.spot_exponent = value.r;'+#13#10 +
+    '    source.spot_direction = value.gba;'+#13#10 +
+    '    if (source.position.w == 1.0)'#10#13+
+    '    {'#10#13+
+    '        if (source.spot_cutoff == -1.0){ pointLight(source); }'#10#13+
+    '        else { spotLight(source); }'#10#13+
+    '    }'#10#13+
+    '    else'#10#13+
+    '    {'#10#13+
+    '        if (source.spot_cutoff == -1.0) { directionalLight(source); }'#10#13+
+    '        else { infiniteSpotLight(source); }'#10#13+
+    '    }'#10#13+
+    '}'#10#13+
 
 'void main()'+#13#10 +
 '{'+#13#10 +
@@ -274,40 +298,16 @@ begin
 '  LightAmbient = vec4(0.0);'+#13#10 +
 '  LightDiffuse = vec4(0.0);'+#13#10 +
 '  LightSpecular = vec4(0.0);'+#13#10 +
-'    for (int I = 0; I < 8 && I < LightNumber; I++) {'#10#13+
-'        int idx = lightIndices.indices[I];'#10#13+
-'        vec4 value;'#10#13+
-'        Light source;'#10#13+
-'        source.position = texelFetch(Lights, idx).rgba; idx++;'#10#13+
-'        source.ambient = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
-'        source.diffuse = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
-'        source.specular = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
-'        value = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
-'        source.constant_attenuation = value.r;'+#13#10 +
-'        source.linear_attenuation = value.g;'+#13#10 +
-'        source.quadratic_attenuation = value.b;'+#13#10 +
-'        source.spot_cutoff = value.a;'+#13#10 +
-'        value = texelFetch(Lights, idx).rgba; idx++;'+#13#10 +
-'        source.spot_exponent = value.r;'+#13#10 +
-'        source.spot_direction = value.gba;'+#13#10 +
-'        if (source.position.w == 1.0)'#10#13+
-'        {'#10#13+
-'            if (source.spot_cutoff == -1.0){ pointLight(source); }'#10#13+
-'            else { spotLight(source); }'#10#13+
-'        }'#10#13+
-'        else'#10#13+
-'        {'#10#13+
-'            if (source.spot_cutoff == -1.0) { directionalLight(source); }'#10#13+
-'            else { infiniteSpotLight(source); }'#10#13+
-'        }'#10#13+
-'    }'#10#13+
-'    LightAmbient = clamp(LightAmbient, vec4(0.0), vec4(1.0));'#10#13+
-'    LightDiffuse = clamp(LightDiffuse, vec4(0.0), vec4(1.0));'#10#13+
-'    LightSpecular = clamp(LightSpecular, vec4(0.0), vec4(1.0));'#10#13+
-'    vec4 finalColor = material.emissive + material.ambient * LightAmbient;'#10#13+
-'    finalColor += material.diffuse * LightDiffuse;'#10#13+
-'    finalColor += material.specular * LightSpecular;'#10#13+
-'    FragColor = vec4(finalColor.rgb, material.diffuse.a);'#10#13+
+'  for (int I = 0; I < 8 && I < LightNumber; I++) {'#10#13+
+'    processLight(lightIndices.indices[I].x);'#10#13+
+'  }'#10#13+
+'  LightAmbient = clamp(LightAmbient, vec4(0.0), vec4(1.0));'#10#13+
+'  LightDiffuse = clamp(LightDiffuse, vec4(0.0), vec4(1.0));'#10#13+
+'  LightSpecular = clamp(LightSpecular, vec4(0.0), vec4(1.0));'#10#13+
+'  vec4 finalColor = material.emissive + material.ambient * LightAmbient;'#10#13+
+'  finalColor += material.diffuse * LightDiffuse;'#10#13+
+'  finalColor += material.specular * LightSpecular;'#10#13+
+'  FragColor = vec4(finalColor.rgb, material.diffuse.a);'#10#13+
 '}';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
@@ -327,7 +327,6 @@ begin
   result:=TShaderProgram.Create;
   vt:=
 '#version 430'+#13#10 +
-'#extension GL_ARB_enhanced_layouts: enable'+#13#10 +
 'layout(location = 0) in vec3 in_Position;'+#13#10 +
 'layout(location = 1) in vec3 in_Normal;'+#13#10 +
 'layout(location = 2) in vec2 in_TexCoord;'+#13#10 +

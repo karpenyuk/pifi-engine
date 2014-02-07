@@ -237,7 +237,7 @@ begin
   for I := 0 to aLights.Count - 1 do
   begin
     p^ := TGLLight(aLights[I]).FIdexInPool * 6;
-    inc(p);
+    inc(p, 4);
   end;
   FLightIndices.UnMap;
 end;
@@ -297,7 +297,7 @@ begin
     FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 2000);
     FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000, btTexture);
     FLightIndices := TGLBufferObject.Create(btUniform);
-    FLightIndices.Allocate(8*SizeOf(GLuint), nil, GL_STREAM_READ);
+    FLightIndices.Allocate(8*SizeOf(Vec4i), nil);
     FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
   end;
 
