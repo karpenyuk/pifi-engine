@@ -52,6 +52,8 @@ Type
     property Childs: TSceneItemList read FChilds;
   end;
 
+  TDirectionBehavior = (dbNone, dbSphericalSprite, dbCylindricalSprite);
+
   TMovableObject = class (TBaseSceneItem)
   private
     //координатный базис
@@ -61,6 +63,7 @@ Type
     FUp: TVector;       // OY
     FDirection: TVector;// OZ
     FLeft: TVector;
+    FDirBehavior: TDirectionBehavior;
     procedure setModelMatrix(const Value: TMatrix);
     procedure setRotMatrix(const Value: TMatrix);
     procedure setScaleMatrix(const Value: TMatrix);
@@ -69,6 +72,7 @@ Type
     function getDirection: TVector;
     function getLeftVector: TVector;
     function getUpVector: TVector;
+    procedure SetDirBehavior(const Value: TDirectionBehavior);
   protected
     FParent: TMovableObject;
 
@@ -141,6 +145,7 @@ Type
     property Direction: TVector read getDirection write SetDirection;
     property Left: TVector read getLeftVector;
     property Up: TVector read getUpVector;
+    property DirectionBehavior: TDirectionBehavior read FDirBehavior write SetDirBehavior;
 
     //Вращение относительно локальных осей
     procedure TurnObject(Angle:single);  //Вокруг локальной оси Y
@@ -563,6 +568,14 @@ procedure TMovableObject.ScaleObject(ScaleX, ScaleY, ScaleZ: single;
   AbsoluteScale: boolean);
 begin
   ScaleObject(Vector(ScaleX, ScaleY, ScaleZ, 0),AbsoluteScale);
+end;
+
+procedure TMovableObject.SetDirBehavior(const Value: TDirectionBehavior);
+begin
+  if FDirBehavior <> Value then
+  begin
+    FDirBehavior := Value;
+  end;
 end;
 
 procedure TMovableObject.SetDirection(const aDirection: TVector);

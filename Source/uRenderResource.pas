@@ -3666,18 +3666,18 @@ begin
   LoD:=aLod; Distance:=aDistance;
 end;
 
-{ TBuiltinUniformLightNumber }
-
-class function TBuiltinUniformLightNumber.Name: ansistring;
-begin
-  Result := 'LightNumber';
-end;
-
 { TBaseBuiltinUniform }
 
 class function TBaseBuiltinUniform.IsInner: boolean;
 begin
   Result := true;
+end;
+
+{ TBuiltinUniformLightNumber }
+
+class function TBuiltinUniformLightNumber.Name: ansistring;
+begin
+  Result := 'LightNumber';
 end;
 
 initialization

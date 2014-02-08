@@ -4,7 +4,7 @@ interface
 
 uses Classes,
      uBaseTypes, uVMath, uPrimitives, uMiscUtils, uRenderResource, uBaseRenders,
-     uLists, uImageFormats, uImageLoader, uWorldSpace;
+     uLists, uImageFormats, uImageLoader, uWorldSpace, uBaseClasses;
 
 type
 
@@ -12,9 +12,11 @@ type
   private
     FSceneGraph: TSceneGraph;
     FSceneObject: TSceneObject;
+    FSprite: TSceneObject;
     FMaterial: array[0..3] of TMaterialObject;
+    FSpriteMaterial: TMaterialObject;
     FLight: array[0..2] of TLightSource;
-    FShader: TShaderProgram;
+    FShader: array[0..1] of TShaderProgram;
     FMeshList: TMeshList;
     procedure CreateScene;
   public
@@ -40,6 +42,7 @@ end;
 
 procedure TDemoScene.CreateScene;
 var MeshObject: TMeshObject;
+    Mesh: TMesh;
 begin
   FMeshList:=TMeshList.Create;
   FMeshList.AddNewMesh(CreateBox(2, 1.5, 3.5)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
@@ -53,11 +56,19 @@ begin
   FSceneObject.MeshObjects.AddMeshObject(MeshObject,true);
   FSceneGraph.AddItem(FSceneObject);
 
+  Mesh := TMesh.CreateFrom(CreateSprite());
+  MeshObject:=TMeshObject.CreateFrom(Mesh);
+  FSprite := TSceneObject.Create;
+  FSprite.DirectionBehavior := dbSphericalSprite;
+  FSprite.MeshObjects.AddMeshObject(MeshObject,true);
+  FSprite.MoveObject(0, 3, 0);
+  FSceneGraph.AddItem(FSprite);
+
   // Create material which use shader
-  FShader := ShaderGenerator.GenForwardLightShader();
+  FShader[0] := ShaderGenerator.GenForwardLightShader();
 
   FMaterial[0] := TMaterialObject.Create;
-  FMaterial[0].AttachShader(FShader);
+  FMaterial[0].AttachShader(FShader[0]);
   with FMaterial[0].AddNewMaterial('RedMate') do begin
      Properties.DiffuseColor.SetColor(165, 41, 0, 255);
   end;
@@ -65,7 +76,7 @@ begin
   FSceneGraph.AddMaterial(FMaterial[0]);
 
   FMaterial[1] := TMaterialObject.Create;
-  FMaterial[1].AttachShader(FShader);
+  FMaterial[1].AttachShader(FShader[0]);
   with FMaterial[1].AddNewMaterial('DarkShine') do begin
      Properties.DiffuseColor.SetColor(15, 15, 15, 255);
      Properties.SpecularColor.SetColor(127, 127, 127, 255);
@@ -74,7 +85,7 @@ begin
   FSceneGraph.AddMaterial(FMaterial[1]);
 
   FMaterial[2] := TMaterialObject.Create;
-  FMaterial[2].AttachShader(FShader);
+  FMaterial[2].AttachShader(FShader[0]);
   with FMaterial[2].AddNewMaterial('Enamel') do begin
      Properties.DiffuseColor.SetColor(221, 236, 192, 255);
      Properties.SpecularColor.SetColor(250, 250, 250, 255);
@@ -83,7 +94,7 @@ begin
   FSceneGraph.AddMaterial(FMaterial[2]);
 
   FMaterial[3] := TMaterialObject.Create;
-  FMaterial[3].AttachShader(FShader);
+  FMaterial[3].AttachShader(FShader[0]);
   with FMaterial[3].AddNewMaterial('GreenLuminescent') do begin
      Properties.DiffuseColor.SetColor(4, 17, 0, 255);
      Properties.EmissionColor.SetColor(41, 165, 0, 255);
@@ -91,6 +102,14 @@ begin
   FMeshList[3].MaterialObject := FMaterial[3];
   FSceneGraph.AddMaterial(FMaterial[3]);
 
+  FShader[1] := ShaderGenerator.GenLightGlyphShader();
+  FSpriteMaterial := TMaterialObject.Create;
+  FSpriteMaterial.AttachShader(FShader[1]);
+  with FSpriteMaterial.AddNewMaterial('Sprite') do begin
+     Properties.DiffuseColor.SetColor(255, 255, 255, 255);
+  end;
+  Mesh.MaterialObject := FSpriteMaterial;
+  FSceneGraph.AddMaterial(FSpriteMaterial);
 
   FLight[0] := TLightSource.Create;
   FLight[0].LightStyle := lsOmni;
@@ -120,11 +139,13 @@ destructor TDemoScene.Destroy;
 begin
   FSceneGraph.Free;
   FSceneObject.Free;
-  FShader.Free;
+  FShader[0].Free;
+  FShader[1].Free;
   FMaterial[0].Free;
   FMaterial[1].Free;
   FMaterial[2].Free;
   FMaterial[3].Free;
+  FSpriteMaterial.Free;
   FLight[0].Free;
   FLight[1].Free;
   FLight[2].Free;

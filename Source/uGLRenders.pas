@@ -131,7 +131,7 @@ Type
     FMeshObjects: array of TGLMeshObject;
     FIdexInPool: integer;
     FStructureChanged: boolean;
-    procedure UpdateUBO(aPool: TGLBufferObjectsPool);
+    procedure UpdateUBO(aRender: TBaseRender; aPool: TGLBufferObjectsPool);
   public
     constructor CreateFrom(aOwner: TGLResources; aSceneObject: TSceneObject);
 
@@ -152,7 +152,7 @@ Type
       aShaderUsageLogic: TShaderUsageLogic = slUseOwnShader;
       aShaderUsagePriority: TShaderUsagePriority = spUseOwnShaderFirst);
 
-    constructor Create;
+    constructor Create; override;
 
     property Render: TGLRender read getRender;
   end;
@@ -194,7 +194,7 @@ Type
     procedure ApplyLights(aLights: TObjectList);
 //    procedure ProcessMeshObjects(const aMeshObjects: TMeshObjectsList); override;
   public
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
 
     function isSupported(const aAPI: TApiVersion): boolean; override;
@@ -341,7 +341,7 @@ begin
     SceneItem:=aScene[i];
     glres := FResourceManager.GetOrCreateResource(SceneItem);
     // обновляем даные в видеопамяти
-    TGLSceneObject(glres).UpdateUBO(FObjectPool);
+    TGLSceneObject(glres).UpdateUBO(Self, FObjectPool);
   end;
 end;
 
@@ -1015,13 +1015,15 @@ begin
 
 end;
 
-procedure TGLSceneObject.UpdateUBO(aPool: TGLBufferObjectsPool);
+procedure TGLSceneObject.UpdateUBO(aRender: TBaseRender; aPool: TGLBufferObjectsPool);
 var i, j: integer;
     p: PByte;
     MeshObject: TGLMeshObject;
     Mesh: TGLMesh;
+    flag: boolean;
 begin
-  if FStructureChanged then
+  flag := FStructureChanged or (FSceneObject.DirectionBehavior <> dbNone);
+  if flag then
   begin
     if FIdexInPool < 0 then
       FIdexInPool := aPool.GetFreeSlotIndex();
@@ -1031,6 +1033,8 @@ begin
 
     // Fill Uniform Buffer Object Data
     with FSceneObject do begin
+      WorldMatrix := aRender.UpdateWorldMatrix(FSceneObject);
+      UpdateWorldMatrix;
       move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
       move(InvWorldMatrix.GetAddr^,p^,64); inc(p, 64);
       move(WorldMatrix.Normalize.GetAddr^, p^,64);
@@ -1043,7 +1047,7 @@ begin
     MeshObject:=FMeshObjects[i];
     for j:=0 to length(MeshObject.FLods[0])-1 do begin
       Mesh:=MeshObject.FLods[0,j];
-      Mesh.UpdateUBO(FSceneObject, aPool, FStructureChanged);
+      Mesh.UpdateUBO(FSceneObject, aPool, flag);
     end;
   end;
 
@@ -1165,7 +1169,7 @@ var
 begin
   CreateFrom(aShaderProgram);
   Owner := aOwner;
-  if aShaderProgram.BuildinUniforms.Count > 0 then
+  if Assigned(aShaderProgram.BuildinUniforms) then
   begin
     FBuiltinUniforms := TObjectList.Create;
     for I := 0 to aShaderProgram.BuildinUniforms.Count - 1 do

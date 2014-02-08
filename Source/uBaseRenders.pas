@@ -26,7 +26,7 @@ Type
     FRequiredAPIVersion: TApiVersion;
     FRenderPurpose: TRenderPurposes;
   public
-    constructor Create;
+    constructor Create; override;
     constructor CreateOwned(aRender: TBaseRender); virtual;
     destructor Destroy; override;
 
@@ -56,7 +56,7 @@ Type
 
     procedure ProcessScene(const aScene: TSceneGraph); virtual; abstract;
 
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
 
     procedure RegisterSubRender(const SubRender: TBaseSubRender); virtual;
@@ -70,7 +70,7 @@ Type
   private
     FRenders: TList;
   public
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
 
     procedure RegisterRender(const aRender: TBaseRender);
@@ -152,6 +152,33 @@ begin
 
   if hasParent then
     wm:=wm * pm;
+
+  case MovableObject.DirectionBehavior of
+    dbSphericalSprite:
+      begin
+        wm := wm * UpdateWorldMatrix(CurrentGraph.Camera, [ttModel]);
+        wm[0, 0] := MovableObject.Scale.X;
+        wm[0, 1] := 0;
+        wm[0, 2] := 0;
+        wm[1, 0] := 0;
+        wm[1, 1] := MovableObject.Scale.Y;
+        wm[1, 2] := 0;
+        wm[2, 0] := 0;
+        wm[2, 1] := 0;
+        wm[2, 2] := 1;
+      end;
+    dbCylindricalSprite:
+      begin
+        wm := wm * UpdateWorldMatrix(CurrentGraph.Camera, [ttModel]);
+        wm[0, 0] := 1;
+        wm[0, 1] := 0;
+        wm[0, 2] := 0;
+        wm[2, 0] := 0;
+        wm[2, 1] := 0;
+        wm[2, 2] := 1;
+      end;
+  end;
+
   result:= wm;
 end;
 
