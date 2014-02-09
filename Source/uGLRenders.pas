@@ -11,7 +11,8 @@ unit uGLRenders;
 interface
 
 uses Classes, uVMath, uBaseGL, uBaseClasses, uRenderResource, uBaseRenders,
-     uBaseTypes, uLists, uMiscUtils, uGenericsRBTree, uWorldSpace, dglOpenGL;
+     uBaseTypes, uLists, uMiscUtils, uGenericsRBTree, uWorldSpace, dglOpenGL,
+     uPersistentClasses;
 
 Type
 
@@ -64,7 +65,7 @@ Type
   TGLMaterial = class (TGLBaseResource)
   private
     FMaterialObject: TMaterialObject;
-    FTex: array of TGLTextureObject;
+    FTextures: array of TGLTextureObject;
     FBlend: TCustomBlending;
     FShader: TGLSLShaderProgramExt;
     FIdexInPool: integer;
@@ -101,19 +102,27 @@ Type
 
   TLightingRBTree = GRedBlackTree<TLightSource, TGLLight>;
 
+  TMeshParentState = class
+  public
+    FMatrixChanged: boolean;
+    FIdexInPool: integer;
+  end;
+
+  TMeshParentRBTree = GRedBlackTree<TPersistentResource, TMeshParentState>;
+
   TGLMesh = class (TGLBaseResource)
   private
     FMesh: TMesh;
     FVertexObject: TGLVertexObject;
     FMaterialObject: TGLMaterial;
-    FMatrixChanged: boolean;
-    FIdexInPool: integer;
+    FMeshParentTree: TMeshParentRBTree;
     procedure UpdateUBO(aParent: TMovableObject; aPool: TGLBufferObjectsPool; aForceUpload: boolean);
   public
     constructor CreateFrom(aOwner: TGLResources; aMesh: TMesh);
+    destructor Destroy; override;
 
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
-    procedure Apply(aRender: TGLRender);
+    procedure Apply(aRender: TGLRender; aParent: TMovableObject);
   end;
 
   TGLMeshObject = class (TGLBaseResource)
@@ -417,7 +426,7 @@ begin
         MeshObject:=FMeshObjects[i];
         for j:=0 to length(MeshObject.FLods[0])-1 do begin
           Mesh:=MeshObject.FLods[0,j];
-          Mesh.Apply(Render);
+          Mesh.Apply(Render, FSceneObject);
           Mesh.FMaterialObject.Apply(Render);
           Mesh.FVertexObject.RenderVO();
           Mesh.FMaterialObject.UnApply;
@@ -486,11 +495,6 @@ begin
 end;
 
 { TGLResources }
-
-function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
-begin
-  Result := CompareInteger(Item1.Order, Item2.Order);
-end;
 
 constructor TGLResources.CreateOwned(aRender: TBaseRender);
 var i: integer;
@@ -664,8 +668,12 @@ begin
   end;
 
   if Resource.ClassType = TTexture then begin
-    result := nil;
-    exit;
+    // Create Texture object
+    glres:=TGLTextureObject.CreateFrom(Resource as TTexture);
+    FInnerResource.Add(Resource, glres);
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    exit(glres);
   end;
 
 end;
@@ -729,9 +737,12 @@ end;
 
 { TGLMesh }
 
-procedure TGLMesh.Apply(aRender: TGLRender);
+procedure TGLMesh.Apply(aRender: TGLRender; aParent: TMovableObject);
+var
+  state: TMeshParentState;
 begin
-  aRender.BindObjectBuffer(FIdexInPool);
+  if FMeshParentTree.Find(aParent, state) then
+    aRender.BindObjectBuffer(state.FIdexInPool);
 end;
 
 constructor TGLMesh.CreateFrom(aOwner: TGLResources; aMesh: TMesh);
@@ -744,8 +755,20 @@ begin
   FMesh.Subscribe(aOwner);
   FVertexObject:=TGLVertexObject(aOwner.GetOrCreateResource(FMesh.VertexObject));
   FMaterialObject:=TGLMaterial(aOwner.GetOrCreateResource(FMesh.MaterialObject));
-  FIdexInPool := -1;
-  FMatrixChanged := true;
+  FMeshParentTree := TMeshParentRBTree.Create(ResourceComparer, nil);
+end;
+
+procedure MeshParentDestroyer(AKey: TPersistentResource; AValue: TMeshParentState; out AContinue: Boolean);
+begin
+  AValue.Free;
+  AContinue := true;
+end;
+
+destructor TGLMesh.Destroy;
+begin
+  FMeshParentTree.ForEach(MeshParentDestroyer);
+  FMeshParentTree.Free;
+  inherited;
 end;
 
 procedure TGLMesh.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
@@ -759,7 +782,9 @@ begin
       end;
       NM_WorldMatrixChanged: begin
         if Sender = FMesh then
-          FMatrixChanged := true;
+        begin
+          { TODO: parent world matrix changes }
+        end;
       end;
     end;
 end;
@@ -768,15 +793,18 @@ procedure TGLMesh.UpdateUBO(aParent: TMovableObject; aPool: TGLBufferObjectsPool
 var
     p: PByte;
     mat: TMatrix;
+    state: TMeshParentState;
 begin
-  if not (FMatrixChanged or aForceUpload) then
-    exit;
-
-  if FIdexInPool < 0 then
-    FIdexInPool := aPool.GetFreeSlotIndex();
+  if not FMeshParentTree.Find(aParent, state) then
+  begin
+    state := TMeshParentState.Create;
+    FMeshParentTree.Add(aParent, state);
+    state.FMatrixChanged := true;
+    state.FIdexInPool := aPool.GetFreeSlotIndex();
+  end;
 
   p := aPool.Buffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
-    aPool.OffsetByIndex(FIdexInPool), aPool.ObjectSize);
+    aPool.OffsetByIndex(state.FIdexInPool), aPool.ObjectSize);
 
   // Calculate final world matrix
   mat := FMesh.LocalMatrix * aParent.WorldMatrix;
@@ -785,7 +813,7 @@ begin
   move(mat.Invert.GetAddr^, p^,64); inc(p, 64);
   move(mat.Normalize.GetAddr^, p^,64);
   aPool.Buffer.UnMap;
-  FMatrixChanged := False;
+
 end;
 
 { TGLMaterial }
@@ -793,6 +821,7 @@ end;
 procedure TGLMaterial.Apply(aRender: TGLRender);
 var
     tb: TGLUniformBlock;
+    i: integer;
 begin
   if assigned(FShader) then begin
     vActiveShader:=FShader;
@@ -818,11 +847,13 @@ begin
     aRender.MaterialPool.BindUBO(FIdexInPool, tb);
     glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubMaterial].Location);
   end;
+
+  for i := High(FTextures) downto 0 do FTextures[i].Bind(i);
 end;
 
 constructor TGLMaterial.CreateFrom(aOwner: TGLResources;
   const aMat: TMaterialObject);
-var i: integer;
+var i, idx: integer;
 begin
   Create;
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
@@ -833,9 +864,18 @@ begin
 
   FShader:=TGLSLShaderProgramExt(aOwner.GetOrCreateResource(FMaterialObject.Shader));
   FBlend:=FMaterialObject.Blending;
-  setlength(FTex,FMaterialObject.TexCount);
-  for i:=0 to FMaterialObject.TexCount-1 do begin
-    FTex[i]:=TGLTextureObject(aOwner.GetOrCreateResource(FMaterialObject.TextureSlot[i]));
+  setlength(FTextures,FMaterialObject.TexCount);
+  idx := 0;
+  if Assigned(FMaterialObject.Texture) then
+  begin
+    FTextures[idx]:=TGLTextureObject(aOwner.GetOrCreateResource(FMaterialObject.Texture));
+    FTextures[idx].UploadTexture();
+    Inc(idx);
+  end;
+  for i:=idx to FMaterialObject.TexCount-1 do begin
+    FTextures[idx]:=TGLTextureObject(aOwner.GetOrCreateResource(FMaterialObject.TextureSlot[i]));
+    FTextures[idx].UploadTexture();
+    Inc(Idx);
   end;
 
   FStructureChanged := true;

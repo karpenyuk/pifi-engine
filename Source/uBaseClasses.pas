@@ -217,7 +217,19 @@ Type
 
   end;
 
+function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
+
 implementation
+
+function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
+begin
+  if Item1.Order < Item2.Order then
+    exit(-1)
+  else if (Item1.Order = Item2.Order) then
+    exit(0)
+  else
+    Result := 1;
+end;
 
 { TMovableObject }
 

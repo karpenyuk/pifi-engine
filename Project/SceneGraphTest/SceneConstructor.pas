@@ -12,12 +12,14 @@ type
   private
     FSceneGraph: TSceneGraph;
     FSceneObject: TSceneObject;
-    FSprite: TSceneObject;
+    FSprite: array[0..2] of TSceneObject;
     FMaterial: array[0..3] of TMaterialObject;
     FSpriteMaterial: TMaterialObject;
     FLight: array[0..2] of TLightSource;
     FShader: array[0..1] of TShaderProgram;
     FMeshList: TMeshList;
+    FImageLoader: TImageLoader;
+    FTexture: TTexture;
     procedure CreateScene;
   public
     constructor Create;
@@ -41,8 +43,16 @@ begin
 end;
 
 procedure TDemoScene.CreateScene;
+const
+{$IFDEF MSWindows}
+  path : string = '..\..\Source\Media\';
+{$ENDIF}
+{$IFDEF Linux}
+  path : string = '../../Source/Media/';
+{$ENDIF}
 var MeshObject: TMeshObject;
     Mesh: TMesh;
+
 begin
   FMeshList:=TMeshList.Create;
   FMeshList.AddNewMesh(CreateBox(2, 1.5, 3.5)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
@@ -58,11 +68,21 @@ begin
 
   Mesh := TMesh.CreateFrom(CreateSprite());
   MeshObject:=TMeshObject.CreateFrom(Mesh);
-  FSprite := TSceneObject.Create;
-  FSprite.DirectionBehavior := dbSphericalSprite;
-  FSprite.MeshObjects.AddMeshObject(MeshObject,true);
-  FSprite.MoveObject(0, 3, 0);
-  FSceneGraph.AddItem(FSprite);
+
+  FSprite[0] := TSceneObject.Create;
+  FSprite[0].DirectionBehavior := dbSphericalSprite;
+  FSprite[0].MeshObjects.AddMeshObject(MeshObject,true);
+  FSceneGraph.AddItem(FSprite[0]);
+
+  FSprite[1] := TSceneObject.Create;
+  FSprite[1].DirectionBehavior := dbSphericalSprite;
+  FSprite[1].MeshObjects.AddMeshObject(MeshObject,true);
+  FSceneGraph.AddItem(FSprite[1]);
+
+  FSprite[2] := TSceneObject.Create;
+  FSprite[2].DirectionBehavior := dbSphericalSprite;
+  FSprite[2].MeshObjects.AddMeshObject(MeshObject,true);
+  FSceneGraph.AddItem(FSprite[2]);
 
   // Create material which use shader
   FShader[0] := ShaderGenerator.GenForwardLightShader();
@@ -105,9 +125,15 @@ begin
   FShader[1] := ShaderGenerator.GenLightGlyphShader();
   FSpriteMaterial := TMaterialObject.Create;
   FSpriteMaterial.AttachShader(FShader[1]);
+  FImageLoader := TImageLoader.Create();
+  FImageLoader.LoadImageFromFile(path + 'OmniLightTexture.dds');
+  FTexture := FImageLoader.CreateTexture();
+  FTexture.GenerateMipMaps := true;
+  FSpriteMaterial.AttachTexture(FTexture);
   with FSpriteMaterial.AddNewMaterial('Sprite') do begin
      Properties.DiffuseColor.SetColor(255, 255, 255, 255);
   end;
+
   Mesh.MaterialObject := FSpriteMaterial;
   FSceneGraph.AddMaterial(FSpriteMaterial);
 
@@ -116,18 +142,21 @@ begin
   FLight[0].Position.SetVector(2, 10, 3);
   FLight[0].Specular.SetColor(250, 250, 250, 255);
   FSceneGraph.AddLight(FLight[0]);
+  FSprite[0].MoveObject(FLight[0].Position);
 
   FLight[1] := TLightSource.Create;
   FLight[1].LightStyle := lsOmni;
   FLight[1].Position.SetVector(-6, 5, -1);
   FLight[1].Diffuse.SetColor(250, 250, 15, 255);
   FSceneGraph.AddLight(FLight[1]);
+  FSprite[1].MoveObject(FLight[1].Position);
 
   FLight[2] := TLightSource.Create;
   FLight[2].LightStyle := lsOmni;
-  FLight[2].Position.SetVector(0, 20, 0);
+  FLight[2].Position.SetVector(0, 7, 0);
   FLight[2].Specular.SetColor(5, 5, 120, 255);
   FSceneGraph.AddLight(FLight[2]);
+  FSprite[2].MoveObject(FLight[2].Position);
 
   FSceneGraph.Camera.FoV:=60;
   FSceneGraph.Camera.MoveObject(0, 2, -10);
@@ -139,6 +168,9 @@ destructor TDemoScene.Destroy;
 begin
   FSceneGraph.Free;
   FSceneObject.Free;
+  FSprite[0].Free;
+  FSprite[1].Free;
+  FSprite[2].Free;
   FShader[0].Free;
   FShader[1].Free;
   FMaterial[0].Free;
@@ -150,6 +182,8 @@ begin
   FLight[1].Free;
   FLight[2].Free;
   FMeshList.Free;
+  FImageLoader.Free;
+  FTexture.Free;
   inherited;
 end;
 

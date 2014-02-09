@@ -420,6 +420,11 @@ Type
 
     destructor Destroy; override;
 
+    procedure Bind(aUnit: cardinal);
+    procedure UnBind(aUnit: cardinal);
+
+    class procedure MultiBind(const aTextures: array of TGLTextureObject; aUnit: cardinal);
+
     procedure UploadTexture(aData: pointer = nil; aLevel: integer = -1; aLevelsCount: integer = 1);
 
     property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
@@ -1823,6 +1828,12 @@ end;
 
 { TGLTextureObject }
 
+procedure TGLTextureObject.Bind(aUnit: cardinal);
+begin
+  glActiveTexture(GL_TEXTURE0+aUnit);
+  glBindTexture(CTexTargets[FTarget], FTexId);
+end;
+
 constructor TGLTextureObject.Create;
 begin
   inherited Create;
@@ -1893,6 +1904,24 @@ end;
 function TGLTextureObject.getInternalFormat: cardinal;
 begin
   result := FFormatDescr.InternalFormat;
+end;
+
+class procedure TGLTextureObject.MultiBind(
+  const aTextures: array of TGLTextureObject; aUnit: cardinal);
+var
+  ids: array of GLuint;
+  i: integer;
+begin
+  SetLength(ids, Length(aTextures));
+  for I := 0 to High(aTextures) do
+    ids[I] := aTextures[I].Id;
+  glBindTextures(aUnit, Length(ids), @ids[0]);
+end;
+
+procedure TGLTextureObject.UnBind(aUnit: cardinal);
+begin
+  glActiveTexture(GL_TEXTURE0+aUnit);
+  glBindTexture(CTexTargets[FTarget], 0);
 end;
 
 procedure TGLTextureObject.UploadTexture(aData: pointer; aLevel: integer; aLevelsCount: integer);
