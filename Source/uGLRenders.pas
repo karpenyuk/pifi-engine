@@ -66,6 +66,7 @@ Type
   private
     FMaterialObject: TMaterialObject;
     FTextures: array of TGLTextureObject;
+    FSamplers: array of TGLTextureSampler;
     FBlend: TCustomBlending;
     FShader: TGLSLShaderProgramExt;
     FIdexInPool: integer;
@@ -519,6 +520,7 @@ begin
   FSupportedResources.Add(TTexture);
   FSupportedResources.Add(TMesh);
   FSupportedResources.Add(TBuiltinUniformLightNumber);
+  FSupportedResources.Add(TTextureSampler);
 
   //Resource Tree for each of resource type, exclude inner resource
   setlength(FResList,FSupportedResources.Count - 5);
@@ -670,6 +672,15 @@ begin
   if Resource.ClassType = TTexture then begin
     // Create Texture object
     glres:=TGLTextureObject.CreateFrom(Resource as TTexture);
+    FInnerResource.Add(Resource, glres);
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    exit(glres);
+  end;
+
+  if Resource.ClassType = TTextureSampler then begin
+    // Create Sampler object
+    glres:=TGLTextureSampler.CreateFrom(Resource as TTextureSampler);
     FInnerResource.Add(Resource, glres);
     glres.Owner:=self;
     Resource.Subscribe(self);
@@ -849,6 +860,7 @@ begin
   end;
 
   for i := High(FTextures) downto 0 do FTextures[i].Bind(i);
+  for i := High(FSamplers) downto 0 do FSamplers[i].Bind(i);
 end;
 
 constructor TGLMaterial.CreateFrom(aOwner: TGLResources;
@@ -876,6 +888,12 @@ begin
     FTextures[idx]:=TGLTextureObject(aOwner.GetOrCreateResource(FMaterialObject.TextureSlot[i]));
     FTextures[idx].UploadTexture();
     Inc(Idx);
+  end;
+
+  if Assigned(FMaterialObject.TextureSampler) then
+  begin
+    SetLength(FSamplers, 1);
+    FSamplers[0] := TGLTextureSampler(aOwner.GetOrCreateResource(FMaterialObject.TextureSampler));
   end;
 
   FStructureChanged := true;

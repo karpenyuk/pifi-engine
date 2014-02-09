@@ -308,6 +308,7 @@ Type
     function getSamplerHash: integer;
   public
     constructor Create; override;
+    class function IsInner: boolean; override;
     // Texture Descriptors
     property WrapS: TTextureWraps read getWrapS write setWrapS;
     property WrapT: TTextureWraps read getWrapT write setWrapT;
@@ -503,6 +504,7 @@ Type
     FActive: boolean;
     FBlending: TCustomBlending;
     FTexture: TTexture;
+    FSampler: TTextureSampler;
     FMaterial: TMaterial;
     FShader: TShaderProgram;
     FspId: cardinal;
@@ -535,6 +537,7 @@ Type
     destructor Destroy; override;
     procedure Assign(MaterialObject: TMaterialObject);
     procedure AttachTexture(tex: TTexture);
+    procedure AttachSampler(aSampler: TTextureSampler);
     procedure AttachMaterial(mat: TMaterial);
     procedure AttachShader(Shader: TShaderProgram);
     procedure AddExTextures(tex: TTexture);
@@ -550,6 +553,7 @@ Type
     property HashKey: integer read GetHash;
     property Blending: TCustomBlending read FBlending;
     property Texture: TTexture read FTexture;
+    property TextureSampler: TTextureSampler read FSampler;
     property Material: TMaterial read FMaterial;
     property Shader: TShaderProgram read FShader;
     property TextureSlot[index: integer]: TTexture read getAddTex
@@ -1455,6 +1459,11 @@ end;
 function TTextureSampler.getWrapT: TTextureWraps;
 begin
   result := FTextureDescriptor.WrapT;
+end;
+
+class function TTextureSampler.IsInner: boolean;
+begin
+  Result := true;
 end;
 
 procedure TTextureSampler.setCFunc(const Value: TTextureCompareFunc);
@@ -2529,6 +2538,14 @@ begin
   else
     FUseMaterial := false;
   FActive := true;
+end;
+
+procedure TMaterialObject.AttachSampler(aSampler: TTextureSampler);
+begin
+  if assigned(FSampler) and (FSampler.Owner = Self) then
+    FSampler.Free;
+  FSampler := aSampler;
+  FHashKey := -1;
 end;
 
 procedure TMaterialObject.AttachShader(Shader: TShaderProgram);
