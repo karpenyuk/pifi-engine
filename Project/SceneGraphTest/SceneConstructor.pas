@@ -13,14 +13,18 @@ type
     FSceneGraph: TSceneGraph;
     FSceneObject: TSceneObject;
     FSprite: array[0..2] of TSceneObject;
-    FMaterial: array[0..3] of TMaterialObject;
+    FScreenQuad: TSceneObject;
+    FMaterial: array[0..4] of TMaterialObject;
     FSpriteMaterial: TMaterialObject;
     FLight: array[0..2] of TLightSource;
-    FShader: array[0..1] of TShaderProgram;
+    FShader: array[0..2] of TShaderProgram;
     FMeshList: TMeshList;
     FImageLoader: TImageLoader;
     FSampler: TTextureSampler;
     FTexture: TTexture;
+    FFrameBuffer: TFrameBuffer;
+    FColorAttachment: TTexture;
+    FRGBAfloatImage: TImageHolder;
     FSlaves: TObjectList;
     procedure CreateScene;
   public
@@ -55,7 +59,6 @@ const
 {$ENDIF}
 var MeshObject: TMeshObject;
     Mesh: TMesh;
-
 begin
   FMeshList:=TMeshList.Create;
   FSlaves.Add(FMeshList);
@@ -72,7 +75,9 @@ begin
   FSceneGraph.AddItem(FSceneObject);
 
   Mesh := TMesh.CreateFrom(CreateSprite());
+  FSlaves.Add(Mesh);
   MeshObject:=TMeshObject.CreateFrom(Mesh);
+  FSlaves.Add(MeshObject);
 
   FSprite[0] := TSceneObject.Create;
   FSprite[0].DirectionBehavior := dbSphericalSprite;
@@ -138,6 +143,7 @@ begin
   FShader[1] := ShaderGenerator.GenLightGlyphShader();
   FSlaves.Add(FShader[1]);
   FSpriteMaterial := TMaterialObject.Create;
+  FSceneGraph.AddMaterial(FSpriteMaterial);
   FSlaves.Add(FSpriteMaterial);
   FSpriteMaterial.AttachShader(FShader[1]);
 
@@ -188,10 +194,38 @@ begin
   FSprite[2].MoveObject(FLight[2].Position);
   FSlaves.Add(FLight[2]);
 
+  FScreenQuad  := TSceneObject.Create;
+  FSlaves.Add(FScreenQuad);
+  Mesh := TMesh.CreateFrom(CreateSprite());
+  FSlaves.Add(Mesh);
+  MeshObject:=TMeshObject.CreateFrom(Mesh);
+  FSlaves.Add(MeshObject);
+  FScreenQuad.MeshObjects.AddMeshObject(MeshObject,true);
+  FSceneGraph.AddItem(FScreenQuad);
+  FShader[2] := ShaderGenerator.GenScreenQuadShader();
+  FSlaves.Add(FShader[2]);
+  FMaterial[4] := TMaterialObject.Create;
+  FSceneGraph.AddMaterial(FMaterial[4]);
+  FSlaves.Add(FMaterial[4]);
+  FMaterial[4].AttachShader(FShader[2]);
+  Mesh.MaterialObject := FMaterial[4];
+
   FSceneGraph.Camera.FoV:=60;
   FSceneGraph.Camera.MoveObject(0, 2, -10);
 
   FSceneGraph.Camera.ViewTarget := FSceneObject;
+
+  FRGBAfloatImage:=TImageSampler.CreateBitmap(
+    TImageFormatSelector.CreateFloat16(bfRGBA), 1280, 1024, false);
+  FColorAttachment := TTexture.CreateOwned(FRGBAfloatImage);
+  FSlaves.Add(FColorAttachment);
+  FMaterial[4].AttachTexture(FColorAttachment);
+
+  FFrameBuffer := TFrameBuffer.Create;
+  FSlaves.Add(FFrameBuffer);
+  FFrameBuffer.AttachColor(FColorAttachment);
+  FFrameBuffer.AttachRenderBuffer(rbDepth24, bmBuffer);
+  FSceneGraph.Camera.RenderTarget := FFrameBuffer;
 end;
 
 destructor TDemoScene.Destroy;
@@ -204,7 +238,7 @@ end;
 
 procedure TDemoScene.SetSize(aWidth, aHeight: integer);
 begin
-  FSceneGraph.Camera.ViewPortSize := Vec2iMake(aWidth,aHeight);
+  FSceneGraph.Camera.ViewPortSize := Vec2iMake(aWidth, aHeight);
 end;
 
 end.

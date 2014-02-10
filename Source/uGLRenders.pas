@@ -62,6 +62,16 @@ Type
     procedure Apply(aRender: TGLRender); overload;
   end;
 
+  TGLFrameBufferObjectExt = class(TGLFrameBufferObject)
+  private
+    FFrameBuffer: TFrameBuffer;
+    FStructureChanged: Boolean;
+    procedure Update;
+  public
+    constructor CreateFrom(aOwner: TGLResources; const aFrameBuffer: TFrameBuffer);
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+  end;
+
   TGLMaterial = class (TGLBaseResource)
   private
     FMaterialObject: TMaterialObject;
@@ -194,7 +204,7 @@ Type
     FLightIndices: TGLBufferObject;
     FMaterialPool: TGLBufferObjectsPool;
     FIdexInPool: integer;
-
+    FFrameBuffer: TGLFrameBufferObjectExt;
   protected
     FResourceManager: TGLResources;
 
@@ -329,6 +339,14 @@ begin
   glBindBufferRange(GL_UNIFORM_BUFFER, CUBOSemantics[ubCamera].Location,
     FCameraPool.Buffer.Id, FCameraPool.OffsetByIndex(FIdexInPool), FCameraPool.ObjectSize);
 
+  if Assigned(aScene.Camera.RenderTarget) then
+  begin
+    FFrameBuffer := FResourceManager.GetOrCreateResource(aScene.Camera.RenderTarget) as TGLFrameBufferObjectExt;
+    FFrameBuffer.Update;
+  end
+  else
+    FFrameBuffer := nil;
+
   //создаем ресурсы для всех материалов сцены
   for i:=0 to aScene.MaterialsCount-1 do begin
     res:=aScene.Materials[i];
@@ -376,12 +394,17 @@ begin
   FCurrentGraph := aScene;
   //Подготавливаем ресурсы сцены
   PrepareResources(aScene);
+
+  if Assigned(FFrameBuffer) then
+    FFrameBuffer.Apply();
   //Обрабатываем объекты сцены (подготовка + рендеринг)
   for i:=0 to aScene.Count-1 do begin
     SceneItem:=aScene[i];
     res := FResourceManager.GetOrCreateResource(SceneItem);
     ProcessResource(res);
   end;
+  if Assigned(FFrameBuffer) then
+    FFrameBuffer.UnApply();
 end;
 
 function TGLRender.UpdateWorldMatrix(const MovableObject: TMovableObject;
@@ -521,6 +544,7 @@ begin
   FSupportedResources.Add(TMesh);
   FSupportedResources.Add(TBuiltinUniformLightNumber);
   FSupportedResources.Add(TTextureSampler);
+  FSupportedResources.Add(TFrameBuffer);
 
   //Resource Tree for each of resource type, exclude inner resource
   setlength(FResList,FSupportedResources.Count - 5);
@@ -681,6 +705,15 @@ begin
   if Resource.ClassType = TTextureSampler then begin
     // Create Sampler object
     glres:=TGLTextureSampler.CreateFrom(Resource as TTextureSampler);
+    FInnerResource.Add(Resource, glres);
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    exit(glres);
+  end;
+
+  if Resource.ClassType = TFrameBuffer then begin
+    // Create Sampler object
+    glres:=TGLFrameBufferObjectExt.CreateFrom(Self, Resource as TFrameBuffer);
     FInnerResource.Add(Resource, glres);
     glres.Owner:=self;
     Resource.Subscribe(self);
@@ -1242,6 +1275,59 @@ destructor TGLSLShaderProgramExt.Destroy;
 begin
   FBuiltinUniforms.Free;
   inherited;
+end;
+
+{ TGLFrameBufferObjectExt }
+
+constructor TGLFrameBufferObjectExt.CreateFrom(aOwner: TGLResources;
+  const aFrameBuffer: TFrameBuffer);
+var
+  i: integer;
+  texture: TTexture;
+  gltexture: TGLTextureObject;
+begin
+  Create;
+  Owner := aOwner;
+  FFrameBuffer := aFrameBuffer;
+  Subscribe(FFrameBuffer);
+
+  Multisample := FFrameBuffer.Multisample;
+  for i := 0 to FFrameBuffer.ColorAttachmentCount - 1 do begin
+    texture := FFrameBuffer.ColorAttachments[i];
+    gltexture := aOwner.GetOrCreateResource(texture) as TGLTextureObject;
+    gltexture.UploadTexture();
+    AttachTexture(gltexture);
+  end;
+
+  ConfigFBO(FFrameBuffer.RenderBuffers);
+  InitFBO(FFrameBuffer.Size);
+  FStructureChanged := false;
+end;
+
+
+procedure TGLFrameBufferObjectExt.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  inherited;
+  if Msg = NM_ResourceChanged then
+  begin
+      if Sender = FFrameBuffer then begin
+        DispatchMessage(NM_ResourceChanged);
+      end;
+  end;
+end;
+
+procedure TGLFrameBufferObjectExt.Update;
+var
+  size: vec2i;
+begin
+  if FStructureChanged then
+  begin
+    size := FFrameBuffer.Size;
+    if (size[0] <> FWidth) or (size[1] <> FHeight) then
+      InitFBO(size);
+    FStructureChanged := false;
+  end;
 end;
 
 initialization

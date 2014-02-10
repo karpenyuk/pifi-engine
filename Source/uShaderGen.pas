@@ -21,6 +21,7 @@ type
     class function UBOParamShader: TShaderProgram; static;
     class function GenForwardLightShader: TShaderProgram; static;
     class function GenLightGlyphShader: TShaderProgram; static;
+    class function GenScreenQuadShader: TShaderProgram; static;
 
     class function GetUniformLightNumber: TBuiltinUniformLightNumber;
   end;
@@ -353,7 +354,7 @@ SG_BLOCK_CAMERA +
   ft :=
 '#version 430'#10#13 +
 'in vec2 v2f_TexCoord0;'#10#13 +
-'out vec4 FragColor;'#10#13 +
+'layout(location = 0) out vec4 FragColor;'#10#13 +
 'layout(binding = 0) uniform sampler2D DiffuseTexture;'#10#13 +
 SG_STRUCT_OBJECT +
 SG_BLOCK_OBJECT +
@@ -362,6 +363,29 @@ SG_BLOCK_MATERIAL +
 ' vec4 Color = texture(DiffuseTexture, v2f_TexCoord0);'#10#13 +
 ' if (Color.a < 0.5) discard;'#10#13 +
 ' FragColor = material.diffuse * Color; }'#10#13;
+  result.ShaderText[stVertex]:=vt;
+  result.ShaderText[stFragment]:=ft;
+end;
+
+class function ShaderGenerator.GenScreenQuadShader: TShaderProgram;
+var vt,ft: ansistring;
+begin
+  result:=TShaderProgram.Create;
+  vt:=
+'#version 430'+#10#13 +
+'layout(location = 0) in vec3 in_Position;'+#10#13 +
+'layout(location = 2) in vec2 in_TexCoord;'+#10#13 +
+'out vec2 v2f_TexCoord0;'#10#13 +
+'void main() {'#10#13 +
+'	gl_Position = vec4(in_Position, 1.0);'+#10#13 +
+'	v2f_TexCoord0 = in_TexCoord; }';
+  ft :=
+'#version 430'#10#13 +
+'in vec2 v2f_TexCoord0;'#10#13 +
+'layout(location = 0) out vec4 FragColor;'#10#13 +
+'layout(binding = 0) uniform sampler2D DiffuseTexture;'#10#13 +
+'void main() {'#10#13 +
+' FragColor = texture(DiffuseTexture, v2f_TexCoord0); }';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
 end;

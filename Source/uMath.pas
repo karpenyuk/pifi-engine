@@ -34,7 +34,8 @@ type
   public
 
     // Clamp = max( aMin, min( aMax, aValue ))
-    class function Clamp( aValue,aMin,aMax: Float ): Float; static;
+    class function Clamp( aValue,aMin,aMax: Float ): Float; overload; static;
+    class function Clamp( aValue,aMin,aMax: Int ): Int; overload; static;
 
     // Delta = ( aCurr - aStart ) / ( aStop - aStart )
     class function Delta( aStart,aStop,aCurr: Float ): Float; static;
@@ -92,6 +93,13 @@ implementation
 class function TMath.ArcCos(aTheta: Float): Float;
 begin
    Result:= Math.ArcTan2(Sqrt(1 - Sqr(aTheta)), aTheta);
+end;
+
+class function TMath.Clamp(aValue, aMin, aMax: Int): Int;
+begin
+  if aValue < aMin then result := aMin
+    else if aValue > aMax then result := aMax
+      else result := aValue;
 end;
 
 //

@@ -950,28 +950,34 @@ Type
 
     FSize: vec2i;
 
+    procedure SetSize(aSize: vec2i);
     procedure SetActive(const Value: boolean);
     procedure SetMultisample(const Value: TMultisampleFormat);
-  public
+    function GetRenderBuffer(aRenderBuffer: TRenderBuffer): TTexture;
+    function GetTexture(aAttachmentSlot: cardinal): TTexture;
+    function GetColorCount: Integer;
 
+  public
     constructor Create;
     destructor Destroy; override;
+    class function IsInner: boolean; override;
 
-    procedure SetSize(aSize: vec2i);
+
     procedure AttachRenderBuffer(aFormat: TRenderBufferFormat; aMode: TBufferMode = bmBuffer);
     procedure AttachColor(aTexture: TTexture);
-    function GetTexture(aRenderBuffer: TRenderBuffer): TTexture; overload;
-    function GetTexture(aAttachmentSlot: cardinal): TTexture; overload;
 
     procedure ResetColorAttachments;
     procedure ResetRenderBuffers;
     procedure ResetReedBackBuffers;
 
+    property Size: vec2i read FSize write SetSize;
+    property ColorAttachmentCount: Integer read GetColorCount;
+    property ColorAttachments[aSlot: cardinal]: TTexture read GetTexture;
+    property BufferAttachments[aBuffer: TRenderBuffer]: TTexture read GetRenderBuffer;
     property RenderBuffers: TRenderBuffers read FRenderBuffers;
     property ReadBackBuffers: TImageHolders read FReadBackBuffers;
     property Active: boolean read FActive write SetActive;
     property Multisample: TMultisampleFormat read FMultisample write SetMultisample;
-
   end;
 
   TSceneCamera = class(TMovableObject)
@@ -3474,22 +3480,6 @@ end;
 
 { TFrameBuffer }
 
-function TFrameBuffer.GetTexture(aRenderBuffer: TRenderBuffer): TTexture;
-begin
-  case aRenderBuffer of
-    rbDepth: if FDepthBuffer.Mode = bmTexture
-      then result := FDepthBuffer.Texture
-      else result := nil;
-    rbStencil: if FStencilBuffer.Mode = bmTexture
-      then result := FStencilBuffer.Texture
-      else result := nil;
-    rbDepthStencil: if FDepthStencilBuffer.Mode = bmTexture
-      then result := FDepthStencilBuffer.Texture
-      else result := nil;
-    else result := nil;
-  end;
-end;
-
 procedure TFrameBuffer.AttachColor(aTexture: TTexture);
 begin
   FColorAttachments.Add(aTexture);
@@ -3556,11 +3546,37 @@ begin
   inherited;
 end;
 
+function TFrameBuffer.GetColorCount: Integer;
+begin
+  Result := FColorAttachments.Count;
+end;
+
+function TFrameBuffer.GetRenderBuffer(aRenderBuffer: TRenderBuffer): TTexture;
+begin
+  case aRenderBuffer of
+    rbDepth: if FDepthBuffer.Mode = bmTexture
+      then result := FDepthBuffer.Texture
+      else result := nil;
+    rbStencil: if FStencilBuffer.Mode = bmTexture
+      then result := FStencilBuffer.Texture
+      else result := nil;
+    rbDepthStencil: if FDepthStencilBuffer.Mode = bmTexture
+      then result := FDepthStencilBuffer.Texture
+      else result := nil;
+    else result := nil;
+  end;
+end;
+
 function TFrameBuffer.GetTexture(aAttachmentSlot: cardinal): TTexture;
 begin
   if (aAttachmentSlot < FColorAttachments.Count)
   then result := FColorAttachments[aAttachmentSlot]
   else result := nil;
+end;
+
+class function TFrameBuffer.IsInner: boolean;
+begin
+  Result := true;
 end;
 
 procedure TFrameBuffer.ResetColorAttachments;

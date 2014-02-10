@@ -27,8 +27,10 @@ Type
     Precision: GLEnum;
   end;
 
+  TGLTextureList = TDataList<TGLTextureObject>;
+
   TFBOAttachments = record
-    Textures: TList;
+    Textures: TGLTextureList;
     DepthBuffer: TFBORenderTarget;
     StencilBuffer: TFBORenderTarget;
     DepthStencilBuffer: TFBORenderTarget;
@@ -440,7 +442,7 @@ Type
   end;
 
   TGLFrameBufferObject = class(TGLBaseResource)
-  private
+  protected
     FBOId: GLUInt;
     FMSFBOId: GLUInt;
     FAttachments: TFBOAttachments;
@@ -463,7 +465,8 @@ Type
   public
     constructor Create; override;
     destructor Destroy; override;
-    procedure InitFBO(Width, Height: integer);
+
+    procedure InitFBO(const aSize: vec2i);
     procedure ResetFBO(ResetConfig: boolean = true);
 
     procedure ConfigFBO(RenderBuffers: TRenderBuffers);
@@ -524,6 +527,9 @@ function GetWorkgroupCount: vec3i;
 function GetWorkgroupSize: vec3i;
 
 implementation
+
+uses
+  uMath;
 
 var
   vActiveShader: TGLSLShaderProgram = nil;
@@ -2017,6 +2023,7 @@ procedure TGLFrameBufferObject.AttachTexture(tex: TGLTextureObject;
 var
   i, n, m: integer;
 begin
+  Subscribe(tex);
   glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
   n := -1;
   if aTarget = tgTexture then
@@ -2070,14 +2077,15 @@ end;
 
 procedure TGLFrameBufferObject.DetachTexture(Index: integer);
 var
-  tex: TGLTextureObject;
+  texture: TGLTextureObject;
 begin
   if (index < FAttachments.Textures.Count) and (index >= 0) then
   begin
-    tex := FAttachments.Textures[index];
+    texture := FAttachments.Textures[index];
+    UnSubscribe(texture);
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index,
-      CTexTargets[tex.Target], 0, 0);
+      CTexTargets[texture.Target], 0, 0);
     FAttachments.Textures.Delete(index);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   end;
@@ -2093,7 +2101,7 @@ begin
   inherited;
   with FAttachments do
   begin
-    Textures := TList.Create;
+    Textures := TGLTextureList.Create;
     DepthBuffer.Mode := bmNone;
     StencilBuffer.Mode := bmNone;
     DepthStencilBuffer.Mode := bmNone;
@@ -2198,16 +2206,26 @@ begin
   FAttachments.DepthStencilBuffer.Precision := 0;
 end;
 
-procedure TGLFrameBufferObject.InitFBO(Width, Height: integer);
+procedure TGLFrameBufferObject.InitFBO(const aSize: vec2i);
 var
+  maxW, maxH: integer;
   FBTarget: GLEnum;
+  i: integer;
+  texture: TGLTextureObject;
 begin
-  if (Width = FWidth) and (Height = FHeight) and FInit then
+  if (aSize[0] = FWidth) and (aSize[1] = FHeight) and FInit then
     exit
   else if FInit then
     ResetFBO(false);
-  FWidth := Width;
-  FHeight := Height;
+  FWidth := aSize[0];
+  FHeight := aSize[1];
+  glGetIntegerv(GL_MAX_FRAMEBUFFER_WIDTH, @maxW);
+  glGetIntegerv(GL_MAX_FRAMEBUFFER_HEIGHT, @maxH);
+  Assert( (FWidth > 0) and (FHeight > 0) and (FWidth <= maxW) and (FHeight <= maxH),
+    'Invalid frame buffer sizes!');
+  FWidth := TMath.Clamp(FWidth, 1, maxW);
+  FHeight := TMath.Clamp(FHeight, 1, maxH);
+
   FBTarget := GL_FRAMEBUFFER;
 
   with FAttachments do
@@ -2270,6 +2288,14 @@ begin
       glBindFramebuffer(FBTarget, 0);
     end;
   end;
+
+  for i := 0 to FAttachments.Textures.Count - 1 do
+  begin
+    texture := TGLTextureObject(FAttachments.Textures[i]);
+    texture.FImageHolder.Width := FWidth;
+    texture.FImageHolder.Height := FHeight;
+  end;
+
   FInit := true;
   // CheckCompleteness;
 end;
