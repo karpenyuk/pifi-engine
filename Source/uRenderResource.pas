@@ -159,7 +159,7 @@ Type
     property Alpha: single read getAlpha write setAlpha;
   end;
 
-  TLightSource = class(TBaseRenderResource)
+  TLightSource = class(TMovableObject)
   private
     FEnabled: boolean;
     FLightStyle: TLightStyle;
@@ -167,7 +167,6 @@ Type
     FSpotDirection: TVector;
     FSpotCutOff: single;
     FSpotExponent: single;
-    FPosition: TVector;
     FAmbient: TColorVectorClass;
     FDiffuse: TColorVectorClass;
     FSpecular: TColorVectorClass;
@@ -182,7 +181,6 @@ Type
     destructor Destroy; override;
 
     property SpotDirection: TVector read FSpotDirection write FSpotDirection;
-    property Position: TVector read FPosition write FPosition;
     property LightStyle: TLightStyle read FLightStyle write FLightStyle;
     property LightModel: TLightModels read FLightModel write FLightModel;
     property SpotCutOff: single read FSpotCutOff write FSpotCutOff;
@@ -980,6 +978,7 @@ Type
     property Multisample: TMultisampleFormat read FMultisample write SetMultisample;
   end;
 
+  { TODO : Update dictionary when object name changed }
   TSceneCamera = class(TMovableObject)
   private
     FProjMatrix: TMatrix;
@@ -989,6 +988,7 @@ Type
     FzNear: single;
     FzFar: single;
     FViewTarget: TMovableObject;
+    FName: string;
 
     procedure SetFoV(const Value: single);
     procedure SetProjMatrix(const Value: TMatrix);
@@ -1011,6 +1011,7 @@ Type
        implementing camera controls. Only the camera's position is changed. }
     procedure AdjustDistanceToTarget(distanceRatio: Single);
 
+    property Name: string read FName write FName;
     property ViewPortSize: vec2i read FViewPortSize write SetViewPortSize;
     property ViewTarget: TMovableObject read FViewTarget write SetViewTarget;
     property FoV: single read FFoV write SetFoV;
@@ -1019,6 +1020,22 @@ Type
     property ProjMatrix: TMatrix read FProjMatrix write SetProjMatrix;
     property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
   end;
+
+  TCamerasList = class (TObjectsDictionary)
+  private
+    function getItemObj(index: integer): TSceneCamera;
+  public
+    destructor Destroy; override;
+
+    function AddCamera(const aItem: TSceneCamera): integer;
+    function GetCamera(aKey: TGUID): TSceneCamera; overload;
+    function GetCamera(aName: string): TSceneCamera; overload;
+
+    procedure RemoveCamera(const aItem: TSceneCamera);
+
+    property Cameras[index: integer]: TSceneCamera read getItemObj; default;
+  end;
+
 
 var
   vRegisteredResource: TRegisteredResource;
@@ -1207,6 +1224,7 @@ end;
 constructor TLightSource.Create;
 begin
   inherited;
+  Position := Vector(0, 0, 1, 0);
   FAmbient := TColorVectorClass.Create;
   FDiffuse := TColorVectorClass.Create;
   FSpecular := TColorVectorClass.Create;
@@ -1215,7 +1233,6 @@ begin
   FDiffuse.ColorVector := Vector(1, 1, 1, 1);
   FSpecular.ColorVector := Vector(1, 1, 1, 1);
   FSceneColor.ColorVector := Vector(0.2, 0.2, 0.2, 1);
-  FPosition := Vector(0, 0, 1, 0);
   FSpotDirection := Vector(0, 0, -1, 0);
   FSpotExponent := 0;
   FSpotCutOff := 180;
@@ -3711,6 +3728,61 @@ end;
 class function TBuiltinUniformLightNumber.Name: ansistring;
 begin
   Result := 'LightNumber';
+end;
+
+{ TCamerasList }
+
+function TCamerasList.AddCamera(const aItem: TSceneCamera): integer;
+begin
+  result:=AddKey(aItem.GUID, aItem);
+end;
+
+destructor TCamerasList.Destroy;
+var i: integer;
+    obj: TSceneCamera;
+begin
+  for i:=0 to Count-1 do begin
+    obj := getItemObj(i);
+    if obj.Owner = self then  obj.Free;
+  end;
+  inherited;
+end;
+
+function TCamerasList.GetCamera(aKey: TGUID): TSceneCamera;
+begin
+  result:=TSceneCamera(GetValue(aKey));
+end;
+
+function TCamerasList.GetCamera(aName: string): TSceneCamera;
+var i: integer;
+    si: TSceneCamera;
+begin
+  for i:=0 to FCount-1 do begin
+    si:=TSceneCamera(FItems[i].Value);
+    if si.FName=aName then begin
+      result:=si; exit;
+    end;
+  end; result:=nil;
+
+end;
+
+function TCamerasList.getItemObj(index: integer): TSceneCamera;
+begin
+  result:=TSceneCamera(FItems[Index].Value);
+end;
+
+procedure TCamerasList.RemoveCamera(const aItem: TSceneCamera);
+var i: integer;
+    si: TSceneCamera;
+begin
+  for i:=0 to FCount-1 do begin
+    si:=TSceneCamera(FItems[i].Value);
+    if si=aItem then begin
+      FItems[i].Key:=-1; FItems[i].KeyName:='';
+      FItems[i].KeyGUID := TGUIDEx.Empty;
+      FItems[i].Value:=nil; exit;
+    end;
+  end;
 end;
 
 initialization

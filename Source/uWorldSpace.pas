@@ -13,12 +13,16 @@ type
     FRoot: TSceneCamera;
     FLights: TLightsList;
     FMaterials: TMaterialList;
+    FCameras: TCamerasList;
+
     function getItem(Index: integer): TBaseSceneItem;
     function getCount: integer;
     function getLight(Index: integer): TLightSource;
     function getLightCount: integer;
     function getMatCount: integer;
     function getMaterial(Index: integer): TMaterialObject;
+    function getCamCount: integer;
+    function getCamera(index: integer): TSceneCamera;
   public
     constructor Create;
     destructor Destroy; override;
@@ -32,6 +36,7 @@ type
     function GetMaterials: TMaterialList;
 
     property Items[index: integer]: TBaseSceneItem read getItem; default;
+
     property Lights[index: integer]: TLightSource read getLight;
     property LightsCount: integer read getLightCount;
 
@@ -39,6 +44,9 @@ type
     property MaterialsCount: integer read getMatCount;
 
     property Camera: TSceneCamera read FRoot;
+
+    property Cameras[index: integer]: TSceneCamera read getCamera;
+    property CamerasCount: integer read getCamCount;
 
     property Count: integer read getCount;
   end;
@@ -60,6 +68,13 @@ implementation
 function TSceneGraph.AddItem(aItem: TBaseSceneItem): integer;
 begin
   result := FRoot.Childs.AddSceneItem(aItem);
+  //If aItem is Camera - add it to Camera List
+  if (aItem is TSceneCamera) and (not FCameras.inList(aItem))
+  then FCameras.AddCamera(aItem as TSceneCamera);
+  //If aItem is Light - add it to Light List
+  if (aItem is TLightSource) and (not FLights.inList(aItem))
+  then FLights.AddLight(aItem as TLightSource);
+
 end;
 
 function TSceneGraph.AddLight(aLight: TLightSource): integer;
@@ -89,6 +104,8 @@ end;
 constructor TSceneGraph.Create;
 begin
   FRoot := TSceneCamera.Create;
+  FCameras := TCamerasList.Create;
+  FCameras.AddCamera(FRoot);
   FMaterials:=TMaterialList.Create;
   FLights := TLightsList.Create;
 end;
@@ -96,9 +113,20 @@ end;
 destructor TSceneGraph.Destroy;
 begin
   FRoot.Free;
+  FCameras.Free;
   FMaterials.Free;
   FLights.Free;
   inherited;
+end;
+
+function TSceneGraph.getCamCount: integer;
+begin
+  result := FCameras.Count;
+end;
+
+function TSceneGraph.getCamera(index: integer): TSceneCamera;
+begin
+  result := FCameras[index];
 end;
 
 function TSceneGraph.getCount: integer;
