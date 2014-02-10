@@ -162,6 +162,7 @@ Type
   public
     constructor Create;
     property Count: Integer read FCount;
+    function inList(const aItem: TObject): boolean;
   end;
 
   TLinkedObjectItem = record
@@ -492,6 +493,14 @@ begin
       exit;
     end;
   result := nil;
+end;
+
+function TObjectsDictionary.inList(const aItem: TObject): boolean;
+var i: integer;
+begin
+  result:=true;
+  for i := 0 to FCount - 1 do if FItems[i].Value = aItem then exit;
+  result:=false;
 end;
 
 function TObjectsDictionary.GetValue(const Key: string): TObject;

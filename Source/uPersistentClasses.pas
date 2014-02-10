@@ -260,8 +260,8 @@ begin
 //    FGarbageCollector := nil;
 //    for I := list.Count - 1 downto 0 do
 //      if Assigned(list[I]) then
-//        TObject(list[I]).Destroy;
-//    list.Destroy;
+//        TObject(list[I]).Free;
+//    list.Free;
 //  end;
 end;
 
