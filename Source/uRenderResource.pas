@@ -26,6 +26,7 @@ const
   cAmbientColor: vec4 = (0.2, 0.2, 0.2, 1);
   cSpecularColor: vec4 = (0, 0, 0, 1);
   cEmissiveColor: vec4 = (0, 0, 0, 1);
+  cShininess: integer = 127;
 
 Type
 
@@ -877,6 +878,7 @@ Type
     FCollider: TTriangleList;
     FExtents: TExtents;
     function getMeshes: TMeshList;
+    procedure setOwner(const Value: TObject); override;
   public
     FriendlyName: string;
 
@@ -2169,6 +2171,8 @@ begin
   FLods.Free;
   FOccluder.Free;
   FCollider.Free;
+  if assigned(Owner) and (Owner is TSceneItemList)
+  then TSceneItemList(Owner).RemoveSceneItem(TBaseSceneItem(self));
   inherited;
 end;
 
@@ -2185,6 +2189,14 @@ end;
 function TMeshObject.SetMesh(aMesh: TMesh): integer;
 begin
 
+end;
+
+procedure TMeshObject.setOwner(const Value: TObject);
+begin
+  if assigned(Owner) and (Owner is TSceneItemList)
+  then TSceneItemList(Owner).RemoveSceneItem(TBaseSceneItem(self));
+
+  inherited;
 end;
 
 { TRegisteredResource }
@@ -2768,9 +2780,13 @@ var
   i: integer;
   mo: TMeshObject;
 begin
+  { TODO : Find Items Leaks }
+  exit;
   for i := 0 to FCount - 1 do begin
-    mo := TMeshObject(FItems[i].Value);
-    if mo.Owner=self then FreeAndNil(mo);
+    if assigned(FItems[i].Value) then begin
+      mo := TMeshObject(FItems[i].Value);
+      if mo.Owner=self then FreeAndNil(mo);
+    end;
   end;
 
   inherited;

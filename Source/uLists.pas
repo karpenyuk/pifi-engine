@@ -1249,7 +1249,8 @@ procedure TObjectList.FreeObjects;
 var
   i: Integer;
 begin
-  for i := Count - 1 downto 0 do FItems[i].Free;
+  for i := Count - 1 downto 0 do
+    if assigned(FItems[i]) then FItems[i].Free;
   Clear;
 end;
 

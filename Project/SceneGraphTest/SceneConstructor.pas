@@ -62,7 +62,8 @@ var MeshObject: TMeshObject;
     Mesh: TMesh;
     Sprite_VO: TVertexObject;
 begin
-  FMeshList:=TMeshList.Create;              FSlaves.Add(FMeshList);
+  FMeshList:=TMeshList.Create;
+  FSlaves.Add(FMeshList);
 
   FMeshList.AddNewMesh(CreateBox(2, 1.5, 3.5)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
   FMeshList.AddNewMesh(CreateSphere(1, 16, 32)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(3,-3,+0.1));
@@ -212,8 +213,8 @@ end;
 
 destructor TDemoScene.Destroy;
 begin
-  FSceneGraph.Free;
   FSlaves.FreeObjects;
+  FSceneGraph.Free;
   FSlaves.Free;
   inherited;
 end;

@@ -49,8 +49,8 @@ type
     FOwner: TObject;
     FOrder: integer;
     class var Counter: integer;
-    procedure setOwner(const Value: TObject);
   protected
+    procedure setOwner(const Value: TObject); virtual;
     procedure WriteString(const s: string; const stream: TStream);
     function ReadString(const stream: TStream): string;
     procedure WriteInt(const Value: integer; const stream: TStream);

@@ -352,14 +352,14 @@ begin
     res:=aScene.Materials[i];
     glres := FResourceManager.GetOrCreateResource(res);
     // обновляем даные в видеопамяти
-    TGLMaterial(glres).UpdateUBO(FMaterialPool);
+    if assigned(glRes) then TGLMaterial(glres).UpdateUBO(FMaterialPool);
   end;
   //создаем ресурсы для всех источников света сцены
   for i:= 0 to aScene.LightsCount - 1 do begin
     res:=aScene.Lights[i];
     glres := FResourceManager.GetOrCreateResource(res);
     // обновляем даные в видеопамяти
-    TGLLight(glres).UpdateUBO(FLightPool);
+    if assigned(glRes) then TGLLight(glres).UpdateUBO(FLightPool);
   end;
   FLightIndices.BindBase(CUBOSemantics[ubLights].Location);
   glActiveTexture(GL_TEXTURE0);
@@ -369,7 +369,7 @@ begin
     SceneItem:=aScene[i];
     glres := FResourceManager.GetOrCreateResource(SceneItem);
     // обновляем даные в видеопамяти
-    TGLSceneObject(glres).UpdateUBO(Self, FObjectPool);
+    if assigned(glRes) then TGLSceneObject(glres).UpdateUBO(Self, FObjectPool);
   end;
 end;
 
@@ -377,6 +377,8 @@ procedure TGLRender.ProcessResource(const Res: TBaseRenderResource);
 var i: integer;
     Render: TBaseSubRender;
 begin
+  if not assigned(Res) then exit;
+
   for i:=0 to FRegisteredSubRenders.Count-1 do begin
     render:=TBaseSubRender(FRegisteredSubRenders[i]);
     { TODO : Реализовать выбор "наилучшего" из зарегистрированных рендеров }
@@ -611,6 +613,8 @@ var idx: integer;
     glres: TGLBaseResource;
 begin
   inherited;
+  if not assigned(Resource) then exit(nil);
+  
   idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx < 0 then begin result:=nil; exit; end;
   //assert(idx>=0,'Unsupported resource: "'+Resource.ClassName+'"!');
@@ -964,12 +968,20 @@ begin
     aPool.OffsetByIndex(FIdexInPool), SizeOf(vec4)*5);
 
   // Fill Uniform Buffer Object Data
-  with FMaterialObject.Material.Properties do begin
-    move(AmbientColor.ColorAsAddress^,p^,16); inc(p, 16);
-    move(DiffuseColor.ColorAsAddress^,p^,16); inc(p, 16);
-    move(SpecularColor.ColorAsAddress^,p^,16); inc(p, 16);
-    move(EmissionColor.ColorAsAddress^,p^,16); inc(p, 16);
-    move(Shininess,p^,4);
+  if assigned(FMaterialObject.Material) then begin
+    with FMaterialObject.Material.Properties do begin
+      move(AmbientColor.ColorAsAddress^,p^,16); inc(p, 16);
+      move(DiffuseColor.ColorAsAddress^,p^,16); inc(p, 16);
+      move(SpecularColor.ColorAsAddress^,p^,16); inc(p, 16);
+      move(EmissionColor.ColorAsAddress^,p^,16); inc(p, 16);
+      move(Shininess,p^,4);
+    end;
+  end else begin
+    move(cAmbientColor,p^,16); inc(p, 16);
+    move(cDiffuseColor,p^,16); inc(p, 16);
+    move(cSpecularColor,p^,16); inc(p, 16);
+    move(cEmissiveColor,p^,16); inc(p, 16);
+    move(cShininess,p^,4);
   end;
   aPool.Buffer.UnMap;
   FStructureChanged := false;

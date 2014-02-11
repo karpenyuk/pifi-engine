@@ -45,6 +45,7 @@ Type
     FParent: TBaseSceneItem;
     FChilds: TSceneItemList;
     FSerialNumber: Cardinal;
+    FNestingDepth: integer;
     procedure SetParent(const Value: TBaseSceneItem);
   public
     Active: boolean;
@@ -67,6 +68,7 @@ Type
     property Parent: TBaseSceneItem read FParent write SetParent;
     property Childs: TSceneItemList read FChilds;
     property SerialNumber: Cardinal read FSerialNumber;
+    property NestingDepth: integer read FNestingDepth;
   end;
 
   TDirectionBehavior = (dbNone, dbSphericalSprite, dbCylindricalSprite);
@@ -772,6 +774,7 @@ constructor TBaseSceneItem.Create;
 begin
   inherited;
   FChilds:=TSceneItemList.Create;
+  FNestingDepth := 0;
 end;
 
 destructor TBaseSceneItem.Destroy;
@@ -807,8 +810,11 @@ begin
   if Assigned(aChild.Parent) then
     aChild.Parent.RemoveChild(aChild, False);
 
-  for I := 0 to FChilds.Count - 1 do
-    if aSerialNumber >= FChilds[i].SerialNumber then Inc(FChilds[i].FSerialNumber);
+  for I := 0 to FChilds.Count - 1 do begin
+    if assigned(FChilds[i]) then begin
+      if aSerialNumber >= FChilds[i].SerialNumber then Inc(FChilds[i].FSerialNumber);
+    end;
+  end;
 
   FChilds.AddSceneItem(aChild);
   aChild.FParent := Self;
@@ -943,7 +949,10 @@ begin
 
   if assigned(FParent) then FParent.RemoveChild(Self, false);
   FParent:=Value;
-  if assigned(FParent) then FParent.InsertChild(0, Self);
+  if assigned(FParent) then begin
+    FParent.InsertChild(0, Self);
+    FNestingDepth := FParent.NestingDepth+1;
+  end else FNestingDepth := 0;
 end;
 
 { TSceneItemList }
@@ -960,7 +969,9 @@ var i: integer;
 begin
   for i:=0 to Count-1 do begin
     obj := getItemObj(i);
-    if obj.Owner = self then  obj.Free;
+    if assigned(obj) then begin
+      if obj.Owner = self then  obj.Free;
+    end;
   end;
 
   inherited;
