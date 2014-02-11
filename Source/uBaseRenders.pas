@@ -136,22 +136,22 @@ end;
 
 function TBaseRender.UpdateWorldMatrix(const MovableObject: TMovableObject; UseMatrix: TTransforms): TMatrix;
 var wm, pm: TMatrix;
-    hasParent: boolean;
+    hasPivot: boolean;
 begin
 
-  hasParent := false;
-  if (MovableObject.Parent<>nil) and ((ttParent in UseMatrix) or (ttAll in UseMatrix)) then begin
-   if not MovableObject.Parent.WorldMatrixUpdated then
-     MovableObject.parent.UpdateWorldMatrix;
-   pm:=MovableObject.parent.WorldMatrix;
-   hasParent := true;
+  hasPivot := false;
+  if (MovableObject.Pivot<>nil) and ((ttPivot in UseMatrix) or (ttAll in UseMatrix)) then begin
+   if not MovableObject.Pivot.WorldMatrixUpdated then
+     MovableObject.Pivot.UpdateWorldMatrix;
+   pm:=MovableObject.Pivot.WorldMatrix;
+   hasPivot := true;
   end;
 
   wm.SetIdentity;
-  if (MovableObject.Parent<>nil) and ((ttParent in UseMatrix) or (ttAll in UseMatrix)) then begin
-     if not MovableObject.Parent.WorldMatrixUpdated then
-       MovableObject.parent.UpdateWorldMatrix;
-     wm:=MovableObject.parent.WorldMatrix; wm:=wm * MovableObject.ModelMatrix;
+  if (MovableObject.Pivot<>nil) and ((ttPivot in UseMatrix) or (ttAll in UseMatrix)) then begin
+     if not MovableObject.Pivot.WorldMatrixUpdated then
+       MovableObject.Pivot.UpdateWorldMatrix;
+     wm:=MovableObject.Pivot.WorldMatrix; wm:=wm * MovableObject.ModelMatrix;
   end else wm := MovableObject.ModelMatrix;
 
   if (not (ttModel in UseMatrix)) and (not(ttAll in UseMatrix)) then wm.SetIdentity;
@@ -160,7 +160,7 @@ begin
   if (ttRotation in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.RotationMatrix;
   if (ttPosition in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.TranslationMatrix;
 
-  if hasParent then
+  if hasPivot then
     wm:=wm * pm;
 
   case MovableObject.DirectionBehavior of

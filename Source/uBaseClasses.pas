@@ -15,7 +15,7 @@ uses
   Classes, SysUtils, uPersistentClasses, uVMath, uBaseTypes, uLists, uMiscUtils;
 Type
 
-  TTransformsTypes = (ttPosition, ttScale, ttRotation, ttModel, ttParent, ttFollow, ttAll);
+  TTransformsTypes = (ttPosition, ttScale, ttRotation, ttModel, ttPivot, ttFollow, ttAll);
   TTransforms = set of TTransformsTypes;
 
   TBaseRenderResource = TPersistentResource;
@@ -42,14 +42,31 @@ Type
   { TODO : Решить что нужно вынести в базовый объект сцены }
   TBaseSceneItem = class (TPersistentResource)
   protected
+    FParent: TBaseSceneItem;
     FChilds: TSceneItemList;
+    FSerialNumber: Cardinal;
+    procedure SetParent(const Value: TBaseSceneItem);
   public
     Active: boolean;
     FriendlyName: string;
 
     constructor Create; override;
     destructor Destroy; override;
+
+    procedure MoveUp;
+    procedure MoveDown;
+    procedure MoveFirst;
+    procedure MoveLast;
+    procedure InsertChild(aSerialNumber: Cardinal; aChild: TBaseSceneItem);
+    procedure RemoveChild(aChild: TBaseSceneItem; aKeepChildren: Boolean);
+    procedure MoveChildUp(aChild: TBaseSceneItem);
+    procedure MoveChildDown(aChild: TBaseSceneItem);
+    procedure MoveChildFirst(aChild: TBaseSceneItem);
+    procedure MoveChildLast(aChild: TBaseSceneItem);
+    function GetChildsQueue: TList;
+    property Parent: TBaseSceneItem read FParent write SetParent;
     property Childs: TSceneItemList read FChilds;
+    property SerialNumber: Cardinal read FSerialNumber;
   end;
 
   TDirectionBehavior = (dbNone, dbSphericalSprite, dbCylindricalSprite);
@@ -73,9 +90,9 @@ Type
     function getLeftVector: TVector;
     function getUpVector: TVector;
     procedure SetDirBehavior(const Value: TDirectionBehavior);
+    function GetPivot: TMovableObject;
+    procedure SetPivot(const Value: TMovableObject);
   protected
-    FParent: TMovableObject;
-
     FRollAngle: single;
     FTurnAngle: single;
     FPitchAngle: single;
@@ -91,10 +108,8 @@ Type
     FWorldMatrix: TMatrix; //результирующая мировая матрица
     FWorldMatrixT: TMatrix; //транспонированная мировая матрица
     FInvWorldMatrix: TMatrix;//обратная мировая матрица
-    FParentMatrix: TMatrix;
+    FPivotMatrix: TMatrix;
 
-    function getParent: TMovableObject;
-    procedure SetParent(const Value: TMovableObject);
     procedure SetPosition(const Value: TVector);
     procedure SetScale(const Value: TVector);
     //Ориентирует объект в заданном направлении
@@ -112,10 +127,10 @@ Type
 
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
-    //установка родителя, из которого будет браться базовая матрица трансформаций
-    property Parent: TMovableObject read getParent write SetParent;
+    // Parent as TMovableObject
+    property Pivot: TMovableObject read GetPivot write SetPivot;
     //Прямая установка родительской матрицы
-    property ParentMatrix: TMatrix read FParentMatrix write FParentMatrix;
+    property PivotMatrix: TMatrix read FPivotMatrix write FPivotMatrix;
 
     //модельная матрица, хранит локальные/базовые трансформации объекта
     property ModelMatrix: TMatrix read FModelMatrix write setModelMatrix;
@@ -257,7 +272,7 @@ begin
   FWorldMatrix.SetIdentity;
   FWorldMatrixT.SetIdentity;
   FInvWorldMatrix.SetIdentity;
-  FParentMatrix.SetIdentity;
+  FPivotMatrix.SetIdentity;
 
   FRollAngle:=0;
   FTurnAngle:=0;
@@ -291,9 +306,9 @@ begin
   result:=FWorldMatrix.Row[0];
 end;
 
-function TMovableObject.getParent: TMovableObject;
+function TMovableObject.GetPivot: TMovableObject;
 begin
-  result:=FParent as TMovableObject;
+  Result := Parent as TMovableObject;
 end;
 
 function TMovableObject.getUpVector: TVector;
@@ -496,11 +511,9 @@ begin
   UpdateWorldMatrix;
 end;
 
-procedure TMovableObject.SetParent(const Value: TMovableObject);
+procedure TMovableObject.SetPivot(const Value: TMovableObject);
 begin
-  if assigned(FParent) then FParent.UnSubscribe(self);
-  FParent:=Value;
-  if assigned(FParent) then FParent.Subscribe(self);
+  Parent := Value;
 end;
 
 procedure TMovableObject.SetPosition(const Value: TVector);
@@ -765,6 +778,172 @@ destructor TBaseSceneItem.Destroy;
 begin
   FChilds.Free;
   inherited;
+end;
+
+function ChildsCompare(Item1, Item2: Pointer): Integer;
+var
+  ch1: TBaseSceneItem absolute Item1;
+  ch2: TBaseSceneItem absolute Item2;
+begin
+  result := ch2.FSerialNumber - ch1.FSerialNumber;
+end;
+
+function TBaseSceneItem.GetChildsQueue: TList;
+var
+  i: integer;
+  list: TList;
+begin
+  list := TList.Create;
+  list.Capacity := FChilds.Count;
+  for I := 0 to FChilds.Count - 1 do list.Add(FChilds[i]);
+  list.Sort(ChildsCompare);
+  result := list;
+end;
+
+procedure TBaseSceneItem.InsertChild(aSerialNumber: Cardinal; aChild: TBaseSceneItem);
+var
+  i: integer;
+begin
+  if Assigned(aChild.Parent) then
+    aChild.Parent.RemoveChild(aChild, False);
+
+  for I := 0 to FChilds.Count - 1 do
+    if aSerialNumber >= FChilds[i].SerialNumber then Inc(FChilds[i].FSerialNumber);
+
+  FChilds.AddSceneItem(aChild);
+  aChild.FParent := Self;
+  Subscribe(aChild);
+  aChild.FSerialNumber := aSerialNumber;
+end;
+
+procedure TBaseSceneItem.MoveChildDown(aChild: TBaseSceneItem);
+var
+  i, n: integer;
+  downer: TBaseSceneItem;
+begin
+  Assert(aChild.Parent = Self, 'aChild is not a child of this scene item');
+
+  downer := nil;
+  n := $FFFFFFFF;
+  for I := 0 to FChilds.Count - 1 do
+    if (FChilds[i].FSerialNumber < n) and
+      (FChilds[i].FSerialNumber > aChild.FSerialNumber) then begin
+        downer := FChilds[i];
+        n := downer.FSerialNumber;
+      end;
+
+  // Exchange
+  if Assigned(downer) then begin
+    downer.FSerialNumber := aChild.FSerialNumber;
+    aChild.FSerialNumber := n;
+  end;
+end;
+
+procedure TBaseSceneItem.MoveChildFirst(aChild: TBaseSceneItem);
+var
+  i, j: integer;
+begin
+  Assert(aChild.Parent = Self, 'aChild is not a child of this scene item');
+
+  for I := 0 to FChilds.Count - 1 do
+    if FChilds[i].FSerialNumber = 0 then
+    begin
+      for j := 0 to FChilds.Count - 1 do
+        Inc(FChilds[i].FSerialNumber);
+      break;
+    end;
+  aChild.FSerialNumber := 0;
+end;
+
+procedure TBaseSceneItem.MoveChildLast(aChild: TBaseSceneItem);
+var
+  i, n: integer;
+begin
+  Assert(aChild.Parent = Self, 'aChild is not a child of this scene item');
+
+  n := -1;
+  for I := 0 to FChilds.Count - 1 do
+    if FChilds[i].FSerialNumber > n then
+      n := FChilds[i].FSerialNumber;
+  if n < 0 then
+    aChild.FSerialNumber := 0 else aChild.FSerialNumber := n + 1;
+end;
+
+procedure TBaseSceneItem.MoveChildUp(aChild: TBaseSceneItem);
+var
+  i, n: integer;
+  upper: TBaseSceneItem;
+begin
+  Assert(aChild.Parent = Self, 'aChild is not a child of this scene item');
+  if aChild.FSerialNumber = 0 then exit;
+
+  upper := nil;
+  n := -1;
+  for I := 0 to FChilds.Count - 1 do
+    if (FChilds[i].FSerialNumber > n) and
+      (FChilds[i].FSerialNumber < aChild.FSerialNumber) then begin
+        upper := FChilds[i];
+        n := upper.FSerialNumber;
+      end;
+
+  // Exchange
+  if Assigned(upper) then begin
+    upper.FSerialNumber := aChild.FSerialNumber;
+    aChild.FSerialNumber := n;
+  end
+  else aChild.FSerialNumber := 0;
+end;
+
+procedure TBaseSceneItem.MoveDown;
+begin
+  if Assigned(FParent) then
+    FParent.MoveChildDown(Self);
+end;
+
+procedure TBaseSceneItem.MoveFirst;
+begin
+  if Assigned(FParent) then
+    FParent.MoveChildFirst(Self);
+end;
+
+procedure TBaseSceneItem.MoveLast;
+begin
+  if Assigned(FParent) then
+    FParent.MoveChildLast(Self);
+end;
+
+procedure TBaseSceneItem.MoveUp;
+begin
+  if Assigned(FParent) then
+    FParent.MoveChildUp(Self);
+end;
+
+procedure TBaseSceneItem.RemoveChild(aChild: TBaseSceneItem; aKeepChildren: Boolean);
+var
+  i: integer;
+  list: TList;
+begin
+  if aChild.Parent = Self then
+  begin
+    UnSubscribe(aChild);
+    FChilds.RemoveSceneItem(aChild);
+    aChild.FParent := nil;
+    if aKeepChildren then
+    begin
+      list := GetChildsQueue();
+      for I := list.Count - 1 downto 0 do
+        InsertChild(aChild.SerialNumber, TBaseSceneItem(list[i]));
+    end;
+  end;
+end;
+
+procedure TBaseSceneItem.SetParent(const Value: TBaseSceneItem);
+begin
+  if FParent = Value then exit;
+
+  if assigned(FParent) then FParent.RemoveChild(Self, false);
+  FParent:=Value;
+  if assigned(FParent) then FParent.InsertChild(0, Self);
 end;
 
 { TSceneItemList }
