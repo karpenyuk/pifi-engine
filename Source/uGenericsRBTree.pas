@@ -319,7 +319,9 @@ begin
           exit;
         end;
         {: Value already exists in tree. }
-      end;
+      end
+      else { Replace value. }
+        x.Value := Value;
 //{$IFDEF FPC}
  //     Dispose(z);
 //{$ELSE}
