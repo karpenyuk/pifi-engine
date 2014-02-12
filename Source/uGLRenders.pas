@@ -328,11 +328,11 @@ begin
     FCameraPool.OffsetByIndex(FIdexInPool), FCameraPool.ObjectSize);
 
   // Fill Uniform Buffer Object Data
-  mat := UpdateWorldMatrix(aScene.Camera, [ttModel]);
+  aScene.Camera.WorldMatrix := UpdateWorldMatrix(aScene.Camera);
   with aScene.Camera do begin
-    move(mat.GetAddr^, p^,64); inc(p, 64);
+    move(ViewMatrix.GetAddr^, p^,64); inc(p, 64);
     move(ProjMatrix.GetAddr^,p^,64); inc(p, 64);
-    mat := mat * ProjMatrix;
+    mat := ViewMatrix * ProjMatrix;
     move(mat.GetAddr^, p^,64);
   end;
   FCameraPool.Buffer.UnMap;

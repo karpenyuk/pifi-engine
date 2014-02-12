@@ -983,6 +983,7 @@ Type
   { TODO : Update dictionary when object name changed }
   TSceneCamera = class(TMovableObject)
   private
+    FViewMatrix: TMatrix;
     FProjMatrix: TMatrix;
     FRenderTarget: TFrameBuffer;
     FViewPortSize: vec2i;
@@ -993,6 +994,7 @@ Type
     FName: string;
 
     procedure SetFoV(const Value: single);
+    procedure SetViewMatrix(const Value: TMatrix);
     procedure SetProjMatrix(const Value: TMatrix);
     procedure SetRenderTarget(const Value: TFrameBuffer);
     procedure SetViewPortSize(const Value: vec2i);
@@ -1003,7 +1005,7 @@ Type
     procedure RebuildViewMatrix;
 
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
-
+    function GetViewMatrix: TMatrix;
   public
     constructor Create; override;
 
@@ -1019,6 +1021,7 @@ Type
     property FoV: single read FFoV write SetFoV;
     property zNear: single read FzNear write SetzNear;
     property zFar: single read FzFar write SetzFar;
+    property ViewMatrix: TMatrix read GetViewMatrix write SetViewMatrix;
     property ProjMatrix: TMatrix read FProjMatrix write SetProjMatrix;
     property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
   end;
@@ -3420,6 +3423,12 @@ begin
   RebuildViewMatrix;
 end;
 
+function TSceneCamera.GetViewMatrix: TMatrix;
+begin
+  RebuildViewMatrix;
+  Result := FViewMatrix;
+end;
+
 procedure TSceneCamera.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   if sender = FViewTarget then
@@ -3448,9 +3457,9 @@ end;
 procedure TSceneCamera.RebuildViewMatrix;
 begin
   if assigned(FViewTarget) then
-    ModelMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
+    FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
   else
-    ModelMatrix := TMatrix.LookAtMatrix(Position,Position + Direction,Up);
+    FViewMatrix := TMatrix.LookAtMatrix(Position,Position + Direction,Up);
 end;
 
 procedure TSceneCamera.SetFoV(const Value: single);
@@ -3471,6 +3480,11 @@ begin
 
   FRenderTarget := Value;
   if assigned(FRenderTarget) then FRenderTarget.SetSize(FViewPortSize);
+end;
+
+procedure TSceneCamera.SetViewMatrix(const Value: TMatrix);
+begin
+  FViewMatrix := Value;
 end;
 
 procedure TSceneCamera.SetViewPortSize(const Value: vec2i);
