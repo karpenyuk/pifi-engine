@@ -592,18 +592,23 @@ var idx: integer;
 begin
   if not assigned(Resource) then exit;
 
+
   idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx <0 then exit;
 
   //Resource exists?
   if Resource.IsInner then begin
     if FInnerResource.Find(Resource, glres) then begin
+      glres.UnSubscribe(Self);
+      UnSubscribe(glres);
       FInnerResource.Delete(Resource);
-      FreeAndNil(glres);
+      FreeAndNil(glRes);
     end;
   end else if FResList[idx].Find(Resource, glres) then begin
+      glres.UnSubscribe(Self);
+      UnSubscribe(glres);
       FResList[idx].Delete(Resource);
-      FreeAndNil(glres);
+      FreeAndNil(glRes);
   end;
 end;
 
@@ -628,102 +633,73 @@ begin
     //Create GLSL Shader program
     glres:=TGLSLShaderProgramExt.CreateFrom(Self, Resource as TShaderProgram);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Result:=glres;
-    Resource.Subscribe(self);
-    exit;
   end;
 
   if Resource.ClassType = TVertexObject then begin
     //Create Vertex object
     glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TMesh then begin
     //Create Mesh
     glres:=TGLMesh.CreateFrom(self, Resource as TMesh);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TMeshObject then begin
     //Create Mesh object
     glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TSceneObject then begin
     //Create Scene object
     glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TBuiltinUniformLightNumber then begin
     //Create uniform setter of LightNumber
     glres:=TGLUniformLightNumber.CreateFrom(self, Resource as TBaseBuiltinUniform);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TMaterialObject then begin
     //Create Material object
     glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TLightSource then begin
     //Create Material object
     glres:=TGLLight.CreateFrom(self, Resource as TLightSource);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TTexture then begin
     // Create Texture object
     glres:=TGLTextureObject.CreateFrom(Resource as TTexture);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TTextureSampler then begin
     // Create Sampler object
     glres:=TGLTextureSampler.CreateFrom(Resource as TTextureSampler);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TFrameBuffer then begin
     // Create Sampler object
     glres:=TGLFrameBufferObjectExt.CreateFrom(Self, Resource as TFrameBuffer);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
+  glres.Owner:=self;
+  Resource.Subscribe(self);
+  glres.Subscribe(Self);
+  Subscribe(glres);
+  result := glres;
 end;
 
 function TGLResources.GetResource(
@@ -752,8 +728,7 @@ begin
   if assigned(res) then begin
     case Msg of
       NM_ObjectDestroyed: begin
-        if assigned(res.BaseResource) then
-          RemoveGLResource(res.BaseResource)
+          FreeResource(TBaseRenderResource(Sender));
       end;
     end;
   end;

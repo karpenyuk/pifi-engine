@@ -16,11 +16,18 @@ type
 
   TStorage = class
   private
-    class var FStorageHandle: TPersistentResource;
+    Type
+      TStorageHandler = class (TPersistentResource)
+      public
+        procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+      end;
+    class var FStorageHandle: TStorageHandler;
     class var FResources: TResourceList;
     class constructor Create;
     class destructor Destroy;
   public
+    class procedure Delete(Resource: TPersistentResource);
+
     class function CreateProgram: TShaderProgram;
     class function CreateMaterial: TMaterial;
     class function CreateTextureSample: TTextureSampler;
@@ -62,7 +69,7 @@ end;
 
 class constructor TStorage.Create;
 begin
-  FStorageHandle:=TPersistentResource.Create;
+  FStorageHandle:=TStorageHandler.Create;
   FResources:=TResourceList.Create(ResourceComparer, nil);
 end;
 
@@ -73,6 +80,7 @@ begin
   result := TAttribBuffer.CreateAndSetup(AttrName, aSize, AType,
     AStride, BuffType, FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateAttribObject(AttrName: ansistring;
@@ -82,36 +90,42 @@ begin
   result := TAttribBuffer.CreateAndSetup(AttrName, aSize, AType,
     AStride, BuffType, FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateAttribObject: TAttribObject;
 begin
   result := TAttribObject.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateBlending: TCustomBlending;
 begin
   result := TCustomBlending.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateBufferObject: TBufferObject;
 begin
   result := TBufferObject.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateCamera: TSceneCamera;
 begin
   result := TSceneCamera.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateFrameBuffer: TFrameBuffer;
 begin
   result := TFrameBuffer.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateImageHolder(aFormatCode: cardinal;
@@ -120,86 +134,121 @@ begin
   result := TImageHolder.Create(aFormatCode,aImageType);
   result.Owner := FStorageHandle;
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateImageHolder: TImageHolder;
 begin
   result := CreateImageHolder.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateLight: TLightSource;
 begin
   result := TLightSource.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateLODsController: TLODsController;
 begin
   result := TLODsController.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateMaterial: TMaterial;
 begin
   result := TMaterial.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateMaterialObject: TMaterialObject;
 begin
   result := TMaterialObject.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateMesh: TMesh;
 begin
   result := TMesh.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateMeshObject: TMeshObject;
 begin
   result := TMeshObject.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateProgram: TShaderProgram;
 begin
   result:=TShaderProgram.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateSceneObject: TSceneObject;
 begin
   result := TSceneObject.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateTexture(aImageHolder: TImageHolder): TTexture;
 begin
   result := TTexture.CreateOwned(aImageHolder, FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateTextureSample: TTextureSampler;
 begin
   result := TTextureSampler.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
 end;
 
 class function TStorage.CreateVertexObject: TVertexObject;
 begin
   result := TVertexObject.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
+end;
+
+class procedure TStorage.Delete(Resource: TPersistentResource);
+begin
+  if Resource is TPersistentResource then
+    FResources.Delete(Resource.GUID);
 end;
 
 class destructor TStorage.Destroy;
-var i: integer;
 begin
   FResources.Clear;
   FResources.Free;
   FStorageHandle.Free;
+end;
+
+{ TStorage.TStorageHandler }
+
+procedure TStorage.TStorageHandler.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  inherited;
+  if assigned(Sender) then begin
+    case Msg of
+      NM_ObjectDestroyed:
+        if Sender is TPersistentResource then begin
+          FStorageHandle.UnSubscribe(TNotifiableObject(Sender));
+          TStorage.Delete(TPersistentResource(Sender));
+        end;
+    end;
+  end;
 end;
 
 initialization

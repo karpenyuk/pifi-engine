@@ -24,8 +24,10 @@ type
     function getCamCount: integer;
     function getCamera(index: integer): TSceneCamera;
   public
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     function AddItem(aItem: TBaseSceneItem): integer;
     function AddLight(aLight: TLightSource): integer;
@@ -68,6 +70,8 @@ implementation
 function TSceneGraph.AddItem(aItem: TBaseSceneItem): integer;
 begin
   result := FRoot.Childs.AddSceneItem(aItem);
+  aItem.Subscribe(Self);
+  Subscribe(aItem);
   //If aItem is Camera - add it to Camera List
   if (aItem is TSceneCamera) and (not FCameras.inList(aItem))
   then FCameras.AddCamera(aItem as TSceneCamera);
@@ -103,6 +107,7 @@ end;
 
 constructor TSceneGraph.Create;
 begin
+  inherited Create;
   FRoot := TSceneCamera.Create;
   FCameras := TCamerasList.Create;
   FCameras.AddCamera(FRoot);
@@ -167,6 +172,17 @@ end;
 function TSceneGraph.GetMaterials: TMaterialList;
 begin
   result := FMaterials;
+end;
+
+procedure TSceneGraph.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  inherited;
+  if assigned(Sender) then begin
+    case Msg of
+      NM_ObjectDestroyed:
+        if Sender is TNotifiableObject then UnSubscribe(TNotifiableObject(Sender));
+    end;
+  end;
 end;
 
 end.
