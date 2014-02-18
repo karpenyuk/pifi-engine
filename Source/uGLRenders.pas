@@ -215,7 +215,6 @@ Type
     FLightIndices: TGLBufferObject;
     FMaterialPool: TGLBufferObjectsPool;
     FCurrentParent: TSceneObject;
-    FFrameBuffer: TGLFrameBufferObjectExt;
   protected
     FResourceManager: TGLResources;
 
@@ -299,7 +298,6 @@ begin
   inherited;
   RegisterSubRender(TGLStaticRender.CreateOwned(Self));
   FResourceManager:=TGLResources.CreateOwned(Self);
-  FIdexInPool := -1;
   FCameraPool := nil;
   FObjectPool := nil;
   FLightPool := nil;
@@ -324,7 +322,7 @@ begin
 end;
 
 procedure TGLRender.PrepareResources(const aScene: TSceneGraph);
-var i: integer; p: PByte;
+var i: integer;
     SceneItem: TBaseSceneItem;
     res: TBaseRenderResource;
     glres: TGLBaseResource;
@@ -562,6 +560,7 @@ begin
   FSupportedResources.Add(TBuiltinUniformLightNumber);
   FSupportedResources.Add(TTextureSampler);
   FSupportedResources.Add(TFrameBuffer);
+  FSupportedResources.Add(TSceneCamera);
 
   //Resource Tree for each of resource type, exclude inner resource
   setlength(FResList,FSupportedResources.Count - 5);
@@ -708,6 +707,12 @@ begin
   if Resource.ClassType = TFrameBuffer then begin
     // Create Sampler object
     glres:=TGLFrameBufferObjectExt.CreateFrom(Self, Resource as TFrameBuffer);
+    FInnerResource.Add(Resource, glres);
+  end;
+
+  if Resource.ClassType = TSceneCamera then begin
+    // Create Sampler object
+    glres:=TGLCamera.CreateFrom(Self, Resource as TSceneCamera);
     FInnerResource.Add(Resource, glres);
   end;
 
@@ -1385,8 +1390,12 @@ begin
   if FIdexInPool < 0 then
     FIdexInPool := glRender.FCameraPool.GetFreeSlotIndex();
 
-  FCamera.WorldMatrix := glRender.UpdateWorldMatrix(glRender.CurrentGraph.Camera);
-  with glRender.CurrentGraph.Camera do begin
+  p := glRender.FCameraPool.Buffer.MapRange(
+    GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+    glRender.FCameraPool.OffsetByIndex(FIdexInPool), glRender.FCameraPool.ObjectSize);
+
+  FCamera.WorldMatrix := glRender.UpdateWorldMatrix(FCamera);
+  with FCamera do begin
     move(ViewMatrix.GetAddr^, p^,64); inc(p, 64);
     move(ProjMatrix.GetAddr^,p^,64); inc(p, 64);
     mat := ViewMatrix * ProjMatrix;

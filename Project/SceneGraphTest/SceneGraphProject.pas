@@ -46,7 +46,6 @@ var
   counter: Integer = 0;
   dummy: Integer = 0;
   cv: Integer = 0;
-  log: tstringlist;
   dt: double = 0;
 
 implementation
@@ -99,7 +98,6 @@ begin
 
   FDemoScene := TDemoScene.Create;
 
-  log := tstringlist.Create;
 end;
 
 procedure TForm2.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
@@ -124,45 +122,17 @@ procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   GLViewer1.OnRender := nil;
   FDemoScene.Free;
-  log.Add(inttostr(dummy));
-  log.SaveToFile('e:\fps.txt');
 end;
 
 procedure TForm2.GLViewer1Render(Sender: TObject);
-var
-  i: Integer;
-  state: Boolean;
-  t: double;
 begin
-  dt := dt + GLViewer1.DeltaTime;
   glClearColor(0.2, 0.2, 0.2, 1.0);
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
   //Со временем здесь будет полноценный ренедер сцены
   if assigned(Render) then begin
-    Render.ProcessScene(FDemoScene.SceneGraph); exit;
+    Render.ProcessScene(FDemoScene.SceneGraph);
   end;
-
-  t := GetTime;
-
-  for i := 0 to 5000 do begin
-    glEnable(GL_COLOR_MATERIAL);
-    inc(dummy);
-    state := false;
-  end;
-
-  t := GetTime - t;
-  if state then log.Add(floattostr(t) + inttostr(dummy));
-
-  inc(cv);
-  if cv = 10 then begin
-    inc(counter);
-    cv := 0;
-    log.Add(floattostr(1.0 / (dt / 20)));
-    dt := 0;
-  end;
-
-  if counter >= 1000 then close;
 end;
 
 procedure TForm2.Timer1Timer(Sender: TObject);

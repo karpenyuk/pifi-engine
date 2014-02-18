@@ -50,8 +50,8 @@ type
   public
     GUID: TGUID;
     Version: integer;
-    Storage: TObject;
-    constructor Create; virtual;
+    TagStorage: TObject;
+    constructor Create; overload; override;
     constructor CreateOwned(aOwner: TObject = nil); virtual;
 
     procedure SaveToStream(s: TStream); virtual;

@@ -6,7 +6,7 @@ unit uShaderGen;
 
 interface
 
-uses Classes, uRenderResource, uBaseTypes, uMiscUtils;
+uses Classes, uRenderResource, uBaseTypes, uMiscUtils, uStorage;
 
 type
 
@@ -147,7 +147,7 @@ end;
 class function ShaderGenerator.GenForwardLightShader: TShaderProgram;
 var vt,ft: ansistring;
 begin
-  result:=TShaderProgram.Create;
+  result:= Storage.CreateProgram;
   vt:=
 '#version 430'+#10#13 +
 'layout(location = 0) in vec3 in_Position;'+#10#13 +
@@ -336,7 +336,7 @@ end;
 class function ShaderGenerator.GenLightGlyphShader: TShaderProgram;
 var vt,ft: ansistring;
 begin
-  result:=TShaderProgram.Create;
+  result:=Storage.CreateProgram;
   vt:=
 '#version 430'#10#13 +
 'layout(location = 0) in vec3 in_Position;'#10#13 +
@@ -370,7 +370,7 @@ end;
 class function ShaderGenerator.GenScreenQuadShader: TShaderProgram;
 var vt,ft: ansistring;
 begin
-  result:=TShaderProgram.Create;
+  result:=Storage.CreateProgram;
   vt:=
 '#version 430'+#10#13 +
 'layout(location = 0) in vec3 in_Position;'+#10#13 +
@@ -400,7 +400,7 @@ end;
 class function ShaderGenerator.UBOParamShader: TShaderProgram;
 var vt,ft: ansistring;
 begin
-  result:=TShaderProgram.Create;
+  result:=Storage.CreateProgram;
   vt:=
 '#version 430'+#10#13 +
 'layout(location = 0) in vec3 in_Position;'+#10#13 +

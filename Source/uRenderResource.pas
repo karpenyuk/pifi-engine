@@ -19,8 +19,7 @@ interface
 
 uses
   SysUtils, Classes, uLists, uVMath, uMiscUtils, uBaseTypes, uBaseClasses,
-  uGenericsRBTree, uPersistentClasses, uDataAccess, uImageFormats,
-  uEffectPipeline;
+  uGenericsRBTree, uPersistentClasses, uDataAccess, uImageFormats;
 
 const
   cDiffuseColor: vec4 = (0.8, 0.8, 0.8, 1);
@@ -30,6 +29,9 @@ const
   cShininess: integer = 127;
 
 Type
+
+  TPipelineAbstractEffect = class;
+  TEffectPipeline = class;
 
   TRegisteredResource = class(TNotifiableObject)
   private
@@ -448,7 +450,7 @@ Type
 
   public
 
-    constructor CreateOwned(aImageHolder: TImageHolder; aOwner: TObject = nil);
+    constructor CreateFrom(aImageHolder: TImageHolder; aOwner: TObject = nil);
     class function IsInner: boolean; override;
 
     property ImageHolder: TImageHolder read FImageDescriptor;
@@ -1016,6 +1018,7 @@ Type
     procedure SetEffectPipeline(const Value: TEffectPipeline);
   public
     constructor Create; override;
+    class function IsInner: boolean; override;
 
     procedure UpdateWorldMatrix(UseMatrix: TTransforms=[ttAll]); override;
     {: Adjusts distance from camera to target by applying a ratio.
@@ -1050,6 +1053,46 @@ Type
     property Cameras[index: integer]: TSceneCamera read getItemObj; default;
   end;
 
+  TEffectNotifyEvent = procedure(Sender: TPipelineAbstractEffect);
+
+  TPipelineAbstractEffect = class (TPersistentResource)
+  private
+    FShaderProgram: TShaderProgram;
+    FonApply: TEffectNotifyEvent;
+    FonUnapply: TEffectNotifyEvent;
+    FonInitialize: TEffectNotifyEvent;
+    FonSetup: TEffectNotifyEvent;
+    FUsage: TUsageLogic;
+  protected
+    FEffectName: string;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+
+    procedure Initialize; virtual; abstract;
+    procedure Apply; virtual; abstract;
+    procedure UnApply; virtual; abstract;
+    procedure Setup; virtual; abstract;
+
+    property ShaderProgram: TShaderProgram read FShaderProgram write FShaderProgram;
+    property onApply: TEffectNotifyEvent read FonApply write FonApply;
+    property onUnapply: TEffectNotifyEvent read FonUnapply write FonUnapply;
+    property onInitialize: TEffectNotifyEvent read FonInitialize write FonInitialize;
+    property onSetup: TEffectNotifyEvent read FonSetup write FonSetup;
+    property EffectName: string read FEffectName;
+    property Usage: TUsageLogic read FUsage write FUsage;
+
+  end;
+
+  TBaseEffectList = TDataList<TPipelineAbstractEffect>;
+
+  TEffectPipeline = class (TPersistentResource)
+  private
+    FEffectsList: TBaseEffectList;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+  end;
 
 var
   vRegisteredResource: TRegisteredResource;
@@ -1340,12 +1383,11 @@ begin
   FTexMatrixChanged := true;
 end;
 
-constructor TTexture.CreateOwned(aImageHolder: TImageHolder; aOwner: TObject);
+constructor TTexture.CreateFrom(aImageHolder: TImageHolder; aOwner: TObject);
 begin
   assert(assigned(aImageHolder),'Image holder is not assigned!');
-  Create;
+  CreateOwned(aOwner);
   FTexMatrixChanged := false;
-  Owner := aOwner;
   FImageDescriptor := aImageHolder;
   aImageHolder.Subscribe(Self);
 
@@ -2549,7 +2591,7 @@ function TMaterialObject.AddNewTexture(aName: string): TTexture;
 begin
   if assigned(FTexture) and (FTexture.Owner = Self) then
     FTexture.Free;
-  FTexture := TTexture.CreateOwned(nil, Self);
+  FTexture := TTexture.CreateFrom(nil, Self);
   FTexture.Name := aName;
   FUseTexture := true;
   result := FTexture;
@@ -2635,7 +2677,7 @@ end;
 
 constructor TMaterialObject.Create;
 var
-  mtc, i: integer;
+  i: integer;
 begin
   inherited;
   FBlending := TCustomBlending.Create;
@@ -2784,7 +2826,7 @@ function TMeshObjectsList.AddMeshObject(const aMeshObject: TMeshObject): integer
 var
   list: TMeshObjectsList;
 begin
-  if aMeshObject.Owner <> Self then
+  if Assigned(aMeshObject.Owner) and (aMeshObject.Owner <> Self) then
   begin
     // transmit MeshObject from other list without it destroying
     list := TMeshObjectsList(aMeshObject.Owner);
@@ -3074,7 +3116,6 @@ begin
 end;
 
 constructor TImageHolder.Create(aFormatCode: cardinal; aImageType: TImageType);
-var size: cardinal;
 begin
   Create;
   FImageFormat := aFormatCode;
@@ -3111,7 +3152,7 @@ end;
 
 procedure TImageHolder.FillLodsStructure(aFormatCode: cardinal; aWidth, aHeight,
   aDepth: integer; aArray: boolean);
-var i,j, offs, size: integer;
+var i, offs, size: integer;
     w,h,d,layers: integer;
 begin
   assert(assigned(FData), 'Allocate image memory first!');
@@ -3143,7 +3184,7 @@ end;
 
 procedure TImageHolder.FillZeroLod(aFormatCode: cardinal; aWidth, aHeight,
   aDepth: integer; aArray: boolean);
-var i,j, offs, size: integer;
+var i, offs, size: integer;
     w,h,d,layers: integer;
 begin
   assert(assigned(FData), 'Allocate image memory first!');
@@ -3294,7 +3335,7 @@ end;
 function TImageHolder.CreateTexture: TTexture;
 begin
   assert(FDataSize > 0, 'Allocate image first!');
-  result := TTexture.CreateOwned(self);
+  result := TTexture.CreateFrom(self, nil);
 end;
 
 { TMaterialList }
@@ -3444,6 +3485,11 @@ function TSceneCamera.GetViewMatrix: TMatrix;
 begin
   RebuildViewMatrix;
   Result := FViewMatrix;
+end;
+
+class function TSceneCamera.IsInner: boolean;
+begin
+  result := true;
 end;
 
 procedure TSceneCamera.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
@@ -3841,6 +3887,39 @@ begin
       FItems[i].Value:=nil; exit;
     end;
   end;
+end;
+
+{ TAbstractPipelineEffect }
+
+constructor TPipelineAbstractEffect.Create;
+begin
+  inherited;
+  FShaderProgram:=nil;
+  FonApply:=nil;
+  FonUnapply:=nil;
+  FonInitialize:=nil;
+  FonSetup:=nil;
+  FEffectName:='AbstractEffect';
+  FUsage:=useAlways;
+end;
+
+destructor TPipelineAbstractEffect.Destroy;
+begin
+  inherited;
+end;
+
+{ TEffectPipeline }
+
+constructor TEffectPipeline.Create;
+begin
+  inherited Create;
+  FEffectsList := TBaseEffectList.Create;
+end;
+
+destructor TEffectPipeline.Destroy;
+begin
+  FEffectsList.Free;
+  inherited;
 end;
 
 initialization
