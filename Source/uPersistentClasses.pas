@@ -65,12 +65,14 @@ type
     GUID: TGUID;
     Version: integer;
     Storage: TObject;
+    constructor Create; virtual;
+    destructor Destroy; override;
+    constructor CreateOwned(aOwner: TObject = nil); virtual;
+
     procedure SaveToStream(s: TStream); virtual;
     procedure LoadFromStream(s: TStream); virtual;
     procedure SetGUID(GUIDString: string);
     class function IsInner: boolean; virtual;
-    constructor Create; virtual;
-    destructor Destroy; override;
     property Owner: TObject read FOwner write setOwner;
     property Order: integer read FOrder;
   end;
@@ -92,6 +94,12 @@ begin
   FOrder := Counter;
   Inc(Counter);
   inherited;
+end;
+
+constructor TPersistentResource.CreateOwned(aOwner: TObject);
+begin
+  Create;
+  FOwner := aOwner;
 end;
 
 destructor TPersistentResource.Destroy;

@@ -42,14 +42,13 @@ Type
     FCurrentLightNumber: integer;
     FCurrentGraph: TSceneGraph;
     FRegisteredSubRenders: TList;  //List of TBaseSubRender
-    FMaterials: TMaterialList;
-    FLights: TLightsList;
-    FCameras: TCamerasList;
     procedure UploadResource(const Res: TBaseRenderResource); virtual; abstract;
     procedure ProcessResource(const Res: TBaseRenderResource); virtual; abstract;
 //    procedure ProcessMeshObjects(const aMeshObjects: TMeshObjectsList); virtual; abstract;
 
   public
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
     function UpdateWorldMatrix(const MovableObject: TMovableObject;
       UseMatrix: TTransforms=[ttAll]): TMatrix; virtual;
     function CheckVisibility(const aFrustum: TFrustum;
@@ -63,6 +62,7 @@ Type
     destructor Destroy; override;
 
     procedure RegisterSubRender(const SubRender: TBaseSubRender); virtual;
+    procedure UnRegisterSubRender(const SubRender: TBaseSubRender); virtual;
 
     // Rendering states
     property CurrentGraph: TSceneGraph read FCurrentGraph;
@@ -73,6 +73,8 @@ Type
   private
     FRenders: TList;
   public
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
     constructor Create; override;
     destructor Destroy; override;
 
@@ -99,24 +101,27 @@ constructor TBaseRender.Create;
 begin
   inherited Create;
   FRegisteredSubRenders:=TList.Create;
-  FMaterials := TMaterialList.Create;
-  FLights := TLightsList.Create;
-  FCameras := TCamerasList.Create;
-
 end;
 
 destructor TBaseRender.Destroy;
 begin
   FreeObjectList(FRegisteredSubRenders);
-  FMaterials.Free;
-  FLights.Free;
-  FCameras.Free;
   inherited;
 end;
 
 function TBaseRender.isSupported(const aAPI: TApiVersion): boolean;
 begin
   result:=false;
+end;
+
+procedure TBaseRender.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  inherited;
+  if Sender is TBaseSubRender then begin
+    case Msg of
+      NM_ResourceChanged: UnRegisterSubRender(TBaseSubRender(Sender));
+    end;
+  end;
 end;
 
 function TBaseRender.isSupported(const aClassType: TClass): boolean;
@@ -132,6 +137,14 @@ end;
 procedure TBaseRender.RegisterSubRender(const SubRender: TBaseSubRender);
 begin
   FRegisteredSubRenders.Add(SubRender);
+  SubRender.Subscribe(Self);
+end;
+
+procedure TBaseRender.UnRegisterSubRender(const SubRender: TBaseSubRender);
+var i: integer;
+begin
+  i := FRegisteredSubRenders.IndexOf(SubRender);
+  if i>=0 then FRegisteredSubRenders.Delete(i);
 end;
 
 function TBaseRender.UpdateWorldMatrix(const MovableObject: TMovableObject; UseMatrix: TTransforms): TMatrix;
@@ -229,8 +242,7 @@ end;
 
 destructor TRegisteredRenders.Destroy;
 begin
-  //FreeObjectList(FRenders);
-  FRenders.Free;
+  FreeObjectList(FRenders);
   inherited;
 end;
 
@@ -246,9 +258,24 @@ begin
   end; result:=nil;
 end;
 
+procedure TRegisteredRenders.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  inherited;
+  if Sender is TBaseRender then begin
+    case Msg of
+      NM_ResourceChanged: UnRegisterRender(TBaseRender(Sender));
+    end;
+  end;
+
+end;
+
 procedure TRegisteredRenders.RegisterRender(const aRender: TBaseRender);
 begin
-  if FRenders.indexof(aRender)<0 then FRenders.Add(aRender);
+  if FRenders.indexof(aRender)<0 then begin
+    FRenders.Add(aRender);
+    aRender.Subscribe(Self);
+  end;
 end;
 
 

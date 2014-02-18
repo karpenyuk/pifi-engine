@@ -148,7 +148,7 @@ Type
   end;
 
   // Key+Value pair list with linear searching
-  TObjectsDictionary = class
+  TObjectsDictionary = class(TNotifiableObject)
   protected
     FCount: Integer;
     FItems: array of THashDictionaryNode;
@@ -160,7 +160,7 @@ Type
     function GetValue(const Key: string): TObject; overload; virtual;
     function GetValue(const Key: TGUID): TObject; overload; virtual;
   public
-    constructor Create;
+    constructor Create; override;
     property Count: Integer read FCount;
     function inList(const aItem: TObject): boolean;
   end;
@@ -477,6 +477,7 @@ end;
 
 constructor TObjectsDictionary.Create;
 begin
+  inherited Create;
   Setlength(FItems, 128);
   FCount := 0;
 end;

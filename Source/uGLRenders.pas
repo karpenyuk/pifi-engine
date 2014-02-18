@@ -300,16 +300,21 @@ begin
   RegisterSubRender(TGLStaticRender.CreateOwned(Self));
   FResourceManager:=TGLResources.CreateOwned(Self);
   FIdexInPool := -1;
+  FCameraPool := nil;
+  FObjectPool := nil;
+  FLightPool := nil;
+  FLightIndices := nil;
+  FMaterialPool := nil;
 end;
 
 destructor TGLRender.Destroy;
 begin
-  FCameraPool.Free;
-  FObjectPool.Free;
-  FLightPool.Free;
-  FLightIndices.Free;
-  FMaterialPool.Free;
-  FResourceManager.Free;
+  if assigned(FCameraPool) then FCameraPool.Free;
+  if assigned(FObjectPool) then FObjectPool.Free;
+  if assigned(FLightPool) then FLightPool.Free;
+  if assigned(FLightIndices) then FLightIndices.Free;
+  if assigned(FMaterialPool) then FMaterialPool.Free;
+  if assigned(FResourceManager) then FResourceManager.Free;
   inherited;
 end;
 
@@ -330,14 +335,18 @@ begin
     снимка (через хэш библиотеки или рассылку уведомлений?)
     Делать вычитку ресурсов только при несовпадении хэша. }
 
-  if not Assigned(FObjectPool) then begin
+  if not Assigned(FCameraPool) then
     FCameraPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 8);
+  if not Assigned(FObjectPool) then
     FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 2000);
+  if not Assigned(FLightPool) then
     FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000, btTexture);
+  if not Assigned(FLightIndices) then begin
     FLightIndices := TGLBufferObject.Create(btUniform);
     FLightIndices.Allocate(8*SizeOf(Vec4i), nil);
-    FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
   end;
+  if not Assigned(FMaterialPool) then
+    FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
 
   //создаем ресурсы для всех камер сцены
   for i:=0 to aScene.CamerasCount-1 do begin
@@ -598,18 +607,23 @@ var idx: integer;
 begin
   if not assigned(Resource) then exit;
 
+
   idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx <0 then exit;
 
   //Resource exists?
   if Resource.IsInner then begin
     if FInnerResource.Find(Resource, glres) then begin
+      glres.UnSubscribe(Self);
+      UnSubscribe(glres);
       FInnerResource.Delete(Resource);
-      FreeAndNil(glres);
+      FreeAndNil(glRes);
     end;
   end else if FResList[idx].Find(Resource, glres) then begin
+      glres.UnSubscribe(Self);
+      UnSubscribe(glres);
       FResList[idx].Delete(Resource);
-      FreeAndNil(glres);
+      FreeAndNil(glRes);
   end;
 end;
 
@@ -627,6 +641,7 @@ begin
 
   //Resource already exists?
   result:=GetResource(Resource); if assigned(result) then exit;
+  glres:=nil;
 
   //Create new GLResources
 
@@ -634,102 +649,75 @@ begin
     //Create GLSL Shader program
     glres:=TGLSLShaderProgramExt.CreateFrom(Self, Resource as TShaderProgram);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Result:=glres;
-    Resource.Subscribe(self);
-    exit;
   end;
 
   if Resource.ClassType = TVertexObject then begin
     //Create Vertex object
     glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TMesh then begin
     //Create Mesh
     glres:=TGLMesh.CreateFrom(self, Resource as TMesh);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TMeshObject then begin
     //Create Mesh object
     glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TSceneObject then begin
     //Create Scene object
     glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TBuiltinUniformLightNumber then begin
     //Create uniform setter of LightNumber
     glres:=TGLUniformLightNumber.CreateFrom(self, Resource as TBaseBuiltinUniform);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TMaterialObject then begin
     //Create Material object
     glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TLightSource then begin
     //Create Material object
     glres:=TGLLight.CreateFrom(self, Resource as TLightSource);
     FResList[idx].Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TTexture then begin
     // Create Texture object
     glres:=TGLTextureObject.CreateFrom(Resource as TTexture);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TTextureSampler then begin
     // Create Sampler object
     glres:=TGLTextureSampler.CreateFrom(Resource as TTextureSampler);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
   if Resource.ClassType = TFrameBuffer then begin
     // Create Sampler object
     glres:=TGLFrameBufferObjectExt.CreateFrom(Self, Resource as TFrameBuffer);
     FInnerResource.Add(Resource, glres);
-    glres.Owner:=self;
-    Resource.Subscribe(self);
-    exit(glres);
   end;
 
+  if assigned(glres) then begin
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    glres.Subscribe(Self);
+    Subscribe(glres);
+  end;
+  result := glres;
 end;
 
 function TGLResources.GetResource(
@@ -758,8 +746,7 @@ begin
   if assigned(res) then begin
     case Msg of
       NM_ObjectDestroyed: begin
-        if assigned(res.BaseResource) then
-          RemoveGLResource(res.BaseResource)
+          FreeResource(TBaseRenderResource(Sender));
       end;
     end;
   end;
@@ -1414,8 +1401,10 @@ initialization
   vRegisteredRenders.RegisterRender(vGLRender);
 
 finalization
-  vRegisteredRenders.UnRegisterRender(vGLRender);
-  vGLRender.Free;
+//  if assigned(vRegisteredRenders) then vRegisteredRenders.UnRegisterRender(vGLRender);
+//  vGLRender.DispatchMessage(NM_ResourceChanged);
+//  FreeAndNil(vGLRender);
+  vGLRender := nil;
 end.
 //Projected Sphere radius
 //radius * cot(fov / 2) / Z * ViewerSize

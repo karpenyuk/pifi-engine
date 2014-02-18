@@ -35,7 +35,7 @@ Type
   private
     FResource: TList;
   public
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
 
     procedure RegisterResource(const aResource: TBaseRenderResource);
@@ -89,7 +89,7 @@ Type
 
     property BuildinUniforms: TObjectList read FBuildinUniforms;
 
-    constructor CreateOwned(aOwner: TObject = nil);
+    constructor CreateOwned(aOwner: TObject = nil); override;
     destructor Destroy; override;
   end;
 
@@ -177,7 +177,6 @@ Type
     FLinearAttenuation: single;
     FQuadraticAttenuation: single;
     FLightSlot: integer;
-    FName: string;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -200,8 +199,6 @@ Type
     property LightSlot: integer read FLightSlot write FLightSlot;
 
     property Enabled: boolean read FEnabled write FEnabled;
-
-    property FriendlyName: string read FName write FName;
   end;
 
   TLightsList = class (TObjectsDictionary)
@@ -257,7 +254,7 @@ Type
     procedure SetName(const Value: string);
     function GetHashName(const Name: string): integer;
   public
-    constructor CreateOwned(aOwner: TObject = nil);
+    constructor CreateOwned(aOwner: TObject = nil); override;
     destructor Destroy; override;
 
     property Light: TLightSource read FLightProperties;
@@ -372,14 +369,14 @@ Type
   public
     constructor Create; overload; override;
     constructor Create(aFormatCode: cardinal; aImageType: TImageType = itBitmap); overload;
-    constructor CreateFromStream(aStream: TStream);
+    constructor CreateFromStream(aStream: TStream); virtual;
     destructor Destroy; override;
 
     function CreateTexture: TTexture;
 
     procedure Allocate(aWithMipmaps: boolean = false);
     procedure SaveToStream(aStream: TStream); virtual;
-    procedure LoadFromStream(aStream: TStream); virtual;
+    procedure LoadFromStream(aStream: TStream); override;
     //virtual function for implementing different image format loader
     procedure LoadImageFromStream(aStream: TStream); virtual;
     procedure LoadImageFromFile(aFileName: string);
@@ -646,7 +643,7 @@ Type
     constructor Create; override;
     constructor CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
       AType: TValueType = vtFloat; AStride: integer = 0;
-      BuffType: TBufferType = btArray); virtual;
+      BuffType: TBufferType = btArray; aOwner: TObject = nil); virtual;
     constructor CreateClone(ASample: TAttribObject);
     destructor Destroy; override;
     class function IsInner: boolean; override;
@@ -678,7 +675,7 @@ Type
   public
     constructor CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
       AType: TValueType = vtFloat; AStride: integer = 0;
-      BuffType: TBufferType = btArray); override;
+      BuffType: TBufferType = btArray; aOwner: TObject = nil); override;
     destructor Destroy; override;
   end;
 
@@ -856,6 +853,7 @@ Type
     function getCount: integer;
   public
     constructor Create(aBaseLod: TMeshList);
+    constructor CreateOwner(aBaseLod: TMeshList; aOwner: TObject);
     destructor Destroy; override;
 
     procedure SetLodEquation(aConstant, aLinear, aQuadric: single);
@@ -884,6 +882,7 @@ Type
     FCollider: TTriangleList;
     FExtents: TExtents;
     function getMeshes: TMeshList;
+  protected
     procedure setOwner(const Value: TObject); override;
   public
     FriendlyName: string;
@@ -964,7 +963,7 @@ Type
     function GetColorCount: Integer;
 
   public
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
     class function IsInner: boolean; override;
 
@@ -1011,6 +1010,7 @@ Type
     procedure RebuildProjMatrix;
     procedure RebuildViewMatrix;
 
+  public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
     function GetViewMatrix: TMatrix;
     procedure SetEffectPipeline(const Value: TEffectPipeline);
@@ -1272,7 +1272,7 @@ end;
 
 constructor TMaterial.CreateOwned(aOwner: TObject);
 begin
-  Create;
+  inherited Create;
   Owner := aOwner;
   FMaterialProperties := TMaterialProperties.Create;
   FLightProperties := TLightSource.Create;
@@ -1681,14 +1681,15 @@ begin
 end;
 
 constructor TAttribObject.CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
-      AType: TValueType = vtFloat; AStride: integer = 0;
-      BuffType: TBufferType = btArray);
+      AType: TValueType; AStride: integer;
+      BuffType: TBufferType; aOwner: TObject);
 begin
   Create;
   FSize := aSize;
   FAttribName := AttrName;
   FType := AType;
   FStride := AStride;
+  Owner := aOwner;
   if AStride = 0 then
     FElementSize := Ord(aSize) * CValueSizes[AType]
   else
@@ -1813,13 +1814,14 @@ end;
 { TAttribBuffer }
 
 constructor TAttribBuffer.CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
-      AType: TValueType = vtFloat; AStride: integer = 0;
-      BuffType: TBufferType = btArray);
+      AType: TValueType; AStride: integer;
+      BuffType: TBufferType; aOwner: TObject);
 begin
   inherited CreateAndSetup(AttrName, aSize, AType, AStride, BuffType);
   FBuffer := TBufferObject.Create(BuffType);
   FBuffer.Subscribe(Self);
   FBuffer.Owner:=self;
+  Owner := aOwner;
 end;
 
 destructor TAttribBuffer.Destroy;
@@ -3379,7 +3381,7 @@ var i: integer;
 begin
   for i:=0 to FCount-1 do begin
     li:=TLightSource(FItems[i].Value);
-    if li.FName=aName then begin
+    if li.FriendlyName=aName then begin
       result:=li; exit;
     end;
   end; result:=nil;
@@ -3705,6 +3707,12 @@ begin
   FList := TLodsDataList.Create;
   FList.Add(TLod.Create(aBaseLod, 0));
   FMinLod := 0; FMaxLod := high(Integer);
+end;
+
+constructor TLODsController.CreateOwner(aBaseLod: TMeshList; aOwner: TObject);
+begin
+  Create(aBaseLod);
+  Owner := aOwner;
 end;
 
 destructor TLODsController.Destroy;

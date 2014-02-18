@@ -61,6 +61,7 @@ const
 var MeshObject: TMeshObject;
     Mesh: TMesh;
     Sprite_VO: TVertexObject;
+    vo: TVertexObject;
 begin
   FMeshList:=TMeshList.Create;
   FSlaves.Add(FMeshList);
@@ -74,7 +75,7 @@ begin
 
   FSceneObject:=TSceneObject.Create;
   FSlaves.Add(FSceneObject);
-  FSceneObject.MeshObjects.AddMeshObject(MeshObject,true);
+  FSceneObject.MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(FSceneObject);
 
   Sprite_VO := CreateSprite();              FSlaves.Add(Sprite_VO);
@@ -83,17 +84,17 @@ begin
 
   FSprite[0] := TSceneObject.Create;        FSlaves.Add(FSprite[0]);
   FSprite[0].DirectionBehavior := dbSphericalSprite;
-  FSprite[0].MeshObjects.AddMeshObject(MeshObject,true);
+  FSprite[0].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(FSprite[0]);
 
   FSprite[1] := TSceneObject.Create;        FSlaves.Add(FSprite[1]);
   FSprite[1].DirectionBehavior := dbSphericalSprite;
-  FSprite[1].MeshObjects.AddMeshObject(MeshObject,true);
+  FSprite[1].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(FSprite[1]);
 
   FSprite[2] := TSceneObject.Create;        FSlaves.Add(FSprite[2]);
   FSprite[2].DirectionBehavior := dbSphericalSprite;
-  FSprite[2].MeshObjects.AddMeshObject(MeshObject,true);
+  FSprite[2].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(FSprite[2]);
 
   // Create material which use shader
@@ -213,6 +214,7 @@ end;
 
 destructor TDemoScene.Destroy;
 begin
+  FRGBAfloatImage.Free;
   FSlaves.FreeObjects;
   FSceneGraph.Free;
   FSlaves.Free;
