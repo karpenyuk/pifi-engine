@@ -281,16 +281,21 @@ begin
   RegisterSubRender(TGLStaticRender.CreateOwned(Self));
   FResourceManager:=TGLResources.CreateOwned(Self);
   FIdexInPool := -1;
+  FCameraPool := nil;
+  FObjectPool := nil;
+  FLightPool := nil;
+  FLightIndices := nil;
+  FMaterialPool := nil;
 end;
 
 destructor TGLRender.Destroy;
 begin
-  FCameraPool.Free;
-  FObjectPool.Free;
-  FLightPool.Free;
-  FLightIndices.Free;
-  FMaterialPool.Free;
-  FResourceManager.Free;
+  if assigned(FCameraPool) then FCameraPool.Free;
+  if assigned(FObjectPool) then FObjectPool.Free;
+  if assigned(FLightPool) then FLightPool.Free;
+  if assigned(FLightIndices) then FLightIndices.Free;
+  if assigned(FMaterialPool) then FMaterialPool.Free;
+  if assigned(FResourceManager) then FResourceManager.Free;
   inherited;
 end;
 
@@ -312,14 +317,18 @@ begin
     снимка (через хэш библиотеки или рассылку уведомлений?)
     Делать вычитку ресурсов только при несовпадении хэша. }
 
-  if not Assigned(FObjectPool) then begin
+  if not Assigned(FCameraPool) then
     FCameraPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 8);
+  if not Assigned(FObjectPool) then
     FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 2000);
+  if not Assigned(FLightPool) then
     FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000, btTexture);
+  if not Assigned(FLightIndices) then begin
     FLightIndices := TGLBufferObject.Create(btUniform);
     FLightIndices.Allocate(8*SizeOf(Vec4i), nil);
-    FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
   end;
+  if not Assigned(FMaterialPool) then
+    FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
 
   if FIdexInPool < 0 then
     FIdexInPool := FCameraPool.GetFreeSlotIndex();
@@ -626,6 +635,7 @@ begin
 
   //Resource already exists?
   result:=GetResource(Resource); if assigned(result) then exit;
+  glres:=nil;
 
   //Create new GLResources
 
@@ -695,10 +705,12 @@ begin
     FInnerResource.Add(Resource, glres);
   end;
 
-  glres.Owner:=self;
-  Resource.Subscribe(self);
-  glres.Subscribe(Self);
-  Subscribe(glres);
+  if assigned(glres) then begin
+    glres.Owner:=self;
+    Resource.Subscribe(self);
+    glres.Subscribe(Self);
+    Subscribe(glres);
+  end;
   result := glres;
 end;
 
@@ -1323,8 +1335,10 @@ initialization
   vRegisteredRenders.RegisterRender(vGLRender);
 
 finalization
-  vRegisteredRenders.UnRegisterRender(vGLRender);
-  vGLRender.Free;
+//  if assigned(vRegisteredRenders) then vRegisteredRenders.UnRegisterRender(vGLRender);
+//  vGLRender.DispatchMessage(NM_ResourceChanged);
+//  FreeAndNil(vGLRender);
+  vGLRender := nil;
 end.
 //Projected Sphere radius
 //radius * cot(fov / 2) / Z * ViewerSize
