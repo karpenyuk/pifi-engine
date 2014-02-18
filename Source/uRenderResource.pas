@@ -19,7 +19,8 @@ interface
 
 uses
   SysUtils, Classes, uLists, uVMath, uMiscUtils, uBaseTypes, uBaseClasses,
-  uGenericsRBTree, uPersistentClasses, uDataAccess, uImageFormats;
+  uGenericsRBTree, uPersistentClasses, uDataAccess, uImageFormats,
+  uEffectPipeline;
 
 const
   cDiffuseColor: vec4 = (0.8, 0.8, 0.8, 1);
@@ -789,9 +790,6 @@ Type
     FExtents: TExtents;
     FbbPosition: vec3;
     FbbRadius: single;
-    FLocalMatrix: TMatrix;
-    FIdentityMatrix: boolean;
-    procedure SetLocalMatrix(const Value: TMatrix);
   public
     Visible: boolean;
 
@@ -809,15 +807,18 @@ Type
     property Extents: TExtents read FExtents;
     property bbPosition: vec3 read FbbPosition;
     property bbRadius: single read FbbRadius;
-    property LocalMatrix: TMatrix read FLocalMatrix write SetLocalMatrix;
-    property IsIdentityMatrix: boolean read FIdentityMatrix;
   end;
+
+  TLocalMatrixTree = GRedBlackTree<TPersistentResource,TMatrix>;
 
   TMeshList = class
   private
     FList: TList;
+    FLocalMatrices: TLocalMatrixTree;
     function getMesh(Index: integer): TMesh;
     function getCount: integer;
+    function getMatrix(aMesh: TMesh): TMatrix;
+    procedure setMatrix(aMesh: TMesh; const Value: TMatrix);
   public
     constructor Create;
     constructor CreateFrom(aMesh: TMesh); overload;
@@ -827,6 +828,7 @@ Type
     function AddNewMesh(aVertexObject: TVertexObject): TMesh;
 
     property Items[Index: integer]: TMesh read getMesh; default;
+    property LocalMatrices[aMesh: TMesh]: TMatrix read getMatrix write setMatrix;
     property Count: integer read getCount;
   end;
 
@@ -871,6 +873,10 @@ Type
 
   end;
 
+  TMeshObjectsList = class;
+
+  // TMeshObject must belongs to only one TSceneObject
+  // beacause it depent of its transformations
   TMeshObject = class(TBaseRenderResource)
   private
     FLods: TLODsController;
@@ -900,7 +906,7 @@ Type
   private
     function getMeshObj(Index: integer): TMeshObject;
   public
-    function AddMeshObject(const aMeshObject: TMeshObject; aCapture: boolean = false): integer;
+    function AddMeshObject(const aMeshObject: TMeshObject): integer;
     function GetMeshObject(aKey: TGUID): TMeshObject; overload;
     function GetMeshObject(aFriendlyName: string): TMeshObject; overload;
 
@@ -991,6 +997,7 @@ Type
     FzNear: single;
     FzFar: single;
     FViewTarget: TMovableObject;
+    FEffectPipeline: TEffectPipeline;
     FName: string;
 
     procedure SetFoV(const Value: single);
@@ -1006,6 +1013,7 @@ Type
 
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
     function GetViewMatrix: TMatrix;
+    procedure SetEffectPipeline(const Value: TEffectPipeline);
   public
     constructor Create; override;
 
@@ -1024,6 +1032,7 @@ Type
     property ViewMatrix: TMatrix read GetViewMatrix write SetViewMatrix;
     property ProjMatrix: TMatrix read FProjMatrix write SetProjMatrix;
     property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
+    property EffectPipeline: TEffectPipeline read FEffectPipeline write SetEffectPipeline;
   end;
 
   TCamerasList = class (TObjectsDictionary)
@@ -2246,6 +2255,7 @@ constructor TMeshList.Create;
 begin
   inherited;
   FList := TList.Create;
+  FLocalMatrices := TLocalMatrixTree.Create(ResourceComparer, nil);
 end;
 
 constructor TMeshList.CreateFrom(aMesh: TMesh);
@@ -2262,6 +2272,7 @@ end;
 destructor TMeshList.Destroy;
 begin
   FreeObjectList(FList);
+  FLocalMatrices.Destroy;
   inherited;
 end;
 
@@ -2270,9 +2281,21 @@ begin
   result := FList.Count;
 end;
 
+function TMeshList.getMatrix(aMesh: TMesh): TMatrix;
+begin
+  Assert(FList.IndexOf(aMesh) > -1, 'Mesh not belongs to list');
+  if not FLocalMatrices.Find(aMesh, Result) then Result := TMatrix.IdentityMatrix;
+end;
+
 function TMeshList.getMesh(Index: integer): TMesh;
 begin
   result := FList[Index];
+end;
+
+procedure TMeshList.setMatrix(aMesh: TMesh; const Value: TMatrix);
+begin
+  Assert(FList.IndexOf(aMesh) > -1, 'Mesh not belongs to list');
+  FLocalMatrices.Add(aMesh, Value);
 end;
 
 { TMesh }
@@ -2284,8 +2307,6 @@ begin
   FVertexObject := aVertexObject; // Возможно надо добавить Subscribe(aVertexObject)
   GUID := aGUID;
   FriendlyName := '';
-  LocalMatrix := TMatrix.IdentityMatrix;
-  FIdentityMatrix := true;
 end;
 
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject);
@@ -2293,8 +2314,6 @@ begin
   Create;
   FVertexObject := aVertexObject;
   FriendlyName := '';
-  LocalMatrix := TMatrix.IdentityMatrix;
-  FIdentityMatrix := true;
 end;
 
 constructor TMesh.CreateFrom(const aVertexObject: TVertexObject; aName: string);
@@ -2302,23 +2321,11 @@ begin
   Create;
   FVertexObject := aVertexObject;
   FriendlyName := aName;
-  LocalMatrix := TMatrix.IdentityMatrix;
-  FIdentityMatrix := true;
 end;
 
 class function TMesh.IsInner: boolean;
 begin
   Result := true;
-end;
-
-procedure TMesh.SetLocalMatrix(const Value: TMatrix);
-begin
-  if FLocalMatrix <> Value then
-  begin
-    FLocalMatrix := Value;
-    FIdentityMatrix := FLocalMatrix.IsIdentity;
-    DispatchMessage(NM_WorldMatrixChanged);
-  end;
 end;
 
 { TShaderProgram }
@@ -2771,11 +2778,19 @@ end;
 
 { TMeshObjectsList }
 
-function TMeshObjectsList.AddMeshObject(const aMeshObject: TMeshObject;
-  aCapture: boolean): integer;
+function TMeshObjectsList.AddMeshObject(const aMeshObject: TMeshObject): integer;
+var
+  list: TMeshObjectsList;
 begin
+  if aMeshObject.Owner <> Self then
+  begin
+    // transmit MeshObject from other list without it destroying
+    list := TMeshObjectsList(aMeshObject.Owner);
+    aMeshObject.Owner := nil;
+    list.RemoveMeshObject(aMeshObject);
+  end;
   result := AddKey(aMeshObject.GUID, aMeshObject);
-  if aCapture then aMeshObject.Owner:=self;
+  aMeshObject.Owner:=self;
 end;
 
 destructor TMeshObjectsList.Destroy;
@@ -3460,6 +3475,11 @@ begin
     FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
   else
     FViewMatrix := TMatrix.LookAtMatrix(Position,Position + Direction,Up);
+end;
+
+procedure TSceneCamera.SetEffectPipeline(const Value: TEffectPipeline);
+begin
+  FEffectPipeline := Value;
 end;
 
 procedure TSceneCamera.SetFoV(const Value: single);

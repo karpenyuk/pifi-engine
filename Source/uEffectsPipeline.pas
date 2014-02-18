@@ -44,9 +44,15 @@ Type
 
   end;
 
+  TGlowPipelineEffect = class(TPipelineAbstractEffect)
+  public
+  end;
+
   TEffectPipeline = class (TPersistentResource)
   private
     FEffectsList: TBaseEffectList;
+  public
+    constructor Create;
   end;
 
 implementation

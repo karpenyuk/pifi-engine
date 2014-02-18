@@ -4,7 +4,7 @@ interface
 
 uses Classes,
      uBaseTypes, uVMath, uPrimitives, uMiscUtils, uRenderResource, uBaseRenders,
-     uLists, uImageFormats, uImageLoader, uWorldSpace, uBaseClasses;
+     uLists, uImageFormats, uImageLoader, uWorldSpace, uBaseClasses, uEffectsPipeline;
 
 type
 
@@ -65,10 +65,10 @@ begin
   FMeshList:=TMeshList.Create;
   FSlaves.Add(FMeshList);
 
-  FMeshList.AddNewMesh(CreateBox(2, 1.5, 3.5)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
-  FMeshList.AddNewMesh(CreateSphere(1, 16, 32)).LocalMatrix:=TMatrix.TranslationMatrix(Vector(3,-3,+0.1));
+  FMeshList.LocalMatrices[FMeshList.AddNewMesh(CreateBox(2, 1.5, 3.5))] := TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
+  FMeshList.LocalMatrices[FMeshList.AddNewMesh(CreateSphere(1, 16, 32))] := TMatrix.TranslationMatrix(Vector(3,-3,+0.1));
   FMeshList.AddNewMesh(CreateTeapod(4));
-  FMeshList.AddNewMesh(CreatePlane(3,3)).LocalMatrix:=TMatrix.RotationMatrix(Vector(1.0,0.0,0.0),Pi/180*90);
+  FMeshList.LocalMatrices[FMeshList.AddNewMesh(CreatePlane(3,3))] := TMatrix.RotationMatrix(Vector(1.0,0.0,0.0),Pi/180*90);
 
   MeshObject:=TMeshObject.CreateFrom(FMeshList);
 

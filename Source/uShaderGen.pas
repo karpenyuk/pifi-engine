@@ -189,7 +189,7 @@ SG_BLOCK_MATERIAL +
 'in vec3 WorldNormal;'+#10#13 +
 'in vec3 ViewDir;'+#10#13 +
 'layout(location = 0) out vec4 FragColor;'+#10#13 +
-'layout(binding = 0) uniform samplerBuffer Lights;'+#10#13 +
+'layout(binding = 10) uniform samplerBuffer Lights;'+#10#13 +
 'uniform int LightNumber = 0;'#10#13+
 
 'vec3 Normal;'+#10#13 +
