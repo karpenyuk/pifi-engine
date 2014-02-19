@@ -993,12 +993,14 @@ Type
     FViewMatrix: TMatrix;
     FProjMatrix: TMatrix;
     FRenderTarget: TFrameBuffer;
+    FResizableRenderTarget: boolean;
     FViewPortSize: vec2i;
     FFoV: single;
     FzNear: single;
     FzFar: single;
     FViewTarget: TMovableObject;
     FEffectPipeline: TEffectPipeline;
+
     FName: string;
 
     procedure SetFoV(const Value: single);
@@ -1036,6 +1038,7 @@ Type
     property ViewMatrix: TMatrix read GetViewMatrix write SetViewMatrix;
     property ProjMatrix: TMatrix read GetProjMatrix write SetProjMatrix;
     property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
+    property ResizableRenderTarget: Boolean read FResizableRenderTarget write FResizableRenderTarget;
     property EffectPipeline: TEffectPipeline read FEffectPipeline write SetEffectPipeline;
   end;
 
@@ -1057,14 +1060,13 @@ Type
   TEffectNotifyEvent = procedure(Sender: TPipelineAbstractEffect);
 
   TPipelineAbstractEffect = class (TPersistentResource)
-  private
+  protected
     FShaderProgram: TShaderProgram;
     FonApply: TEffectNotifyEvent;
     FonUnapply: TEffectNotifyEvent;
     FonInitialize: TEffectNotifyEvent;
     FonSetup: TEffectNotifyEvent;
     FUsage: TUsageLogic;
-  protected
     FEffectName: string;
   public
     constructor Create; override;
@@ -1090,9 +1092,15 @@ Type
   TEffectPipeline = class (TPersistentResource)
   private
     FEffectsList: TBaseEffectList;
+    function getEffect(anIndex: integer): TPipelineAbstractEffect;
+    function getEffectCount: Integer;
   public
     constructor Create; override;
     destructor Destroy; override;
+
+    procedure AddEffect(anEffect: TPipelineAbstractEffect);
+    property Effects[anIndex: integer]: TPipelineAbstractEffect read getEffect;
+    property EffectCount: Integer read getEffectCount;
   end;
 
 var
@@ -3476,6 +3484,7 @@ begin
   FzNear := 0.1;
   FzFar := 100;
   FViewTarget := nil;
+  FResizableRenderTarget := false;
   RebuildProjMatrix;
   RebuildViewMatrix;
 end;
@@ -3554,7 +3563,7 @@ begin
   then FRenderTarget.Free;
 
   FRenderTarget := Value;
-  if assigned(FRenderTarget) then FRenderTarget.SetSize(FViewPortSize);
+  if assigned(FRenderTarget) and FResizableRenderTarget then FRenderTarget.SetSize(FViewPortSize);
 end;
 
 procedure TSceneCamera.SetViewMatrix(const Value: TMatrix);
@@ -3565,7 +3574,7 @@ end;
 procedure TSceneCamera.SetViewPortSize(const Value: vec2i);
 begin
   FViewPortSize := Value;
-  if assigned(FRenderTarget) then FRenderTarget.SetSize(Value);
+  if assigned(FRenderTarget) and FResizableRenderTarget then FRenderTarget.SetSize(Value);
 end;
 
 procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
@@ -3732,14 +3741,18 @@ end;
 
 procedure TFrameBuffer.SetMultisample(const Value: TMultisampleFormat);
 begin
-  FMultisample := Value;
-  DispatchMessage(NM_ResourceChanged);
+  if FMultisample <> Value then begin
+    FMultisample := Value;
+    DispatchMessage(NM_ResourceChanged);
+  end;
 end;
 
 procedure TFrameBuffer.SetSize(aSize: vec2i);
 begin
-  FSize := aSize;
-  DispatchMessage(NM_ResourceChanged);
+  if (FSize[0] <> aSize[0]) or (FSize[1] <> aSize[1]) then begin
+    FSize := aSize;
+    DispatchMessage(NM_ResourceChanged);
+  end;
 end;
 
 { TLODsController }
@@ -3917,6 +3930,11 @@ end;
 
 { TEffectPipeline }
 
+procedure TEffectPipeline.AddEffect(anEffect: TPipelineAbstractEffect);
+begin
+  FEffectsList.Add(anEffect);
+end;
+
 constructor TEffectPipeline.Create;
 begin
   inherited Create;
@@ -3927,6 +3945,16 @@ destructor TEffectPipeline.Destroy;
 begin
   FEffectsList.Free;
   inherited;
+end;
+
+function TEffectPipeline.getEffect(anIndex: integer): TPipelineAbstractEffect;
+begin
+  Result := FEffectsList[anIndex];
+end;
+
+function TEffectPipeline.getEffectCount: Integer;
+begin
+  Result := FEffectsList.Count;
 end;
 
 initialization

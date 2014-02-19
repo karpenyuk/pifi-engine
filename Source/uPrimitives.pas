@@ -16,7 +16,7 @@ function CreateSphere(Radius: Float; VSegments, HSegments: integer;
 function CreateBox(aWidth, aHeight, aDepth: Float): TVertexObject;
 function CreateCube(aSize: Float): TVertexObject;
 function CreateTeapod(aDivision: Integer = 9): TVertexObject;
-function CreateSprite(): TVertexObject;
+function CreateSprite(aWidth, aHeight: Float): TVertexObject;
 
 implementation
 
@@ -725,7 +725,7 @@ begin
     end;
 end;
 
-function CreateSprite(): TVertexObject;
+function CreateSprite(aWidth, aHeight: Float): TVertexObject;
 var attr: TAttribBuffer;
     Vertices: TVec2List;
     TexCoords: TVec2List;
@@ -733,11 +733,13 @@ begin
   result:=Storage.CreateVertexObject;
   Vertices:=TVec2List.Create;
   TexCoords:=TVec2List.Create;
+  aWidth := aWidth / 2;
+  aHeight := aHeight / 2;
 
-  Vertices.Add( Vec2Make( -0.5, -0.5));  TexCoords.Add( Vec2Make( 0, 0 ));
-  Vertices.Add( Vec2Make( -0.5, 0.5 ));  TexCoords.Add( Vec2Make( 0, 1 ));
-  Vertices.Add( Vec2Make( 0.5, 0.5 ));   TexCoords.Add( Vec2Make( 1, 1 ));
-  Vertices.Add( Vec2Make( 0.5, -0.5 ));  TexCoords.Add( Vec2Make( 1, 0 ));
+  Vertices.Add( Vec2Make( -aWidth, -aHeight));  TexCoords.Add( Vec2Make( 0, 0 ));
+  Vertices.Add( Vec2Make( -aWidth, aHeight ));  TexCoords.Add( Vec2Make( 0, 1 ));
+  Vertices.Add( Vec2Make( aWidth, aHeight ));   TexCoords.Add( Vec2Make( 1, 1 ));
+  Vertices.Add( Vec2Make( aWidth, -aHeight ));  TexCoords.Add( Vec2Make( 1, 0 ));
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,2,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size, Vertices.Data);

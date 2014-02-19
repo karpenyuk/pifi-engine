@@ -374,18 +374,15 @@ begin
   vt:=
 '#version 430'+#10#13 +
 'layout(location = 0) in vec3 in_Position;'+#10#13 +
-'layout(location = 2) in vec2 in_TexCoord;'+#10#13 +
 'out vec2 v2f_TexCoord0;'#10#13 +
 'void main() {'#10#13 +
-'	gl_Position = vec4(in_Position, 1.0);'+#10#13 +
-'	v2f_TexCoord0 = in_TexCoord; }';
+'	gl_Position = vec4(in_Position, 1.0); }';
   ft :=
 '#version 430'#10#13 +
-'in vec2 v2f_TexCoord0;'#10#13 +
 'layout(location = 0) out vec4 FragColor;'#10#13 +
 'layout(binding = 0) uniform sampler2D DiffuseTexture;'#10#13 +
 'void main() {'#10#13 +
-' FragColor = texture(DiffuseTexture, v2f_TexCoord0); }';
+' FragColor = texelFetch(DiffuseTexture, ivec2(gl_FragCoord.xy), 0); }';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
 end;

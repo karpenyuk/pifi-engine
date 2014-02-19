@@ -97,7 +97,7 @@ begin
   Render := vRegisteredRenders.GetCompatibleRender(ver);
 
   FDemoScene := TDemoScene.Create;
-
+  FDemoScene.SetSize(GLViewer1.ClientWidth, GLViewer1.ClientHeight);
 end;
 
 procedure TForm2.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
@@ -126,9 +126,6 @@ end;
 
 procedure TForm2.GLViewer1Render(Sender: TObject);
 begin
-  glClearColor(0.2, 0.2, 0.2, 1.0);
-  glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
-
   //Со временем здесь будет полноценный ренедер сцены
   if assigned(Render) then begin
     Render.ProcessScene(FDemoScene.SceneGraph);

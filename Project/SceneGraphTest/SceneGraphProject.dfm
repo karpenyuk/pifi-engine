@@ -25,6 +25,7 @@ object Form2: TForm2
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
     Align = alClient
+    OnCanResize = GLViewer1CanResize
     OnMouseDown = GLViewer1MouseDown
     OnMouseMove = GLViewer1MouseMove
   end

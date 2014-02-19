@@ -7,7 +7,7 @@
 interface
 
 uses Classes, uPersistentClasses, uVMath, uLists, uMiscUtils, Math,
-  uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, 
+  uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, uBaseRenders,
   {$IFDEF ANDROID}
   Androidapi.Egl, Androidapi.Gles2, Androidapi.Gles2ext;
   {$ELSE}dglOpenGL;{$ENDIF}
@@ -17,9 +17,12 @@ Type
 
   // Base GL Resource
   TGLBaseResource = class(TBaseRenderResource)
-    Owner: TObject;
+  public
     BaseResource: TBaseRenderResource;
     constructor Create; override;
+    procedure Update(aRender: TBaseRender); virtual;
+    procedure Apply(aRender: TBaseRender); virtual;
+    procedure UnApply(aRender: TBaseRender); virtual;
   end;
 
   TGLTextureObject = class;
@@ -403,7 +406,6 @@ Type
   private
     FTexId: cardinal;
     FpboId: cardinal;
-    FPBOInit: boolean;
     FImageHolder: TImageHolder;
     FFormatDescr: TGLTextureFormatDescriptor;
     FTexDesc: PTextureDesc;
@@ -411,6 +413,7 @@ Type
     FTextureObject: TTexture;
     FTextureSampler: TTextureSampler;
     FGenerateMipMaps: boolean;
+    FPBOInit: boolean;
     FHandle: GLuint64;
 
     function getInternalFormat: cardinal;
@@ -432,6 +435,7 @@ Type
     class procedure MultiBind(const aTextures: array of TGLTextureObject; aUnit: cardinal);
 
     procedure UploadTexture(aData: pointer = nil; aLevel: integer = -1; aLevelsCount: integer = 1);
+    procedure AllocateStorage();
 
     property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
 
@@ -453,7 +457,6 @@ Type
     FRenderBuffers: TRenderBuffers;
     FReadBackBuffers: TList;
     FWidth, FHeight: integer;
-    FViewport: array [0 .. 3] of integer;
     FInit: boolean;
     FActive: boolean;
     FDeactivate: boolean;
@@ -491,8 +494,8 @@ Type
     procedure DetachTexture(Index: integer);
     procedure DetachAllTextures;
 
-    procedure Apply(ClearBuffers: boolean = true);
-    procedure UnApply;
+    procedure Apply(ClearBuffers: boolean = true); overload;
+    procedure UnApply; overload;
     procedure SetReadBackBuffer(const ColorBufers: array of GLUInt);
 
     property Textures[index: integer]: TGLTextureObject read GetTexture
@@ -1838,6 +1841,25 @@ end;
 
 { TGLTextureObject }
 
+procedure TGLTextureObject.AllocateStorage;
+var
+  glTarget: cardinal;
+  desc: PImageLevelDesc;
+begin
+  glTarget := CTexTargets[FTarget];
+  glBindTexture(glTarget, FTexId);
+  desc := FImageHolder.LODS[0];
+  case FTarget of
+    ttTexture1D:
+      glTexStorage1D(glTarget, FImageHolder.LevelsCount, InternalFormat, desc.Width);
+    ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ, tt1DArray:
+      glTexStorage2D(glTarget, FImageHolder.LevelsCount, InternalFormat, desc.Width, desc.Height);
+    ttTexture3D, tt2DArray:
+      glTexStorage3D(glTarget, FImageHolder.LevelsCount, InternalFormat, desc.Width, desc.Height, desc.Depth);
+  end;
+  glBindTexture(glTarget, 0);
+end;
+
 procedure TGLTextureObject.Bind(aUnit: cardinal);
 begin
   glActiveTexture(GL_TEXTURE0+aUnit);
@@ -1849,13 +1871,13 @@ begin
   inherited Create;
   glGenTextures(1, @FTexId);
   glGenBuffers(1, @FpboId);
-  FPBOInit := false;
   FTarget := ttTexture2D;
   FTextureSampler := nil;
   FTextureObject := nil;
   FImageHolder:=nil;
   FTexDesc:=nil;
   FGenerateMipMaps := false;
+  FPBOInit := false;
   FHandle := 0;
 end;
 
@@ -1953,10 +1975,10 @@ begin
       glPixelStorei ( GL_PACK_SKIP_ROWS,   0 );
       glPixelStorei ( GL_PACK_SKIP_PIXELS, 0 );
 
-    if not FPBOInit then begin
-       glBufferData(GL_PIXEL_UNPACK_BUFFER, DataSize, nil, GL_STREAM_DRAW);
-       FPBOInit := true;
-    end;
+      if not FPBOInit then begin
+         glBufferData(GL_PIXEL_UNPACK_BUFFER, DataSize, nil, GL_STREAM_DRAW);
+         FPBOInit := true;
+      end;
       //t := glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
       //Move(Data^,t^,DataSize);
       //glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
@@ -2217,10 +2239,7 @@ var
   i: integer;
   texture: TGLTextureObject;
 begin
-  if (aSize[0] = FWidth) and (aSize[1] = FHeight) and FInit then
-    exit
-  else if FInit then
-    ResetFBO(false);
+  if (aSize[0] = FWidth) and (aSize[1] = FHeight) and FInit then exit;
   FWidth := aSize[0];
   FHeight := aSize[1];
   glGetIntegerv(GL_MAX_FRAMEBUFFER_WIDTH, @maxW);
@@ -2298,6 +2317,7 @@ begin
     texture := TGLTextureObject(FAttachments.Textures[i]);
     texture.FImageHolder.Width := FWidth;
     texture.FImageHolder.Height := FHeight;
+    texture.AllocateStorage();
   end;
 
   FInit := true;
@@ -2483,9 +2503,6 @@ begin
   FBTarget := GL_FRAMEBUFFER;
 
   glBindFramebuffer(FBTarget, FBOId);
-  glGetIntegerv(GL_VIEWPORT, @FViewport);
-  if (FViewport[2] <> FWidth) or (FViewport[3] <> FHeight) then
-    glViewport(0, 0, FWidth, FHeight);
 
   with FAttachments do
   begin
@@ -2549,8 +2566,6 @@ begin
       end;
     end;
   end;
-  if (FViewport[2] <> FWidth) or (FViewport[2] <> FHeight) then
-    glViewport(FViewport[0], FViewport[1], FViewport[2], FViewport[3]);
 
   glBindFramebuffer(FBTarget, 0);
   glReadBuffer(GL_BACK);
@@ -3250,11 +3265,26 @@ end;
 
 { TGLBaseResource }
 
+procedure TGLBaseResource.Apply(aRender: TBaseRender);
+begin
+  // Do nothing
+end;
+
 constructor TGLBaseResource.Create;
 begin
   inherited Create;
   Owner := nil;
   BaseResource := nil;
+end;
+
+procedure TGLBaseResource.UnApply(aRender: TBaseRender);
+begin
+  // Do nothing
+end;
+
+procedure TGLBaseResource.Update(aRender: TBaseRender);
+begin
+  // Do nothing
 end;
 
 initialization

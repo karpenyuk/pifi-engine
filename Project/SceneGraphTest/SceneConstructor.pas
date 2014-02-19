@@ -25,6 +25,7 @@ type
     SpriteMaterial: TMaterialObject;
     FrameBuffer: TFrameBuffer;
     ColorAttachment: TTexture;
+    effects: TEffectPipeline;
     procedure CreateScene;
   public
     constructor Create;
@@ -37,7 +38,7 @@ type
 implementation
 
 uses
-  uShaderGen, uStorage;
+  uShaderGen, uStorage, uMath;
 
 { TDemoScene }
 
@@ -80,9 +81,8 @@ begin
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(SceneObject);
 
-  Sprite_VO := CreateSprite();
+  Sprite_VO := CreateSprite(1, 1);
   Mesh := TMesh.CreateFrom(Sprite_VO);
-
 
   Sprite[0] := Storage.CreateSceneObject;
   Sprite[0].DirectionBehavior := dbSphericalSprite;
@@ -200,14 +200,19 @@ begin
   FSceneGraph.Cameras[0].ViewTarget := SceneObject;
 
   FRGBAfloatImage:=TImageSampler.CreateBitmap(
-    TImageFormatSelector.CreateFloat16(bfRGBA), 1280, 1024, false);
+    TImageFormatSelector.CreateFloat16(bfRGBA), 2048, 2048, false);
   ColorAttachment := Storage.CreateTexture(FRGBAfloatImage);
 //  Material[4].AttachTexture(ColorAttachment);
 
   FrameBuffer := Storage.CreateFrameBuffer;
+  FrameBuffer.Size := Vec2iMake(2048, 2048);
   FrameBuffer.AttachColor(ColorAttachment);
   FrameBuffer.AttachRenderBuffer(rbDepth24, bmBuffer);
+  FSceneGraph.Camera.RenderTarget := FrameBuffer;
 
+  effects := Storage.CreateEffectPipeline;
+  effects.AddEffect(TGlowPipelineEffect.CreateFrom(ColorAttachment));
+  FSceneGraph.Camera.EffectPipeline := effects;
 end;
 
 destructor TDemoScene.Destroy;
@@ -222,7 +227,7 @@ end;
 
 procedure TDemoScene.SetSize(aWidth, aHeight: integer);
 begin
-  FSceneGraph.Cameras[0].ViewPortSize := Vec2iMake(aWidth, aHeight);
+  FSceneGraph.Camera.ViewPortSize := Vec2iMake(aWidth, aHeight);
 end;
 
 end.
