@@ -6,11 +6,11 @@ uses Classes, uMiscUtils, uBaseTypes, uBaseClasses, uPersistentClasses, uRenderR
 
 type
 
-  TSceneGraph = class(TSceneItemList)
+  TSceneGraph = class(TNotifiableObject)
     // Решить вопрос со скриптовым рендером - добавить вместе с камерами в корень графа?
     // Или передавать их в рендер через ProcessScene(Scene, Camera, Target, Script)?
   private
-    FRoot: TSceneCamera;
+    FRoot: TSceneObject;
     FLights: TLightsList;
     FMaterials: TMaterialList;
     FCameras: TCamerasList;
@@ -23,6 +23,7 @@ type
     function getMaterial(Index: integer): TMaterialObject;
     function getCamCount: integer;
     function getCamera(index: integer): TSceneCamera;
+    function getMainCamera: TSceneCamera;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -45,8 +46,9 @@ type
     property Materials[index: integer]: TMaterialObject read getMaterial;
     property MaterialsCount: integer read getMatCount;
 
-    property Camera: TSceneCamera read FRoot;
+    property Root: TSceneObject read FRoot;
 
+    property Camera: TSceneCamera read getMainCamera;
     property Cameras[index: integer]: TSceneCamera read getCamera;
     property CamerasCount: integer read getCamCount;
 
@@ -106,11 +108,17 @@ begin
 end;
 
 constructor TSceneGraph.Create;
+var
+  camera: TSceneCamera;
 begin
   inherited Create;
-  FRoot := TSceneCamera.Create;
+  FRoot := TSceneObject.Create;
+  FRoot.FriendlyName := 'Root';
+  camera := TSceneCamera.Create;
+  camera.Parent := FRoot;
+  camera.FriendlyName := 'Main camera';
   FCameras := TCamerasList.Create;
-  FCameras.AddCamera(FRoot);
+  FCameras.AddCamera(camera);
   FMaterials:=TMaterialList.Create;
   FLights := TLightsList.Create;
 end;
@@ -118,6 +126,7 @@ end;
 destructor TSceneGraph.Destroy;
 begin
   FRoot.Free;
+  Camera.Free;
   FCameras.Free;
   FMaterials.Free;
   FLights.Free;
@@ -157,6 +166,12 @@ end;
 function TSceneGraph.GetLights: TLightsList;
 begin
   result := FLights;
+end;
+
+function TSceneGraph.getMainCamera: TSceneCamera;
+begin
+  if FCameras.Count > 0 then
+    Result := FCameras[0] else Result := nil;
 end;
 
 function TSceneGraph.getMatCount: integer;

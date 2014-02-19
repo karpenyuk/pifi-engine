@@ -41,6 +41,7 @@ Type
   protected
     FCurrentLightNumber: integer;
     FCurrentGraph: TSceneGraph;
+    FCurrentCamera: TSceneCamera;
     FRegisteredSubRenders: TList;  //List of TBaseSubRender
     procedure UploadResource(const Res: TBaseRenderResource); virtual; abstract;
     procedure ProcessResource(const Res: TBaseRenderResource); virtual; abstract;
@@ -66,6 +67,7 @@ Type
 
     // Rendering states
     property CurrentGraph: TSceneGraph read FCurrentGraph;
+    property CurrentCamera: TSceneCamera read FCurrentCamera;
     property CurrentLightNumber: integer read FCurrentLightNumber;
   end;
 
@@ -179,7 +181,7 @@ begin
   case MovableObject.DirectionBehavior of
     dbSphericalSprite:
       begin
-        wm := wm * UpdateWorldMatrix(CurrentGraph.Camera, [ttModel]);
+        wm := wm * CurrentCamera.ViewMatrix;
         wm[0, 0] := MovableObject.Scale.X;
         wm[0, 1] := 0;
         wm[0, 2] := 0;
@@ -192,7 +194,7 @@ begin
       end;
     dbCylindricalSprite:
       begin
-        wm := wm * UpdateWorldMatrix(CurrentGraph.Camera, [ttModel]);
+        wm := wm * CurrentCamera.ViewMatrix;
         wm[0, 0] := 1;
         wm[0, 1] := 0;
         wm[0, 2] := 0;

@@ -1011,6 +1011,7 @@ Type
     procedure SetzNear(const Value: single);
     procedure RebuildProjMatrix;
     procedure RebuildViewMatrix;
+    function GetProjMatrix: TMatrix;
 
   public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
@@ -1033,7 +1034,7 @@ Type
     property zNear: single read FzNear write SetzNear;
     property zFar: single read FzFar write SetzFar;
     property ViewMatrix: TMatrix read GetViewMatrix write SetViewMatrix;
-    property ProjMatrix: TMatrix read FProjMatrix write SetProjMatrix;
+    property ProjMatrix: TMatrix read GetProjMatrix write SetProjMatrix;
     property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
     property EffectPipeline: TEffectPipeline read FEffectPipeline write SetEffectPipeline;
   end;
@@ -3467,9 +3468,7 @@ end;
 
 constructor TSceneCamera.Create;
 begin
-  inherited;
-  FProjMatrix := TMatrix.IdentityMatrix;
-  Direction := TVector.MakeTmp(vtY);
+  inherited Create;
   FRenderTarget := nil;
   FViewPortSize[0]:=256;
   FViewPortSize[1]:=256;
@@ -3479,6 +3478,12 @@ begin
   FViewTarget := nil;
   RebuildProjMatrix;
   RebuildViewMatrix;
+end;
+
+function TSceneCamera.GetProjMatrix: TMatrix;
+begin
+  RebuildProjMatrix;
+  Result := FProjMatrix;
 end;
 
 function TSceneCamera.GetViewMatrix: TMatrix;
@@ -3515,6 +3520,7 @@ begin
     FProjMatrix := TMatrix.OrthoMatrix(0,FViewPortSize[0],0,FViewPortSize[1],FzNear, FzFar)
   else
     FProjMatrix := TMatrix.PerspectiveMatrix(FFov,FViewPortSize[0]/FViewPortSize[1],FzNear, FzFar);
+  DispatchMessage(NM_ProjMatrixChanged);
 end;
 
 procedure TSceneCamera.RebuildViewMatrix;
@@ -3523,6 +3529,7 @@ begin
     FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
   else
     FViewMatrix := TMatrix.LookAtMatrix(Position,Position + Direction,Up);
+  DispatchMessage(NM_ViewMatrixChanged);
 end;
 
 procedure TSceneCamera.SetEffectPipeline(const Value: TEffectPipeline);

@@ -50,7 +50,7 @@ Type
     FParent: TBaseSceneItem;
     FChilds: TSceneItemList;
     FNestingDepth: integer;
-    procedure OnItemsChnaged(anItem: TBaseSceneItem; aChnages: TSceneItemListChanges);
+    procedure OnItemsChanged(anItem: TBaseSceneItem; aChnages: TSceneItemListChanges);
     procedure SetParent(const Value: TBaseSceneItem);
   public
     Active: boolean;
@@ -111,7 +111,6 @@ Type
     procedure SetDirection(const aDirection: TVector);
 
   public
-    FriendlyName: string; //храните любой текст или комментарии тут
     Tag: integer; //для нужд пользователя
     DirectingAxis: TVector; //Хранит направляющую ось Axis
 
@@ -767,7 +766,7 @@ constructor TBaseSceneItem.Create;
 begin
   inherited;
   FChilds:=TSceneItemList.Create;
-  FChilds.OnChange := OnItemsChnaged;
+  FChilds.OnChange := OnItemsChanged;
   FNestingDepth := 0;
 end;
 
@@ -789,7 +788,7 @@ begin
   end else FNestingDepth := 0;
 end;
 
-procedure TBaseSceneItem.OnItemsChnaged(anItem: TBaseSceneItem; aChnages: TSceneItemListChanges);
+procedure TBaseSceneItem.OnItemsChanged(anItem: TBaseSceneItem; aChnages: TSceneItemListChanges);
 begin
   case aChnages of
     chAdd: begin

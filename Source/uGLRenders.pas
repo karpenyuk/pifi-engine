@@ -167,7 +167,7 @@ Type
     constructor CreateFrom(aOwner: TGLResources; aSceneObject: TSceneObject);
 
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
-    procedure Apply(aRender: TGLRender);
+    procedure Apply(aRender: TBaseRender);
     procedure UnApply;
   end;
 
@@ -244,10 +244,24 @@ Type
     property MaterialPool: TGLBufferObjectsPool read FMaterialPool;
   end;
 
+  TGLGlowEffect = class(TGLBaseResource)
+  private
+    FEffect: TBaseRenderResource;
+  public
+    constructor CreateFrom(aOwner: TGLResources; aEffect: TBaseRenderResource);
+    destructor Destroy; override;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+    procedure Apply(aRender: TBaseRender);
+  end;
+
 var
   vGLRender: TGLRender = nil;
 
 implementation
+
+uses
+  uEffectsPipeline;
 
 var
   vActiveShader: TGLSLShaderProgram = nil;
@@ -324,8 +338,28 @@ end;
 procedure TGLRender.PrepareResources(const aScene: TSceneGraph);
 var i: integer;
     SceneItem: TBaseSceneItem;
+    movable: TMovableObject absolute SceneItem;
     res: TBaseRenderResource;
     glres: TGLBaseResource;
+
+    procedure DownToTree(anItems: TSceneItemList);
+    var ii: integer;
+    begin
+      for ii:=0 to anItems.Count-1 do begin
+        SceneItem:=anItems[ii];
+        if Assigned(SceneItem) then
+        begin
+          if SceneItem is TLightSource then
+            movable.WorldMatrix := UpdateWorldMatrix(movable);
+
+          glres := FResourceManager.GetOrCreateResource(SceneItem);
+          // обновляем даные в видеопамяти
+          if glRes is TGLSceneObject then TGLSceneObject(glres).Update(Self);
+          DownToTree(SceneItem.Childs);
+        end;
+      end;
+    end;
+
 begin
   inherited;
   { TODO :
@@ -375,12 +409,8 @@ begin
   FLightPool.Buffer.BindTexture;
 
   //создаем ресурсы для всех объектов сцены
-  for i:=0 to aScene.Count-1 do begin
-    SceneItem:=aScene[i];
-    glres := FResourceManager.GetOrCreateResource(SceneItem);
-    // обновляем даные в видеопамяти
-    if assigned(glRes) then TGLSceneObject(glres).Update(Self);
-  end;
+  FCurrentCamera := aScene.Camera;
+  DownToTree(aScene.Root.Childs);
 end;
 
 procedure TGLRender.ProcessResource(const Res: TBaseRenderResource);
@@ -399,24 +429,36 @@ begin
 end;
 
 procedure TGLRender.ProcessScene(const aScene: TSceneGraph);
-var i, j: integer;
+var i: integer;
     SceneItem: TBaseSceneItem;
     camera: TGLCamera;
     res: TGLBaseResource;
+
+    procedure DownToTree(anItems: TSceneItemList);
+    var ii: integer;
+    begin
+      for ii:=0 to anItems.Count-1 do begin
+        SceneItem:=anItems[ii];
+        if Assigned(SceneItem) then
+        begin
+          res := FResourceManager.GetResource(SceneItem);
+          ProcessResource(res);
+          DownToTree(SceneItem.Childs);
+        end;
+      end;
+    end;
+
 begin
   FCurrentGraph := aScene;
   //Подготавливаем ресурсы сцены
   PrepareResources(aScene);
 
-  for j := 0 to aScene.CamerasCount - 1 do begin
-    camera := TGLCamera(FResourceManager.GetOrCreateResource(aScene.Cameras[j]));
+  for i := 0 to aScene.CamerasCount - 1 do begin
+    FCurrentCamera := aScene.Cameras[i];
+    camera := TGLCamera(FResourceManager.GetOrCreateResource(aScene.Cameras[i]));
     camera.Apply(Self);
     //Обрабатываем объекты сцены (подготовка + рендеринг)
-    for i:=0 to aScene.Count-1 do begin
-      SceneItem:=aScene[i];
-      res := FResourceManager.GetOrCreateResource(SceneItem);
-      ProcessResource(res);
-    end;
+    DownToTree(aScene.Root.Childs);
     camera.UnApply;
   end;
 end;
@@ -458,13 +500,14 @@ var i,j: integer;
 begin
   if Resource.ClassType = TGLSceneObject then
     with TGLSceneObject(Resource) do begin
-
+      Apply(Render);
       //рендерим объект сцены с применением материалов
       for i:=0 to length(FMeshObjects)-1 do begin
         MeshObject:=FMeshObjects[i];
         for j:=0 to length(MeshObject.FLods[0])-1 do begin
           Mesh:=MeshObject.FLods[0,j].Mesh;
-          if MeshObject.FLods[0,j].IsIdentity then Apply(Render)
+          if MeshObject.FLods[0,j].IsIdentity
+          then Render.BindObjectBuffer(FIdexInPool)
           else Render.BindObjectBuffer(MeshObject.FLods[0,j].IdexInPool);
           Mesh.FMaterialObject.Apply(Render);
           Mesh.FVertexObject.RenderVO();
@@ -745,14 +788,13 @@ procedure TGLResources.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 var res: TGLBaseResource;
 begin
   inherited;
-  if not (Sender is TBaseRenderResource) then exit;
-
-  res:=GetResource(TBaseRenderResource(Sender));
-  if assigned(res) then begin
-    case Msg of
-      NM_ObjectDestroyed: begin
-          FreeResource(TBaseRenderResource(Sender));
-      end;
+  if Msg = NM_ObjectDestroyed then
+  begin
+    Unsubscribe(TNotifiableObject(Sender));
+    if Sender is TBaseRenderResource then
+    begin
+      res:=GetResource(TBaseRenderResource(Sender));
+      if assigned(res) then  FreeResource(TBaseRenderResource(Sender));
     end;
   end;
 end;
@@ -971,18 +1013,18 @@ end;
 
 { TGLSceneObject }
 
-procedure TGLSceneObject.Apply(aRender: TGLRender);
+procedure TGLSceneObject.Apply(aRender: TBaseRender);
 var
+  glRender: TGLRender absolute aRender;
   list: TObjectList;
   i: Integer;
 begin
-  aRender.BindObjectBuffer(FIdexInPool);
   list := TObjectList.Create;
   try
     // Just add all lights
     for i := 0 to aRender.CurrentGraph.LightsCount - 1 do
-      list.Add(aRender.FResourceManager.GetResource(aRender.CurrentGraph.Lights[i]));
-    aRender.ApplyLights(list);
+      list.Add(glRender.FResourceManager.GetResource(aRender.CurrentGraph.Lights[i]));
+    glRender.ApplyLights(list);
   finally
     list.Free;
   end;
@@ -1192,6 +1234,8 @@ begin
   if not FStructureChanged then
     exit;
 
+  FLight.WorldMatrix := glRender.UpdateWorldMatrix(FLight);
+
   if FIdexInPool < 0 then
     FIdexInPool := glRender.FLightPool.GetFreeSlotIndex();
 
@@ -1355,22 +1399,25 @@ begin
   begin
     FFrameBuffer := aOwner.GetOrCreateResource(FCamera.RenderTarget) as TGLFrameBufferObjectExt;
   end;
+  FStructureChanged := true;
 end;
 
 destructor TGLCamera.Destroy;
 begin
-
+  if Assigned(FCamera) then begin
+    FCamera.UnSubscribe(self);
+    FCamera := nil;
+  end;
   inherited;
 end;
 
 procedure TGLCamera.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   inherited;
-  if Msg = NM_ResourceLoaded then
-  begin
-    if Sender = FCamera then
-      FStructureChanged := true;
-  end;
+  if (Msg = NM_ViewMatrixChanged) or (Msg = NM_ProjMatrixChanged) then begin
+    if Sender = FCamera then FStructureChanged := true;
+  end
+  else if Msg = NM_ObjectDestroyed then if Sender = FCamera then FCamera := nil;
 end;
 
 procedure TGLCamera.UnApply;
@@ -1402,6 +1449,42 @@ begin
     move(mat.GetAddr^, p^,64);
   end;
   glRender.FCameraPool.Buffer.UnMap;
+end;
+
+{ TGLGlowEffect }
+
+procedure TGLGlowEffect.Apply(aRender: TBaseRender);
+begin
+
+end;
+
+constructor TGLGlowEffect.CreateFrom(aOwner: TGLResources;
+  aEffect: TBaseRenderResource);
+begin
+  Assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
+  Assert(assigned(aEffect) and (aEffect is TGlowPipelineEffect),'Effect invalide or not assigned');
+  Create;
+  FEffect := TGlowPipelineEffect(aEffect);
+  FEffect.Subscribe(Self);
+end;
+
+destructor TGLGlowEffect.Destroy;
+begin
+  if Assigned(FEffect) then begin
+    FEffect.UnSubscribe(Self);
+    FEffect := nil;
+  end;
+  inherited;
+end;
+
+procedure TGLGlowEffect.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  inherited;
+  if Msg = NM_ObjectDestroyed then
+  begin
+    if Sender = FEffect then
+      FEffect := nil;
+  end;
 end;
 
 initialization

@@ -299,6 +299,8 @@ const
 const
   // Notification Messages
   NM_WorldMatrixChanged = 10001;
+  NM_ViewMatrixChanged = 10002;
+  NM_ProjMatrixChanged = 10003;
   NM_ResourceLoaded  = 10101;
   NM_ResourceChanged = 10102;
   NM_ObjectDestroyed = 10201;

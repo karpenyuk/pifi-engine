@@ -82,21 +82,21 @@ begin
 
   Sprite_VO := CreateSprite();
   Mesh := TMesh.CreateFrom(Sprite_VO);
-  MeshObject:=TMeshObject.CreateFrom(Mesh);
+
 
   Sprite[0] := Storage.CreateSceneObject;
   Sprite[0].DirectionBehavior := dbSphericalSprite;
-  Sprite[0].MeshObjects.AddMeshObject(MeshObject);
+  MeshObject:=TMeshObject.CreateFrom(Mesh);  Sprite[0].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(Sprite[0]);
 
   Sprite[1] := Storage.CreateSceneObject;
   Sprite[1].DirectionBehavior := dbSphericalSprite;
-  Sprite[1].MeshObjects.AddMeshObject(MeshObject);
+  MeshObject:=TMeshObject.CreateFrom(Mesh);  Sprite[1].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(Sprite[1]);
 
   Sprite[2] := Storage.CreateSceneObject;
   Sprite[2].DirectionBehavior := dbSphericalSprite;
-  Sprite[2].MeshObjects.AddMeshObject(MeshObject);
+  MeshObject:=TMeshObject.CreateFrom(Mesh); Sprite[2].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(Sprite[2]);
 
   // Create material which use shader
@@ -162,25 +162,25 @@ begin
   Mesh.MaterialObject := SpriteMaterial;
   FSceneGraph.AddMaterial(SpriteMaterial);
 
-  light := Storage.CreateLight;
+  light := Storage.CreateLight;  light.FriendlyName := 'light1';
   light.LightStyle := lsOmni;
-  light.Position.SetVector(2, 10, 3);
+  light.MoveObject(2, 0.5, -3);
   light.Specular.SetColor(250, 250, 250, 255);
-  FSceneGraph.AddLight(light);
+  FSceneGraph.AddItem(light);
   Sprite[0].Parent := light;
 
   light := Storage.CreateLight;
   light.LightStyle := lsOmni;
-  light.Position.SetVector(-6, 5, -1);
+  light.MoveObject(-4, 5, 3);
   light.Diffuse.SetColor(250, 250, 15, 255);
-  FSceneGraph.AddLight(light);
+  FSceneGraph.AddItem(light);
   Sprite[1].Parent := light;
 
   light := Storage.CreateLight;
   light.LightStyle := lsOmni;
-  light.Position.SetVector(0, 7, 0);
+  light.MoveObject(0, 7, 0);
   light.Specular.SetColor(5, 5, 120, 255);
-  FSceneGraph.AddLight(light);
+  FSceneGraph.AddItem(light);
   Sprite[2].Parent := light;
 
 {
@@ -195,9 +195,9 @@ begin
   FMaterial[4].AttachShader(FShader[2]);
   Mesh.MaterialObject := FMaterial[4];
 }
-  FSceneGraph.Camera.FoV:=60;
-  FSceneGraph.Camera.MoveObject(0, 2, -10);
-  FSceneGraph.Camera.ViewTarget := SceneObject;
+  FSceneGraph.Cameras[0].FoV:=60;
+  FSceneGraph.Cameras[0].MoveObject(0, 2, -10);
+  FSceneGraph.Cameras[0].ViewTarget := SceneObject;
 
   FRGBAfloatImage:=TImageSampler.CreateBitmap(
     TImageFormatSelector.CreateFloat16(bfRGBA), 1280, 1024, false);
@@ -222,7 +222,7 @@ end;
 
 procedure TDemoScene.SetSize(aWidth, aHeight: integer);
 begin
-  FSceneGraph.Camera.ViewPortSize := Vec2iMake(aWidth, aHeight);
+  FSceneGraph.Cameras[0].ViewPortSize := Vec2iMake(aWidth, aHeight);
 end;
 
 end.
