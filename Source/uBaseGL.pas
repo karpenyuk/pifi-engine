@@ -319,6 +319,8 @@ Type
       overload;
     procedure SetUniform(const Name: ansistring; const Value: single;
       Count: GLsizei = 1); overload;
+    procedure SetUniform(const Name: ansistring; const Value: PSingle;
+      Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: vec2;
       Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: vec3;
@@ -326,6 +328,8 @@ Type
     procedure SetUniform(const Name: ansistring; const Value: vec4;
       Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: integer;
+      Count: GLsizei = 1); overload;
+    procedure SetUniform(const Name: ansistring; const Value: vec2i;
       Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: mat2;
       Count: GLsizei = 1; transpose: boolean = false); overload;
@@ -1505,6 +1509,18 @@ procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
 begin
   glUniformMatrix4fv(GetUniformLocation(FShaderId, name), Count,
     transpose, @Value);
+end;
+
+procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
+  const Value: PSingle; Count: GLsizei);
+begin
+  glUniform1fv(GetUniformLocation(FShaderId, name), Count, PGLfloat(Value));
+end;
+
+procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
+  const Value: vec2i; Count: GLsizei);
+begin
+  glUniform2iv(GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;

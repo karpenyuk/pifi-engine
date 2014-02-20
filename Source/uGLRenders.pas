@@ -163,6 +163,7 @@ Type
     FStructureChanged: boolean;
   public
     constructor CreateFrom(aOwner: TGLResources; aSceneObject: TSceneObject);
+    destructor Destroy; override;
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     procedure Update(aRender: TBaseRender); override;
@@ -247,6 +248,12 @@ Type
   private
     FEffect: TBaseRenderResource;
     FShader: TGLSLShaderProgramExt;
+    FBlurShader: TGLSLShaderProgramExt;
+    FFrameH: TGLFrameBufferObject;
+    FFrameV: TGLFrameBufferObject;
+    FImageHolder: TImageHolder;
+    FBluredH: TGLTextureObject;
+    FBluredV: TGLTextureObject;
     FVertexObject: TGLVertexObject;
     FSampler: TGLTextureSampler;
     FStructureChanged: boolean;
@@ -266,7 +273,7 @@ var
 implementation
 
 uses
-  uEffectsPipeline;
+  uEffectsPipeline, uStorage;
 
 var
   vActiveShader: TGLSLShaderProgram = nil;
@@ -875,25 +882,16 @@ end;
 
 destructor TGLMesh.Destroy;
 begin
+  if Assigned(FMesh) then FMesh.UnSubscribe(Self);
   inherited;
 end;
 
 procedure TGLMesh.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   inherited;
-    case Msg of
-      NM_ObjectDestroyed: begin
-        Assert(Sender <> FMesh, 'You can not destroy the owner ahead of subscribers.');
-        FMesh.UnSubscribe(Self);
-        FMesh := nil;
-      end;
-      NM_WorldMatrixChanged: begin
-        if Sender = FMesh then
-        begin
-          { TODO: parent world matrix changes }
-        end;
-      end;
-    end;
+  case Msg of
+    NM_ObjectDestroyed: if Sender = FMesh then FMesh := nil;
+  end;
 end;
 
 { TGLMaterial }
@@ -971,6 +969,7 @@ end;
 
 destructor TGLMaterial.Destroy;
 begin
+  if Assigned(FMaterialObject) then FMaterialObject.UnSubscribe(Self);
   inherited;
 end;
 
@@ -979,6 +978,7 @@ begin
   inherited;
   case Msg of
     NM_ResourceChanged: if Sender = FMaterialObject then FStructureChanged := true;
+    NM_ObjectDestroyed: if Sender = FMaterialObject then FMaterialObject := nil;
   end;
 end;
 
@@ -1083,12 +1083,19 @@ begin
   end;
 end;
 
+destructor TGLSceneObject.Destroy;
+begin
+  if Assigned(FSceneObject) then FSceneObject.UnSubscribe(Self);
+  inherited;
+end;
+
 procedure TGLSceneObject.Notify(Sender: TObject; Msg: Cardinal;
   Params: pointer);
 begin
   inherited;
   case Msg of
     NM_ResourceChanged: if Sender = FSceneObject then FStructureChanged := true;
+    NM_ObjectDestroyed: if Sender = FSceneObject then FSceneObject := nil;
   end;
 end;
 
@@ -1244,6 +1251,7 @@ end;
 destructor TGLLight.Destroy;
 begin
   // Need to add slot freeing in Lights pool
+  if Assigned(FLight) then FLight.UnSubscribe(Self);
   inherited;
 end;
 
@@ -1252,10 +1260,11 @@ begin
   inherited;
   case Msg of
     NM_ResourceChanged: if Sender = FLight then FStructureChanged := true;
+    NM_ObjectDestroyed: if Sender = FLight then FLight := nil;
   end;
 end;
 
-procedure TGLLight.UnApply;
+procedure TGLLight.UnApply(aRender: TBaseRender);
 begin
 
 end;
@@ -1434,7 +1443,7 @@ begin
   assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
   Owner:=aOwner;
   FCamera:=aCamera;
-  FCamera.Subscribe(self);
+  FCamera.Subscribe(Self);
   FIdexInPool:=-1;
   if Assigned(FCamera.RenderTarget) then
   begin
@@ -1492,7 +1501,7 @@ begin
       move(mat.GetAddr^, p^,64);
     end;
     glRender.FCameraPool.Buffer.UnMap;
-//    FStructureChanged := false;
+    FStructureChanged := false;
   end;
 end;
 
@@ -1503,16 +1512,42 @@ var
   glRender: TGLRender absolute aRender;
   eff: TGlowPipelineEffect;
   tex: TGLTextureObject;
+  vp: vec2i;
+  scale: vec2;
+  w, h: integer;
 begin
   if Assigned(FEffect) then begin
     eff := TGlowPipelineEffect(FEffect);
     tex := glRender.FResourceManager.GetOrCreateResource(eff.SceneTexture) as TGLTextureObject;
     if Assigned(tex) then begin
-      FShader.Apply(aRender);
+      glDisable(GL_DEPTH_TEST);
       tex.Bind(0);
       FSampler.Bind(0);
-      glDisable(GL_DEPTH_TEST);
+      FSampler.Bind(1);
 
+      FBlurShader.Apply(aRender);
+      FFrameH.Apply(false);
+      vp := glRender.CurrentCamera.ViewPortSize;
+      w := vp[0] div 4;
+      h := vp[1] div 4;
+      glViewport(0, 0, w, h);
+      scale := Vec2Make(w / FImageHolder.Width, h / FImageHolder.Height);
+      FBlurShader.SetUniform('TexCoordScale', scale);
+      FBlurShader.SetUniform('Step', Vec2Make(scale[0]/FImageHolder.Width, 0));
+      TGLStaticRender.RenderVertexObject(FVertexObject);
+
+      FFrameV.Apply(false);
+      FBluredH.Bind(0);
+      FBlurShader.SetUniform('Step', Vec2Make(0, scale[1]/FImageHolder.Height));
+      TGLStaticRender.RenderVertexObject(FVertexObject);
+      FBlurShader.UnApply;
+      FFrameV.UnApply;
+
+      glViewport(0, 0, vp[0], vp[1]);
+      FShader.Apply(aRender);
+      FShader.SetUniform('TexCoordScale', scale);
+      tex.Bind(0);
+      FBluredV.Bind(1);
       TGLStaticRender.RenderVertexObject(FVertexObject);
       FShader.UnApply;
     end;
@@ -1554,12 +1589,44 @@ var
   glRender: TGLRender absolute aRender;
   eff: TGlowPipelineEffect;
 begin
-  if Assigned(FEffect) and FStructureChanged then begin
+  if Assigned(FEffect) then begin
     eff := TGlowPipelineEffect(FEffect);
-    FShader := glRender.FResourceManager.GetOrCreateResource(eff.ShaderProgram) as TGLSLShaderProgramExt;
-    FVertexObject := glRender.FResourceManager.GetOrCreateResource(eff.ScreenQuad) as TGLVertexObject;
-    FSampler :=glRender.FResourceManager.GetOrCreateResource(eff.SceneSampler) as TGLTextureSampler;
-    FStructureChanged := false;
+    if FStructureChanged then begin
+      FShader := glRender.FResourceManager.GetOrCreateResource(eff.ShaderProgram) as TGLSLShaderProgramExt;
+      FShader.Apply(aRender);
+      FShader.SetUniform('BlurAmount', eff.BlurAmount);
+      FShader.UnApply;
+      FBlurShader := glRender.FResourceManager.GetOrCreateResource(eff.ConvolutionShader) as TGLSLShaderProgramExt;
+      FBlurShader.Apply(aRender);
+      FBlurShader.SetUniform('Weights', eff.Weights, eff.WeightCount);
+      FBlurShader.SetUniform('Width', eff.WeightCount div 2);
+      FBlurShader.UnApply();
+      FVertexObject := glRender.FResourceManager.GetOrCreateResource(eff.ScreenQuad) as TGLVertexObject;
+      FSampler := glRender.FResourceManager.GetOrCreateResource(eff.SceneSampler) as TGLTextureSampler;
+      FStructureChanged := false;
+    end;
+
+    if not Assigned(FImageHolder) then
+      FImageHolder := TImageSampler.CreateBitmap(eff.SceneTexture.ImageFormat,
+        eff.SceneTexture.ImageHolder.Width div 4,
+        eff.SceneTexture.ImageHolder.Height div 4, false);
+
+    if not Assigned(FFrameH) then begin
+      FFrameH := TGLFrameBufferObject.CreateOwned(Self);
+      FFrameH.InitFBO(Vec2iMake(FImageHolder.Width, FImageHolder.Height));
+      FBluredH := TGLTextureObject.CreateFrom(ttTexture2D, FImageHolder);
+      FBluredH.AllocateStorage;
+      FFrameH.AttachTexture(FBluredH);
+    end;
+
+    if not Assigned(FFrameV) then begin
+      FFrameV := TGLFrameBufferObject.CreateOwned(Self);
+      FFrameV.InitFBO(Vec2iMake(FImageHolder.Width, FImageHolder.Height));
+      FBluredV := TGLTextureObject.CreateFrom(ttTexture2D, FImageHolder);
+      FBluredV.AllocateStorage;
+      FFrameV.AttachTexture(FBluredV);
+    end;
+
   end;
 end;
 

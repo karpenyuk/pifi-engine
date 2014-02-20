@@ -132,7 +132,7 @@ begin
   Material[3].AttachShader(shader);
   with Material[3].AddNewMaterial('GreenLuminescent') do begin
      Properties.DiffuseColor.SetColor(4, 17, 0, 255);
-     Properties.EmissionColor.SetColor(41, 165, 0, 255);
+     Properties.EmissionColor.SetColor(2*41, 2*165, 0, 255);
   end;
   FMeshList[3].MaterialObject := Material[3];
   FSceneGraph.AddMaterial(Material[3]);

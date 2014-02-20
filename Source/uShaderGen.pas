@@ -22,6 +22,8 @@ type
     class function GenForwardLightShader: TShaderProgram; static;
     class function GenLightGlyphShader: TShaderProgram; static;
     class function GenScreenQuadShader: TShaderProgram; static;
+    class function GenCompositionShader: TShaderProgram; static;
+    class function Gen1DConvolution: TShaderProgram; static;
 
     class function GetUniformLightNumber: TBuiltinUniformLightNumber;
   end;
@@ -39,9 +41,9 @@ type
     procedure GenShaderForMesh(const aMesh: TMesh; const aLights: TList);
   end;
 
-implementation
+  TGaussianWeights = array of Single;
 
-{ TShaderMaterial }
+implementation
 
 const
   SG_STRUCT_OBJECT: ansistring =
@@ -98,6 +100,8 @@ const
   '    vec3    padding;'+#10#13 +
   '} material;'+#10#13;
 
+{ TShaderMaterial }
+
 constructor TShaderMaterial.Create(aGLSLVersion: integer);
 begin
   FGLSLVersion:=aGLSLVersion;
@@ -142,7 +146,44 @@ begin
 //
 end;
 
-{ TConfigShader }
+{ ShaderGenerator }
+
+class function ShaderGenerator.Gen1DConvolution: TShaderProgram;
+var vt,ft: ansistring;
+begin
+  result:= Storage.CreateProgram;
+  vt:=
+'#version 430'#10#13 +
+'layout(location = 0) in vec3 in_Position;'#10#13 +
+'layout(location = 2) in vec2 in_TexCoord;'#10#13 +
+'uniform vec2 TexCoordScale;'+#10#13 +
+'out vec2 v2f_TexCoord;'#10#13 +
+'void main() {'#10#13 +
+'	gl_Position = vec4(in_Position, 1.0);'#10#13 +
+'	v2f_TexCoord = in_TexCoord * TexCoordScale;'#10#13 +
+'}';
+  ft :=
+'#version 430'#10#13 +
+'layout(location = 0) out vec4 FragColor;'#10#13 +
+'layout(binding = 0) uniform sampler2D Source;'#10#13 +
+'in vec2 v2f_TexCoord;'#10#13 +
+'uniform float Weights[64];'#10#13 +
+'uniform int Width;'#10#13 +
+'uniform vec2 Step;'#10#13 +
+'void main() {'#10#13 +
+'  vec4 color = vec4(0.0);'#10#13 +
+'  vec2 coords = v2f_TexCoord - Step * vec2(Width);'#10#13 +
+'  for (int i = -Width; i <= Width; i++) {'#10#13 +
+'    vec4 value = texture(Source, coords);'#10#13+
+'    coords += Step;'#10#13 +
+'    value *= Weights[i+Width];'#10#13+
+'    color += value;'#10#13 +
+'  }'#10#13 +
+'  FragColor = color;'#10#13 +
+'}';
+  result.ShaderText[stVertex]:=vt;
+  result.ShaderText[stFragment]:=ft;
+end;
 
 class function ShaderGenerator.GenForwardLightShader: TShaderProgram;
 var vt,ft: ansistring;
@@ -323,9 +364,10 @@ SG_BLOCK_MATERIAL +
 '  LightAmbient = clamp(LightAmbient, vec4(0.0), vec4(1.0));'#10#13+
 '  LightDiffuse = clamp(LightDiffuse, vec4(0.0), vec4(1.0));'#10#13+
 '  LightSpecular = clamp(LightSpecular, vec4(0.0), vec4(1.0));'#10#13+
-'  vec4 finalColor = material.emissive + material.ambient * LightAmbient;'#10#13+
+'  vec4 finalColor = material.ambient * LightAmbient;'#10#13+
 '  finalColor += material.diffuse * LightDiffuse;'#10#13+
 '  finalColor += material.specular * LightSpecular;'#10#13+
+'  finalColor = min(finalColor, vec4(1.0)) + material.emissive;'#10#13+
 '  FragColor = vec4(finalColor.rgb, material.diffuse.a);'#10#13+
 '}';
   result.ShaderText[stVertex]:=vt;
@@ -372,9 +414,8 @@ var vt,ft: ansistring;
 begin
   result:=Storage.CreateProgram;
   vt:=
-'#version 430'+#10#13 +
-'layout(location = 0) in vec3 in_Position;'+#10#13 +
-'out vec2 v2f_TexCoord0;'#10#13 +
+'#version 430'#10#13 +
+'layout(location = 0) in vec3 in_Position;'#10#13 +
 'void main() {'#10#13 +
 '	gl_Position = vec4(in_Position, 1.0); }';
   ft :=
@@ -383,6 +424,40 @@ begin
 'layout(binding = 0) uniform sampler2D DiffuseTexture;'#10#13 +
 'void main() {'#10#13 +
 ' FragColor = texelFetch(DiffuseTexture, ivec2(gl_FragCoord.xy), 0); }';
+  result.ShaderText[stVertex]:=vt;
+  result.ShaderText[stFragment]:=ft;
+end;
+
+class function ShaderGenerator.GenCompositionShader: TShaderProgram;
+var vt,ft: ansistring;
+begin
+  result:=Storage.CreateProgram;
+  vt:=
+'#version 430'+#10#13 +
+'layout(location = 0) in vec3 in_Position;'#10#13 +
+'layout(location = 2) in vec2 in_TexCoord;'#10#13 +
+'uniform vec2 TexCoordScale;'#10#13 +
+'out vec2 v2f_TexCoord0;'#10#13 +
+'void main() {'#10#13 +
+'	gl_Position = vec4(in_Position, 1.0);'#10#13 +
+' v2f_TexCoord0 = in_TexCoord * TexCoordScale;'#10#13 +
+'}';
+  ft :=
+'#version 430'#10#13 +
+'in vec2 v2f_TexCoord0;'#10#13 +
+'layout(location = 0) out vec4 FragColor;'#10#13 +
+'layout(binding = 0) uniform sampler2D SceneTexture;'#10#13 +
+'layout(binding = 1) uniform sampler2D BluredTexture;'#10#13 +
+'uniform float BlurAmount;'#10#13 +
+'void main() {'#10#13 +
+' vec4 SceneColor = texelFetch(SceneTexture, ivec2(gl_FragCoord.xy), 0);'#10#13 +
+' vec4 BluredColor = texture(BluredTexture, v2f_TexCoord0);'#10#13 +
+' float sceneMax = max(max(SceneColor.r, SceneColor.g), SceneColor.b);'#10#13 +
+' if (sceneMax > 1.0) SceneColor /= sceneMax;'#10#13 +
+' float bluredMax = max(max(BluredColor.r, BluredColor.g), BluredColor.b);'#10#13 +
+' if (bluredMax > 1.0) BluredColor /= bluredMax;'#10#13 +
+' FragColor = mix(SceneColor , BluredColor, vec4(bluredMax*BlurAmount));'#10#13 +
+'}';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
 end;
