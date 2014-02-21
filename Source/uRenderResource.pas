@@ -305,6 +305,8 @@ Type
 
     function getTexDescr: PTextureDesc;
     function getSamplerHash: integer;
+    function getBorderColor: TVector;
+    procedure setBorderColor(const Value: TVector);
   public
     constructor Create; override;
     class function IsInner: boolean; override;
@@ -324,6 +326,7 @@ Type
     property CompareFunc: TTextureCompareFunc read getCFunc write setCFunc;
     property AnisotropyLevel: single read getAnisotropyLevel
       write SetAnisotropyLevel;
+    property BorderColor: TVector read getBorderColor write setBorderColor;
 
     property UseTexGen: boolean read FUseTexGen write FUseTexGen;
     property TextureDescriptor: PTextureDesc read getTexDescr;
@@ -956,7 +959,7 @@ Type
     FMultisample: TMultisampleFormat;
 
     FSize: vec2i;
-
+    FResizable: Boolean;
     procedure SetSize(aSize: vec2i);
     procedure SetActive(const Value: boolean);
     procedure SetMultisample(const Value: TMultisampleFormat);
@@ -978,6 +981,7 @@ Type
     procedure ResetReedBackBuffers;
 
     property Size: vec2i read FSize write SetSize;
+    property Resizable: boolean read FResizable write FResizable;
     property ColorAttachmentCount: Integer read GetColorCount;
     property ColorAttachments[aSlot: cardinal]: TTexture read GetTexture;
     property BufferAttachments[aBuffer: TRenderBuffer]: TTexture read GetRenderBuffer;
@@ -993,7 +997,6 @@ Type
     FViewMatrix: TMatrix;
     FProjMatrix: TMatrix;
     FRenderTarget: TFrameBuffer;
-    FResizableRenderTarget: boolean;
     FViewPortSize: vec2i;
     FFoV: single;
     FzNear: single;
@@ -1038,7 +1041,6 @@ Type
     property ViewMatrix: TMatrix read GetViewMatrix write SetViewMatrix;
     property ProjMatrix: TMatrix read GetProjMatrix write SetProjMatrix;
     property RenderTarget: TFrameBuffer read FRenderTarget write SetRenderTarget;
-    property ResizableRenderTarget: Boolean read FResizableRenderTarget write FResizableRenderTarget;
     property EffectPipeline: TEffectPipeline read FEffectPipeline write SetEffectPipeline;
   end;
 
@@ -1463,6 +1465,11 @@ begin
   result := FTextureDescriptor.AnisotropyLevel;
 end;
 
+function TTextureSampler.getBorderColor: TVector;
+begin
+  Result := FTextureDescriptor.BorderColor;
+end;
+
 function TTextureSampler.getCFunc: TTextureCompareFunc;
 begin
   result:=FTextureDescriptor.CompareFunc;
@@ -1552,6 +1559,18 @@ end;
 class function TTextureSampler.IsInner: boolean;
 begin
   Result := true;
+end;
+
+procedure TTextureSampler.setBorderColor(const Value: TVector);
+var
+  v: TVector;
+begin
+  v.Vec4 := FTextureDescriptor.BorderColor;
+  if v <> Value then begin
+    FTextureDescriptor.BorderColor := Value.Vec4;
+    include(FUpdates, tuBorderColor);
+    DispatchMessage(NM_ResourceChanged);
+  end;
 end;
 
 procedure TTextureSampler.setCFunc(const Value: TTextureCompareFunc);
@@ -3484,7 +3503,6 @@ begin
   FzNear := 0.1;
   FzFar := 100;
   FViewTarget := nil;
-  FResizableRenderTarget := false;
   RebuildProjMatrix;
   RebuildViewMatrix;
 end;
@@ -3563,7 +3581,7 @@ begin
   then FRenderTarget.Free;
 
   FRenderTarget := Value;
-  if assigned(FRenderTarget) and FResizableRenderTarget then FRenderTarget.SetSize(FViewPortSize);
+  if assigned(FRenderTarget) then FRenderTarget.SetSize(FViewPortSize);
 end;
 
 procedure TSceneCamera.SetViewMatrix(const Value: TMatrix);
@@ -3574,7 +3592,7 @@ end;
 procedure TSceneCamera.SetViewPortSize(const Value: vec2i);
 begin
   FViewPortSize := Value;
-  if assigned(FRenderTarget) and FResizableRenderTarget then FRenderTarget.SetSize(Value);
+  if assigned(FRenderTarget) then FRenderTarget.SetSize(Value);
 end;
 
 procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
@@ -3663,7 +3681,7 @@ begin
 
     FActive := false;
     FMultisample := MSNone;
-
+    FResizable := true;
 end;
 
 destructor TFrameBuffer.Destroy;
@@ -3749,7 +3767,7 @@ end;
 
 procedure TFrameBuffer.SetSize(aSize: vec2i);
 begin
-  if (FSize[0] <> aSize[0]) or (FSize[1] <> aSize[1]) then begin
+  if FResizable and ((FSize[0] <> aSize[0]) or (FSize[1] <> aSize[1])) then begin
     FSize := aSize;
     DispatchMessage(NM_ResourceChanged);
   end;

@@ -195,17 +195,19 @@ begin
   FMaterial[4].AttachShader(FShader[2]);
   Mesh.MaterialObject := FMaterial[4];
 }
-  FSceneGraph.Cameras[0].FoV:=60;
-  FSceneGraph.Cameras[0].MoveObject(0, 2, -10);
-  FSceneGraph.Cameras[0].ViewTarget := SceneObject;
+  FSceneGraph.Camera.FoV:=60;
+  FSceneGraph.Camera.MoveObject(0, 2, -10);
+  FSceneGraph.Camera.ViewTarget := SceneObject;
 
   FRGBAfloatImage:=TImageSampler.CreateBitmap(
-    TImageFormatSelector.CreateFloat16(bfRGBA), 2048, 2048, false);
+    TImageFormatSelector.CreateSpecial(sfR11FG11FB10F), 2048, 2048, false);
   ColorAttachment := Storage.CreateTexture(FRGBAfloatImage);
 //  Material[4].AttachTexture(ColorAttachment);
 
   FrameBuffer := Storage.CreateFrameBuffer;
   FrameBuffer.Size := Vec2iMake(2048, 2048);
+  // frize size
+  FrameBuffer.Resizable := false;
   FrameBuffer.AttachColor(ColorAttachment);
   FrameBuffer.AttachRenderBuffer(rbDepth24, bmBuffer);
   FSceneGraph.Camera.RenderTarget := FrameBuffer;

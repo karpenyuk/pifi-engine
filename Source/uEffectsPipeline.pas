@@ -81,8 +81,9 @@ function TGlowPipelineEffect.GetSceneSampler: TTextureSampler;
 begin
   if not Assigned(FSceneSampler) then begin
     FSceneSampler := Storage.CreateTextureSample;
-    FSceneSampler.WrapS := twClampToEdge;
-    FSceneSampler.WrapT := twClampToEdge;
+    FSceneSampler.WrapS := twClampToBorder;
+    FSceneSampler.WrapT := twClampToBorder;
+    FSceneSampler.BorderColor := Vector(0, 0, 0, 1);
     FSceneSampler.minFilter := mnNearest;
     FSceneSampler.magFilter := mgLinear;
   end;

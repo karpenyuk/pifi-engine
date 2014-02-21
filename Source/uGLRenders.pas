@@ -578,7 +578,7 @@ begin
       //Do nothing, all shaders ready
     end else begin
       //Try to use Own shader
-      if assigned(aVertexObject.Shader) then aVertexObject.Shader.Apply
+      if assigned(aVertexObject.Shader) then aVertexObject.Shader.Bind
       //else use current active shader
     end;
   end;
@@ -602,7 +602,7 @@ begin
 
   if aShaderUsageLogic in [slUseOwnAndStashActiveShader, slStashActiveAndDisableShader]
   then begin
-    if assigned(ActiveShader) then ActiveShader.Apply
+    if assigned(ActiveShader) then ActiveShader.Bind
     else glUseProgram(0);
   end else begin
     if aShaderUsageLogic in [slDisableShader, slUseActiveAndDisable, slUseOwnAndDisable]
@@ -984,7 +984,7 @@ end;
 
 procedure TGLMaterial.UnApply;
 begin
-  if assigned(FShader) then begin FShader.UnApply; vActiveShader:=nil; end else exit;
+  if assigned(FShader) then begin FShader.UnBind; vActiveShader:=nil; end else exit;
 end;
 
 procedure TGLMaterial.Update(aRender: TBaseRender);
@@ -1337,7 +1337,7 @@ procedure TGLSLShaderProgramExt.Apply(aRender: TBaseRender);
 var
   i: integer;
 begin
-  Apply();
+  Bind();
   if Assigned(FBuiltinUniforms) then
     for i := 0 to FBuiltinUniforms.Count - 1 do
       TGLBuiltinUniform(FBuiltinUniforms[i]).Apply(aRender);
@@ -1432,7 +1432,7 @@ var
   glRender: TGLRender absolute aRender;
 begin
   glRender.BindCameraBuffer(FIdexInPool);
-  if Assigned(FFrameBuffer) then FFrameBuffer.Apply();
+  if Assigned(FFrameBuffer) then FFrameBuffer.Bind();
   glViewport(0, 0, FCamera.ViewPortSize[0], FCamera.ViewPortSize[1]);
 end;
 
@@ -1472,7 +1472,7 @@ end;
 
 procedure TGLCamera.UnApply;
 begin
-  if Assigned(FFrameBuffer) then FFrameBuffer.UnApply;
+  if Assigned(FFrameBuffer) then FFrameBuffer.UnBind;
 end;
 
 procedure TGLCamera.Update(aRender: TBaseRender);
@@ -1526,7 +1526,7 @@ begin
       FSampler.Bind(1);
 
       FBlurShader.Apply(aRender);
-      FFrameH.Apply(false);
+      FFrameH.Bind(false);
       vp := glRender.CurrentCamera.ViewPortSize;
       w := vp[0] div 4;
       h := vp[1] div 4;
@@ -1536,20 +1536,20 @@ begin
       FBlurShader.SetUniform('Step', Vec2Make(scale[0]/FImageHolder.Width, 0));
       TGLStaticRender.RenderVertexObject(FVertexObject);
 
-      FFrameV.Apply(false);
+      FFrameV.Bind(false);
       FBluredH.Bind(0);
       FBlurShader.SetUniform('Step', Vec2Make(0, scale[1]/FImageHolder.Height));
       TGLStaticRender.RenderVertexObject(FVertexObject);
-      FBlurShader.UnApply;
-      FFrameV.UnApply;
+      FBlurShader.UnBind;
+      FFrameV.UnBind;
 
       glViewport(0, 0, vp[0], vp[1]);
-      FShader.Apply(aRender);
+      FShader.Bind;
       FShader.SetUniform('TexCoordScale', scale);
       tex.Bind(0);
       FBluredV.Bind(1);
       TGLStaticRender.RenderVertexObject(FVertexObject);
-      FShader.UnApply;
+      FShader.UnBind;
     end;
   end;
 end;
@@ -1593,14 +1593,14 @@ begin
     eff := TGlowPipelineEffect(FEffect);
     if FStructureChanged then begin
       FShader := glRender.FResourceManager.GetOrCreateResource(eff.ShaderProgram) as TGLSLShaderProgramExt;
-      FShader.Apply(aRender);
+      FShader.Bind;
       FShader.SetUniform('BlurAmount', eff.BlurAmount);
-      FShader.UnApply;
+      FShader.UnBind;
       FBlurShader := glRender.FResourceManager.GetOrCreateResource(eff.ConvolutionShader) as TGLSLShaderProgramExt;
-      FBlurShader.Apply(aRender);
+      FBlurShader.Bind;
       FBlurShader.SetUniform('Weights', eff.Weights, eff.WeightCount);
       FBlurShader.SetUniform('Width', eff.WeightCount div 2);
-      FBlurShader.UnApply();
+      FBlurShader.UnBind;
       FVertexObject := glRender.FResourceManager.GetOrCreateResource(eff.ScreenQuad) as TGLVertexObject;
       FSampler := glRender.FResourceManager.GetOrCreateResource(eff.SceneSampler) as TGLTextureSampler;
       FStructureChanged := false;

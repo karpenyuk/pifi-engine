@@ -312,8 +312,8 @@ Type
     function ProgramBinary(Binary: pointer; Size: integer; Format: GLEnum): cardinal;
     procedure GetProgramBinary(var Binary: pointer; var Size: integer; var Format: GLEnum);
 
-    procedure Apply; overload;
-    procedure UnApply;
+    procedure Bind;
+    procedure UnBind;
 
     procedure SetUniform(const Name: ansistring; const Value: array of TVector);
       overload;
@@ -440,6 +440,7 @@ Type
 
     procedure UploadTexture(aData: pointer = nil; aLevel: integer = -1; aLevelsCount: integer = 1);
     procedure AllocateStorage();
+    procedure Clear(const aColor: vec4);
 
     property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
 
@@ -498,8 +499,8 @@ Type
     procedure DetachTexture(Index: integer);
     procedure DetachAllTextures;
 
-    procedure Apply(ClearBuffers: boolean = true); overload;
-    procedure UnApply; overload;
+    procedure Bind(ClearBuffers: boolean = true);
+    procedure UnBind; overload;
     procedure SetReadBackBuffer(const ColorBufers: array of GLUInt);
 
     property Textures[index: integer]: TGLTextureObject read GetTexture
@@ -1169,7 +1170,7 @@ end;
 
 { TShaderProgram }
 
-procedure TGLSLShaderProgram.Apply;
+procedure TGLSLShaderProgram.Bind;
 begin
   if FStructureChanged then
     exit;
@@ -1182,7 +1183,7 @@ begin
   end;
 end;
 
-procedure TGLSLShaderProgram.UnApply;
+procedure TGLSLShaderProgram.UnBind;
 begin
   glUseProgram(0);
   vActiveShader := nil;
@@ -1805,7 +1806,7 @@ begin
   end
   else if (aShader = -1) and (assigned(FShader)) then
   begin
-    FShader.Apply;
+    FShader.Bind;
     ActiveShader := Shader.Id;
   end;
 
@@ -1880,6 +1881,13 @@ procedure TGLTextureObject.Bind(aUnit: cardinal);
 begin
   glActiveTexture(GL_TEXTURE0+aUnit);
   glBindTexture(CTexTargets[FTarget], FTexId);
+end;
+
+procedure TGLTextureObject.Clear(const aColor: vec4);
+begin
+  if GL_ARB_clear_texture then begin
+    glClearTexImage(FTexId, 0, GL_RGBA, GL_FLOAT, @aColor);
+  end;
 end;
 
 constructor TGLTextureObject.Create;
@@ -2509,7 +2517,7 @@ begin
   end;
 end;
 
-procedure TGLFrameBufferObject.Apply(ClearBuffers: boolean);
+procedure TGLFrameBufferObject.Bind(ClearBuffers: boolean);
 var
   buffers: array of GLEnum;
   i, n: integer;
@@ -2563,7 +2571,7 @@ begin
   end;
 end;
 
-procedure TGLFrameBufferObject.UnApply;
+procedure TGLFrameBufferObject.UnBind;
 var
   tex: TGLTextureObject;
   i, n: integer;
