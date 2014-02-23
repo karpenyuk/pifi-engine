@@ -290,6 +290,7 @@ begin
         temp:=z.Value;
         z.Value:=nil;
         temp.UnSubscribe(aOwner);
+        aOwner.UnSubscribe(temp);
         FreeAndNil(temp);
         z := z.Twin;
       until z = nil;
@@ -313,6 +314,7 @@ begin
         temp := x.Value;
         x.Value := nil;
         temp.UnSubscribe(aOwner);
+        aOwner.UnSubscribe(temp);
         FreeAndNil(temp);
       end;
     end;
