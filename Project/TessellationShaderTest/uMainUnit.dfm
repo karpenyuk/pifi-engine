@@ -21,7 +21,7 @@ object Form1: TForm1
     Width = 639
     Height = 479
     OnRender = GLViewer1Render
-    onContextReady = GLViewer1ContextReady
+    OnContextReady = GLViewer1ContextReady
     Align = alClient
     OnCanResize = GLViewer1CanResize
     OnMouseDown = GLViewer1MouseDown

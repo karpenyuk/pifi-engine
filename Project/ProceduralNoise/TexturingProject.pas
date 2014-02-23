@@ -197,11 +197,11 @@ begin
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
     mvp := Model*View;
-    Shader1.Apply;
+    Shader1.Bind;
     Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
     Shader1.SetUniform('ModelView', mvp.Matrix4);
     Shader1.SetUniform('tex', 0);
-    Shader1.UnApply;
+    Shader1.UnBind;
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     // TGLStaticRender.RenderVertexObject(box,slUseActiveShader, spUseActiveShaderFirst);
     glActiveTexture(GL_TEXTURE0);

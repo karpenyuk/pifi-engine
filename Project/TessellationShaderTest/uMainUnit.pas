@@ -307,7 +307,7 @@ begin
   r8Image:=TImageSampler.CreateBitmap(
     TImageFormatSelector.CreateUInt8(bfRed), 532, 0, false);
   LeftOff.Add(r8Image);
-  StructTex := TTexture.CreateOwned(r8Image);
+  StructTex := r8Image.CreateTexture;
   StructTex.GenerateMipMaps := false;
   WallStruct :=  StructTex.ImageHolder.Data;
   WallStruct[0] := 0; // Wallpaper
@@ -426,7 +426,7 @@ begin
   GLViewer1.Context.ClearDevice;
 
   VP := View * Proj;
-  Shader1.Apply;
+  Shader1.Bind;
   Shader1.SetUniform('ModelMatrix', Model.Matrix4);
   Shader1.SetUniform('ViewProjection', VP.Matrix4);
   Shader1.SetUniform('LightPosition', cameraPos.Vec3);
@@ -463,7 +463,7 @@ begin
 
   glPatchParameteri(GL_PATCH_VERTICES, 3);
   Drawer.RenderVO();
-  Shader1.UnApply;
+  Shader1.UnBind;
 end;
 
 end.

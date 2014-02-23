@@ -157,7 +157,6 @@ end;
 procedure TForm5.GenIndirectBuffer;
 var
   pos: TVec2List;
-  Attr: TAttribBuffer;
   VDA: IVectorDataAccess;
   I, C, P: Integer;
   Offset, Len: Integer;
@@ -324,17 +323,17 @@ begin
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
   MV := Model * View;
   MVP := MV * Proj;
-  Shader1.Apply;
+  Shader1.Bind;
   Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
   Shader1.SetUniform('ModelView', MV.Matrix4);
   Shader1.SetUniform('MVP', MVP.Matrix4);
   TextObject.RenderVO();
-  Shader1.UnApply;
+  Shader1.UnBind;
 
   if Length(Commands) > 0 then
   begin
     glDisable(GL_DEPTH_TEST);
-    Shader2.Apply;
+    Shader2.Bind;
     Shader2.SetUniform('Projection', OrthoProj.Matrix4);
     Shader2.SetUniform('Origin', TVector.Make(0, Height - 60).Vec2);
     glBindVertexArray(FontGLMesh.VAOid);
@@ -350,7 +349,7 @@ begin
     else
       glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, @Commands[0], Length(Commands), 0);
     glBindVertexArray(0);
-    Shader2.UnApply;
+    Shader2.UnBind;
     glEnable(GL_DEPTH_TEST);
   end;
 end;
