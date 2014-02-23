@@ -28,6 +28,7 @@ type
          Left, Right, Parent, Twin: TRBNode;
          Color: TRBColor;
          Value: TValue;
+         constructor Create(AKey: TKey; AValue: TValue);
        end;
     var
       FRoot: TRBNode;
@@ -49,14 +50,15 @@ type
     function GetFirst: TKey;
     function GetLast: TKey;
     procedure SetDuplicateKeys(Value: Boolean);
-    class procedure FastErase(x: TRBNode);
+    class procedure FastErase(x: TRBNode; FreeData: boolean = false);
 
   public
     { Public Declarations }
     constructor Create(KeyCompare: TKeyCompareFunc; ValueCompare: TValueCompareFunc);
     destructor Destroy; override;
 
-    procedure Clear;
+    procedure Clear(FreeData: boolean = false);
+
     {: Find value by key. }
     function Find(const key: TKey; out Value: TValue): Boolean;
     function NextKey(var key: TKey; out Value: TValue): Boolean;
@@ -78,16 +80,11 @@ implementation
 
 function CompareInteger(const Item1, Item2: Integer): Integer;
 begin
-  if Item1 < Item2 then
-  begin
+  if Item1 < Item2 then begin
     Result := -1;
-  end
-  else if (Item1 = Item2) then
-  begin
+  end else if (Item1 = Item2) then begin
     Result := 0;
-  end
-  else
-  begin
+  end else begin
     Result := 1;
   end
 end;
@@ -110,26 +107,19 @@ begin
   inherited Destroy;
 end;
 
-class procedure GRedBlackTree< TKey, TValue >.FastErase(x: TRBNode);
-var
-  y: TRBNode;
+class procedure GRedBlackTree< TKey, TValue >.FastErase(x: TRBNode; FreeData: boolean);
+var y: TRBNode;
 begin
-  if (x.left <> nil) then
-    FastErase(x.left);
-  if (x.right <> nil) then
-    FastErase(x.right);
+  if (x.left <> nil) then FastErase(x.left);
+  if (x.right <> nil) then FastErase(x.right);
   repeat
     y := x;
     x := x.Twin;
-//{$IFDEF FPC}
- //   Dispose(y);
-//{$ELSE}
     y.Free;
-//{$ENDIF}
   until x = nil;
 end;
 
-procedure GRedBlackTree< TKey, TValue >.Clear;
+procedure GRedBlackTree< TKey, TValue >.Clear(FreeData: boolean = false);
 begin
   if (FRoot <> nil) then
     FastErase(FRoot);
@@ -154,30 +144,20 @@ var
   cmp: integer;
 begin
   Result := FRoot;
-  while (Result <> nil) do
-  begin
+  while (Result <> nil) do begin
     cmp := FKeyCompareFunc(Result.Key, key);
-    if cmp < 0 then
-    begin
+    if cmp < 0 then begin
       Result := Result.right;
-    end
-    else if cmp > 0 then
-    begin
+    end else if cmp > 0 then begin
       Result := Result.left;
-    end
-    else
-    begin
-      break;
-    end;
+    end else break;
   end;
 end;
 
 function GRedBlackTree< TKey, TValue >.NextDublicate(out Value: TValue): Boolean;
 begin
-  if Assigned(FLastFound) then
-  begin
-    if Assigned(FLastFound.Twin) then
-    begin
+  if Assigned(FLastFound) then begin
+    if Assigned(FLastFound.Twin) then begin
       FLastFound := FLastFound.Twin;
       Value := FLastFound.Value;
       exit(True);
@@ -192,21 +172,13 @@ var
 begin
   y := x.right;
   x.right := y.left;
-  if (y.left <> nil) then
-  begin
-    y.left.parent := x;
-  end;
+  if (y.left <> nil) then y.left.parent := x;
   y.parent := x.parent;
-  if (x = FRoot) then
-  begin
+  if (x = FRoot) then begin
     FRoot := y;
-  end
-  else if (x = x.parent.left) then
-  begin
+  end else if (x = x.parent.left) then begin
     x.parent.left := y;
-  end
-  else
-  begin
+  end else begin
     x.parent.right := y;
   end;
   y.left := x;
@@ -259,110 +231,65 @@ var
   x, y, z, zpp: TRBNode;
   cmp: Integer;
 begin
-  //{$IFDEF FPC}
-//  New(z);
- // {$ELSE}
-  z := TRBNode.Create;
- // {$ENDIF}
-
-  { Initialize fields in new node z }
-  z.Key := key;
-  z.left := nil;
-  z.right := nil;
-  z.color := clRed;
-  z.Value := Value;
-  z.Twin := nil;
+  z := TRBNode.Create(key, Value);
 
   { Maintain FLeftmost and FRightmost nodes }
-  if ((FLeftmost = nil) or (FKeyCompareFunc(key, FLeftmost.Key) < 0)) then
-  begin
-    FLeftmost := z;
-  end;
-  if ((FRightmost = nil) or (FKeyCompareFunc(FRightmost.Key, key) < 0)) then
-  begin
-    FRightmost := z;
-  end;
+  if ((FLeftmost = nil) or (FKeyCompareFunc(key, FLeftmost.Key) < 0))
+  then FLeftmost := z;
+  if ((FRightmost = nil) or (FKeyCompareFunc(FRightmost.Key, key) < 0))
+  then FRightmost := z;
 
   {: Insert node z }
   y := nil;
   x := FRoot;
-  while (x <> nil) do
-  begin
+  while (x <> nil) do begin
     y := x;
     cmp := FKeyCompareFunc(key, x.Key);
-    if cmp < 0 then
-      x := x.left
-    else if cmp > 0 then
-      x := x.right
-    else
-    begin
+    if cmp < 0 then x := x.left
+    else if cmp > 0 then x := x.right
+    else begin
       {: Key already exists in tree. }
-      if FDuplicateKeys then
-      begin
+      if FDuplicateKeys then begin
         {: Check twins chain for value dublicate. }
         repeat
-          if FValueCompareFunc(Value, x.Value) then
-          begin
-            y := nil;
-            break;
+          if FValueCompareFunc(Value, x.Value) then begin
+            y := nil; break;
           end;
-          y := x;
-          x := x.Twin;
+          y := x; x := x.Twin;
         until x = nil;
-        if Assigned(y) then
-        begin
+        if Assigned(y) then begin
           {: Add dublicate key to end of twins chain. }
-          y.Twin := z;
-          Inc(FCount);
+          y.Twin := z; Inc(FCount);
           if Assigned(FOnChange) then
             FOnChange(Self);
           exit;
         end;
         {: Value already exists in tree. }
-      end
-      else { Replace value. }
+      end else begin{ Replace value. }
         x.Value := Value;
-//{$IFDEF FPC}
- //     Dispose(z);
-//{$ELSE}
-      z.Free;
-//{$ENDIF}
-      //a jzombi: memory leak: if we don't put it in the tree, we shouldn't hold it in the memory
-      exit;
+        z.Free;
+        exit;
+      end;
     end;
   end;
   z.parent := y;
-  if (y = nil) then
-  begin
-    FRoot := z;
-  end
-  else if (FKeyCompareFunc(key, y.Key) < 0) then
-  begin
-    y.left := z;
-  end
-  else
-  begin
-    y.right := z;
+  if (y = nil) then begin FRoot := z;
+  end else begin
+    if (FKeyCompareFunc(key, y.Key) < 0) then y.left := z
+    else y.right := z;
   end;
-
   { Rebalance tree }
-  while ((z <> FRoot) and (z.parent.color = clRed)) do
-  begin
+  while ((z <> FRoot) and (z.parent.color = clRed)) do begin
     zpp := z.parent.parent;
-    if (z.parent = zpp.left) then
-    begin
+    if (z.parent = zpp.left) then begin
       y := zpp.right;
-      if ((y <> nil) and (y.color = clRed)) then
-      begin
+      if ((y <> nil) and (y.color = clRed)) then begin
         z.parent.color := clBlack;
         y.color := clBlack;
         zpp.color := clRed;
         z := zpp;
-      end
-      else
-      begin
-        if (z = z.parent.right) then
-        begin
+      end else begin
+        if (z = z.parent.right) then begin
           z := z.parent;
           rotateLeft(z);
         end;
@@ -370,21 +297,15 @@ begin
         zpp.color := clRed;
         rotateRight(zpp);
       end;
-    end
-    else
-    begin
+    end else begin
       y := zpp.left;
-      if ((y <> nil) and (y.color = clRed)) then
-      begin
+      if ((y <> nil) and (y.color = clRed)) then begin
         z.parent.color := clBlack;
         y.color := clBlack;
         zpp.color := clRed; //c jzombi: zpp.color := clRed;
         z := zpp;
-      end
-      else
-      begin
-        if (z = z.parent.left) then
-        begin
+      end else begin
+        if (z = z.parent.left) then begin
           z := z.parent;
           rotateRight(z);
         end;
@@ -406,8 +327,7 @@ var
   tmpcol: TRBColor;
 begin
   z := FindNode(key);
-  if z = nil then
-    exit;
+  if z = nil then exit;
 
   y := z;
   x := nil;
@@ -416,56 +336,41 @@ begin
   if (y.left = nil) then
   begin { z has at most one non-null child. y = z. }
     x := y.right; { x might be null. }
-  end
-  else
-  begin
+  end else begin
     if (y.right = nil) then
     begin { z has exactly one non-null child. y = z. }
       x := y.left; { x is not null. }
-    end
-    else
-    begin
+    end else begin
       { z has two non-null children.  Set y to }
       y := y.right; {   z's successor.  x might be null. }
-      while (y.left <> nil) do
-      begin
+      while (y.left <> nil) do begin
         y := y.left;
       end;
       x := y.right;
     end;
   end;
 
-  if (y <> z) then
-  begin
+  if (y <> z) then begin
     { "copy y's sattelite data into z" }
     { relink y in place of z.  y is z's successor }
     z.left.parent := y;
     y.left := z.left;
-    if (y <> z.right) then
-    begin
+    if (y <> z.right) then begin
       x_parent := y.parent;
-      if (x <> nil) then
-      begin
+      if (x <> nil) then begin
         x.parent := y.parent;
       end;
       y.parent.left := x; { y must be a child of left }
       y.right := z.right;
       z.right.parent := y;
-    end
-    else
-    begin
+    end else begin
       x_parent := y;
     end;
-    if (FRoot = z) then
-    begin
+    if (FRoot = z) then begin
       FRoot := y;
-    end
-    else if (z.parent.left = z) then
-    begin
+    end else if (z.parent.left = z) then begin
       z.parent.left := y;
-    end
-    else
-    begin
+    end else begin
       z.parent.right := y;
     end;
     y.parent := z.parent;
@@ -474,81 +379,50 @@ begin
     z.color := tmpcol;
     y := z;
     { y now points to node to be actually deleted }
-  end
-  else
-  begin { y = z }
+  end else begin { y = z }
     x_parent := y.parent;
-    if (x <> nil) then
-    begin
-      x.parent := y.parent;
-    end;
-    if (FRoot = z) then
-    begin
+    if (x <> nil) then x.parent := y.parent;
+    if (FRoot = z) then begin
       FRoot := x;
-    end
-    else
-    begin
-      if (z.parent.left = z) then
-      begin
+    end else begin
+      if (z.parent.left = z) then begin
         z.parent.left := x;
-      end
-      else
-      begin
-        z.parent.right := x;
-      end;
+      end else z.parent.right := x;
     end;
-    if (FLeftmost = z) then
-    begin
-      if (z.right = nil) then
-      begin { z.left must be null also }
+    if (FLeftmost = z) then begin
+      if (z.right = nil) then begin
+        { z.left must be null also }
         FLeftmost := z.parent;
-      end
-      else
-      begin
-        FLeftmost := minimum(x);
-      end;
+      end else FLeftmost := minimum(x);
     end;
-    if (FRightmost = z) then
-    begin
+    if (FRightmost = z) then begin
       if (z.left = nil) then
       begin { z.right must be null also }
         FRightmost := z.parent;
-      end
-      else
-      begin { x == z.left }
+      end else begin { x == z.left }
         FRightmost := maximum(x);
       end;
     end;
   end;
 
   { Rebalance tree }
-  if (y.color = clBlack) then
-  begin
-    while ((x <> FRoot) and ((x = nil) or (x.color = clBlack))) do
-    begin
-      if (x = x_parent.left) then
-      begin
+  if (y.color = clBlack) then begin
+    while ((x <> FRoot) and ((x = nil) or (x.color = clBlack))) do begin
+      if (x = x_parent.left) then begin
         w := x_parent.right;
-        if (w.color = clRed) then
-        begin
+        if (w.color = clRed) then begin
           w.color := clBlack;
           x_parent.color := clRed;
           rotateLeft(x_parent);
           w := x_parent.right;
         end;
-        if (((w.left = nil) or
-          (w.left.color = clBlack)) and
-          ((w.right = nil) or
-          (w.right.color = clBlack))) then
-        begin
-          w.color := clRed;
-          x := x_parent;
-          x_parent := x_parent.parent;
-        end
-        else
-        begin
-          if ((w.right = nil) or (w.right.color = clBlack)) then
-          begin
+        if (((w.left = nil) or (w.left.color = clBlack)) and
+           ((w.right = nil) or (w.right.color = clBlack))) then begin
+              w.color := clRed;
+              x := x_parent;
+              x_parent := x_parent.parent;
+        end else begin
+          if ((w.right = nil) or (w.right.color = clBlack)) then begin
             w.left.color := clBlack;
             w.color := clRed;
             rotateRight(w);
@@ -556,38 +430,27 @@ begin
           end;
           w.color := x_parent.color;
           x_parent.color := clBlack;
-          if (w.right <> nil) then
-          begin
-            w.right.color := clBlack;
-          end;
+          if (w.right <> nil) then w.right.color := clBlack;
           rotateLeft(x_parent);
           x := FRoot; { break; }
         end
-      end
-      else
-      begin
+      end else begin
         { same as above, with right <. left. }
         w := x_parent.left;
-        if (w.color = clRed) then
-        begin
+        if (w.color = clRed) then begin
           w.color := clBlack;
           x_parent.color := clRed;
           rotateRight(x_parent);
           w := x_parent.left;
         end;
-        if (((w.right = nil) or
-          (w.right.color = clBlack)) and
-          ((w.left = nil) or
-          (w.left.color = clBlack))) then
+        if (((w.right = nil) or (w.right.color = clBlack)) and
+          ((w.left = nil) or (w.left.color = clBlack))) then
         begin
           w.color := clRed;
           x := x_parent;
           x_parent := x_parent.parent;
-        end
-        else
-        begin
-          if ((w.left = nil) or (w.left.color = clBlack)) then
-          begin
+        end else begin
+          if ((w.left = nil) or (w.left.color = clBlack)) then begin
             w.right.color := clBlack;
             w.color := clRed;
             rotateLeft(w);
@@ -595,25 +458,16 @@ begin
           end;
           w.color := x_parent.color;
           x_parent.color := clBlack;
-          if (w.left <> nil) then
-          begin
-            w.left.color := clBlack;
-          end;
+          if (w.left <> nil) then w.left.color := clBlack;
           rotateRight(x_parent);
           x := FRoot; { break; }
         end;
       end;
     end;
-    if (x <> nil) then
-    begin
-      x.color := clBlack;
-    end;
+    if (x <> nil) then x.color := clBlack;
   end;
-  while Assigned(y.Twin) do
-  begin
-    z := y;
-    y := y.Twin;
-    z.Free;
+  while Assigned(y.Twin) do begin
+    z := y; y := y.Twin; z.Free;
   end;
   y.Free;
   Dec(FCount);
@@ -629,31 +483,19 @@ begin
     x := FLastNode
   else
     x := FindNode(key);
-  if x = nil then
-    exit;
-  if (x.right <> nil) then
-  begin
+  if x = nil then exit;
+  if (x.right <> nil) then begin
     x := x.right;
-    while (x.left <> nil) do
-    begin
-      x := x.left;
-    end;
-  end
-  else if (x.parent <> nil) then
-  begin
+    while (x.left <> nil) do x := x.left;
+  end else if (x.parent <> nil) then begin
     y := x.parent;
-    while Assigned(y) and (x = y.right) do
-    begin
+    while Assigned(y) and (x = y.right) do begin
       x := y;
       y := y.parent;
     end;
-    if (x.right <> y) then
-      x := y;
-  end
-  else
-    x := FRoot;
-  if x = nil then
-    exit(False);
+    if (x.right <> y) then x := y;
+  end else x := FRoot;
+  if x = nil then exit(False);
   key := x.Key;
   FLastNode := x;
   Value := x.Value;
@@ -668,31 +510,20 @@ begin
     x := FLastNode
   else
     x := FindNode(key);
-  if x = nil then
-    exit(False);
-  if (x.left <> nil) then
-  begin
+  if x = nil then exit(False);
+  if (x.left <> nil) then begin
     y := x.left;
-    while (y.right <> nil) do
-    begin
-      y := y.right;
-    end;
+    while (y.right <> nil) do y := y.right;
     x := y;
-  end
-  else if (x.parent <> nil) then
-  begin
+  end else if (x.parent <> nil) then begin
     y := x.parent;
-    while (x = y.left) do
-    begin
+    while (x = y.left) do begin
       x := y;
       y := y.parent;
     end;
     x := y;
-  end
-  else
-    x := FRoot;
-  if x = nil then
-    exit(False);
+  end else x := FRoot;
+  if x = nil then exit(False);
   key := x.Key;
   FLastNode := x;
   Value := x.Value;
@@ -716,38 +547,30 @@ var
   x, y, z: TRBNode;
   cont: Boolean;
 begin
-  if Assigned(FLeftMost) then
-  begin
+  if Assigned(FLeftMost) then begin
     x := FLeftMost;
     repeat
       z := x;
       repeat
         AProc(z.Key, z.Value, cont);
-        if not cont then
-          exit;
+        if not cont then exit;
         z := z.Twin;
       until z = nil;
       // Next node
-      if (x.right <> nil) then
-      begin
+      if (x.right <> nil) then begin
         x := x.right;
-        while (x.left <> nil) do
-        begin
+        while (x.left <> nil) do begin
           x := x.left;
         end;
       end
-      else if (x.parent <> nil) then
-      begin
+      else if (x.parent <> nil) then begin
         y := x.parent;
-        while (x = y.right) do
-        begin
+        while (x = y.right) do begin
           x := y;
           y := y.parent;
         end;
-        if (x.right <> y) then
-          x := y;
-      end
-      else
+        if (x.right <> y) then x := y;
+      end else
         x := FRoot;
     until x = FRightMost;
     if cont and (FLeftMost <> FRightMost) then
@@ -761,6 +584,19 @@ begin
     FDuplicateKeys := True
   else
     FDuplicateKeys := False;
+end;
+
+{ GRedBlackTree<TKey, TValue>.TRBNode }
+
+constructor GRedBlackTree<TKey, TValue>.TRBNode.Create(AKey: TKey;
+  AValue: TValue);
+begin
+  Key := AKey;
+  left := nil;
+  right := nil;
+  color := clRed;
+  Value := AValue;
+  Twin := nil;
 end;
 
 end.

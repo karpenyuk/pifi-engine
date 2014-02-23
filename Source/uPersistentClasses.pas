@@ -215,6 +215,7 @@ end;
 destructor TNotifiableObject.Destroy;
 begin
   DispatchMessage(NM_ObjectDestroyed);
+  FSubscribers.Clear;
   FreeAndNil(FSubscribers);
   inherited;
 end;
@@ -230,7 +231,10 @@ end;
 procedure TNotifiableObject.Notify(Sender: TObject; Msg: Cardinal;
   Params: pointer);
 begin
-  // Do nothing
+if not assigned(Sender) then exit;
+    case Msg of
+      NM_ObjectDestroyed: UnSubscribe(TNotifiableObject(Sender));
+    end;
 end;
 
 procedure TNotifiableObject.Subscribe(Subscriber: TNotifiableObject);

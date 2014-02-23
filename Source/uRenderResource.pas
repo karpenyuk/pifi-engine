@@ -794,10 +794,7 @@ Type
     FbbRadius: single;
   public
     Visible: boolean;
-
-
     FriendlyName: string;
-
     MaterialObject: TMaterialObject;
 
     constructor CreateFrom(const aVertexObject: TVertexObject; const aGUID: TGUID); overload;
@@ -2733,13 +2730,18 @@ end;
 destructor TMaterialObject.Destroy;
 begin
   FBlending.Free;
-  if assigned(FMaterial) and (FMaterial.Owner = Self) then
+  if assigned(FMaterial) and (FMaterial.Owner = Self) then begin
+    FMaterial.Unsubscribe(Self); Unsubscribe(FMaterial);
     FMaterial.Free;
-  if assigned(FTexture) and (FTexture.Owner = Self) then
+  end;
+  if assigned(FTexture) and (FTexture.Owner = Self) then begin
+    FTexture.Unsubscribe(Self); Unsubscribe(FTexture);
     FTexture.Free;
-  if assigned(FShader) and (FShader.Owner = Self) then
+  end;
+  if assigned(FShader) and (FShader.Owner = Self) then begin
+    FShader.Unsubscribe(Self); Unsubscribe(FShader);
     FShader.Free;
-
+  end;
   inherited;
 end;
 
@@ -2870,8 +2872,6 @@ var
   i: integer;
   mo: TMeshObject;
 begin
-  { TODO : Find Items Leaks }
-  exit;
   for i := 0 to FCount - 1 do begin
     if assigned(FItems[i].Value) then begin
       mo := TMeshObject(FItems[i].Value);
@@ -3434,7 +3434,7 @@ var i: integer;
 begin
   for i:=0 to Count-1 do begin
     obj := getItemObj(i);
-    if obj.Owner = self then  obj.Free;
+    if obj.Owner = self then obj.Free;
   end;
   inherited;
 end;

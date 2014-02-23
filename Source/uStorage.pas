@@ -12,7 +12,12 @@ uses
 
 type
 
-  TResourceList = GRedBlackTree < TGUID, TPersistentResource >;
+  TResourceList = class(GRedBlackTree < TGUID, TPersistentResource >)
+  private
+    procedure FreeResources(aOwner: TPersistentResource);
+  public
+    destructor Destroy; override;
+  end;
 
   Storage = class
   private
@@ -63,6 +68,12 @@ implementation
 function ResourceComparer(const Item1, Item2: TGUID): Integer;
 begin
   result := CompareGUID(Item1, Item2);
+end;
+
+procedure FreeGenericResource(AKey: TGUID; AValue: TPersistentResource; out AContinue: Boolean); inline;
+begin
+  if assigned(AValue) then AValue.Free; 
+  AContinue:=true;
 end;
 
 { TStorage }
@@ -236,7 +247,7 @@ end;
 
 class destructor Storage.Destroy;
 begin
-  FResources.Clear;
+  FResources.FreeResources(FStorageHandle);
   FResources.Free;
   FStorageHandle.Free;
 end;
@@ -254,6 +265,56 @@ begin
           FStorageHandle.UnSubscribe(TNotifiableObject(Sender));
           Storage.Delete(TPersistentResource(Sender));
         end;
+    end;
+  end;
+end;
+
+{ TResourceList }
+
+destructor TResourceList.Destroy;
+begin
+  inherited;
+end;
+
+procedure TResourceList.FreeResources(aOwner: TPersistentResource);
+var
+  x, y, z: TRBNode;
+  cont: Boolean;
+  temp: TPersistentResource;
+begin
+  if Assigned(FLeftMost) then begin
+    x := FLeftMost;
+    repeat
+      z := x;
+      repeat
+        temp:=z.Value;
+        z.Value:=nil;
+        temp.UnSubscribe(aOwner);
+        FreeAndNil(temp);
+        z := z.Twin;
+      until z = nil;
+      // Next node
+      if (x.right <> nil) then begin
+        x := x.right;
+        while (x.left <> nil) do x := x.left;
+      end
+      else if (x.parent <> nil) then begin
+        y := x.parent;
+        while (x = y.right) do begin
+          x := y;
+          y := y.parent;
+        end;
+        if (x.right <> y) then x := y;
+      end else
+        x := FRoot;
+    until x = FRightMost;
+    if (FLeftMost <> FRightMost) and assigned(x) then begin
+      if assigned(x.Value) then begin
+        temp := x.Value;
+        x.Value := nil;
+        temp.UnSubscribe(aOwner);
+        FreeAndNil(temp);
+      end;
     end;
   end;
 end;

@@ -17,6 +17,8 @@ type
   ShaderGenerator = class
   private
     class var UniformLightNumber: TBuiltinUniformLightNumber;
+    class constructor Create;
+    class destructor Destroy;
   public
     class function UBOParamShader: TShaderProgram; static;
     class function GenForwardLightShader: TShaderProgram; static;
@@ -147,6 +149,17 @@ begin
 end;
 
 { ShaderGenerator }
+
+class constructor ShaderGenerator.Create;
+begin
+  UniformLightNumber := TBuiltinUniformLightNumber.Create;
+end;
+
+class destructor ShaderGenerator.Destroy;
+begin
+  if assigned(UniformLightNumber) then UniformLightNumber.Free;
+  UniformLightNumber := nil;
+end;
 
 class function ShaderGenerator.Gen1DConvolution: TShaderProgram;
 var vt,ft: ansistring;
@@ -464,8 +477,6 @@ end;
 
 class function ShaderGenerator.GetUniformLightNumber: TBuiltinUniformLightNumber;
 begin
-  if not Assigned(UniformLightNumber) then
-    UniformLightNumber := TBuiltinUniformLightNumber.Create;
   Result := UniformLightNumber;
 end;
 
@@ -528,7 +539,5 @@ end;
 initialization
 
 finalization
-
-  ShaderGenerator.UniformLightNumber.Free;
 
 end.
