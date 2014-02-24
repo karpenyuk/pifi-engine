@@ -265,11 +265,9 @@ begin
           exit;
         end;
         {: Value already exists in tree. }
-      end else begin{ Replace value. }
-        x.Value := Value;
-        z.Free;
-        exit;
-      end;
+      end else x.Value := Value; { Replace value. }
+      z.Free;
+      exit;
     end;
   end;
   z.parent := y;
