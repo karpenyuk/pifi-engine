@@ -15,7 +15,7 @@ type
     FMaterials: TMaterialList;
     FCameras: TCamerasList;
 
-    function getItem(Index: integer): TBaseSceneItem;
+    function getItem(const aName: string): TBaseSceneItem;
     function getCount: integer;
     function getLight(Index: integer): TLightSource;
     function getLightCount: integer;
@@ -38,7 +38,7 @@ type
     function AddNewMaterial(aName: string): TMaterialObject;
     function GetMaterials: TMaterialList;
 
-    property Items[index: integer]: TBaseSceneItem read getItem; default;
+    property Items[const aName: string]: TBaseSceneItem read getItem; default;
 
     property Lights[index: integer]: TLightSource read getLight;
     property LightsCount: integer read getLightCount;
@@ -148,9 +148,21 @@ begin
   result := FRoot.Childs.Count;
 end;
 
-function TSceneGraph.getItem(Index: integer): TBaseSceneItem;
+function TSceneGraph.getItem(const aName: string): TBaseSceneItem;
+
+  function DownToTree(aItem: TBaseSceneItem): TBaseSceneItem;
+  var i: integer;
+  begin
+    if aItem.FriendlyName = aName then exit(aItem);
+    for i := 0 to aItem.Childs.Count - 1 do begin
+      Result := DownToTree(aItem.Childs[i]);
+      if Assigned(Result) then exit;
+    end;
+    Result := nil;
+  end;
+
 begin
-  result := TBaseSceneItem(FRoot.Childs[index]);
+  result := DownToTree(FRoot);
 end;
 
 function TSceneGraph.getLight(Index: integer): TLightSource;
