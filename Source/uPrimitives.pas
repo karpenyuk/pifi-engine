@@ -825,7 +825,7 @@ begin
     zb := ty * aBottomRadius;
     pt := Vector(xt, y, zt);
     pb := Vector(xb, -y, zb);
-    nm := Vector(tx, ty);
+    nm := Vector(tx, 0, ty);
     for j := 0 to HSegments do begin
       p := pb.Lerp(pt, j / HSegments);
       n := nt.Cross(nm);
