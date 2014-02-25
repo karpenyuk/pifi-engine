@@ -151,17 +151,7 @@ end;
 
 function TBaseRender.UpdateWorldMatrix(const MovableObject: TMovableObject; UseMatrix: TTransforms): TMatrix;
 var wm, pm: TMatrix;
-    hasPivot: boolean;
 begin
-
-  hasPivot := false;
-  if (MovableObject.Pivot<>nil) and ((ttPivot in UseMatrix) or (ttAll in UseMatrix)) then begin
-   if not MovableObject.Pivot.WorldMatrixUpdated then
-     MovableObject.Pivot.UpdateWorldMatrix;
-   pm:=MovableObject.Pivot.WorldMatrix;
-   hasPivot := true;
-  end;
-
   wm.SetIdentity;
   if (MovableObject.Pivot<>nil) and ((ttPivot in UseMatrix) or (ttAll in UseMatrix)) then begin
      if not MovableObject.Pivot.WorldMatrixUpdated then
@@ -174,9 +164,6 @@ begin
   if (ttScale in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.ScaleMatrix;
   if (ttRotation in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.RotationMatrix;
   if (ttPosition in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.TranslationMatrix;
-
-  if hasPivot then
-    wm:=wm * pm;
 
   case MovableObject.DirectionBehavior of
     dbSphericalSprite:

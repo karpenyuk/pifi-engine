@@ -150,6 +150,8 @@ Type
     property Scale: TVector read FScale write SetScale;
     //Угол поворота в плоскости экрана
     property RollAngle: single read FRollAngle write FRollAngle;
+    property TurnAngle: single read FTurnAngle;
+    property PitchAngle: single read FPitchAngle;
     //Установка/чтение ориентации объекта
     property Direction: TVector read getDirection write SetDirection;
     property Left: TVector read getLeftVector;
@@ -230,6 +232,9 @@ function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
 
 implementation
 
+uses
+  Math;
+
 function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
 begin
   if Item1.Order < Item2.Order then
@@ -277,8 +282,8 @@ begin
 
   FPosition:= vtW;
   FDirection := vtX;
-  FUp := vtZ;
-  FLeft := vtNY;
+  FUp := vtY;
+  FLeft := vtZ;
   FScale:= 1;
   Parent:=nil;
   UpdateWorldMatrix;
@@ -396,7 +401,7 @@ procedure TMovableObject.PitchObject(Angle: single);
 begin
   //вокруг оси X в YZ
   if not WorldMatrixUpdated then UpdateWorldMatrix;
-  FRotationMatrix.Pitch(Angle);
+  FRotationMatrix := FRotationMatrix.Pitch(Angle);
   UpdateWorldMatrix;
   FPitchAngle:=FPitchAngle+Angle;
 end;
@@ -405,7 +410,7 @@ procedure TMovableObject.RollObject(Angle: single);
 begin
   //вокруг оси Z в XY
   if not WorldMatrixUpdated then UpdateWorldMatrix;
-  FRotationMatrix.Roll(Angle);
+  FRotationMatrix := FRotationMatrix.Roll(Angle);
   UpdateWorldMatrix;
   FRollAngle:=FRollAngle+Angle;
 end;
@@ -414,9 +419,10 @@ procedure TMovableObject.TurnObject(Angle: single);
 begin
   //вокруг оси Y в XZ
   if not WorldMatrixUpdated then UpdateWorldMatrix;
-  FRotationMatrix.Turn(Angle);
+  FRotationMatrix := FRotationMatrix.Turn(Angle);
   UpdateWorldMatrix;
   FTurnAngle:=FTurnAngle+Angle;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.StoreTransforms(ToStore: TTransforms);

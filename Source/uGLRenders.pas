@@ -367,7 +367,8 @@ var i, j: integer;
 
           glres := FResourceManager.GetOrCreateResource(SceneItem);
           // обновляем даные в видеопамяти
-          if glRes is TGLSceneObject then TGLSceneObject(glres).Update(Self);
+          if glRes is TGLSceneObject then
+            TGLSceneObject(glres).Update(Self);
           DownToTree(SceneItem.Childs);
         end;
       end;
@@ -1094,6 +1095,7 @@ procedure TGLSceneObject.Notify(Sender: TObject; Msg: Cardinal;
 begin
   inherited;
   case Msg of
+    NM_WorldMatrixChanged: if Sender = FSceneObject then FStructureChanged := true;
     NM_ResourceChanged: if Sender = FSceneObject then FStructureChanged := true;
     NM_ObjectDestroyed: if Sender = FSceneObject then FSceneObject := nil;
   end;
