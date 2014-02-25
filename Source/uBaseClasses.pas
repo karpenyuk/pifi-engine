@@ -13,10 +13,16 @@ interface
 
 uses
   Classes, SysUtils, uPersistentClasses, uVMath, uBaseTypes, uLists, uMiscUtils;
-Type
 
-  TTransformsTypes = (ttPosition, ttScale, ttRotation, ttModel, ttPivot, ttFollow, ttAll);
+type
+
+  TTransformsTypes = (ttPosition, ttScale, ttRotation, ttModel, ttPivot, ttFollow);
   TTransforms = set of TTransformsTypes;
+
+const
+  ALL_TRANSFORM = [ttPosition, ttScale, ttRotation, ttModel, ttPivot, ttFollow];
+
+type
 
   TBaseRenderResource = TPersistentResource;
   TRenderResourceClass = class of TBaseRenderResource;
@@ -87,6 +93,9 @@ Type
     procedure SetDirBehavior(const Value: TDirectionBehavior);
     function GetPivot: TMovableObject;
     procedure SetPivot(const Value: TMovableObject);
+    procedure SetPitchAngle(const Value: single);
+    procedure SetRollAngle(const Value: single);
+    procedure SetTurnAngle(const Value: single);
   protected
     FRollAngle: single;
     FTurnAngle: single;
@@ -149,9 +158,9 @@ Type
     //Установка/чтение масштаба объекта
     property Scale: TVector read FScale write SetScale;
     //Угол поворота в плоскости экрана
-    property RollAngle: single read FRollAngle write FRollAngle;
-    property TurnAngle: single read FTurnAngle;
-    property PitchAngle: single read FPitchAngle;
+    property RollAngle: single read FRollAngle write SetRollAngle;
+    property TurnAngle: single read FTurnAngle write SetTurnAngle;
+    property PitchAngle: single read FPitchAngle write SetPitchAngle;
     //Установка/чтение ориентации объекта
     property Direction: TVector read getDirection write SetDirection;
     property Left: TVector read getLeftVector;
@@ -187,7 +196,7 @@ Type
     procedure MoveObject(Pos: TVector; AbsolutePos: boolean=true);overload;
     procedure MoveObject(x,y,z: single; AbsolutePos: boolean=true);overload;
     //перестраивается мировая матрица
-    procedure UpdateWorldMatrix(UseMatrix: TTransforms=[ttAll]); virtual;
+    procedure UpdateWorldMatrix(UseMatrix: TTransforms=ALL_TRANSFORM); virtual;
     //Заменяет все матрицы трансформаций на единичные
     procedure ResetMatrices;
     //Заменяет модельную матрицу текущей мировой матрицей
@@ -233,7 +242,7 @@ function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
 implementation
 
 uses
-  Math;
+  Math, uMath;
 
 function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
 begin
@@ -323,6 +332,7 @@ begin
   else FTranslationMatrix:=TranslationMatrix*mt;
 
   UpdateWorldMatrix;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.ResetMatrices;
@@ -401,25 +411,27 @@ procedure TMovableObject.PitchObject(Angle: single);
 begin
   //вокруг оси X в YZ
   if not WorldMatrixUpdated then UpdateWorldMatrix;
-  FRotationMatrix := FRotationMatrix.Pitch(Angle);
+  FRotationMatrix := FRotationMatrix.Pitch(TMath.DegToRad(Angle));
   UpdateWorldMatrix;
   FPitchAngle:=FPitchAngle+Angle;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.RollObject(Angle: single);
 begin
   //вокруг оси Z в XY
   if not WorldMatrixUpdated then UpdateWorldMatrix;
-  FRotationMatrix := FRotationMatrix.Roll(Angle);
+  FRotationMatrix := FRotationMatrix.Roll(TMath.DegToRad(Angle));
   UpdateWorldMatrix;
   FRollAngle:=FRollAngle+Angle;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.TurnObject(Angle: single);
 begin
   //вокруг оси Y в XZ
   if not WorldMatrixUpdated then UpdateWorldMatrix;
-  FRotationMatrix := FRotationMatrix.Turn(Angle);
+  FRotationMatrix := FRotationMatrix.Turn(TMath.DegToRad(Angle));
   UpdateWorldMatrix;
   FTurnAngle:=FTurnAngle+Angle;
   DispatchMessage(NM_WorldMatrixChanged);
@@ -470,9 +482,9 @@ begin
   //вокруг глобальной оси Y
   if not WorldMatrixUpdated then UpdateWorldMatrix;
   if AbsoluteRotation then begin
-     FRotationMatrix:=TMatrix.RotationMatrix( TVector( vtY ),Angle);
+    FRotationMatrix := TMatrix.RotationMatrix(TVector(vtY), Angle);
   end else begin
-     FYRotationAngle:=FYRotationAngle+Angle;
+    FYRotationAngle := FYRotationAngle+Angle;
      rm:=TMatrix.RotationMatrix(TVector( vtY ), Angle);
      FRotationMatrix:=FRotationMatrix*rm;
   end;
@@ -511,6 +523,12 @@ begin
   UpdateWorldMatrix;
 end;
 
+procedure TMovableObject.SetPitchAngle(const Value: single);
+begin
+  if not TMath.SameValue(FPitchAngle, Value) then
+    PitchObject(Value - FPitchAngle);
+end;
+
 procedure TMovableObject.SetPivot(const Value: TMovableObject);
 begin
   Parent := Value;
@@ -519,6 +537,12 @@ end;
 procedure TMovableObject.SetPosition(const Value: TVector);
 begin
   MoveObject(Value);
+end;
+
+procedure TMovableObject.SetRollAngle(const Value: single);
+begin
+  if not TMath.SameValue(FRollAngle, Value) then
+    RollObject(Value - FRollAngle);
 end;
 
 procedure TMovableObject.setRotMatrix(const Value: TMatrix);
@@ -541,6 +565,12 @@ begin
   FTranslationMatrix := Value;
 end;
 
+procedure TMovableObject.SetTurnAngle(const Value: single);
+begin
+  if not TMath.SameValue(FTurnAngle, Value) then
+    TurnObject(Value - FTurnAngle);
+end;
+
 procedure TMovableObject.setWorldMatrix(const Value: TMatrix);
 begin
   FWorldMatrix := Value;
@@ -552,6 +582,7 @@ begin
   FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+FDirection[1]*Step;
   FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+FDirection[2]*Step;
   UpdateWorldMatrix;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.MoveLeft(Step: single);
@@ -560,6 +591,7 @@ begin
   FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+FLeft[1]*Step;
   FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+FLeft[2]*Step;
   UpdateWorldMatrix;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.MoveUp(Step: single);
@@ -568,6 +600,7 @@ begin
   FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+FUp[1]*Step;
   FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+FUp[2]*Step;
   UpdateWorldMatrix;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.Notify(Sender: TObject; Msg: Cardinal;
@@ -575,7 +608,10 @@ procedure TMovableObject.Notify(Sender: TObject; Msg: Cardinal;
 begin
   if Sender = FParent then
   case Msg of
-    NM_WorldMatrixChanged: UpdateWorldMatrix;
+    NM_WorldMatrixChanged: begin
+//      if Childs.inList(Sender) then
+        DispatchMessage(NM_WorldMatrixChanged);
+    end;
     NM_ObjectDestroyed: begin
       FParent := nil; UpdateWorldMatrix;
     end;

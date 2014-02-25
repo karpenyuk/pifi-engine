@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Rtti, System.Classes,
   System.Variants, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
-  FMX.StdCtrls,
+//  FMX.StdCtrls,
   FMX.Platform.Win, Windows, uGLWindow;
 
 type
@@ -22,6 +22,11 @@ type
     procedure Timer1Timer(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ArcDial1Change(Sender: TObject);
+    procedure ArcDial2Change(Sender: TObject);
+    procedure ArcDial3Change(Sender: TObject);
+    procedure ArcDial4Change(Sender: TObject);
+    procedure ArcDial5Change(Sender: TObject);
+    procedure ArcDial6Change(Sender: TObject);
   private
     { Private declarations }
   public
@@ -39,17 +44,58 @@ implementation
 
 {$R *.fmx}
 
-uses Math, uMain, uRenderResource;
+uses Math, uvMath, uMain, uRenderResource;
 
 procedure TForm1.ArcDial1Change(Sender: TObject);
 var
   obj: TSceneObject;
-  a: Single;
 begin
-  obj := TSceneObject(Demo.SceneGraph.Items[1]);
-  a := 180 * obj.TurnAngle / pi;
-  a := ArcDial1.Value - a;
-  obj.TurnObject(pi*a/180);
+  obj := TSceneObject(Demo.SceneGraph.Items['Base']);
+  obj.TurnAngle := ArcDial1.Value;
+end;
+
+procedure TForm1.ArcDial2Change(Sender: TObject);
+var
+  obj: TSceneObject;
+begin
+  obj := TSceneObject(Demo.SceneGraph.Items['Hinge1']);
+  obj.RollAngle := ArcDial2.Value;
+end;
+
+procedure TForm1.ArcDial3Change(Sender: TObject);
+var
+  obj: TSceneObject;
+begin
+  obj := TSceneObject(Demo.SceneGraph.Items['Hinge2']);
+  obj.RollAngle := ArcDial3.Value;
+end;
+
+procedure TForm1.ArcDial4Change(Sender: TObject);
+var
+  obj: TSceneObject;
+begin
+  obj := TSceneObject(Demo.SceneGraph.Items['Hinge3']);
+  obj.RollAngle := ArcDial4.Value;
+end;
+
+procedure TForm1.ArcDial5Change(Sender: TObject);
+var
+  obj: TSceneObject;
+begin
+  obj := TSceneObject(Demo.SceneGraph.Items['Hinge3']);
+  obj.TurnAngle := ArcDial5.Value;
+end;
+
+procedure TForm1.ArcDial6Change(Sender: TObject);
+var
+  s: Single;
+  obj: TSceneObject;
+begin
+  s := 1.5*Cos(DegToRad(ArcDial6.Value)*0.5)+0.15;
+  obj := TSceneObject(Demo.SceneGraph.Items['Finger1']);
+  obj.MoveObject(Vector(s, 1.65, 0));
+  obj := TSceneObject(Demo.SceneGraph.Items['Finger2']);
+  obj.MoveObject(Vector(-s, 1.65, 0));
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);

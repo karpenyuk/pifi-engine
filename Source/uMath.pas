@@ -81,6 +81,8 @@ type
     class function Min(a,b: Int): Int; overload; static;
     class function Max(a,b: Int): Int; overload; static;
 
+    class function SameValue(a,b: Float; Epsilon: Float = 0): Boolean; overload; static;
+
     class function IsPowerOfTwo(a: Integer): Boolean; static;
   end;
 
@@ -358,10 +360,25 @@ begin
 
 end;
 
+class function TMath.SameValue(a, b: Float; Epsilon: Float = 0): Boolean;
+const
+  FuzzFactorSingle = 10;
+  SingleResolution: Single = 1.25E-7 * FuzzFactorSingle;
+  SingleZero: Single = 6.25E-37;
+begin
+  if Epsilon = 0 then
+    Epsilon := Max(Abs(A), Abs(B)) * SingleResolution;
+  if Epsilon = 0 then
+    Epsilon := SingleZero; // both A and B are very little, Epsilon was 0 because of normalization
+  if A > B
+    then Result := (A - B) <= Epsilon
+    else Result := (B - A) <= Epsilon;
+end;
 
 //
 // TMath.SinCos
 //
+
 class procedure TMath.SinCos( aTheta,aRadius: Float;
   out aSVar,aCVar: Float );
 var

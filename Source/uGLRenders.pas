@@ -229,8 +229,8 @@ Type
 
     function isSupported(const aAPI: TApiVersion): boolean; override;
 
-    function UpdateWorldMatrix(const MovableObject: TMovableObject;
-      UseMatrix: TTransforms=[ttAll]): TMatrix; override;
+    procedure UpdateTransform(const MovableObject: TMovableObject;
+      UseMatrix: TTransforms = ALL_TRANSFORM); override;
     function CheckVisibility(const aFrustum: TFrustum;
       const aExtents: TExtents): boolean; override;
     procedure ProcessScene(const aScene: TSceneGraph); override;
@@ -363,7 +363,7 @@ var i, j: integer;
         if Assigned(SceneItem) then
         begin
           if SceneItem is TLightSource then
-            movable.WorldMatrix := UpdateWorldMatrix(movable);
+            UpdateTransform(movable);
 
           glres := FResourceManager.GetOrCreateResource(SceneItem);
           // обновляем даные в видеопамяти
@@ -500,10 +500,10 @@ begin
   end;
 end;
 
-function TGLRender.UpdateWorldMatrix(const MovableObject: TMovableObject;
-  UseMatrix: TTransforms): TMatrix;
+procedure TGLRender.UpdateTransform(const MovableObject: TMovableObject;
+      UseMatrix: TTransforms = ALL_TRANSFORM);
 begin
-  result:= inherited UpdateWorldMatrix(MovableObject, UseMatrix);
+  inherited UpdateTransform(MovableObject, UseMatrix);
 end;
 
 procedure TGLRender.UploadResource(const Res: TBaseRenderResource);
@@ -1188,7 +1188,7 @@ begin
 
     // Fill Uniform Buffer Object Data
     with FSceneObject do begin
-      WorldMatrix := glRender.UpdateWorldMatrix(FSceneObject);
+      glRender.UpdateTransform(FSceneObject);
       UpdateWorldMatrix;
       move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
       move(InvWorldMatrix.GetAddr^,p^,64); inc(p, 64);
@@ -1217,7 +1217,7 @@ begin
           glRender.FObjectPool.ObjectSize);
 
         // Calculate final world matrix
-        mat := mat * FSceneObject.WorldMatrix;
+        mat := mat * FSceneObject.PivotMatrix;
         // Fill Uniform Buffer Object Data
         move(mat.GetAddr^, p^, 64); inc(p, 64);
         move(mat.Invert.GetAddr^, p^,64); inc(p, 64);
@@ -1281,7 +1281,8 @@ begin
   if not FStructureChanged then
     exit;
 
-  FLight.WorldMatrix := glRender.UpdateWorldMatrix(FLight);
+  glRender.UpdateTransform(FLight);
+  FLight.UpdateWorldMatrix;
 
   if FIdexInPool < 0 then
     FIdexInPool := glRender.FLightPool.GetFreeSlotIndex();
@@ -1495,7 +1496,8 @@ begin
       GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
       glRender.FCameraPool.OffsetByIndex(FIdexInPool), glRender.FCameraPool.ObjectSize);
 
-    FCamera.WorldMatrix := glRender.UpdateWorldMatrix(FCamera);
+    glRender.UpdateTransform(FCamera);
+    FCamera.UpdateWorldMatrix;
     with FCamera do begin
       move(ViewMatrix.GetAddr^, p^,64); inc(p, 64);
       move(ProjMatrix.GetAddr^,p^,64); inc(p, 64);

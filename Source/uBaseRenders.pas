@@ -50,8 +50,8 @@ Type
   public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
-    function UpdateWorldMatrix(const MovableObject: TMovableObject;
-      UseMatrix: TTransforms=[ttAll]): TMatrix; virtual;
+    procedure UpdateTransform(const MovableObject: TMovableObject;
+      UseMatrix: TTransforms = ALL_TRANSFORM); virtual;
     function CheckVisibility(const aFrustum: TFrustum;
       const aExtents: TExtents): boolean; virtual;
     function isSupported(const aClassType: TClass): boolean; overload; virtual;
@@ -149,21 +149,25 @@ begin
   if i>=0 then FRegisteredSubRenders.Delete(i);
 end;
 
-function TBaseRender.UpdateWorldMatrix(const MovableObject: TMovableObject; UseMatrix: TTransforms): TMatrix;
-var wm, pm: TMatrix;
+procedure TBaseRender.UpdateTransform(const MovableObject: TMovableObject; UseMatrix: TTransforms);
+var wm, pm, srp: TMatrix;
 begin
   wm.SetIdentity;
-  if (MovableObject.Pivot<>nil) and ((ttPivot in UseMatrix) or (ttAll in UseMatrix)) then begin
+  if (MovableObject.Pivot<>nil) and (ttPivot in UseMatrix) then begin
      if not MovableObject.Pivot.WorldMatrixUpdated then
        MovableObject.Pivot.UpdateWorldMatrix;
-     wm:=MovableObject.Pivot.WorldMatrix; wm:=wm * MovableObject.ModelMatrix;
-  end else wm := MovableObject.ModelMatrix;
+     pm := MovableObject.Pivot.PivotMatrix;
+  end else pm.SetIdentity;
 
-  if (not (ttModel in UseMatrix)) and (not(ttAll in UseMatrix)) then wm.SetIdentity;
+  if ttModel in UseMatrix then wm := MovableObject.ModelMatrix else wm.SetIdentity;
 
-  if (ttScale in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.ScaleMatrix;
-  if (ttRotation in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.RotationMatrix;
-  if (ttPosition in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.TranslationMatrix;
+  srp.SetIdentity;
+  if ttScale in UseMatrix then srp := srp * MovableObject.ScaleMatrix;
+  if ttRotation in UseMatrix then srp := srp * MovableObject.RotationMatrix;
+  if ttPosition in UseMatrix then srp := srp * MovableObject.TranslationMatrix;
+
+  wm := wm * srp * pm;
+  pm := srp * pm;
 
   case MovableObject.DirectionBehavior of
     dbSphericalSprite:
@@ -191,7 +195,8 @@ begin
       end;
   end;
 
-  result:= wm;
+  MovableObject.WorldMatrix := wm;
+  MovableObject.PivotMatrix := pm;
 end;
 
 { TBaseSubRender }

@@ -99,10 +99,12 @@ begin
   Material.AttachShader(Shader);
   with Material.AddNewMaterial('Orange') do begin
      Properties.DiffuseColor.SetColor(255, 127, 0, 255);
+     Properties.SpecularColor.SetColor(52, 26, 0, 255);
+     Properties.Shininess := 127;
   end;
   FSceneGraph.AddMaterial(Material);
 
-  VO := CreateCylinder(2, 3, 2, 24, 6);
+  VO := CreateCylinder(1.8, 2.4, 2, 24, 6);
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
@@ -111,6 +113,7 @@ begin
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(SceneObject);
   Last := SceneObject;
+  SceneObject.MoveUp(-5);
 
   VO := CreateSphere(1.5, 24, 24);
   Mesh := TMesh.CreateFrom(VO);
@@ -122,10 +125,10 @@ begin
   FSceneGraph.AddItem(SceneObject);
   SceneObject.Parent := Last;
   Last := SceneObject;
-  SceneObject.MoveUp(2.5);
-  SceneObject.RollObject(Pi/4);
+  SceneObject.MoveUp(1.75);
+  SceneObject.RollObject(45);
 
-  VO := CreateCylinder(1.5, 1, 5, 24, 6);
+  VO := CreateCylinder(1, 1.5, 5, 24, 6);
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
@@ -146,7 +149,7 @@ begin
   SceneObject.Parent := Last;
   Last := SceneObject;
   SceneObject.MoveUp(3);
-//  SceneObject.RollObject(-Pi/2);
+  SceneObject.RollObject(-90);
 
   VO := CreateCylinder(1.0, 1.0, 6, 24, 6);
   Mesh := TMesh.CreateFrom(VO);
@@ -167,8 +170,40 @@ begin
   SceneObject.FriendlyName := 'Hinge3';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
+  Last := SceneObject;
   SceneObject.MoveUp(3.5);
-//  SceneObject.RollObject(-Pi/4);
+  SceneObject.RollObject(-45);
+
+  VO := CreateBox(4, 0.3, 1);
+  Mesh := TMesh.CreateFrom(VO);
+  Mesh.MaterialObject := Material;
+  MeshObject := TMeshObject.CreateFrom(Mesh);
+  SceneObject:= Storage.CreateSceneObject;
+  SceneObject.FriendlyName := 'Palm';
+  SceneObject.MeshObjects.AddMeshObject(MeshObject);
+  SceneObject.Parent := Last;
+  Last := SceneObject;
+  SceneObject.MoveUp(1);
+
+  VO := CreateBox(0.4, 3, 0.8);
+  Mesh := TMesh.CreateFrom(VO);
+  Mesh.MaterialObject := Material;
+  MeshObject := TMeshObject.CreateFrom(Mesh);
+  SceneObject:= Storage.CreateSceneObject;
+  SceneObject.FriendlyName := 'Finger1';
+  SceneObject.MeshObjects.AddMeshObject(MeshObject);
+  SceneObject.Parent := Last;
+  SceneObject.MoveUp(1.65);
+  SceneObject.MoveForward(1.65);
+
+  MeshObject := TMeshObject.CreateFrom(Mesh);
+  SceneObject:= Storage.CreateSceneObject;
+  SceneObject.FriendlyName := 'Finger2';
+  SceneObject.MeshObjects.AddMeshObject(MeshObject);
+  SceneObject.Parent := Last;
+  Last := SceneObject;
+  SceneObject.MoveUp(1.65);
+  SceneObject.MoveForward(-1.65);
 
   Light := Storage.CreateLight;
   Light.LightStyle := lsParallel;
@@ -177,8 +212,8 @@ begin
   FSceneGraph.AddItem(light);
 
   FSceneGraph.Camera.FoV:=60;
-  FSceneGraph.Camera.MoveObject(0, 2, -20);
-  FSceneGraph.Camera.ViewTarget := Last;
+  FSceneGraph.Camera.MoveObject(0, 5, -25);
+  FSceneGraph.Camera.ViewTarget := FSceneGraph.Items['Hinge3'] as TSceneObject;
 end;
 
 destructor TDemo.Destroy;

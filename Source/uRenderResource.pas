@@ -1023,7 +1023,7 @@ Type
     constructor Create; override;
     class function IsInner: boolean; override;
 
-    procedure UpdateWorldMatrix(UseMatrix: TTransforms=[ttAll]); override;
+    procedure UpdateWorldMatrix(UseMatrix: TTransforms=ALL_TRANSFORM); override;
     {: Adjusts distance from camera to target by applying a ratio.
        If ViewTarget is nil, nothing happens. This method helps in quickly
        implementing camera controls. Only the camera's position is changed. }
@@ -1784,8 +1784,11 @@ end;
 
 destructor TAttribObject.Destroy;
 begin
-  if assigned(FBuffer) then
-    if FBuffer.Owner=self then FBuffer.Free;
+  if assigned(FBuffer) then begin
+    FBuffer.UnSubscribe(Self);
+    if FBuffer.Owner = self then FBuffer.Free;
+    FBuffer := nil;
+  end;
   inherited;
 end;
 
