@@ -210,7 +210,7 @@ Type
   public
 
     // identity
-    procedure SetIdentity;                                               inline;
+    procedure SetIdentity; inline;
     // transpose
     function Transpose: TMatrix;
     procedure SetTranspose;
@@ -264,7 +264,7 @@ Type
     function GetAddr: PMat4;
     procedure Swap( var aMatrix: TMatrix );
 
-    function Minor( aX,aY: Int ): Float;                                 inline;
+    function Minor( aX,aY: Int ): Float; inline;
     function Determinant: Float;
 
     property Matrix4: Mat4 read F;
@@ -343,11 +343,102 @@ Type
 
   end;
 
+  PFloatRect = ^TFloatRect;
+  TFloatRect = record
+  private
+    function GetWidth: Float;
+    procedure SetWidth(const Value: Float);
+    function GetHeight: Float;
+    procedure SetHeight(const Value: Float);
+    function GetSize: TVector;
+    procedure SetSize(const Value: TVector);
+    function GetLocation: TVector;
+  public
+    constructor Create(const Origin: TVector); overload;                               // empty rect at given origin
+    constructor Create(const Origin: TVector; const Width, Height: Float); overload; // at TPoint of origin with width and height
+    constructor Create(const Left, Top, Right, Bottom: Float); overload;              // at x, y with width and height
+    constructor Create(const P1, P2: TVector; Normalize: Boolean = False); overload;  // with corners specified by p1 and p2
+    constructor Create(const R: TFloatRect; Normalize: Boolean = False); overload;
+
+    // operator overloads
+    class operator Equal(const Lhs, Rhs: TFloatRect): Boolean;
+    class operator NotEqual(const Lhs, Rhs: TFloatRect): Boolean;
+
+    // union of two rectangles
+    class operator Add(const Lhs, Rhs: TFloatRect): TFloatRect;
+
+    // intersection of two rectangles
+    class operator Multiply(const Lhs, Rhs: TFloatRect): TFloatRect;
+
+    class function Empty: TFloatRect; inline; static;
+
+    //utility methods
+    //makes sure TopLeft is above and to the left of BottomRight
+    procedure NormalizeRect;
+
+    //returns true if left = right or top = bottom
+    function IsEmpty: Boolean;
+
+    //returns true if the point is inside the rect
+    function Contains(const Pt: TVector): Boolean; overload;
+
+    // returns true if the rect encloses R completely
+    function Contains(const R: TFloatRect): Boolean; overload;
+
+    // returns true if any part of the rect covers R
+    function IntersectsWith(const R: TFloatRect): Boolean;
+
+    // computes an intersection of R1 and R2
+    class function Intersect(const R1: TFloatRect; const R2: TFloatRect): TFloatRect; overload; static;
+
+    // replaces current rectangle with its intersection with R
+    procedure Intersect(const R: TFloatRect); overload;
+
+    // computes a union of R1 and R2
+    class function Union(const R1: TFloatRect; const R2: TFloatRect): TFloatRect; overload; static;
+
+    // replaces current rectangle with its union with R
+    procedure Union(const R: TFloatRect); overload;
+
+    // creates a minimal rectangle that contains all points from array Points
+    class function Union(const Points: Array of TVector): TFloatRect; overload; static;
+
+    // offsets the rectangle origin relative to current position
+    procedure Offset(const DX, DY: Float); overload;
+    procedure Offset(const Point: TVector); overload;
+
+    // sets new origin
+    procedure SetLocation(const X, Y: Float); overload;
+    procedure SetLocation(const Point: TVector); overload;
+
+    // inflate by DX and DY
+    procedure Inflate(const DX, DY: Float); overload;
+
+    // inflate in all directions
+    procedure Inflate(const DL, DT, DR, DB: Float); overload;
+
+    //returns the center point of the rectangle;
+    function CenterPoint: TVector;
+
+    // changing the width is always relative to Left;
+    property Width: Float read GetWidth write SetWidth;
+    // changing the Height is always relative to Top
+    property Height: Float read GetHeight write SetHeight;
+
+    property Size: TVector read GetSize write SetSize;
+
+    property Location: TVector read GetLocation write SetLocation;
+
+  case Integer of
+    0: (Left, Top, Right, Bottom: Float);
+    1: (TopLeft, BottomRight: TVector);
+  end;
+
 
 const
 
   VecNull: Vec4 = ( 0,0,0,0 );
-  VecSingle: Vec4 = ( 1,1,1,1 );
+  VecFloat: Vec4 = ( 1,1,1,1 );
   VecNegate: Vec4 = ( -1,-1,-1,-1 );
   VecX: Vec4 = ( 1,0,0,0 );
   VecY: Vec4 = ( 0,1,0,0 );
@@ -815,7 +906,7 @@ begin
   case aVecType of
 
     vt0: F := VecNull;
-    vt1: F := VecSingle;
+    vt1: F := VecFloat;
     vtN1: F := VecNegate;
     vtX: F := VecX;
     vtY: F := VecY;
@@ -1011,7 +1102,7 @@ end;
 //
 function TVector.Normalize: TVector;
 var
-    d: Single;
+    d: Float;
 begin
 
   d := 1 / Length;
@@ -1027,7 +1118,7 @@ end;
 //
 procedure TVector.SetNormalize;
 var
-    d: Single;
+    d: Float;
 begin
 
   d := 1 / Length;
@@ -1709,7 +1800,7 @@ end;
 class function TMatrix.ReflectionMatrix(const APlanePoint,
   APlaneNormal: TVector): TMatrix;
 var
-   pv2 : Single;
+   pv2 : Float;
 begin
    // Precalcs
    pv2:=2*APlanePoint.Dot(APlaneNormal);
@@ -2525,6 +2616,259 @@ begin
   Empty:=true;
   eMin.SetVector(1e10, 1e10, 1e10);
   eMax.SetVector(-1e10, -1e10, -1e10);
+end;
+
+{ TFloatRect }
+
+constructor TFloatRect.Create(const R: TFloatRect; Normalize: Boolean);
+begin
+  Self := R;
+  if Normalize then NormalizeRect;
+end;
+
+constructor TFloatRect.Create(const Origin: TVector);
+begin
+  TopLeft := Origin;
+  BottomRight := Origin;
+end;
+
+constructor TFloatRect.Create(const Left, Top, Right, Bottom: Float);
+begin
+  Self.Left := Left; Self.Top := Top;
+  Self.Right := Right; Self.Bottom := Bottom;
+end;
+
+constructor TFloatRect.Create(const P1, P2: TVector; Normalize: Boolean);
+begin
+  Self.TopLeft := P1;
+  Self.BottomRight := P2;
+  if Normalize then NormalizeRect;
+end;
+
+constructor TFloatRect.Create(const Origin: TVector; const Width, Height: Float);
+begin
+  Self.TopLeft := Origin;
+  Self.Width := Width;
+  Self.Height := Height;
+end;
+
+class operator TFloatRect.Equal(const Lhs, Rhs: TFloatRect): Boolean;
+begin
+  Result := (Lhs.TopLeft = Rhs.TopLeft) and
+            (Lhs.BottomRight = Rhs.BottomRight);
+end;
+
+class operator TFloatRect.NotEqual(const Lhs, Rhs: TFloatRect): Boolean;
+begin
+  Result := not (Lhs = Rhs);
+end;
+
+class operator TFloatRect.Add(const Lhs, Rhs: TFloatRect): TFloatRect;
+begin
+  Result := TFloatRect.Union(Lhs, Rhs);
+end;
+
+class operator TFloatRect.Multiply(const Lhs, Rhs: TFloatRect): TFloatRect;
+begin
+  Result := TFloatRect.Intersect(Lhs, Rhs);
+end;
+
+function TFloatRect.CenterPoint: TVector;
+begin
+  Result.X := (Right - Left)/2.0 + Left;
+  Result.Y := (Bottom - Top)/2.0 + Top;
+end;
+
+function TFloatRect.Contains(const R: TFloatRect): Boolean;
+begin
+  Result := Contains(R.TopLeft) and Contains(R.BottomRight);
+end;
+
+function TFloatRect.Contains(const Pt: TVector): Boolean;
+begin
+  Result := ((Pt.X > Self.Left) or TMath.SameValue(Pt.X, Self.Left)) and
+            (Pt.X < Self.Right) and
+            ((Pt.Y > Self.Top) or TMath.SameValue(Pt.Y, Self.Top)) and
+            (Pt.Y < Self.Bottom);
+end;
+
+class function TFloatRect.Empty: TFloatRect;
+begin
+  Result := TFloatRect.Create(0,0,0,0);
+end;
+
+function TFloatRect.GetHeight: Float;
+begin
+  Result := Self.Bottom - Self.Top;
+end;
+
+procedure TFloatRect.SetHeight(const Value: Float);
+begin
+  Self.Bottom := Self.Top + Value;
+end;
+
+function TFloatRect.GetWidth: Float;
+begin
+  Result := Self.Right - Self.Left;
+end;
+
+procedure TFloatRect.SetWidth(const Value: Float);
+begin
+  Self.Right := Self.Left + Value;
+end;
+
+function TFloatRect.GetSize: TVector;
+begin
+  Result := TVector.Make(Width, Height);
+end;
+
+procedure TFloatRect.SetSize(const Value: TVector);
+begin
+  Width := Value.X;
+  Height := Value.Y;
+end;
+
+procedure TFloatRect.Inflate(const DX, DY: Float);
+var
+  v: TVector;
+begin
+  v := TVector.Make(DX, DY);
+  TopLeft := TopLeft + v;
+  BottomRight := BottomRight - v;
+end;
+
+procedure TFloatRect.Inflate(const DL, DT, DR, DB: Float);
+begin
+  TopLeft := TopLeft + TVector.Make(-DL, -DT);
+  BottomRight := BottomRight + TVector.Make(DR, DB);
+end;
+
+procedure TFloatRect.Offset(const Point: TVector);
+begin
+  TopLeft := TopLeft + Point;
+  BottomRight := BottomRight + Point;
+end;
+
+procedure TFloatRect.Offset(const DX, DY: Float);
+begin
+  TopLeft := TopLeft + TVector.Make(DX, DY);
+  BottomRight := BottomRight + TVector.Make(DX, DY);
+end;
+
+function TFloatRect.GetLocation: TVector;
+begin
+  Result := TopLeft;
+end;
+
+procedure TFloatRect.SetLocation(const Point: TVector);
+begin
+  Offset(Point.X - Left, Point.Y - Top);
+end;
+
+procedure TFloatRect.SetLocation(const X, Y: Float);
+begin
+  Offset(X - Left, Y - Top);
+end;
+
+function TFloatRect.IntersectsWith(const R: TFloatRect): Boolean;
+begin
+  Result := not ( (Self.BottomRight.X < R.TopLeft.X) or
+                  (Self.BottomRight.Y < R.TopLeft.Y) or
+                  (R.BottomRight.X < Self.TopLeft.X) or
+                  (R.BottomRight.Y < Self.TopLeft.Y) );
+end;
+
+function TFloatRect.IsEmpty: Boolean;
+begin
+  Result := (Right < Left) or TMath.SameValue(Right, Left)
+         or (Bottom < Top) or TMath.SameValue(Bottom, Top);
+end;
+
+procedure TFloatRect.NormalizeRect;
+var
+  temp: Float;
+begin
+  if Top > Bottom then begin
+    temp := Top;
+    Top := Bottom;
+    Bottom := temp;
+  end;
+  if Left > Right then begin
+    temp := Left;
+    Left := Right;
+    Right := temp;
+  end
+end;
+
+class function TFloatRect.Intersect(const R1, R2: TFloatRect): TFloatRect;
+begin
+  Result := R1;
+  if R2.Left > R1.Left then Result.Left := R2.Left;
+  if R2.Top > R1.Top then Result.Top := R2.Top;
+  if R2.Right < R1.Right then Result.Right := R2.Right;
+  if R2.Bottom < R1.Bottom then Result.Bottom := R2.Bottom;
+  if Result.IsEmpty then begin
+    Result.Top := 0.0;
+    Result.Bottom := 0.0;
+    Result.Left := 0.0;
+    Result.Right := 0.0;
+  end;
+end;
+
+procedure TFloatRect.Intersect(const R: TFloatRect);
+begin
+  Self := Intersect(Self, R);
+end;
+
+class function TFloatRect.Union(const R1, R2: TFloatRect): TFloatRect;
+begin
+  Result := R1;
+  if not R2.IsEmpty then
+  begin
+    if R2.Left < R1.Left then Result.Left := R2.Left;
+    if R2.Top < R1.Top then Result.Top := R2.Top;
+    if R2.Right > R1.Right then Result.Right := R2.Right;
+    if R2.Bottom > R1.Bottom then Result.Bottom := R2.Bottom;
+  end;
+  if Result.IsEmpty then begin
+    Result.Top :=0.0;
+    Result.Bottom := 0.0;
+    Result.Left := 0.0;
+    Result.Right := 0.0;
+  end;
+end;
+
+procedure TFloatRect.Union(const R: TFloatRect);
+begin
+  Self := TFloatRect.Union(Self, R);
+end;
+
+class function TFloatRect.Union(const Points: Array of TVector): TFloatRect;
+var
+  I: Integer;
+  TLCorner, BRCorner: TVector;
+begin
+  if Length(Points) > 0 then
+  begin
+    TLCorner := Points[Low(Points)];
+    BRCorner := Points[Low(Points)];
+
+    if Length(Points) > 1 then
+    begin
+      for I := Low(Points) + 1 to High(Points) do
+      begin
+        if Points[I].X < TLCorner.X then TLCorner.X := Points[I].X;
+        if Points[I].X > BRCorner.X then BRCorner.X := Points[I].X;
+        if Points[I].Y < TLCorner.Y then TLCorner.Y := Points[I].Y;
+        if Points[I].Y > BRCorner.Y then BRCorner.Y := Points[I].Y;
+      end;
+    end;
+
+    Result := TFloatRect.Create(TLCorner, BRCorner);
+  end
+  else begin
+    Result := TFloatRect.Empty;
+  end;
 end;
 
 end.
