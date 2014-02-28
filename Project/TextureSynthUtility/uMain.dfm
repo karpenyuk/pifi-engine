@@ -85,6 +85,10 @@ object MainForm: TMainForm
       TabOrder = 2
       object TabSheet1: TTabSheet
         Caption = 'Analysis'
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object Label2: TLabel
           Left = 3
           Top = 0
@@ -915,7 +919,6 @@ object MainForm: TMainForm
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
     VSync = True
-    OnContextDebugMessage = GLViewer1ContextDebugMessage
     Align = alClient
     OnExit = GLViewer1Exit
     OnMouseDown = GLViewer1MouseDown
