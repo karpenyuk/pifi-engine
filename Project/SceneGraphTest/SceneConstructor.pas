@@ -12,7 +12,7 @@ type
   TDemoScene = class
   private
     FSceneGraph: TSceneGraph;
-    FMeshList: TMeshList;
+    FMeshList: TMeshAssembly;
     FImageLoader: TImageLoader;
     FSampler: TTextureSampler;
     FTexture: TTexture;
@@ -62,18 +62,18 @@ var MeshObject: TMeshObject;
     vo: TVertexObject;
 
 begin
-  FMeshList:=TMeshList.Create;
+  FMeshList:=TMeshAssembly.Create;
 
   vo := CreateBox(2, 1.5, 3.5); Mesh := FMeshList.AddNewMesh(vo);
-  FMeshList.LocalMatrices[Mesh] := TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
+  FMeshList.LocalMatrices[0] := TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
 
   vo := CreateSphere(1, 16, 32); Mesh := FMeshList.AddNewMesh(vo);
-  FMeshList.LocalMatrices[Mesh] := TMatrix.TranslationMatrix(Vector(3,-3,+0.1));
+  FMeshList.LocalMatrices[1] := TMatrix.TranslationMatrix(Vector(3,-3,+0.1));
 
   vo := CreateTeapod(4); FMeshList.AddNewMesh(vo);
 
   vo := CreatePlane(3,3);Mesh := FMeshList.AddNewMesh(vo);
-  FMeshList.LocalMatrices[Mesh] := TMatrix.RotationMatrix(Vector(1.0,0.0,0.0),Pi/180*90);
+  FMeshList.LocalMatrices[3] := TMatrix.RotationMatrix(Vector(1.0,0.0,0.0),Pi/180*90);
 
   MeshObject:=TMeshObject.CreateFrom(FMeshList);
 
@@ -86,12 +86,12 @@ begin
 
   Sprite[0] := Storage.CreateSceneObject;
   Sprite[0].DirectionBehavior := dbSphericalSprite;
-  MeshObject:=TMeshObject.CreateFrom(Mesh);  Sprite[0].MeshObjects.AddMeshObject(MeshObject);
+  MeshObject:=TMeshObject.CreateFrom(Mesh); Sprite[0].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(Sprite[0]);
 
   Sprite[1] := Storage.CreateSceneObject;
   Sprite[1].DirectionBehavior := dbSphericalSprite;
-  MeshObject:=TMeshObject.CreateFrom(Mesh);  Sprite[1].MeshObjects.AddMeshObject(MeshObject);
+  MeshObject:=TMeshObject.CreateFrom(Mesh); Sprite[1].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(Sprite[1]);
 
   Sprite[2] := Storage.CreateSceneObject;
