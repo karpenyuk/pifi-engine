@@ -52,7 +52,6 @@ type
                      BuffType: TBufferType = btArray): TAttribBuffer;
     class function CreateVertexObject: TVertexObject;
     class function CreateMesh: TMesh;
-    class function CreateLODsController: TLODsController;
     class function CreateMeshObject: TMeshObject;
     class function CreateSceneObject: TSceneObject;
     class function CreateFrameBuffer: TFrameBuffer;
@@ -165,13 +164,6 @@ end;
 class function Storage.CreateLight: TLightSource;
 begin
   result := TLightSource.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
-end;
-
-class function Storage.CreateLODsController: TLODsController;
-begin
-  result := TLODsController.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
   result.Subscribe(FStorageHandle);
 end;
