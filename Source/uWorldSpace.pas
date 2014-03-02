@@ -57,10 +57,10 @@ type
 
   TWorldSpace = class(TBaseRenderResource)
   private
-    FCameras: TList; // List of Cameras
-    FScripts: TList; // List of lua scripts?
-    FGraphs: TList; // List of TSceneGraph
-    FTimerActions: TList; // List of timer events
+//    FCameras: TList; // List of Cameras
+//    FScripts: TList; // List of lua scripts?
+//    FGraphs: TList; // List of TSceneGraph
+//    FTimerActions: TList; // List of timer events
 
   end;
 
