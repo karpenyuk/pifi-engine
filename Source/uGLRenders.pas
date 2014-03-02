@@ -273,7 +273,7 @@ var
 implementation
 
 uses
-  uEffectsPipeline, uStorage, uShaderGen;
+  uEffectsPipeline, uStorage;
 
 var
   vActiveShader: TGLSLShaderProgram = nil;
@@ -382,17 +382,17 @@ begin
     Делать вычитку ресурсов только при несовпадении хэша. }
 
   if not Assigned(FCameraPool) then
-    FCameraPool := TGLBufferObjectsPool.Create(SizeOf(TCameraTransform), 8);
+    FCameraPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 8);
   if not Assigned(FObjectPool) then
-    FObjectPool := TGLBufferObjectsPool.Create(SizeOf(TWorldTransform), 2000);
+    FObjectPool := TGLBufferObjectsPool.Create(SizeOf(mat4)*3, 2000);
   if not Assigned(FLightPool) then
-    FLightPool := TGLBufferObjectsPool.Create(SizeOf(TLightProp), 1000, btTexture);
+    FLightPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*6, 1000, btTexture);
   if not Assigned(FLightIndices) then begin
     FLightIndices := TGLBufferObject.Create(btUniform);
     FLightIndices.Allocate(8*SizeOf(Vec4i), nil);
   end;
   if not Assigned(FMaterialPool) then
-    FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(TMaterialProp), 100);
+    FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(vec4)*5, 100);
 
   //создаем ресурсы для всех камер сцены
   for i:=0 to aScene.CamerasCount-1 do begin
@@ -440,8 +440,6 @@ var i: integer;
 begin
   if not assigned(Res) then exit;
 
-
-
   for i:=0 to FRegisteredSubRenders.Count-1 do begin
     render:=TBaseSubRender(FRegisteredSubRenders[i]);
     { TODO : Реализовать выбор "наилучшего" из зарегистрированных рендеров }
@@ -465,7 +463,6 @@ var i, j: integer;
         SceneItem:=anItems[ii];
         if Assigned(SceneItem) then
         begin
-          if SceneItem is TSceneObject then FCurrentSceneObject := SceneItem as TSceneObject;
           glRes := FResourceManager.GetResource(SceneItem);
           ProcessResource(glRes);
           DownToTree(SceneItem.Childs);
@@ -537,25 +534,24 @@ procedure TGLStaticRender.ProcessResource(const Resource: TBaseRenderResource);
 var i,j: integer;
     MeshObject: TGLMeshObject;
     Mesh: TGLMesh;
-    SceneObject: TGLSceneObject absolute Resource;
 begin
   if Resource.ClassType = TGLSceneObject then
-  begin
-    SceneObject.Apply(Render);
-    //рендерим объект сцены с применением материалов
-    for i:=0 to length(SceneObject.FMeshObjects)-1 do begin
-      MeshObject:=SceneObject.FMeshObjects[i];
-      for j:=0 to length(MeshObject.FLods[0])-1 do begin
-        Mesh:=MeshObject.FLods[0,j].Mesh;
-        if MeshObject.FLods[0,j].IsIdentity
-        then Render.BindObjectBuffer(SceneObject.FIdexInPool)
-        else Render.BindObjectBuffer(MeshObject.FLods[0,j].IdexInPool);
-        Mesh.FMaterialObject.Apply(Render);
-        Mesh.FVertexObject.RenderVO();
-        Mesh.FMaterialObject.UnApply(nil);
+    with TGLSceneObject(Resource) do begin
+      Apply(Render);
+      //рендерим объект сцены с применением материалов
+      for i:=0 to length(FMeshObjects)-1 do begin
+        MeshObject:=FMeshObjects[i];
+        for j:=0 to length(MeshObject.FLods[0])-1 do begin
+          Mesh:=MeshObject.FLods[0,j].Mesh;
+          if MeshObject.FLods[0,j].IsIdentity
+          then Render.BindObjectBuffer(FIdexInPool)
+          else Render.BindObjectBuffer(MeshObject.FLods[0,j].IdexInPool);
+          Mesh.FMaterialObject.Apply(Render);
+          Mesh.FVertexObject.RenderVO();
+          Mesh.FMaterialObject.UnApply(nil);
+        end;
       end;
     end;
-  end;
 end;
 
 class procedure TGLStaticRender.RenderVertexObject(
@@ -902,8 +898,6 @@ end;
 { TGLMaterial }
 
 procedure TGLMaterial.Apply(aRender: TBaseRender);
-const
-  WORLD_MATRIX_SUB = 'WorldMatrixGetter';
 var
   glRender: TGLRender absolute aRender;
   tb: TGLUniformBlock;
@@ -912,13 +906,6 @@ begin
   if assigned(FShader) then begin
     vActiveShader:=FShader;
     FShader.Apply(aRender);  end else exit;
-
-  if Assigned(glRender.CurrentSceneObject) then
-    case glRender.CurrentSceneObject.DirectionBehavior of
-      dbNone: FShader.SetSubroutine(WORLD_MATRIX_SUB, 'defaultWorldMatrix');
-      dbSphericalSprite: FShader.SetSubroutine(WORLD_MATRIX_SUB, 'sphereSpriteMatrix');
-      dbCylindricalSprite: FShader.SetSubroutine(WORLD_MATRIX_SUB, 'cylindrSpriteMatrix');
-    end;
 
   tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubCamera].Name);
   if Assigned(tb) then begin
@@ -1004,7 +991,7 @@ end;
 procedure TGLMaterial.Update(aRender: TBaseRender);
 var
   glRender: TGLRender absolute aRender;
-  p: PMaterialProp;
+  p: PByte;
 begin
   if not FStructureChanged then
     exit;
@@ -1019,18 +1006,18 @@ begin
   // Fill Uniform Buffer Object Data
   if assigned(FMaterialObject.Material) then begin
     with FMaterialObject.Material.Properties do begin
-      move(AmbientColor.ColorAsAddress^,p.ambient,SizeOf(vec4));
-      move(DiffuseColor.ColorAsAddress^,p.diffuse,SizeOf(vec4));
-      move(SpecularColor.ColorAsAddress^,p.specular,SizeOf(vec4));
-      move(EmissionColor.ColorAsAddress^,p.emissive,SizeOf(vec4));
-      move(Shininess,p.shininess, SizeOf(Single));
+      move(AmbientColor.ColorAsAddress^,p^,16); inc(p, 16);
+      move(DiffuseColor.ColorAsAddress^,p^,16); inc(p, 16);
+      move(SpecularColor.ColorAsAddress^,p^,16); inc(p, 16);
+      move(EmissionColor.ColorAsAddress^,p^,16); inc(p, 16);
+      move(Shininess,p^,4);
     end;
   end else begin
-    move(cAmbientColor,p.ambient,SizeOf(vec4));
-    move(cDiffuseColor,p.diffuse,SizeOf(vec4));
-    move(cSpecularColor,p.specular,SizeOf(vec4));
-    move(cEmissiveColor,p.emissive,SizeOf(vec4));
-    move(cShininess,p.shininess, SizeOf(Single));
+    move(cAmbientColor,p^,16); inc(p, 16);
+    move(cDiffuseColor,p^,16); inc(p, 16);
+    move(cSpecularColor,p^,16); inc(p, 16);
+    move(cEmissiveColor,p^,16); inc(p, 16);
+    move(cShininess,p^,4);
   end;
   glRender.FMaterialPool.Buffer.UnMap;
   FStructureChanged := false;
@@ -1048,9 +1035,9 @@ begin
   BaseResource := aMeshObject;
   setlength(FLods, aMeshObject.Lods.Count);
   for i:=0 to aMeshObject.Lods.Count-1 do begin
-    setlength(FLods[i], aMeshObject.Lods[i].Assembly.Count);
-    for j:=0 to aMeshObject.Lods[i].Assembly.Count-1 do begin
-      FLods[i,j].Mesh:=TGLMesh(aOwner.GetOrCreateResource(aMeshObject.Lods[i].Assembly[j]));
+    setlength(FLods[i], aMeshObject.Lods[i].LoD.Count);
+    for j:=0 to aMeshObject.Lods[i].LoD.Count-1 do begin
+      FLods[i,j].Mesh:=TGLMesh(aOwner.GetOrCreateResource(aMeshObject.Lods[i].LoD[j]));
       FLods[i,j].IdexInPool := -1;
       FLods[i,j].MatrixChanged := false;
     end;
@@ -1181,8 +1168,9 @@ procedure TGLSceneObject.Update(aRender: TBaseRender);
 var
     glRender: TGLRender absolute aRender;
     i, j: integer;
-    p: PWorldTransform;
+    p: PByte;
     MeshObject: TGLMeshObject;
+    Mesh: TGLMesh;
     flag: boolean;
     mat: TMatrix;
 begin
@@ -1200,9 +1188,11 @@ begin
 
     // Fill Uniform Buffer Object Data
     with FSceneObject do begin
-      move(WorldMatrix.GetAddr^,p.world,SizeOf(mat4));
-      move(InvWorldMatrix.GetAddr^,p.invWorld,SizeOf(mat4));
-      move(NormalMatrix.GetAddr^, p.worldNormal,SizeOf(mat4));
+      glRender.UpdateTransform(FSceneObject);
+      UpdateWorldMatrix;
+      move(WorldMatrix.GetAddr^,p^,64); inc(p, 64);
+      move(InvWorldMatrix.GetAddr^,p^,64); inc(p, 64);
+      move(WorldMatrix.Normalize.GetAddr^, p^,64);
     end;
     glRender.FObjectPool.Buffer.UnMap;
   end;
@@ -1214,7 +1204,8 @@ begin
   for i:=0 to length(FMeshObjects)-1 do begin
     MeshObject:=FMeshObjects[i];
     for j:=0 to length(MeshObject.FLods[0])-1 do begin
-      mat := MeshObject.FMeshObject.LODS.LODS[0].Assembly.LocalMatrices[j];
+      Mesh:=MeshObject.FLods[0,j].Mesh;
+      mat := MeshObject.FMeshObject.LODS.LODS[0].LoD.LocalMatrices[Mesh.FMesh];
       MeshObject.FLods[0,j].IsIdentity := mat.IsIdentity;
       if not MeshObject.FLods[0,j].IsIdentity then
       begin
@@ -1228,9 +1219,9 @@ begin
         // Calculate final world matrix
         mat := mat * FSceneObject.PivotMatrix;
         // Fill Uniform Buffer Object Data
-        move(mat.GetAddr^, p.world, SizeOf(mat4));
-        move(mat.Invert.GetAddr^, p.invWorld, SizeOf(mat4));
-        move(mat.Normalize.GetAddr^, p.worldNormal, SizeOf(mat4));
+        move(mat.GetAddr^, p^, 64); inc(p, 64);
+        move(mat.Invert.GetAddr^, p^,64); inc(p, 64);
+        move(mat.Normalize.GetAddr^, p^,64);
         glRender.FObjectPool.Buffer.UnMap;
       end;
     end;
@@ -1283,7 +1274,7 @@ end;
 procedure TGLLight.Update(aRender: TBaseRender);
 var
   glRender: TGLRender absolute aRender;
-  p: PLightProp;
+  p: PByte;
   pos: TVector;
   cos_cuoff: single;
 begin
@@ -1305,21 +1296,21 @@ begin
     pos := Position;
     if LightStyle in [lsParallel, lsParallelSpot] then
       pos.MakeAffine else pos.MakePoint;
-    move(pos.GetAddr^,p.position, SizeOf(vec4));
-    move(Ambient.ColorAsAddress^,p.ambient, SizeOf(vec4));
-    move(Diffuse.ColorAsAddress^,p.diffuse, SizeOf(vec4));
-    move(Specular.ColorAsAddress^,p.specular, SizeOf(vec4));
-    move(ConstAttenuation,p.constant_attenuation, SizeOf(Single));
-    move(LinearAttenuation,p.linear_attenuation, SizeOf(Single));
-    move(QuadraticAttenuation,p.quadratic_attenuation, SizeOf(Single));
+    move(pos.GetAddr^,p^,16); inc(p, 16);
+    move(Ambient.ColorAsAddress^,p^,16); inc(p, 16);
+    move(Diffuse.ColorAsAddress^,p^,16); inc(p, 16);
+    move(Specular.ColorAsAddress^,p^,16); inc(p, 16);
+    move(ConstAttenuation,p^,4); inc(p, 4);
+    move(LinearAttenuation,p^,4); inc(p, 4);
+    move(QuadraticAttenuation,p^,4); inc(p, 4);
     if LightStyle in [lsSpot, lsParallelSpot] then
       cos_cuoff := Cos(Pi*SpotCutOff/180)
     else
       cos_cuoff := -1;
-    move(cos_cuoff,p.spot_cutoff, SizeOf(Single));
-    move(SpotExponent,p.spot_exponent, SizeOf(Single));
+    move(cos_cuoff,p^,4); inc(p, 4);
+    move(SpotExponent,p^,4); inc(p, 4);
     //move(SceneColor.ColorAsAddress^,p^,16); inc(p, 16);
-    move(SpotDirection.GetAddr^,p.spot_direction, SizeOf(vec3));
+    move(SpotDirection.GetAddr^,p^,12);
   end;
   glRender.FLightPool.Buffer.UnMap;
   FStructureChanged := False;
@@ -1490,7 +1481,7 @@ end;
 procedure TGLCamera.Update(aRender: TBaseRender);
 var
   glRender: TGLRender absolute aRender;
-  p: PCameraTransform;
+  p: PByte;
   mat: TMatrix;
 begin
   if Assigned(FFrameBuffer) then
@@ -1505,11 +1496,13 @@ begin
       GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
       glRender.FCameraPool.OffsetByIndex(FIdexInPool), glRender.FCameraPool.ObjectSize);
 
+    glRender.UpdateTransform(FCamera);
+    FCamera.UpdateWorldMatrix;
     with FCamera do begin
-      move(ViewMatrix.GetAddr^, p.View, SizeOf(mat4));
-      move(ProjMatrix.GetAddr^,p.Projection, SizeOf(mat4));
+      move(ViewMatrix.GetAddr^, p^,64); inc(p, 64);
+      move(ProjMatrix.GetAddr^,p^,64); inc(p, 64);
       mat := ViewMatrix * ProjMatrix;
-      move(mat.GetAddr^, p.ViewProjection, SizeOf(mat4));
+      move(mat.GetAddr^, p^,64);
     end;
     glRender.FCameraPool.Buffer.UnMap;
     FStructureChanged := false;

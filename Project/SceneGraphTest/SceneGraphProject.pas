@@ -110,7 +110,7 @@ end;
 procedure TForm2.GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
-  if Shift = [Classes.ssLeft] then
+  if Shift = [ssLeft] then
   begin
     FDemoScene.SceneGraph.Camera.RotateAround(VecNull, vecY, MY - Y, MX - X);
   end;

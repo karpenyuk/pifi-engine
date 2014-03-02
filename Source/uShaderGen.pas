@@ -6,62 +6,12 @@ unit uShaderGen;
 
 interface
 
-uses Classes, uRenderResource, uBaseTypes, uMiscUtils, uStorage, uvMath;
+uses Classes, uRenderResource, uBaseTypes, uMiscUtils, uStorage;
 
 type
 
   TShaderParts = record
     Header, Input, Output, Impl, Exec: ansistring;
-  end;
-
-  // Template of shader structure to define size
-  PWorldTransform = ^TWorldTransform;
-  TWorldTransform = record
-    world: mat4;
-    invWorld: mat4;
-    worldNormal: mat4;
-    worldT: mat4;
-    pivot: mat4;
-    invPivot: mat4;
-  end;
-
-  PBaseTransform = ^TBaseTransform;
-  TBaseTransform = record
-    scale: mat4;
-    rotation: mat4;
-    translation: mat4;
-    model: mat4;
-  end;
-
-  PCameraTransform = ^TCameraTransform;
-  TCameraTransform = record
-    View: mat4;
-    Projection: mat4;
-    ViewProjection: mat4;
-  end;
-
-  PLightProp = ^TLightProp;
-  TLightProp = record
-    position: vec4;
-    ambient: vec4;
-    diffuse: vec4;
-    specular: vec4;
-    constant_attenuation: Single;
-    linear_attenuation: Single;
-    quadratic_attenuation: Single;
-    spot_cutoff: Single;
-    spot_exponent: Single;
-    spot_direction: vec3;
-  end;
-
-  PMaterialProp = ^TMaterialProp;
-  TMaterialProp = record
-    ambient: vec4;
-    diffuse: vec4;
-    specular: vec4;
-    emissive: vec4;
-    shininess: Single;
-    padding: vec3;
   end;
 
   ShaderGenerator = class
@@ -76,15 +26,14 @@ type
     class function GenScreenQuadShader: TShaderProgram; static;
     class function GenCompositionShader: TShaderProgram; static;
     class function Gen1DConvolution: TShaderProgram; static;
-    class function GenMatrixMultiplier: TShaderProgram; static;
 
     class function GetUniformLightNumber: TBuiltinUniformLightNumber;
   end;
 
   TShaderMaterial = class
   private
-//    FVertText: ansistring;
-//    FFragText: ansistring;
+    FVertText: ansistring;
+    FFragText: ansistring;
     FGLSLVersion: integer;
     function CreateAttribs(const attr: TAttribObject): ansistring;
     function CreateVarings(const attr: TAttribObject; const Mat: TMaterialObject): ansistring;
@@ -99,26 +48,17 @@ type
 implementation
 
 const
-  SG_STRUCT_BASE_TRANSFORM: ansistring =
-  'struct Base {'#10#13+
-  '  mat4 scale;'#10#13+
-  '  mat4 rotation;'#10#13+
-  '  mat4 translation;'#10#13+
-  '  mat4 model;'#10#13+
-  '};'#10#13;
-
-  SG_STRUCT_WORLD_TRANSFORM: ansistring =
-  'struct World {'#10#13+
-  '  mat4 world;'#10#13+
-  '  mat4 invWorld;'#10#13+
-  '  mat4 worldNormal;'#10#13+
-  '  mat4 worldT;'#10#13+
-  '  mat4 pivot;'#10#13+
-  '  mat4 invPivot;'#10#13+
-  '};'#10#13;
+  SG_STRUCT_OBJECT: ansistring =
+  'struct Object'+#10#13 +
+  '{'+#10#13 +
+  '     mat4 World;'+#10#13 +
+  '     mat4 WorldInv;'+#10#13 +
+  '     mat4 WorldNormal;'+#10#13 +
+  '};'+#10#13;
 
   SG_STRUCT_CAMERA: ansistring =
-  'struct Camera {'+#10#13 +
+  'struct Camera'+#10#13 +
+  '{'+#10#13 +
   '     mat4 View;'+#10#13 +
   '     mat4 Projection;'+#10#13 +
   '     mat4 ViewProjection;'+#10#13 +
@@ -142,7 +82,7 @@ const
   SG_BLOCK_OBJECT: ansistring =
   'layout(std140, binding = 2) uniform Objects'+#10#13 +
   '{'+#10#13 +
-  '    World object;'+#10#13 +
+  '    Object object;'+#10#13 +
   '} objects;'+#10#13;
 
   SG_BLOCK_CAMERA: ansistring =
@@ -162,23 +102,6 @@ const
   '    vec3    padding;'+#10#13 +
   '} material;'+#10#13;
 
-  SG_GET_WORLD_MATRIX_SUB: ansistring =
-    'subroutine mat4 TGetWorldMatrix();'#10#13 +
-    'subroutine(TGetWorldMatrix) mat4 defaultWorldMatrix() {'#10#13 +
-    '  return objects.object.world; }'#10#13 +
-    'subroutine(TGetWorldMatrix) mat4 sphereSpriteMatrix() {'#10#13 +
-    '  mat4 m = cameras.camera.View * objects.object.world;'#10#13 +
-    '  m[0].xyz = vec3(1.0, 0.0, 0.0);'#10#13 +
-    '  m[1].xyz = vec3(0.0, 1.0, 0.0);'#10#13 +
-    '  m[2].xyz = vec3(0.0, 0.0, 1.0);'#10#13 +
-    '  return m; }'#10#13 +
-    'subroutine(TGetWorldMatrix) mat4 cylindrSpriteMatrix() {'#10#13 +
-    '  mat4 m = objects.object.world * cameras.camera.View;'#10#13 +
-    '  m[0].xyz = vec3(1.0, 0.0, 0.0);'#10#13 +
-    '  m[2].xyz = vec3(0.0, 0.0, 1.0);'#10#13 +
-    '  return m; }'#10#13 +
-    'subroutine uniform TGetWorldMatrix WorldMatrixGetter;'#10#13;
-
 { TShaderMaterial }
 
 constructor TShaderMaterial.Create(aGLSLVersion: integer);
@@ -189,11 +112,11 @@ end;
 procedure TShaderMaterial.GenShaderForMesh(const aMesh: TMesh; const aLights: TList);
 var attr: TAttribObject;
     i: integer;
-    vs: TShaderParts;
+    vs,fs: TShaderParts;
     outname: ansistring;
 begin
   aMesh.MaterialObject.AttachShader(TShaderProgram.CreateOwned(aMesh.MaterialObject));
-  vs.Header:='#version '+inttostr(FGLSLVersion)+#10#13;
+  vs.Header:='#version '+inttostr(FGLSLVersion)+#13+#10;
   if FGLSLVersion>=130 then outname:='out ' else outname:='varying ';
   for i:=0 to aMesh.VertexObject.AttribsCount-1 do begin
     attr:=aMesh.VertexObject.Attribs[i];
@@ -201,7 +124,7 @@ begin
       SetAttribBindPos(CAttribSematics[attr.Semantic].Name,CAttribSematics[attr.Semantic].Location);
     vs.Input:=vs.Input+CreateAttribs(attr);
     vs.Output:=vs.Output+outname+'vec'+inttostr(attr.AttrSize)+
-        CAttribSematics[attr.Semantic].Name+';' + #10#13;
+        CAttribSematics[attr.Semantic].Name+';' + #13+#10;
   end;
 end;
 
@@ -210,9 +133,9 @@ var sem: TAttribSemantic;
 begin
   sem:=CAttribSematics[attr.Semantic];
   if FGLSLVersion >= 330 then
-    result:=result + 'layout(location = '+inttostr(sem.Location) + ')' + #10#13;
+    result:=result + 'layout(location = '+inttostr(sem.Location) + ')' + #13+#10;
   if FGLSLVersion < 130 then result:=result+'attribute ' else result:=result+'in ';
-  result:=result+'vec'+inttostr(attr.AttrSize)+sem.Name+';' + #10#13;
+  result:=result+'vec'+inttostr(attr.AttrSize)+sem.Name+';' + #13+#10;
 end;
 
 
@@ -284,11 +207,10 @@ begin
 'layout(location = 0) in vec3 in_Position;'+#10#13 +
 'layout(location = 1) in vec3 in_Normal;'+#10#13 +
 'layout(location = 2) in vec2 in_TexCoord;'+#10#13 +
-SG_STRUCT_WORLD_TRANSFORM +
+SG_STRUCT_OBJECT +
 SG_STRUCT_CAMERA +
 SG_BLOCK_OBJECT +
 SG_BLOCK_CAMERA +
-SG_GET_WORLD_MATRIX_SUB +
 
 'out vec3 WorldPosition;'+#10#13 +
 'out vec2 TexCoord;'+#10#13 +
@@ -297,14 +219,13 @@ SG_GET_WORLD_MATRIX_SUB +
 
 'void main(void)'+#10#13 +
 '{'+#10#13 +
-'	vec4 pos = WorldMatrixGetter() * vec4(in_Position, 1.0);'+#10#13 +
+'	vec4 pos = objects.object.World * vec4(in_Position, 1.0);'+#10#13 +
 ' WorldPosition = pos.xyz;'+#10#13 +
 ' ViewDir = cameras.camera.View[2].xyz;'+#10#13 +
 '	gl_Position = cameras.camera.ViewProjection * pos;'+#10#13 +
 '	TexCoord = in_TexCoord;'+#10#13 +
-'	WorldNormal = mat3(objects.object.worldNormal) * in_Normal;'+#10#13 +
+'	WorldNormal = mat3(objects.object.WorldNormal) * in_Normal;'+#10#13 +
 '}';
-
   ft :=
 '#version 430'+#10#13 +
 
@@ -476,13 +397,12 @@ begin
 'layout(location = 0) in vec3 in_Position;'#10#13 +
 'layout(location = 2) in vec2 in_TexCoord;'#10#13 +
 SG_STRUCT_CAMERA +
-SG_STRUCT_WORLD_TRANSFORM +
+SG_STRUCT_OBJECT +
 SG_BLOCK_OBJECT +
 SG_BLOCK_CAMERA +
-SG_GET_WORLD_MATRIX_SUB +
 'out vec2 v2f_TexCoord0;'#10#13 +
 'void main() {'#10#13 +
-'	vec4 pos = WorldMatrixGetter() * vec4(in_Position, 1.0);'+#10#13 +
+'	vec4 pos = objects.object.World * vec4(in_Position, 1.0);'+#10#13 +
 '	gl_Position = cameras.camera.Projection * pos;'+#10#13 +
 '	v2f_TexCoord0 = in_TexCoord;'+#10#13 +
 '}';
@@ -491,7 +411,8 @@ SG_GET_WORLD_MATRIX_SUB +
 'in vec2 v2f_TexCoord0;'#10#13 +
 'layout(location = 0) out vec4 FragColor;'#10#13 +
 'layout(binding = 0) uniform sampler2D DiffuseTexture;'#10#13 +
-SG_STRUCT_WORLD_TRANSFORM +
+SG_STRUCT_OBJECT +
+SG_BLOCK_OBJECT +
 SG_BLOCK_MATERIAL +
 'void main() {'#10#13 +
 ' vec4 Color = texture(DiffuseTexture, v2f_TexCoord0);'#10#13 +
@@ -499,54 +420,6 @@ SG_BLOCK_MATERIAL +
 ' FragColor = material.diffuse * Color; }'#10#13;
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
-end;
-
-class function ShaderGenerator.GenMatrixMultiplier: TShaderProgram;
-var
-  ct: ansistring;
-begin
-  result:=Storage.CreateProgram;
-  ct:=
-'#version 430 core'#10#13+
-'#extension GL_ARB_compute_shader : require'#10#13+
-'#extension GL_ARB_shader_storage_buffer_object : require'#10#13+
-'layout( local_size_x = 32,  local_size_y = 1, local_size_z = 1 ) in;'#10#13+
-SG_STRUCT_BASE_TRANSFORM +
-SG_STRUCT_WORLD_TRANSFORM +
-'layout(binding = 0) buffer SSBO0 {'#10#13+
-'	 Base objectBase[];'#10#13+
-'} IN;'#10#13+
-'layout(binding = 1) buffer SSBO1 {'#10#13+
-'	 World parentWorld[];'#10#13+
-'} Parent;'#10#13+
-'layout(binding = 2) buffer SSBO2 {'#10#13+
-'	 World objectWorld[];'#10#13+
-'} OUT;'#10#13+
-'layout(binding = 3) buffer SSBO3 {'#10#13+
-'	 uvec2 Idx[];'#10#13+
-'} Indices;'#10#13+
-
-'void main(void) {'#10#13+
-'	 uint thread = gl_WorkGroupID.x * 32 + gl_LocalInvocationID.x;'#10#13+
-'  uint Id = Indices.Idx[thread];'#10#13+
-'	 mat4 srp = IN.objectBase[Id].scale * IN.objectBase[Id].rotation;'#10#13+
-'	 srp *= IN.objectBase[Id].translation;'#10#13+
-'  mat4 pm = Parent.parentWorld[Id].pivot;'#10#13+
-'  pm *= srp;'#10#13+
-'  mat4 wm = IN.objectBase[Id].model * pm;'#10#13+
-'  mat4 nwm;'#10#13+
-'  nwm[1] = normalize(vec4(wm[1].xyz, 1.0));'#10#13+
-'  nwm[2] = cross(normalize(vec4(wm[1].xyz, 1.0)), nwm[1]);'#10#13+
-'  nwm[0] = cross(nwm[1], nwm[2]);'#10#13+
-'  nwm[3] = vec4(0.0, 0.0, 0.0, 1.0);'#10#13+
-'  OUT.objectWorld[Id].world = wm;'#10#13+
-'  OUT.objectWorld[Id].worldNormal = nwm;'#10#13+
-'  OUT.objectWorld[Id].invWorld = inverse(wm);'#10#13+
-'  OUT.objectWorld[Id].worldT = transpose(wm);'#10#13+
-'  OUT.objectWorld[Id].pivot = pm;'#10#13+
-'  OUT.objectWorld[Id].invPivot = inverse(pm);'#10#13+
-'};'#10#13;
-  Result.ShaderText[stCompute] := ct;
 end;
 
 class function ShaderGenerator.GenScreenQuadShader: TShaderProgram;
@@ -616,7 +489,7 @@ begin
 'layout(location = 0) in vec3 in_Position;'+#10#13 +
 'layout(location = 1) in vec3 in_Normal;'+#10#13 +
 'layout(location = 2) in vec2 in_TexCoord;'+#10#13 +
-SG_STRUCT_WORLD_TRANSFORM +
+SG_STRUCT_OBJECT +
 SG_STRUCT_CAMERA +
 SG_BLOCK_OBJECT +
 SG_BLOCK_CAMERA +
@@ -632,15 +505,15 @@ SG_BLOCK_MATERIAL +
 
 'void main(void)'+#10#13 +
 '{'+#10#13 +
-'	vec4 pos = objects.object.world * vec4(in_Position, 1.0);'+#10#13 +
+'	vec4 pos = objects.object.World * vec4(in_Position, 1.0);'+#10#13 +
 '	gl_Position = cameras.camera.ViewProjection * pos;'+#10#13 +
 '	TexCoord = in_TexCoord;'+#10#13 +
 '	Normal = in_Normal;'+#10#13 +
-'	vec3 nm = mat3(objects.object.worldNormal) * Normal;'+#10#13 +
+'	vec4 nm = objects.object.WorldNormal * vec4(Normal, 0.0);'+#10#13 +
 '	vec3 lightDir = vec3(lights.light.position.xyz - pos.xyz);'+#10#13 +
 '	vec3 eyeVec = -pos.xyz;'+#10#13 +
 '	vec4 final_color = lights.light.ambient * material.ambient;'+#10#13 +
-'	vec3 N = normalize(nm);'+#10#13 +
+'	vec3 N = normalize(nm.xyz);'+#10#13 +
 '	vec3 L = normalize(lightDir);'+#10#13 +
 '	float lambertTerm = max (dot(N,L), 0.0);'+#10#13 +
 '	vec3 E = normalize(eyeVec);'+#10#13 +

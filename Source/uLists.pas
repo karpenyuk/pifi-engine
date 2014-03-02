@@ -161,7 +161,6 @@ Type
     function GetValue(const Key: TGUID): TObject; overload; virtual;
   public
     constructor Create; override;
-    procedure Assign(aSource: TObjectsDictionary);
     property Count: Integer read FCount;
     function inList(const aItem: TObject): boolean;
   end;
@@ -474,12 +473,6 @@ begin
   FItems[FCount].Value := Value;
   result := FCount;
   Inc(FCount);
-end;
-
-procedure TObjectsDictionary.Assign(aSource: TObjectsDictionary);
-begin
-  FCount := aSource.FCount;
-  FItems := aSource.FItems;
 end;
 
 constructor TObjectsDictionary.Create;

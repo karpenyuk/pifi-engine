@@ -43,7 +43,6 @@ begin
   glwnd.OnDebugMessage := Demo.OnDebugMessage;
   glwnd.onMouseDown := Demo.onMouseDown;
   glwnd.onMouseMove := Demo.onMouseMove;
-  glwnd.onMouseWheel := Demo.onMouseWheel;
   glwnd.SetPixelFormatBits(32, 24, 0, 0, true, true);
   glwnd.CreateWindow('[NAN]', 640, 480, false);
   glwnd.VSync := true;

@@ -57,7 +57,7 @@ type
     FChilds: TSceneItemList;
     FNestingDepth: integer;
     procedure OnItemsChanged(anItem: TBaseSceneItem; aChnages: TSceneItemListChanges);
-    procedure SetParent(const Value: TBaseSceneItem); virtual;
+    procedure SetParent(const Value: TBaseSceneItem);
   public
     Active: boolean;
     FriendlyName: string;
@@ -72,47 +72,30 @@ type
 
   TDirectionBehavior = (dbNone, dbSphericalSprite, dbCylindricalSprite);
 
-  TMovableObjectClass = class of TMovableObject;
-
   TMovableObject = class (TBaseSceneItem)
   private
+    //координатный базис
+    FAbsolutePosition: TVector;
+    FPosition: TVector; // глобальные координаты объекта
+    FScale: TVector;    // масштаб объекта, совместно с положением - только для чтения
+    FUp: TVector;       // OY
+    FDirection: TVector;// OZ
+    FLeft: TVector;
     FDirBehavior: TDirectionBehavior;
-    FWorldMatrixUpdated: Boolean;
-    procedure SetModelMatrix(const Value: TMatrix);
-    procedure SetRotMatrix(const Value: TMatrix);
-    procedure SetScaleMatrix(const Value: TMatrix);
-    procedure SetTranslMatrix(const Value: TMatrix);
-    function GetDirection: TVector;
-    function GetLeftVector: TVector;
-    function GetUpVector: TVector;
+    procedure setModelMatrix(const Value: TMatrix);
+    procedure setRotMatrix(const Value: TMatrix);
+    procedure setScaleMatrix(const Value: TMatrix);
+    procedure setTranslMatrix(const Value: TMatrix);
+    procedure setWorldMatrix(const Value: TMatrix);
+    function getDirection: TVector;
+    function getLeftVector: TVector;
+    function getUpVector: TVector;
     procedure SetDirBehavior(const Value: TDirectionBehavior);
     function GetPivot: TMovableObject;
     procedure SetPivot(const Value: TMovableObject);
     procedure SetPitchAngle(const Value: single);
     procedure SetRollAngle(const Value: single);
     procedure SetTurnAngle(const Value: single);
-    function GetWorldMatrix: TMatrix;
-    function GetAbsoluteDirection: TVector;
-    function GetAbsoluteLeft: TVector;
-    function GetAbsolutePosition: TVector;
-    function GetAbsoluteUp: TVector;
-    function GetInvWorldMatrix: TMatrix;
-    function GetPivotMatrix: TMatrix;
-    function GetPosition: TVector;
-    function GetScale: TVector;
-    function GetWorldMatrixT: TMatrix;
-    procedure SetXRotationAngle(const Value: single);
-    procedure SetYRotationAngle(const Value: single);
-    procedure SetZRotationAngle(const Value: single);
-    function GetInvPivotMatrix: TMatrix;
-    procedure SetAbsoluteDirection(const Value: TVector);
-    procedure SetAbsoluteLeft(const Value: TVector);
-    procedure SetAbsolutePosition(const Value: TVector);
-    procedure SetAbsoluteUp(const Value: TVector);
-    procedure SetLeftVector(const Value: TVector);
-    procedure SetUpVector(const Value: TVector);
-    procedure SetDirection(const aDirection: TVector);
-    function GetNormalMatrix: TMatrix;
   protected
     FRollAngle: single;
     FTurnAngle: single;
@@ -129,67 +112,59 @@ type
     FWorldMatrix: TMatrix; //результирующая мировая матрица
     FWorldMatrixT: TMatrix; //транспонированная мировая матрица
     FInvWorldMatrix: TMatrix;//обратная мировая матрица
-    FNormalMatrix: TMatrix;
-    FPivotMatrix: TMatrix; //мировая матрица для дочерних объектов (без учета модельной)
-    FInvPivotMatrix: TMatrix;
-    FWorldMatrixUpdateCounter: Integer;
+    FPivotMatrix: TMatrix;
 
     procedure SetPosition(const Value: TVector);
     procedure SetScale(const Value: TVector);
-    procedure NotifyWorldMatrixChanged; virtual;
-    procedure SetParent(const Value: TBaseSceneItem); override;
+    //Ориентирует объект в заданном направлении
+    procedure SetDirection(const aDirection: TVector);
+
   public
     Tag: integer; //для нужд пользователя
     DirectingAxis: TVector; //Хранит направляющую ось Axis
 
+    WorldMatrixUpdated: boolean; //false=требуется перестроить мировую матрицу
+
     constructor Create; override;
     destructor Destroy; override;
-    function MakeClone(aWithChildren: Boolean): TMovableObject; virtual;
 
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     // Parent as TMovableObject
     property Pivot: TMovableObject read GetPivot write SetPivot;
-    // Мировая матрица для дочерних объектов
-    property PivotMatrix: TMatrix read GetPivotMatrix;
-    property InvPivotMatrix: TMatrix read GetInvPivotMatrix;
+    //Прямая установка родительской матрицы
+    property PivotMatrix: TMatrix read FPivotMatrix write FPivotMatrix;
 
     //модельная матрица, хранит локальные/базовые трансформации объекта
-    property ModelMatrix: TMatrix read FModelMatrix write SetModelMatrix;
+    property ModelMatrix: TMatrix read FModelMatrix write setModelMatrix;
     //масштабная матрица
-    property ScaleMatrix: TMatrix read FScaleMatrix write SetScaleMatrix;
+    property ScaleMatrix: TMatrix read FScaleMatrix write setScaleMatrix;
     //матрица поворота
     property RotationMatrix: TMatrix read FRotationMatrix write setRotMatrix;
     //матрица переноса
     property TranslationMatrix: TMatrix read FTranslationMatrix write setTranslMatrix;
     //результирующая мировая матрица
-    property WorldMatrix: TMatrix read GetWorldMatrix;
-    //нормированая матрица
-    property NormalMatrix: TMatrix read GetNormalMatrix;
+    property WorldMatrix: TMatrix read FWorldMatrix write setWorldMatrix;
     //транспонированная мировая матрица
-    property WorldMatrixT: TMatrix read GetWorldMatrixT;
+    property WorldMatrixT: TMatrix read FWorldMatrixT;
     //обратная мировая матрица
-    property InvWorldMatrix: TMatrix read GetInvWorldMatrix;
-    //счеткик изменений мировой матрицы
-    property WorldMatrixUpdateCounter: Integer read FWorldMatrixUpdateCounter;
-    //Чтение абсолютного положения
-    property AbsolutePosition: TVector read GetAbsolutePosition write SetAbsolutePosition;
-    property AbsoluteDirection: TVector read GetAbsoluteDirection write SetAbsoluteDirection;
-    property AbsoluteLeft: TVector read GetAbsoluteLeft write SetAbsoluteLeft;
-    property AbsoluteUp: TVector read GetAbsoluteUp write SetAbsoluteUp;
+    property InvWorldMatrix: TMatrix read FInvWorldMatrix;
+
 
     //Установка/чтение локального положения
-    property Position: TVector read GetPosition write SetPosition;
+    property Position: TVector read FPosition write SetPosition;
+    //Чтение абсолютного положения
+    property AbsolutePosition: TVector read FAbsolutePosition;
     //Установка/чтение масштаба объекта
-    property Scale: TVector read GetScale write SetScale;
+    property Scale: TVector read FScale write SetScale;
     //Угол поворота в плоскости экрана
     property RollAngle: single read FRollAngle write SetRollAngle;
     property TurnAngle: single read FTurnAngle write SetTurnAngle;
     property PitchAngle: single read FPitchAngle write SetPitchAngle;
     //Установка/чтение ориентации объекта
-    property Direction: TVector read GetDirection write SetDirection;
-    property Left: TVector read GetLeftVector write SetLeftVector;
-    property Up: TVector read GetUpVector write SetUpVector;
+    property Direction: TVector read getDirection write SetDirection;
+    property Left: TVector read getLeftVector;
+    property Up: TVector read getUpVector;
     property DirectionBehavior: TDirectionBehavior read FDirBehavior write SetDirBehavior;
 
     //Вращение относительно локальных осей
@@ -206,38 +181,32 @@ type
     procedure RotateObject(const Axis: TVector; Angle: single; AbsoluteRotation: boolean=true);
     procedure RotateAround(const aPivot, Axis: TVector; Angle: single); overload;
     procedure RotateAround(const aPivot, anUp: TVector; aPitchDelta, aTurnDelta: single); overload;
-    procedure RotateAroundX(Angle: Single);
-    procedure RotateAroundY(Angle: Single);
-    procedure RotateAroundZ(Angle: Single);
+    procedure RotateAroundX(Angle: single; AbsoluteRotation: boolean=true);
+    procedure RotateAroundY(Angle: single; AbsoluteRotation: boolean=true);
+    procedure RotateAroundZ(Angle: single; AbsoluteRotation: boolean=true);
     //Накопленные углы при абсолютном повороте
-    property XRotationAngle: Single read FXRotationAngle write SetXRotationAngle;
-    property YRotationAngle: Single read FYRotationAngle write SetYRotationAngle;
-    property ZRotationAngle: Single read FZRotationAngle write SetZRotationAngle;
+    property XRotationAngle: single read FXRotationAngle;
+    property YRotationAngle: single read FYRotationAngle;
+    property ZRotationAngle: single read FZRotationAngle;
 
-    //формирует матрицу масштабирования
-    procedure RescaleObject(const aNewScale: TVector); overload;
-    procedure RescaleObject(aNewScaleX, aNewScaleY, aNewScaleZ: Single); overload;
-    procedure ScaleObject(const aScale: TVector); overload;
-    procedure ScaleObject(aScaleX, aScaleY, aScaleZ: Single); overload;
-    //формирует матрицу переноса
-    procedure MoveObject(const aPosition: TVector); overload;
-    procedure MoveObject(x, y, z: Single); overload;
-    procedure ShiftObject(const aPosition: TVector); overload;
-    procedure ShiftObject(x, y, z: Single); overload;
+    //формирует матрицу масштабирования, при AbsoluteScale=false модифицируется существующая
+    procedure ScaleObject(Scale: TVector; AbsoluteScale: boolean=true);overload;
+    procedure ScaleObject(ScaleX,ScaleY,ScaleZ: single; AbsoluteScale: boolean=true);overload;
+    //формирует матрицу переноса, при AbsolutePos=false модифицируется существующая
+    procedure MoveObject(Pos: TVector; AbsolutePos: boolean=true);overload;
+    procedure MoveObject(x,y,z: single; AbsolutePos: boolean=true);overload;
     //перестраивается мировая матрица
-    procedure UpdateWorldMatrix(UseMatrix: TTransforms=ALL_TRANSFORM); overload; virtual;
-    //прямая установка матриц (после внешнего расчета)
-    procedure UpdateWorldMatrix(const aWorld, aNormalWorld, anInvWorld, aWorldT, aPivot, anInvPivot: TMatrix); overload;
+    procedure UpdateWorldMatrix(UseMatrix: TTransforms=ALL_TRANSFORM); virtual;
     //Заменяет все матрицы трансформаций на единичные
     procedure ResetMatrices;
     //Заменяет модельную матрицу текущей мировой матрицей
-    procedure StoreTransforms(const aTransforms: TTransforms);
+    procedure StoreTransforms(ToStore: TTransforms);
     //Переводит точку из глобальной системы координат в систему координат объекта
-    function AbsoluteToLocal(const aPosition: TVector):TVector;
+    function AbsoluteToLocal(P: TVector):TVector;
     //Переводит вектор из глобальной системы координат в локальную
-    function VectorToLocal(aVector: TVector; Norm: boolean=true): TVector;
+    function VectorToLocal(V: TVector; Norm: boolean=true): TVector;
     //Переводит точку из локальной системы координат в глобальную
-    function LocalToAbsolute(const aPosition: TVector): TVector;
+    function LocalToAbsolute(P: TVector): TVector;
   end;
 
   { TODO :
@@ -287,51 +256,18 @@ end;
 
 { TMovableObject }
 
-function TMovableObject.AbsoluteToLocal(const aPosition: TVector): TVector;
+function TMovableObject.AbsoluteToLocal(P: TVector): TVector;
 begin
-  Result := InvPivotMatrix.Transform(aPosition);
+    if not WorldMatrixUpdated then UpdateWorldMatrix;p[3]:=1;
+    Result:=P*FInvWorldMatrix.Matrix4;
 end;
 
-function TMovableObject.VectorToLocal(aVector: TVector; Norm: boolean=true): TVector;
+function TMovableObject.VectorToLocal(V: TVector; Norm: boolean=true): TVector;
 var rv: TVector;
 begin
-  aVector.MakeAffine;
-  Result := InvPivotMatrix.Transform(aVector);
-  if Norm then Result.SetNormalize;
-end;
-
-procedure TMovableObject.NotifyWorldMatrixChanged;
-begin
-  FWorldMatrixUpdated := false;
-  DispatchMessage(NM_WorldMatrixChanged);
-end;
-
-function TMovableObject.MakeClone(aWithChildren: Boolean): TMovableObject;
-var
-  ctype: TMovableObjectClass;
-  clone, childclone: TMovableObject;
-  I: Integer;
-begin
-  ctype := TMovableObjectClass(ClassType);
-  clone := TMovableObject(ctype.Create);
-  clone.FDirBehavior := FDirBehavior;
-  clone.FRollAngle := FRollAngle;
-  clone.FTurnAngle := FTurnAngle;
-  clone.FPitchAngle := FPitchAngle;
-  clone.FXRotationAngle := FXRotationAngle;
-  clone.FYRotationAngle := FYRotationAngle;
-  clone.FZRotationAngle := FZRotationAngle;
-  clone.FModelMatrix := FModelMatrix;
-  clone.FScaleMatrix := FScaleMatrix;
-  clone.FRotationMatrix := FRotationMatrix;
-  clone.FTranslationMatrix := FTranslationMatrix;
-  clone.Parent := Parent;
-  Result := clone;
-  if aWithChildren then
-    for I := 0 to Childs.Count - 1 do if Assigned(Childs[i]) then begin
-      childclone := TMovableObject(Childs[i]).MakeClone(aWithChildren);
-      clone.Childs.AddSceneItem(childclone);
-    end;
+    if not WorldMatrixUpdated then UpdateWorldMatrix;
+    rv := V.Affine * FInvWorldMatrix.Matrix4;
+    if Norm then Result:=rv.Normalize else Result:=rv;
 end;
 
 constructor TMovableObject.Create;
@@ -353,7 +289,13 @@ begin
   FYRotationAngle:=0;
   FZRotationAngle:=0;
 
-  FWorldMatrixUpdated := false;
+  FPosition:= vtW;
+  FDirection := vtX;
+  FUp := vtY;
+  FLeft := vtZ;
+  FScale:= 1;
+  Parent:=nil;
+  UpdateWorldMatrix;
 end;
 
 destructor TMovableObject.Destroy;
@@ -362,57 +304,14 @@ begin
   inherited;
 end;
 
-function TMovableObject.GetAbsoluteDirection: TVector;
+function TMovableObject.getDirection: TVector;
 begin
-  Result := PivotMatrix.Row[2];
-  Result.SetNormalize;
+  result:=FWorldMatrix.Row[2];
 end;
 
-function TMovableObject.GetAbsoluteLeft: TVector;
+function TMovableObject.getLeftVector: TVector;
 begin
-  Result := PivotMatrix.Row[0];
-  Result.SetNormalize;
-end;
-
-function TMovableObject.GetAbsolutePosition: TVector;
-begin
-  Result := PivotMatrix.Row[3];
-end;
-
-function TMovableObject.GetAbsoluteUp: TVector;
-begin
-  Result := PivotMatrix.Row[1];
-  Result.SetNormalize;
-end;
-
-function TMovableObject.GetDirection: TVector;
-begin
-  Result := FRotationMatrix.Row[2];
-  Result.SetNormalize;
-end;
-
-function TMovableObject.GetInvPivotMatrix: TMatrix;
-begin
-  if not FWorldMatrixUpdated then UpdateWorldMatrix();
-  Result := FInvPivotMatrix;
-end;
-
-function TMovableObject.GetInvWorldMatrix: TMatrix;
-begin
-  if not FWorldMatrixUpdated then UpdateWorldMatrix();
-  Result := FInvWorldMatrix;
-end;
-
-function TMovableObject.GetLeftVector: TVector;
-begin
-  Result := FRotationMatrix.Row[0];
-  Result.SetNormalize;
-end;
-
-function TMovableObject.GetNormalMatrix: TMatrix;
-begin
-  if not FWorldMatrixUpdated then UpdateWorldMatrix();
-  Result := FNormalMatrix;
+  result:=FWorldMatrix.Row[0];
 end;
 
 function TMovableObject.GetPivot: TMovableObject;
@@ -420,59 +319,20 @@ begin
   Result := Parent as TMovableObject;
 end;
 
-function TMovableObject.GetPivotMatrix: TMatrix;
+function TMovableObject.getUpVector: TVector;
 begin
-  if not FWorldMatrixUpdated then UpdateWorldMatrix();
-  Result := FPivotMatrix;
+  result:=FWorldMatrix.Row[1];
 end;
 
-function TMovableObject.GetPosition: TVector;
+procedure TMovableObject.MoveObject(Pos: TVector; AbsolutePos:boolean=true);
+var mt: TMatrix;
 begin
-  Result := FTranslationMatrix.Row[3];
-end;
+  mt:=TMatrix.TranslationMatrix( Pos );
+  if AbsolutePos then FTranslationMatrix:=mt
+  else FTranslationMatrix:=TranslationMatrix*mt;
 
-function TMovableObject.GetScale: TVector;
-var
-  m: mat3;
-begin
-  m := FScaleMatrix.Matrix3;
-  Result := Vector(m[0][0], m[1][1], m[2][2]);
-end;
-
-function TMovableObject.GetUpVector: TVector;
-begin
-  Result := FRotationMatrix.Row[1];
-  Result.SetNormalize;
-end;
-
-function TMovableObject.GetWorldMatrix: TMatrix;
-begin
-  if not FWorldMatrixUpdated then UpdateWorldMatrix();
-  Result := FWorldMatrix;
-end;
-
-function TMovableObject.GetWorldMatrixT: TMatrix;
-begin
-  if not FWorldMatrixUpdated then UpdateWorldMatrix();
-  Result := FWorldMatrixT;
-end;
-
-procedure TMovableObject.MoveObject(const aPosition: TVector);
-begin
-  FTranslationMatrix := TMatrix.TranslationMatrix( aPosition );
-  NotifyWorldMatrixChanged;
-end;
-
-procedure TMovableObject.RescaleObject(const aNewScale: TVector);
-begin
-  FScaleMatrix := TMatrix.ScaleMatrix( Scale );
-  NotifyWorldMatrixChanged;
-end;
-
-procedure TMovableObject.RescaleObject(aNewScaleX, aNewScaleY,
-  aNewScaleZ: Single);
-begin
-  RescaleObject(Vector(aNewScaleX, aNewScaleY, aNewScaleZ, 0));
+  UpdateWorldMatrix;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.ResetMatrices;
@@ -481,13 +341,9 @@ begin
   FScaleMatrix.SetIdentity;
   FRotationMatrix.SetIdentity;
   FTranslationMatrix.SetIdentity;
-  FRollAngle:=0;
-  FTurnAngle:=0;
-  FPitchAngle:=0;
-  FXRotationAngle:=0;
-  FYRotationAngle:=0;
-  FZRotationAngle:=0;
-  NotifyWorldMatrixChanged;
+  FWorldMatrix.SetIdentity;
+
+  UpdateWorldMatrix;
 end;
 
 procedure TMovableObject.RotateObject(const Axis: TVector; Angle: single;
@@ -497,188 +353,174 @@ begin
   mr:=TMatrix.RotationMatrix( Axis.Affine, Angle );
   if AbsoluteRotation then RotationMatrix:=mr
   else RotationMatrix:=RotationMatrix*mr;
-  NotifyWorldMatrixChanged;
+  UpdateWorldMatrix;
 end;
 
-procedure TMovableObject.ScaleObject(const aScale: TVector);
+procedure TMovableObject.ScaleObject(Scale: TVector; AbsoluteScale:boolean=true);
+var ms: TMatrix;
 begin
-  FScaleMatrix := FScaleMatrix * TMatrix.ScaleMatrix( Scale );
-  NotifyWorldMatrixChanged;
+  ms:=TMatrix.ScaleMatrix( Scale );
+  if AbsoluteScale then begin
+     FScaleMatrix:=ms;
+     FScale:=Scale;
+  end else begin
+     FScale:=Scale*FScaleMatrix.Matrix4;
+     FScaleMatrix:=FScaleMatrix*ms;
+  end;
+  UpdateWorldMatrix;
 end;
 
-procedure TMovableObject.ScaleObject(aScaleX, aScaleY, aScaleZ: Single);
-begin
-  ScaleObject(Vector(aScaleX, aScaleY, aScaleZ, 0));
-end;
 
-
-procedure TMovableObject.UpdateWorldMatrix(UseMatrix: TTransforms=ALL_TRANSFORM);
-var wm, pm, srp: TMatrix;
+procedure TMovableObject.UpdateWorldMatrix;
+var wm: TMatrix;
 begin
+{ //Код перенесен в процедуру UpdateWorldMatrix базового рендера
+  if (FParent<>nil) and ((ttParent in UseMatrix) or (ttAll in UseMatrix)) then begin
+   if not Parent.WorldMatrixUpdated then parent.UpdateWorldMatrix;
+   FParentMatrix:=parent.WorldMatrix;
+  end;
+
   wm.SetIdentity;
-  if (Pivot<>nil) and (ttPivot in UseMatrix)
-    then pm := Pivot.PivotMatrix
-    else pm.SetIdentity;
+  if (FParent<>nil) and ((ttParent in UseMatrix) or (ttAll in UseMatrix)) then begin
+     if not Parent.WorldMatrixUpdated then parent.UpdateWorldMatrix;
+     wm:=parent.WorldMatrix; wm:=wm * FModelMatrix;
+  end else wm := FModelMatrix;
 
-  if ttModel in UseMatrix
-    then wm := ModelMatrix
-    else wm.SetIdentity;
+  if (not (ttModel in UseMatrix)) and (not(ttAll in UseMatrix)) then wm.SetIdentity;
 
-  srp.SetIdentity;
-  if ttScale in UseMatrix then srp := srp * ScaleMatrix;
-  if ttRotation in UseMatrix then srp := srp * RotationMatrix;
-  if ttPosition in UseMatrix then srp := srp * TranslationMatrix;
+  if (ttScale in UseMatrix) or (ttAll in UseMatrix) then wm := wm * ScaleMatrix;
+  if (ttRotation in UseMatrix) or (ttAll in UseMatrix) then wm := wm * RotationMatrix;
+  if (ttPosition in UseMatrix) or (ttAll in UseMatrix) then wm := wm * TranslationMatrix;
 
-  pm := srp * pm;
-  wm := wm * pm;
+  wm:=wm * FParentMatrix;
 
-  FWorldMatrix := wm;
-  FPivotMatrix := pm;
+  FWorldMatrix:=wm;
+}
 
-  FNormalMatrix := FWorldMatrix.Normalize;
-  FWorldMatrixT := FWorldMatrix.Transpose;
-  FInvWorldMatrix := FWorldMatrix.Invert;
-  FInvPivotMatrix := FPivotMatrix.Invert;
-  DirectingAxis := Vector(FWorldMatrix[0,0], FWorldMatrix[1,1], FWorldMatrix[2,2]);
+  FAbsolutePosition:=FWorldMatrix.Row[3];
+  FPosition:=FTranslationMatrix.Row[3];
+  FWorldMatrixT:=wm.Transpose;
+  FInvWorldMatrix:=FWorldMatrix.Invert;
+  DirectingAxis:=Vector(WorldMatrix[0,0],WorldMatrix[1,1],WorldMatrix[2,2],0);
   DirectingAxis.SetNormalize;
-  FWorldMatrixUpdated := true;
-  Inc(FWorldMatrixUpdateCounter);
+  WorldMatrixUpdated:=true;
+
 end;
 
 procedure TMovableObject.PitchObject(Angle: single);
 begin
   //вокруг оси X в YZ
-  if not FWorldMatrixUpdated then UpdateWorldMatrix;
+  if not WorldMatrixUpdated then UpdateWorldMatrix;
   FRotationMatrix := FRotationMatrix.Pitch(TMath.DegToRad(Angle));
-  FPitchAngle := FPitchAngle + Angle;
-  NotifyWorldMatrixChanged;
+  UpdateWorldMatrix;
+  FPitchAngle:=FPitchAngle+Angle;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.RollObject(Angle: single);
 begin
   //вокруг оси Z в XY
+  if not WorldMatrixUpdated then UpdateWorldMatrix;
   FRotationMatrix := FRotationMatrix.Roll(TMath.DegToRad(Angle));
-  FRollAngle := FRollAngle + Angle;
-  NotifyWorldMatrixChanged;
+  UpdateWorldMatrix;
+  FRollAngle:=FRollAngle+Angle;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.TurnObject(Angle: single);
 begin
   //вокруг оси Y в XZ
-  if not FWorldMatrixUpdated then UpdateWorldMatrix;
+  if not WorldMatrixUpdated then UpdateWorldMatrix;
   FRotationMatrix := FRotationMatrix.Turn(TMath.DegToRad(Angle));
-  FTurnAngle := FTurnAngle + Angle;
-  NotifyWorldMatrixChanged;
+  UpdateWorldMatrix;
+  FTurnAngle:=FTurnAngle+Angle;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
-procedure TMovableObject.UpdateWorldMatrix(const aWorld, aNormalWorld,
-  anInvWorld, aWorldT, aPivot, anInvPivot: TMatrix);
+procedure TMovableObject.StoreTransforms(ToStore: TTransforms);
+var wm,mm: TMatrix;
 begin
-  FWorldMatrix := aWorld;
-  FInvWorldMatrix := anInvWorld;
-  FWorldMatrixT := aWorldT;
-  FNormalMatrix := aNormalWorld;
-  FPivotMAtrix := aPivot;
-  FInvPivotMatrix := anInvPivot;
-  DirectingAxis := Vector(FWorldMatrix[0,0], FWorldMatrix[1,1], FWorldMatrix[2,2]);
-  DirectingAxis.SetNormalize;
-  FWorldMatrixUpdated := true;
-  Inc(FWorldMatrixUpdateCounter);
-end;
-
-procedure TMovableObject.ShiftObject(const aPosition: TVector);
-begin
-  FTranslationMatrix := FTranslationMatrix * TMatrix.TranslationMatrix( aPosition );
-  NotifyWorldMatrixChanged;
-end;
-
-procedure TMovableObject.ShiftObject(x, y, z: Single);
-begin
-  ShiftObject(Vector(x, y, z, 1));
-end;
-
-procedure TMovableObject.StoreTransforms(const aTransforms: TTransforms);
-var
-  wm, mm: TMatrix;
-begin
-  if ttModel in aTransforms
-    then wm := FModelMatrix
-    else wm.SetIdentity;
-
-  if ttScale in aTransforms then begin
-    wm := wm * FScaleMatrix;
-    FScaleMatrix.SetIdentity;
-  end;
-
-  if ttRotation in aTransforms then begin
-    wm := wm * FRotationMatrix;
-    FRotationMatrix.SetIdentity;
-  end;
-
-  if ttPosition in aTransforms then begin
-    wm := wm*FTranslationMatrix;
-    FTranslationMatrix.SetIdentity;
-  end;
-
-  mm:=FModelMatrix;
-  ResetMatrices;
-  FModelMatrix:=mm*wm;
-  NotifyWorldMatrixChanged;
+    if ttModel in toStore then wm := FModelMatrix else wm.SetIdentity;
+    if ttScale in toStore then begin wm := wm*FScaleMatrix; FScaleMatrix.SetIdentity; end;
+    if ttRotation in toStore then begin wm := wm*FRotationMatrix; FRotationMatrix.SetIdentity; end;
+    if ttposition in toStore then begin wm := wm*FTranslationMatrix; FTranslationMatrix.SetIdentity; end;
+    mm:=FModelMatrix; ResetMatrices;
+    FModelMatrix:=mm*wm;
+    UpdateWorldMatrix;
 end;
 
 procedure TMovableObject.RotateAround(const aPivot, anUp: TVector; aPitchDelta,
   aTurnDelta: single);
 var p: TVector;
 begin
-  p := AbsolutePosition;
+  if not WorldMatrixUpdated then UpdateWorldMatrix;
+  p := Position;
   p.RotateAround(aPivot, anUp, aPitchDelta, aTurnDelta);
-  AbsolutePosition := p;
+  MoveObject(p);
 end;
 
-procedure TMovableObject.RotateAroundX(Angle: Single);
+procedure TMovableObject.RotateAroundX(Angle: single;
+  AbsoluteRotation: boolean);
 var rm: TMatrix;
 begin
   //вокруг глобальной оси X
-  FXRotationAngle := FXRotationAngle + Angle;
-  rm:=TMatrix.RotationMatrix( TVector( vtX ), TMath.DegToRad(Angle));
-  FRotationMatrix := FRotationMatrix * rm;
-  NotifyWorldMatrixChanged;
+  if not WorldMatrixUpdated then UpdateWorldMatrix;
+  if AbsoluteRotation then begin
+     FRotationMatrix:=TMatrix.RotationMatrix( TVector( vtX ), Angle);
+  end else begin
+     FXRotationAngle:=FXRotationAngle+Angle;
+     rm:=TMatrix.RotationMatrix( TVector( vtX ), Angle);
+     FRotationMatrix:=FRotationMatrix * rm;
+  end;
+  UpdateWorldMatrix;
 end;
 
-procedure TMovableObject.RotateAroundY(Angle: Single);
+procedure TMovableObject.RotateAroundY(Angle: single;
+  AbsoluteRotation: boolean);
 var rm: TMatrix;
 begin
   //вокруг глобальной оси Y
-  FYRotationAngle := FYRotationAngle + Angle;
-  rm := TMatrix.RotationMatrix(TVector( vtY ), TMath.DegToRad(Angle));
-  FRotationMatrix := FRotationMatrix * rm;
-  NotifyWorldMatrixChanged;
+  if not WorldMatrixUpdated then UpdateWorldMatrix;
+  if AbsoluteRotation then begin
+    FRotationMatrix := TMatrix.RotationMatrix(TVector(vtY), Angle);
+  end else begin
+    FYRotationAngle := FYRotationAngle+Angle;
+     rm:=TMatrix.RotationMatrix(TVector( vtY ), Angle);
+     FRotationMatrix:=FRotationMatrix*rm;
+  end;
+  UpdateWorldMatrix;
 end;
 
-procedure TMovableObject.RotateAroundZ(Angle: Single);
+procedure TMovableObject.RotateAroundZ(Angle: single;
+  AbsoluteRotation: boolean);
 var rm: TMatrix;
 begin
   //вокруг глобальной оси Z
-  FZRotationAngle := FZRotationAngle + Angle;
-  rm := TMatrix.RotationMatrix(TVector( vtZ ), TMath.DegToRad(Angle));
-  FRotationMatrix := FRotationMatrix * rm;
-  NotifyWorldMatrixChanged;
-end;
-
-procedure TMovableObject.RotateAround(const aPivot, Axis: TVector; Angle: Single);
-var p: TVector;
-begin
-  p := AbsolutePosition;
-  p := TMatrix.RotationMatrix(Axis, Angle).Transform(p);
-  AbsolutePosition := p;
-end;
-
-procedure TMovableObject.SetParent(const Value: TBaseSceneItem);
-begin
-  if Parent <> Value then begin
-    inherited SetParent(Value);
-    NotifyWorldMatrixChanged;
+  if not WorldMatrixUpdated then UpdateWorldMatrix;
+  if AbsoluteRotation then begin
+     FRotationMatrix:=TMatrix.RotationMatrix(TVector( vtZ ), Angle);
+  end else begin
+     FZRotationAngle:=FZRotationAngle+Angle;
+     rm:=TMatrix.RotationMatrix(TVector( vtZ ), Angle);
+     FRotationMatrix:=FRotationMatrix * rm;
   end;
+  UpdateWorldMatrix;
+end;
+
+procedure TMovableObject.RotateAround(const aPivot, Axis: TVector; Angle: single);
+var np: TVector;
+    mr,mp,mnp,m: TMatrix;
+begin
+  mr:=TMatrix.RotationMatrix(Axis, Angle);
+
+  np:=-aPivot; np[3]:=1;
+  mp:=TMatrix.TranslationMatrix(aPivot);
+  mnp:=TMatrix.TranslationMatrix(np);
+
+  //Поворот вокруг заданной точки
+  m:=FModelMatrix*mp; m:=m*mr; m:=m*mnp;
+  FModelMatrix:=m;
+  UpdateWorldMatrix;
 end;
 
 procedure TMovableObject.SetPitchAngle(const Value: single);
@@ -705,31 +547,22 @@ end;
 
 procedure TMovableObject.setRotMatrix(const Value: TMatrix);
 begin
-  if FRotationMatrix <> Value then begin
-    FRotationMatrix := Value;
-    NotifyWorldMatrixChanged;
-  end;
+  FRotationMatrix := Value;
 end;
 
 procedure TMovableObject.SetScale(const Value: TVector);
 begin
-  RescaleObject(Value);
+  ScaleObject(Value);
 end;
 
-procedure TMovableObject.SetScaleMatrix(const Value: TMatrix);
+procedure TMovableObject.setScaleMatrix(const Value: TMatrix);
 begin
-  if FScaleMatrix = Value then begin
-    FScaleMatrix := Value;
-    NotifyWorldMatrixChanged;
-  end;
+  FScaleMatrix := Value;
 end;
 
-procedure TMovableObject.SetTranslMatrix(const Value: TMatrix);
+procedure TMovableObject.setTranslMatrix(const Value: TMatrix);
 begin
-  if FTranslationMatrix <> Value then begin
-    FTranslationMatrix := Value;
-    NotifyWorldMatrixChanged;
-  end;
+  FTranslationMatrix := Value;
 end;
 
 procedure TMovableObject.SetTurnAngle(const Value: single);
@@ -738,62 +571,36 @@ begin
     TurnObject(Value - FTurnAngle);
 end;
 
-procedure TMovableObject.SetUpVector(const Value: TVector);
+procedure TMovableObject.setWorldMatrix(const Value: TMatrix);
 begin
-  FRotationMatrix := TMatrix.LookAtMatrix(TVector.Null, Direction, Value);
-  FRotationMatrix.SetNormalize;
-  NotifyWorldMatrixChanged;
-end;
-
-procedure TMovableObject.SetXRotationAngle(const Value: single);
-begin
-  if not TMath.SameValue(FXRotationAngle, Value) then
-    RotateAroundX(Value - FXRotationAngle);
-end;
-
-procedure TMovableObject.SetYRotationAngle(const Value: single);
-begin
-  if not TMath.SameValue(FYRotationAngle, Value) then
-    RotateAroundY(Value - FYRotationAngle);
-end;
-
-procedure TMovableObject.SetZRotationAngle(const Value: single);
-begin
-  if not TMath.SameValue(FZRotationAngle, Value) then
-    RotateAroundZ(Value - FZRotationAngle);
+  FWorldMatrix := Value;
 end;
 
 procedure TMovableObject.MoveForward(Step: single);
-var
-  dir: vec3;
 begin
-  dir := Direction.Vec3;
-  FTranslationMatrix[3,0]:=FTranslationMatrix[3,0]+dir[0]*Step;
-  FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+dir[1]*Step;
-  FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+dir[2]*Step;
-  NotifyWorldMatrixChanged;
+  FTranslationMatrix[3,0]:=FTranslationMatrix[3,0]+FDirection[0]*Step;
+  FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+FDirection[1]*Step;
+  FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+FDirection[2]*Step;
+  UpdateWorldMatrix;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.MoveLeft(Step: single);
-var
-  left_: vec3;
 begin
-  left_ := Left.Vec3;
-  FTranslationMatrix[3,0]:=FTranslationMatrix[3,0]+left_[0]*Step;
-  FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+left_[1]*Step;
-  FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+left_[2]*Step;
-  NotifyWorldMatrixChanged;
+  FTranslationMatrix[3,0]:=FTranslationMatrix[3,0]+FLeft[0]*Step;
+  FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+FLeft[1]*Step;
+  FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+FLeft[2]*Step;
+  UpdateWorldMatrix;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.MoveUp(Step: single);
-var
-  up_: vec3;
 begin
-  up_ := Up.Vec3;
-  FTranslationMatrix[3,0]:=FTranslationMatrix[3,0]+up_[0]*Step;
-  FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+up_[1]*Step;
-  FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+up_[2]*Step;
-  NotifyWorldMatrixChanged;
+  FTranslationMatrix[3,0]:=FTranslationMatrix[3,0]+FUp[0]*Step;
+  FTranslationMatrix[3,1]:=FTranslationMatrix[3,1]+FUp[1]*Step;
+  FTranslationMatrix[3,2]:=FTranslationMatrix[3,2]+FUp[2]*Step;
+  UpdateWorldMatrix;
+  DispatchMessage(NM_WorldMatrixChanged);
 end;
 
 procedure TMovableObject.Notify(Sender: TObject; Msg: Cardinal;
@@ -803,39 +610,25 @@ begin
   case Msg of
     NM_WorldMatrixChanged: begin
 //      if Childs.inList(Sender) then
-        NotifyWorldMatrixChanged;
+        DispatchMessage(NM_WorldMatrixChanged);
     end;
     NM_ObjectDestroyed: begin
-      FParent := nil; NotifyWorldMatrixChanged;
+      FParent := nil; UpdateWorldMatrix;
     end;
   end;
 
   inherited;
 end;
 
-procedure TMovableObject.MoveObject(x, y, z: Single);
+procedure TMovableObject.MoveObject(x, y, z: single; AbsolutePos: boolean);
 begin
-  MoveObject(Vector(x, y, z, 1));
+   MoveObject(Vector(x,y,z,1),AbsolutePos);
 end;
 
-procedure TMovableObject.SetAbsoluteDirection(const Value: TVector);
+procedure TMovableObject.ScaleObject(ScaleX, ScaleY, ScaleZ: single;
+  AbsoluteScale: boolean);
 begin
-  Direction := VectorToLocal(Value);
-end;
-
-procedure TMovableObject.SetAbsoluteLeft(const Value: TVector);
-begin
-  Left := VectorToLocal(Value);
-end;
-
-procedure TMovableObject.SetAbsolutePosition(const Value: TVector);
-begin
-  MoveObject(AbsoluteToLocal(Value));
-end;
-
-procedure TMovableObject.SetAbsoluteUp(const Value: TVector);
-begin
-  Up := VectorToLocal(Value);
+  ScaleObject(Vector(ScaleX, ScaleY, ScaleZ, 0),AbsoluteScale);
 end;
 
 procedure TMovableObject.SetDirBehavior(const Value: TDirectionBehavior);
@@ -847,33 +640,38 @@ begin
 end;
 
 procedure TMovableObject.SetDirection(const aDirection: TVector);
+var up,left,right,dir,t: TVector;
 begin
-  FRotationMatrix := TMatrix.LookAtMatrix(TVector.Null, aDirection, Vector(0, 1, 0));
-  FRotationMatrix.SetNormalize;
-  NotifyWorldMatrixChanged;
-end;
-
-procedure TMovableObject.SetLeftVector(const Value: TVector);
-var
-  newUp: TVector;
-begin
-  newUp := Direction.Cross(Value);
-  FRotationMatrix := TMatrix.LookAtMatrix(TVector.Null, Direction, newUp);
-  FRotationMatrix.SetNormalize;
-  NotifyWorldMatrixChanged;
-end;
-
-procedure TMovableObject.SetModelMatrix(const Value: TMatrix);
-begin
-  if FModelMatrix <> Value then begin
-    FModelMatrix := Value;
-    NotifyWorldMatrixChanged;
+  up:=FModelMatrix.Row[1]; up.SetNormalize;
+  dir:=aDirection.Normalize;
+  right:=Dir.Cross(Up);
+  if right.Length<1e-5  then begin
+     t:= vtZ;
+     right:=t.Cross(Up);
+     if right.Length<1e-5 then begin
+        t:= vtX;
+        right:=t.Cross(Up);
+     end;
   end;
+  right.SetNormalize;
+  Up:=right.Cross(Dir); Up.SetNormalize;
+  Left:=Up.Cross(Dir); Left.SetNormalize;
+  FModelMatrix.Row[0]:=Left.Vec4;
+  FModelMatrix.Row[1]:=Up.Vec4;
+  FModelMatrix.Row[2]:=Dir.Vec4;
+  FRotationMatrix.SetIdentity;
+  UpdateWorldMatrix;
 end;
 
-function TMovableObject.LocalToAbsolute(const aPosition: TVector): TVector;
+procedure TMovableObject.setModelMatrix(const Value: TMatrix);
 begin
-  Result := PivotMatrix.Transform(aPosition);
+  FModelMatrix := Value;
+end;
+
+function TMovableObject.LocalToAbsolute(P: TVector): TVector;
+begin
+  if not WorldMatrixUpdated then UpdateWorldMatrix;
+  Result:=P*FWorldMatrix.Matrix4;
 end;
 
 { TTriangleList }

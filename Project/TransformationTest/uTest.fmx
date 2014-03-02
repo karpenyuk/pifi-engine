@@ -4,7 +4,7 @@ object Form1: TForm1
   BiDiMode = bdLeftToRight
   Caption = 'Transformation test'
   BorderStyle = bsToolWindow
-  ClientHeight = 106
+  ClientHeight = 99
   ClientWidth = 445
   Position = poDesktopCenter
   Transparency = False

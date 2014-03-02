@@ -380,7 +380,7 @@ Type
     function CreateTexture: TTexture;
 
     procedure Allocate(aWithMipmaps: boolean = false);
-    procedure SaveToStream(aStream: TStream); override;
+    procedure SaveToStream(aStream: TStream); virtual;
     procedure LoadFromStream(aStream: TStream); override;
     //virtual function for implementing different image format loader
     procedure LoadImageFromStream(aStream: TStream); virtual;
@@ -808,105 +808,98 @@ Type
     property bbRadius: single read FbbRadius;
   end;
 
-  TMatrixList = TDataList<TMatrix>;
+  TLocalMatrixTree = GRedBlackTree<TPersistentResource,TMatrix>;
 
-  TMeshAssembly = class(TNotifiableObject)
+  TMeshList = class
   private
-    FMeshes: TList;
-    FLocalMatrices: TMatrixList;
+    FList: TList;
+    FLocalMatrices: TLocalMatrixTree;
     function getMesh(Index: integer): TMesh;
     function getCount: integer;
-    function getMatrix(Index: integer): TMatrix;
-    procedure setMatrix(Index: integer; const Value: TMatrix);
+    function getMatrix(aMesh: TMesh): TMatrix;
+    procedure setMatrix(aMesh: TMesh; const Value: TMatrix);
   public
-    constructor Create; override;
+    constructor Create;
     constructor CreateFrom(aMesh: TMesh); overload;
     constructor CreateFrom(aVertexObject: TVertexObject); overload;
-    destructor Destroy; override;
-    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
-    procedure Add(aMesh: TMesh); overload;
-    procedure Add(aMesh: TMesh; const aLocalMatrix: TMatrix); overload;
-    function AddNewMesh(aVertexObject: TVertexObject): TMesh; overload;
-    function AddNewMesh(aVertexObject: TVertexObject; const aLocalMatrix: TMatrix): TMesh; overload;
-    procedure Delete(Index: Integer);
-    procedure DeleteMesh(aMesh: TMesh);
+    destructor Destroy; override;
+    function AddNewMesh(aVertexObject: TVertexObject): TMesh;
 
     property Items[Index: integer]: TMesh read getMesh; default;
-    property LocalMatrices[Index: integer]: TMatrix read getMatrix write setMatrix;
+    property LocalMatrices[aMesh: TMesh]: TMatrix read getMatrix write setMatrix;
     property Count: integer read getCount;
   end;
 
   TLodFunction = function (aDistance: single): integer;
 
-  TMeshLOD = class(TNotifiableObject)
-  private
-    FAssembly: TMeshAssembly;
-    FDistance: Single;
-  public
-    constructor CreateFrom(anAssembly: TMeshAssembly; aDistance: single);
-    destructor Destroy; override;
-    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
-
-    property Assembly: TMeshAssembly read FAssembly;
-    property Distance: Single read FDistance;
+  TLoD = class
+    LoD: TMeshList;
+    Distance: single;
+    constructor Create(aLoD: TMeshList; aDistance: single);
   end;
 
-  TLodsDataList = TDataList<TMeshLOD>;
+  TLodsDataList = TDataList<TLoD>;
 
   { TODO : Реализовать закон смены ЛОДов + функцию GetMeshLod с выборкой
            по расстоянию из библиотеки ЛОДов.
   }
 
-  TLODsController = class (TNotifiableObject)
+  TLODsController = class (TPersistentResource)
   private
     FList: TLodsDataList;
     FLodFunction: TLodFunction;
     FConstant, FLinear, FQuadric: single;
     FMinLod, FMaxLod: integer;
-    function getLod(Index: integer): TMeshLOD;
+    function getLod(Index: integer): TLod;
     function getCount: integer;
   public
-    constructor CreateFrom(aBaseLod: TMeshAssembly);
+    constructor Create(aBaseLod: TMeshList);
+    constructor CreateOwner(aBaseLod: TMeshList; aOwner: TObject);
     destructor Destroy; override;
-    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     procedure SetLodEquation(aConstant, aLinear, aQuadric: single);
     procedure SetLodRange(aMinLod, aMaxLod: integer);
 
-    function GetMeshLod(const aLod: integer): TMeshAssembly; overload;
-    function GetMeshLod(const aDistance: single): TMeshAssembly; overload;
+    function GetMeshLod(const aLod: integer): TMeshList; overload;
+    function GetMeshLod(const aDistance: single): TMeshList; overload;
 
-    function AddLod(aLoD: TMeshAssembly; aDistance: single): integer; overload;
-    function AddLod(aLoD: TMeshLOD): integer; overload;
+    function AddLod(aLoD: TMeshList; aDistance: single): integer; overload;
+    function AddLod(aLoD: TLoD): integer; overload;
 
     property onGetLod: TLodFunction read FLodFunction write FLodFunction;
-    property LODS[Index: integer]: TMeshLOD read getLod; default;
+    property LODS[Index: integer]: TLod read getLod; default;
     property Count: integer read getCount;
 
   end;
 
   TMeshObjectsList = class;
 
+  // TMeshObject must belongs to only one TSceneObject
+  // beacause it depent of its transformations
   TMeshObject = class(TBaseRenderResource)
   private
     FLods: TLODsController;
-    FOccluder: TMeshAssembly;
+    FOccluder: TMeshList;
     FCollider: TTriangleList;
     FExtents: TExtents;
-    function GetAssembly: TMeshAssembly;
+    function getMeshes: TMeshList;
+  protected
+    procedure setOwner(const Value: TObject); override;
   public
     FriendlyName: string;
 
     constructor Create; override;
-    constructor CreateFrom(aMesh: TMeshAssembly); overload;
+    constructor CreateFrom(aMesh: TMeshList); overload;
     constructor CreateFrom(aMesh: TMesh); overload;
     destructor Destroy; override;
-    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
-    property Mesh: TMeshAssembly read GetAssembly;
+    function SetMesh(aMesh: TMeshList): integer; overload;
+    function SetMesh(aMesh: TMesh): integer; overload;
+
+    property Meshes: TMeshList read getMeshes;
     property LODS: TLODsController read FLods;
-    property Occluder: TMeshAssembly read FOccluder;
+    property Occluder: TMeshList read FOccluder;
     property Collider: TTriangleList read FCollider;
   end;
 
@@ -936,7 +929,6 @@ Type
 
     constructor Create; override;
     destructor Destroy; override;
-    function MakeClone(aWithChildren: Boolean): TMovableObject; override;
 
     property MeshObjects: TMeshObjectsList read FMeshObjects;
   end;
@@ -969,7 +961,7 @@ Type
     procedure SetActive(const Value: boolean);
     procedure SetMultisample(const Value: TMultisampleFormat);
     function GetRenderBuffer(aRenderBuffer: TRenderBuffer): TTexture;
-    function GetTexture(aAttachmentSlot: Integer): TTexture;
+    function GetTexture(aAttachmentSlot: cardinal): TTexture;
     function GetColorCount: Integer;
 
   public
@@ -988,7 +980,7 @@ Type
     property Size: vec2i read FSize write SetSize;
     property Resizable: boolean read FResizable write FResizable;
     property ColorAttachmentCount: Integer read GetColorCount;
-    property ColorAttachments[aSlot: Integer]: TTexture read GetTexture;
+    property ColorAttachments[aSlot: cardinal]: TTexture read GetTexture;
     property BufferAttachments[aBuffer: TRenderBuffer]: TTexture read GetRenderBuffer;
     property RenderBuffers: TRenderBuffers read FRenderBuffers;
     property ReadBackBuffers: TImageHolders read FReadBackBuffers;
@@ -1001,8 +993,6 @@ Type
   private
     FViewMatrix: TMatrix;
     FProjMatrix: TMatrix;
-    FViewMatrixUpdated: Boolean;
-    FProjMatrixUpdated: Boolean;
     FRenderTarget: TFrameBuffer;
     FViewPortSize: vec2i;
     FFoV: single;
@@ -1024,10 +1014,7 @@ Type
     procedure RebuildProjMatrix;
     procedure RebuildViewMatrix;
     function GetProjMatrix: TMatrix;
-  protected
-    procedure NotifyViewMatrixChanged;
-    procedure NotifyProjMatrixChanged;
-    procedure NotifyWorldMatrixChanged; override;
+
   public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
     function GetViewMatrix: TMatrix;
@@ -1036,6 +1023,7 @@ Type
     constructor Create; override;
     class function IsInner: boolean; override;
 
+    procedure UpdateWorldMatrix(UseMatrix: TTransforms=ALL_TRANSFORM); override;
     {: Adjusts distance from camera to target by applying a ratio.
        If ViewTarget is nil, nothing happens. This method helps in quickly
        implementing camera controls. Only the camera's position is changed. }
@@ -1118,9 +1106,6 @@ var
   vRegisteredResource: TRegisteredResource;
 
 implementation
-
-uses
-  uMath;
 
 { TColorVectorClass }
 
@@ -2243,53 +2228,59 @@ end;
 
 constructor TMeshObject.Create;
 begin
-  Assert(False, 'Use CreateFrom constructor');
+  inherited;
+  FLods := TLODsController.Create(nil);
+  FOccluder := TMeshList.Create;
+  FCollider := TTriangleList.Create;
 end;
 
-constructor TMeshObject.CreateFrom(aMesh: TMeshAssembly);
+constructor TMeshObject.CreateFrom(aMesh: TMeshList);
 begin
   inherited Create;
-  FLods := TLODsController.CreateFrom(aMesh);
-  FLods.Subscribe(Self);
-  FOccluder := TMeshAssembly.Create;
+  FOccluder := TMeshList.Create;
   FCollider := TTriangleList.Create;
+  FLods := TLODsController.Create(aMesh);
 end;
 
 constructor TMeshObject.CreateFrom(aMesh: TMesh);
 begin
   inherited Create;
-  FLods := TLODsController.CreateFrom(TMeshAssembly.CreateFrom(aMesh));
-  FLods.Subscribe(Self);
-  FOccluder := TMeshAssembly.Create;
+  FOccluder := TMeshList.Create;
   FCollider := TTriangleList.Create;
+  FLods := TLODsController.Create(TMeshList.CreateFrom(aMesh));
 end;
 
 destructor TMeshObject.Destroy;
 begin
-  if Assigned(FLods) then FLods.UnSubscribe(Self);
   FLods.Free;
   FOccluder.Free;
   FCollider.Free;
+  if assigned(Owner) and (Owner is TSceneItemList)
+  then TSceneItemList(Owner).RemoveSceneItem(TBaseSceneItem(self));
   inherited;
 end;
 
-function TMeshObject.GetAssembly: TMeshAssembly;
+function TMeshObject.getMeshes: TMeshList;
 begin
   result:=FLods.GetMeshLod(0);
 end;
 
-procedure TMeshObject.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+function TMeshObject.SetMesh(aMesh: TMeshList): integer;
 begin
+
+end;
+
+function TMeshObject.SetMesh(aMesh: TMesh): integer;
+begin
+
+end;
+
+procedure TMeshObject.setOwner(const Value: TObject);
+begin
+  if assigned(Owner) and (Owner is TSceneItemList)
+  then TSceneItemList(Owner).RemoveSceneItem(TBaseSceneItem(self));
+
   inherited;
-  if Sender = FLODS then begin
-    case Msg of
-      NM_ResourceChanged, NM_LocalMatrixChanged: DispatchMessage(NM_ResourceChanged, Params);
-      NM_ObjectDestroyed: begin
-        FLODS := nil;
-        DispatchMessage(NM_ResourceChanged);
-      end;
-    end;
-  end;
 end;
 
 { TRegisteredResource }
@@ -2324,117 +2315,59 @@ begin
     FResource.Delete(i);
 end;
 
-{ TMeshAssembly }
+{ TMeshList }
 
-function TMeshAssembly.AddNewMesh(aVertexObject: TVertexObject): TMesh;
+function TMeshList.AddNewMesh(aVertexObject: TVertexObject): TMesh;
 begin
-  Result := TMesh.CreateFrom(aVertexObject,'VertexObject'+inttostr(FMeshes.Count));
-  Add(Result);
+  result := TMesh.CreateFrom(aVertexObject,'VertexObject'+inttostr(FList.Count));
+  FList.Add(result);
 end;
 
-procedure TMeshAssembly.Add(aMesh: TMesh);
-begin
-  Add(aMesh, TMatrix.IdentityMatrix);
-end;
-
-procedure TMeshAssembly.Add(aMesh: TMesh; const aLocalMatrix: TMatrix);
-begin
-  FMeshes.Add(aMesh);
-  FLocalMatrices.Add(aLocalMatrix);
-  aMesh.Subscribe(Self);
-end;
-
-function TMeshAssembly.AddNewMesh(aVertexObject: TVertexObject;
-  const aLocalMatrix: TMatrix): TMesh;
-begin
-  Result := AddNewMesh(aVertexObject);
-  Add(Result, aLocalMatrix);
-end;
-
-constructor TMeshAssembly.Create;
+constructor TMeshList.Create;
 begin
   inherited;
-  FMeshes := TList.Create;
-  FLocalMatrices := TMatrixList.Create;
+  FList := TList.Create;
+  FLocalMatrices := TLocalMatrixTree.Create(ResourceComparer, nil);
 end;
 
-constructor TMeshAssembly.CreateFrom(aMesh: TMesh);
+constructor TMeshList.CreateFrom(aMesh: TMesh);
 begin
   Create;
-  Add(aMesh);
+  FList.Add(aMesh);
 end;
 
-constructor TMeshAssembly.CreateFrom(aVertexObject: TVertexObject);
+constructor TMeshList.CreateFrom(aVertexObject: TVertexObject);
 begin
-  CreateFrom(TMesh.CreateFrom(aVertexObject, 'VertexObject'+inttostr(FMeshes.Count)));
+  CreateFrom(TMesh.CreateFrom(aVertexObject, 'VertexObject'+inttostr(FList.Count)));
 end;
 
-procedure TMeshAssembly.Delete(Index: Integer);
-var
-  mesh: TMesh;
+destructor TMeshList.Destroy;
 begin
-  mesh := Items[Index];
-  mesh.UnSubscribe(Self);
-  FMeshes.Delete(Index);
-  FLocalMatrices.Delete(Index);
-  DispatchMessage(NM_ResourceChanged, mesh);
-end;
-
-procedure TMeshAssembly.DeleteMesh(aMesh: TMesh);
-var i: integer;
-begin
-  i := FMeshes.IndexOf(aMesh);
-  if i > -1 then Delete(i);
-end;
-
-destructor TMeshAssembly.Destroy;
-var
-  i: Integer;
-begin
-  for i := 0 to FMeshes.Count - 1 do
-    Items[i].UnSubscribe(Self);
-  FMeshes.Free;
-  FLocalMatrices.Free;
+  FreeObjectList(FList);
+  FLocalMatrices.Destroy;
   inherited;
 end;
 
-function TMeshAssembly.getCount: integer;
+function TMeshList.getCount: integer;
 begin
-  Result := FMeshes.Count;
+  result := FList.Count;
 end;
 
-function TMeshAssembly.getMatrix(Index: integer): TMatrix;
+function TMeshList.getMatrix(aMesh: TMesh): TMatrix;
 begin
-  Result := FLocalMatrices[Index];
+  Assert(FList.IndexOf(aMesh) > -1, 'Mesh not belongs to list');
+  if not FLocalMatrices.Find(aMesh, Result) then Result := TMatrix.IdentityMatrix;
 end;
 
-function TMeshAssembly.getMesh(Index: integer): TMesh;
+function TMeshList.getMesh(Index: integer): TMesh;
 begin
-  result := FMeshes[Index];
+  result := FList[Index];
 end;
 
-procedure TMeshAssembly.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
-var
-  i: integer;
+procedure TMeshList.setMatrix(aMesh: TMesh; const Value: TMatrix);
 begin
-  inherited;
-  i := FMeshes.IndexOf(Sender);
-  if i > -1 then begin
-    case Msg of
-      NM_ResourceChanged: DispatchMessage(NM_ResourceChanged);
-      NM_ObjectDestroyed: begin
-        FMeshes.Delete(i);
-        FLocalMatrices.Delete(i);
-        DispatchMessage(NM_ResourceChanged);
-      end;
-    end;
-  end;
-end;
-
-procedure TMeshAssembly.setMatrix(Index: integer; const Value: TMatrix);
-begin
-  FLocalMatrices[Index] := Value;
-  DispatchMessage(NM_LocalMatrixChanged, FMeshes[Index]);
+  Assert(FList.IndexOf(aMesh) > -1, 'Mesh not belongs to list');
+  FLocalMatrices.Add(aMesh, Value);
 end;
 
 { TMesh }
@@ -3012,12 +2945,6 @@ begin
   inherited;
 end;
 
-function TSceneObject.MakeClone(aWithChildren: Boolean): TMovableObject;
-begin
-  Result := inherited MakeClone(aWithChildren);
-  TSceneObject(Result).FMeshObjects.Assign(FMeshObjects);
-end;
-
 { TAttribList }
 
 function TAttribList.ExtractAttrib(aSemantic: TAttribType): Boolean;
@@ -3559,11 +3486,12 @@ var
 begin
   if Assigned(FViewTarget) then
   begin
+    UpdateWorldMatrix;
     // calculate vector from target to camera in absolute coordinates
-    v := AbsolutePosition - FViewTarget.AbsolutePosition;
+    v := {Absolute}Position - FViewTarget.AbsolutePosition;
     // ratio -> translation vector
     v.SetScale(-(1 - distanceRatio));
-    v := v + AbsolutePosition;
+    v := v + {Absolute}Position;
     MoveObject(v);
   end;
 end;
@@ -3584,13 +3512,13 @@ end;
 
 function TSceneCamera.GetProjMatrix: TMatrix;
 begin
-  if not FProjMatrixUpdated then RebuildProjMatrix;
+  RebuildProjMatrix;
   Result := FProjMatrix;
 end;
 
 function TSceneCamera.GetViewMatrix: TMatrix;
 begin
-  if not FViewMatrixUpdated then RebuildViewMatrix;
+  RebuildViewMatrix;
   Result := FViewMatrix;
 end;
 
@@ -3601,35 +3529,19 @@ end;
 
 procedure TSceneCamera.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
-  inherited;
-  if Sender = FViewTarget then
+  if sender = FViewTarget then
+    case Msg of
+      NM_WorldMatrixChanged: RebuildViewMatrix;
+      NM_ObjectDestroyed: FViewTarget := nil;
+    end;
+  if sender = Owner then
     case Msg of
       NM_WorldMatrixChanged: begin
-        NotifyViewMatrixChanged;
+        UpdateWorldMatrix; RebuildViewMatrix;
       end;
-      NM_ObjectDestroyed: begin
-        FViewTarget := nil;
-        NotifyViewMatrixChanged;
-      end;
+      NM_ObjectDestroyed: UpdateWorldMatrix;
     end;
-end;
-
-procedure TSceneCamera.NotifyViewMatrixChanged;
-begin
-  FViewMatrixUpdated := false;
-  DispatchMessage(NM_ViewMatrixChanged);
-end;
-
-procedure TSceneCamera.NotifyProjMatrixChanged;
-begin
-  FProjMatrixUpdated := false;
-  DispatchMessage(NM_ProjMatrixChanged);
-end;
-
-procedure TSceneCamera.NotifyWorldMatrixChanged;
-begin
   inherited;
-  NotifyViewMatrixChanged;
 end;
 
 procedure TSceneCamera.RebuildProjMatrix;
@@ -3638,16 +3550,16 @@ begin
     FProjMatrix := TMatrix.OrthoMatrix(0,FViewPortSize[0],0,FViewPortSize[1],FzNear, FzFar)
   else
     FProjMatrix := TMatrix.PerspectiveMatrix(FFov,FViewPortSize[0]/FViewPortSize[1],FzNear, FzFar);
-  FProjMatrixUpdated := true;
+  DispatchMessage(NM_ProjMatrixChanged);
 end;
 
 procedure TSceneCamera.RebuildViewMatrix;
 begin
   if assigned(FViewTarget) then
-    FViewMatrix := TMatrix.LookAtMatrix(AbsolutePosition, FViewTarget.AbsolutePosition,Up)
+    FViewMatrix := TMatrix.LookAtMatrix(Position,FViewTarget.Position,Up)
   else
-    FViewMatrix := TMatrix.LookAtMatrix(AbsolutePosition, AbsolutePosition + AbsoluteDirection,Up);
-  FViewMatrixUpdated := true;
+    FViewMatrix := TMatrix.LookAtMatrix(Position,Position + Direction,Up);
+  DispatchMessage(NM_ViewMatrixChanged);
 end;
 
 procedure TSceneCamera.SetEffectPipeline(const Value: TEffectPipeline);
@@ -3657,16 +3569,13 @@ end;
 
 procedure TSceneCamera.SetFoV(const Value: single);
 begin
-  if not TMath.SameValue(FFoV, Value) then begin
-    FFoV := Value;
-    NotifyProjMatrixChanged;
-  end;
+  FFoV := Value;
+  RebuildProjMatrix;
 end;
 
 procedure TSceneCamera.SetProjMatrix(const Value: TMatrix);
 begin
   FProjMatrix := Value;
-  DispatchMessage(NM_ProjMatrixChanged);
 end;
 
 procedure TSceneCamera.SetRenderTarget(const Value: TFrameBuffer);
@@ -3681,17 +3590,12 @@ end;
 procedure TSceneCamera.SetViewMatrix(const Value: TMatrix);
 begin
   FViewMatrix := Value;
-  DispatchMessage(NM_ViewMatrixChanged);
 end;
 
 procedure TSceneCamera.SetViewPortSize(const Value: vec2i);
 begin
-  if (FViewPortSize[0] <> Value[0]) or (FViewPortSize[1] <> Value[1]) then
-  begin
-    FViewPortSize := Value;
-    if assigned(FRenderTarget) then FRenderTarget.SetSize(Value);
-    NotifyProjMatrixChanged;
-  end;
+  FViewPortSize := Value;
+  if assigned(FRenderTarget) then FRenderTarget.SetSize(Value);
 end;
 
 procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
@@ -3704,24 +3608,26 @@ begin
     if assigned(FViewTarget) then begin
       FViewTarget.Subscribe(self);
     end;
-    NotifyViewMatrixChanged;
+    RebuildViewMatrix;
   end;
 end;
 
 procedure TSceneCamera.SetzFar(const Value: single);
 begin
-  if not TMath.SameValue(FzFar, Value) then begin
-    FzFar := Value;
-    NotifyProjMatrixChanged;
-  end;
+  FzFar := Value;
+  RebuildProjMatrix;
 end;
 
 procedure TSceneCamera.SetzNear(const Value: single);
 begin
-  if not TMath.SameValue(FzNear, Value) then begin
-    FzNear := Value;
-    NotifyProjMatrixChanged;
-  end;
+  FzNear := Value;
+  RebuildProjMatrix;
+end;
+
+procedure TSceneCamera.UpdateWorldMatrix(UseMatrix: TTransforms);
+begin
+  RebuildViewMatrix;
+  inherited;
 end;
 
 { TFrameBuffer }
@@ -3813,7 +3719,7 @@ begin
   end;
 end;
 
-function TFrameBuffer.GetTexture(aAttachmentSlot: Integer): TTexture;
+function TFrameBuffer.GetTexture(aAttachmentSlot: cardinal): TTexture;
 begin
   if (aAttachmentSlot < FColorAttachments.Count)
   then result := FColorAttachments[aAttachmentSlot]
@@ -3872,30 +3778,32 @@ end;
 
 { TLODsController }
 
-function TLODsController.AddLod(aLoD: TMeshAssembly; aDistance: single): integer;
+function TLODsController.AddLod(aLoD: TMeshList; aDistance: single): integer;
 begin
-  Result := AddLod(TMeshLOD.CreateFrom(aLod,aDistance));
+  result := FList.Add(TLod.Create(aLod,aDistance));
 end;
 
-function TLODsController.AddLod(aLoD: TMeshLOD): integer;
+function TLODsController.AddLod(aLoD: TLoD): integer;
 begin
-  Result := FList.Add(aLod);
-  aLod.Subscribe(Self);
+  result := FList.Add(aLod);
 end;
 
-constructor TLODsController.CreateFrom(aBaseLod: TMeshAssembly);
+constructor TLODsController.Create(aBaseLod: TMeshList);
 begin
   inherited Create;
   FList := TLodsDataList.Create;
-  if Assigned(aBaseLod) then AddLod(TMeshLOD.CreateFrom(aBaseLod, 0));
+  FList.Add(TLod.Create(aBaseLod, 0));
   FMinLod := 0; FMaxLod := high(Integer);
 end;
 
-destructor TLODsController.Destroy;
-var
-  i: integer;
+constructor TLODsController.CreateOwner(aBaseLod: TMeshList; aOwner: TObject);
 begin
-  for i := 0 to FList.Count - 1 do FList[i].UnSubscribe(Self);
+  Create(aBaseLod);
+  Owner := aOwner;
+end;
+
+destructor TLODsController.Destroy;
+begin
   FList.Free;
   inherited;
 end;
@@ -3905,51 +3813,34 @@ begin
   result := FList.Count;
 end;
 
-function TLODsController.getLod(Index: integer): TMeshLOD;
+function TLODsController.getLod(Index: integer): TLod;
 begin
   result := FList[min(Index,FList.Count-1)];
 end;
 
-function TLODsController.GetMeshLod(const aLod: integer): TMeshAssembly;
+function TLODsController.GetMeshLod(const aLod: integer): TMeshList;
 var n: integer;
 begin
   n := max(aLod, FMinLod);
   n := min(n,FMaxLod);
-  if n<FList.Count then result := FList[n].Assembly
+  if n<FList.Count then result := FList[n].LoD
   else result:=nil;
 end;
 
-function TLODsController.GetMeshLod(const aDistance: single): TMeshAssembly;
+function TLODsController.GetMeshLod(const aDistance: single): TMeshList;
 var i: integer;
 begin
   if assigned(FLodFunction) then begin
     i:=FLodFunction(aDistance);
     i:=max(FMinLod,i); i:=min(FMaxLod,i);
-    result:=FList[i].Assembly;
+    result:=FList[i].LoD;
   end else begin
-    for i:= FList.Count-1 downto 0 do
-      if FList[i].Distance <= aDistance then exit(FList[i].Assembly);
-    result:=FList[0].Assembly;
-  end;
-end;
-
-procedure TLODsController.Notify(Sender: TObject; Msg: Cardinal;
-  Params: pointer);
-var
-  LOD: TMeshLOD absolute Sender;
-  i: integer;
-begin
-  inherited;
-  i := FList.IndexOf(LOD);
-  if i > -1 then begin
-    case Msg of
-      NM_ResourceChanged: DispatchMessage(NM_ResourceChanged, Params);
-      NM_ObjectDestroyed: begin
-        FList.Delete(i);
-        DispatchMessage(NM_ResourceChanged, Params);
+    for i:= FList.Count-1 downto 0 do begin
+      if FList[i].Distance <= aDistance then begin
+        result:=FList[i].LoD; exit;
       end;
-      NM_LocalMatrixChanged: DispatchMessage(NM_LocalMatrixChanged, Params);
     end;
+    result:=FList[0].LoD;
   end;
 end;
 
@@ -3963,34 +3854,11 @@ begin
   FMinLod := aMinLod; FMaxLod := aMaxLod;
 end;
 
-{ TMeshLOD }
+{ TLoD }
 
-constructor TMeshLOD.CreateFrom(anAssembly: TMeshAssembly; aDistance: single);
+constructor TLoD.Create(aLoD: TMeshList; aDistance: single);
 begin
-  inherited Create;
-  FAssembly := anAssembly;
-  FDistance := aDistance;
-  FAssembly.Subscribe(Self);
-end;
-
-destructor TMeshLOD.Destroy;
-begin
-  if Assigned(FAssembly) then FAssembly.UnSubscribe(Self);
-  inherited;
-end;
-
-procedure TMeshLOD.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
-begin
-  inherited;
-  if Sender = FAssembly then begin
-    case Msg of
-      NM_ResourceChanged, NM_LocalMatrixChanged: DispatchMessage(NM_ResourceChanged, Params);
-      NM_ObjectDestroyed: begin
-        FAssembly := nil;
-        DispatchMessage(NM_ResourceChanged);
-      end;
-    end;
-  end;
+  LoD:=aLod; Distance:=aDistance;
 end;
 
 { TBaseBuiltinUniform }

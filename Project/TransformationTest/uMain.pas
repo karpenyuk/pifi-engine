@@ -17,7 +17,6 @@ type
       Buttons: TCMouseButtons);
     procedure onMouseMove(Sender: TObject; X, Y: Integer;
       Buttons: TCMouseButtons);
-    procedure onMouseWheel(Sender: TObject; Shift: TCShiftState; WheelDelta: Integer; var Handled: Boolean);
     procedure onDebugMessage(const AMessage: string);
   private
     { Private declarations }
@@ -62,14 +61,6 @@ begin
   MY := Y;
 end;
 
-procedure TDemo.onMouseWheel(Sender: TObject; Shift: TCShiftState;
-  WheelDelta: Integer; var Handled: Boolean);
-begin
-  if WheelDelta > 0
-    then FSceneGraph.Camera.AdjustDistanceToTarget(1.1)
-    else FSceneGraph.Camera.AdjustDistanceToTarget(1/1.1);
-end;
-
 procedure TDemo.onResize(Sender: TObject; NewWidth, NewHeight: Integer);
 begin
   FSceneGraph.Camera.ViewPortSize := Vec2iMake(NewWidth, NewHeight);
@@ -96,10 +87,8 @@ var
   MeshObject: TMeshObject;
   Shader: TShaderProgram;
   Material: TMaterialObject;
-  SceneObject, Last, Etalon: TSceneObject;
+  SceneObject, Last: TSceneObject;
   Light: TLightSource;
-  i, j: Integer;
-  x, z: Single;
 begin
   FSceneGraph := TSceneGraph.Create;
 
@@ -124,8 +113,7 @@ begin
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(SceneObject);
   Last := SceneObject;
-  Etalon := SceneObject;
-  SceneObject.MoveUp(-10);
+  SceneObject.MoveUp(-5);
 
   VO := CreateSphere(1.5, 24, 24);
   Mesh := TMesh.CreateFrom(VO);
@@ -206,15 +194,16 @@ begin
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
   SceneObject.MoveUp(1.65);
-  SceneObject.MoveLeft(1.65);
+  SceneObject.MoveForward(1.65);
 
   MeshObject := TMeshObject.CreateFrom(Mesh);
   SceneObject:= Storage.CreateSceneObject;
   SceneObject.FriendlyName := 'Finger2';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
+  Last := SceneObject;
   SceneObject.MoveUp(1.65);
-  SceneObject.MoveLeft(-1.65);
+  SceneObject.MoveForward(-1.65);
 
   Light := Storage.CreateLight;
   Light.LightStyle := lsParallel;
@@ -222,20 +211,9 @@ begin
   Light.Specular.SetColor(250, 250, 250, 255);
   FSceneGraph.AddItem(light);
 
-  for i := -5 to 5 do
-    for j := -5 to 5 do begin
-      if (i = 0) and (j = 0) then continue;
-      x := i * 15 + 5*(random-0.5);
-      z := j * 15 + 5*(random-0.5);
-      SceneObject := Etalon.MakeClone(True) as TSceneObject;
-      SceneObject.ShiftObject(x, 0, z);
-      SceneObject.TurnObject(360*random);
-    end;
-
   FSceneGraph.Camera.FoV:=60;
-  FSceneGraph.Camera.zFar := 500;
-  FSceneGraph.Camera.MoveObject(100, 100, -100);
-  FSceneGraph.Camera.ViewTarget := FSceneGraph.Items['Hinge1'] as TSceneObject;
+  FSceneGraph.Camera.MoveObject(0, 5, -25);
+  FSceneGraph.Camera.ViewTarget := FSceneGraph.Items['Hinge3'] as TSceneObject;
 end;
 
 destructor TDemo.Destroy;
