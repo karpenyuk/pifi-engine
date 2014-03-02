@@ -37,6 +37,7 @@ Type
   TValueComponent = 1..4;
 
   TShaderType = (stVertex, stTessControl, stTessEval,stGeometry, stFragment, stCompute);
+  TShaderTypeSet = set of TShaderType;
 
   TBufferType = (btArray, btAtomicCounter, btCopyRead, btCopyWrite, btDrawIndirect,
                  btDispatchIndirect, btElementArray, btPixelPack, btPixelUnpack,
@@ -254,13 +255,15 @@ Type
   //Window events procs
   TCMouseButton = (mbLeft, mbRight, mbMiddle);
   TCMouseButtons = set of TCMouseButton;
+  TCShiftState = set of (ssShift, ssAlt, ssCtrl,
+    ssLeft, ssRight, ssMiddle, ssDouble, ssTouch, ssPen, ssCommand);
 
   TRenderEvent = procedure (Sender: TObject; aFrameTime: double) of object;
   TResizeEvent = procedure (Sender: TObject; aWidth, aHeight: integer) of object;
 
   TKeyEvent = procedure (Sender: TObject; Key: byte) of object;
   TMouseEvent = procedure (Sender: TObject; X,Y: integer; Buttons: TCMouseButtons) of object;
-
+  TMouseWheelEvent = procedure(Sender: TObject; Shift: TCShiftState; WheelDelta: Integer; var Handled: Boolean) of object;
 
 const
   CValueSizes: array[TValueType] of byte = (1, 2, 4, 4, 4, 8);
@@ -303,6 +306,7 @@ const
   NM_WorldMatrixChanged = 10001;
   NM_ViewMatrixChanged = 10002;
   NM_ProjMatrixChanged = 10003;
+  NM_LocalMatrixChanged = 10004;
   NM_ResourceLoaded  = 10101;
   NM_ResourceChanged = 10102;
   NM_ObjectDestroyed = 10201;

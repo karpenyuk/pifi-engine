@@ -60,6 +60,7 @@ type
     FOnMouseUp: TMouseEvent;
     FOnKeyDown: TKeyEvent;
     FOnKeyUp: TKeyEvent;
+    FOnMouseWheel: TMouseWheelEvent;
     FOnDebugMessage: TOnDebugMessage;
     procedure setActive(const Value: boolean);
     procedure KillGLWindow;
@@ -108,7 +109,7 @@ type
     property onMouseDown: TMouseEvent read FOnMouseDown write FOnMouseDown;
     property onMouseUp: TMouseEvent read FOnMouseUp write FOnMouseUp;
     property onMouseMove: TMouseEvent read FOnMouseMove write FOnMouseMove;
-
+    property onMouseWheel: TMouseWheelEvent read FOnMouseWheel write FOnMouseWheel;
 
   end;
 
@@ -229,6 +230,23 @@ var
 begin
   if Assigned(userParam) and Assigned(window.FOnDebugMessage) then
     window.FOnDebugMessage(string(ParseDebug(Source, type_, id, severity, message_)));
+end;
+
+function KeysToShiftState(Keys: Word): TCShiftState;
+begin
+  Result := [];
+  if Keys and MK_SHIFT <> 0 then
+    Include(Result, ssShift);
+  if Keys and MK_CONTROL <> 0 then
+    Include(Result, ssCtrl);
+  if Keys and MK_LBUTTON <> 0 then
+    Include(Result, ssLeft);
+  if Keys and MK_RBUTTON <> 0 then
+    Include(Result, ssRight);
+  if Keys and MK_MBUTTON <> 0 then
+    Include(Result, ssMiddle);
+  if GetKeyState(VK_MENU) < 0 then
+    Include(Result, ssAlt);
 end;
 
 { TGLWindow }
@@ -595,7 +613,7 @@ begin
 end;
 
 procedure TGLWindow.WindProc(var Message: TMessage);
-var res: integer;
+var res: integer; H: Boolean;
 begin
   if message.Msg=WM_SYSCOMMAND then begin
     case Message.wParam of
@@ -647,6 +665,11 @@ begin
       FMouseX := SMALLINT( Message.lParam and $FFFF);
       FMouseY := SMALLINT( (Message.lParam shr 16) and $FFFF);
       if assigned(FOnMouseMove) then FOnMouseMove(self, FMouseX, FMouseY, FButtons);
+    end;
+    WM_MOUSEWHEEL: begin
+      H := False;
+      if Assigned(FOnMouseWheel) then FOnMouseWheel(Self, KeysToShiftState(Message.wParam), TSmallPoint(cardinal(Message.wParam)).Y, H);
+      res := Integer(H = True);
     end;
 
     WM_SIZE: begin

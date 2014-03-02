@@ -42,6 +42,7 @@ Type
     FCurrentLightNumber: integer;
     FCurrentGraph: TSceneGraph;
     FCurrentCamera: TSceneCamera;
+    FCurrentSceneObject: TSceneObject;
     FRegisteredSubRenders: TList;  //List of TBaseSubRender
     procedure UploadResource(const Res: TBaseRenderResource); virtual; abstract;
     procedure ProcessResource(const Res: TBaseRenderResource); virtual; abstract;
@@ -68,6 +69,7 @@ Type
     // Rendering states
     property CurrentGraph: TSceneGraph read FCurrentGraph;
     property CurrentCamera: TSceneCamera read FCurrentCamera;
+    property CurrentSceneObject: TSceneObject read FCurrentSceneObject;
     property CurrentLightNumber: integer read FCurrentLightNumber;
   end;
 
@@ -150,9 +152,9 @@ begin
 end;
 
 procedure TBaseRender.UpdateTransform(const MovableObject: TMovableObject; UseMatrix: TTransforms);
-var wm, pm, srp: TMatrix;
+//var wm, pm, srp: TMatrix;
 begin
-  wm.SetIdentity;
+{  wm.SetIdentity;
   if (MovableObject.Pivot<>nil) and (ttPivot in UseMatrix) then begin
      if not MovableObject.Pivot.WorldMatrixUpdated then
        MovableObject.Pivot.UpdateWorldMatrix;
@@ -196,7 +198,7 @@ begin
   end;
 
   MovableObject.WorldMatrix := wm;
-  MovableObject.PivotMatrix := pm;
+  MovableObject.PivotMatrix := pm; }
 end;
 
 { TBaseSubRender }
