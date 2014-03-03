@@ -31,6 +31,7 @@ type
     class constructor Create;
     class destructor Destroy;
   public
+    class procedure PutResource(Resource: TPersistentResource);
     class procedure Delete(Resource: TPersistentResource);
 
     class function CreateProgram: TShaderProgram;
@@ -58,7 +59,6 @@ type
     class function CreateCamera: TSceneCamera;
     class function CreateLight: TLightSource;
     class function CreateEffectPipeline: TEffectPipeline;
-
 
   end;
 
@@ -244,6 +244,13 @@ begin
   FStorageHandle.Free;
 end;
 
+class procedure Storage.PutResource(Resource: TPersistentResource);
+begin
+  if Resource is TPersistentResource then
+    FResources.Add(Resource.GUID, Resource);
+    Resource.Subscribe(FStorageHandle);
+end;
+
 { Storage.TStorageHandler }
 
 procedure Storage.TStorageHandler.Notify(Sender: TObject; Msg: Cardinal;
@@ -254,7 +261,7 @@ begin
     case Msg of
       NM_ObjectDestroyed:
         if Sender is TPersistentResource then begin
-          FStorageHandle.UnSubscribe(TNotifiableObject(Sender));
+          DetachResource(TPersistentResource(Sender));
           Storage.Delete(TPersistentResource(Sender));
         end;
     end;
@@ -281,8 +288,7 @@ begin
       repeat
         temp:=z.Value;
         z.Value:=nil;
-        temp.UnSubscribe(aOwner);
-        aOwner.UnSubscribe(temp);
+        aOwner.DetachResource(temp);
         FreeAndNil(temp);
         z := z.Twin;
       until z = nil;
@@ -305,8 +311,7 @@ begin
       if assigned(x.Value) then begin
         temp := x.Value;
         x.Value := nil;
-        temp.UnSubscribe(aOwner);
-        aOwner.UnSubscribe(temp);
+        aOwner.DetachResource(temp);
         FreeAndNil(temp);
       end;
     end;

@@ -56,7 +56,7 @@ constructor TGlowPipelineEffect.CreateFrom(aSceneTexture: TTexture);
 begin
   Create;
   FSceneTexture := aSceneTexture;
-  aSceneTexture.Subscribe(Self);
+  AttachResource(aSceneTexture);
   FShaderProgram := ShaderGenerator.GenCompositionShader;
   SetBlurWidth(4.0);
   FBlurAmount := 0.005;
@@ -65,7 +65,7 @@ end;
 destructor TGlowPipelineEffect.Destroy;
 begin
   if Assigned(FSceneTexture) then begin
-    FSceneTexture.Unsubscribe(Self);
+    DetachResource(FSceneTexture);
     FSceneTexture := nil;
   end;
   inherited;

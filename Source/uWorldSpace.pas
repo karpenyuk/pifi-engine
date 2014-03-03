@@ -72,8 +72,7 @@ implementation
 function TSceneGraph.AddItem(aItem: TBaseSceneItem): integer;
 begin
   result := FRoot.Childs.AddSceneItem(aItem);
-  aItem.Subscribe(Self);
-  Subscribe(aItem);
+  AttachResource(aItem);
   //If aItem is Camera - add it to Camera List
   if (aItem is TSceneCamera) and (not FCameras.inList(aItem))
   then FCameras.AddCamera(aItem as TSceneCamera);
@@ -86,11 +85,14 @@ end;
 function TSceneGraph.AddLight(aLight: TLightSource): integer;
 begin
   result := FLights.AddLight(aLight);
+  AttachResource(aLight);
 end;
 
 function TSceneGraph.AddMaterial(aMat: TMaterialObject; aCapture: boolean): integer;
 begin
+  if not assigned(aMat) then exit(-1);
   result := FMaterials.AddMaterial(aMat);
+  AttachResource(aMat);
   if aCapture then aMat.Owner:=self;
 end;
 
@@ -104,6 +106,7 @@ begin
   aMat.Name := aName;
   aMat.Owner:=FMaterials;
   FMaterials.AddMaterial(aMat);
+  AttachResource(aMat);
   result := aMat;
 end;
 
@@ -124,11 +127,22 @@ begin
 end;
 
 destructor TSceneGraph.Destroy;
+var i: integer;
 begin
+  for i:=0 to FRoot.Childs.Count-1 do
+    if assigned(FRoot.Childs[i]) then DetachResource(FRoot.Childs[i]);
   FRoot.Free;
+  for i:=0 to Camera.Childs.Count-1 do
+    if assigned(Camera.Childs[i]) then DetachResource(Camera.Childs[i]);
+  for i:=0 to FCameras.Count-1 do
+    if assigned(FCameras[i]) then DetachResource(FCameras[i]);
   Camera.Free;
   FCameras.Free;
+  for i:=0 to FMaterials.Count-1 do
+    if assigned(FMaterials[i]) then DetachResource(FMaterials[i]);
   FMaterials.Free;
+  for i:=0 to FLights.Count-1 do
+    if assigned(FLights[i]) then DetachResource(FLights[i]);
   FLights.Free;
   inherited;
 end;
@@ -203,13 +217,13 @@ end;
 
 procedure TSceneGraph.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
-  inherited;
   if assigned(Sender) then begin
     case Msg of
       NM_ObjectDestroyed:
-        if Sender is TNotifiableObject then UnSubscribe(TNotifiableObject(Sender));
+        if Sender is TNotifiableObject then DetachResource(TPersistentResource(Sender));
     end;
   end;
+  inherited;
 end;
 
 end.

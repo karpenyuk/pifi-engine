@@ -38,13 +38,13 @@ begin
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   //attr.SetAttribLocation(CAttribSematics[atVertex].Location);
   result.AddAttrib(attr,true);
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   //attr.SetAttribLocation(CAttribSematics[atTexCoord0].Location);
   result.AddAttrib(attr);
@@ -95,21 +95,21 @@ begin
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   //attr.SetAttribLocation(CAttribSematics[atVertex].Location);
   result.AddAttrib(attr,true);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atNormal].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Normals.Size,Normals.Data);
-  attr.Buffer.SetDataHandler(Normals);
+  attr.Buffer.SetDataHandler(Normals,true);
   attr.SetAttribSemantic(atNormal);
   //attr.SetAttribLocation(CAttribSematics[atNormal].Location);
   result.AddAttrib(attr);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   //attr.SetAttribLocation(CAttribSematics[atTexCoord0].Location);
   result.AddAttrib(attr);
@@ -169,21 +169,21 @@ begin
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   //attr.SetAttribLocation(CAttribSematics[atVertex].Location);
   result.AddAttrib(attr,true);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atNormal].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Normals.Size,Normals.Data);
-  attr.Buffer.SetDataHandler(Normals);
+  attr.Buffer.SetDataHandler(Normals,true);
   attr.SetAttribSemantic(atNormal);
   //attr.SetAttribLocation(CAttribSematics[atNormal].Location);
   result.AddAttrib(attr);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   //attr.SetAttribLocation(CAttribSematics[atTexCoord0].Location);
   result.AddAttrib(attr);
@@ -682,35 +682,35 @@ begin
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   //attr.SetAttribLocation(CAttribSematics[atVertex].Location);
   result.AddAttrib(attr,true);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atNormal].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Normals.Size,Normals.Data);
-  attr.Buffer.SetDataHandler(Normals);
+  attr.Buffer.SetDataHandler(Normals,true);
   attr.SetAttribSemantic(atNormal);
   //attr.SetAttribLocation(CAttribSematics[atNormal].Location);
   result.AddAttrib(attr);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atTangent].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Tangents.Size,Tangents.Data);
-  attr.Buffer.SetDataHandler(Tangents);
+  attr.Buffer.SetDataHandler(Tangents,true);
   attr.SetAttribSemantic(atTangent);
   //attr.SetAttribLocation(CAttribSematics[atTangent].Location);
   result.AddAttrib(attr);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atBinormal].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Binormals.Size,Binormals.Data);
-  attr.Buffer.SetDataHandler(Binormals);
+  attr.Buffer.SetDataHandler(Binormals,true);
   attr.SetAttribSemantic(atBinormal);
   //attr.SetAttribLocation(CAttribSematics[atBinormal].Location);
   result.AddAttrib(attr);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   //attr.SetAttribLocation(CAttribSematics[atTexCoord0].Location);
   result.AddAttrib(attr);
@@ -744,13 +744,13 @@ begin
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,2,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size, Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   result.AddAttrib(attr,true);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   result.AddAttrib(attr);
   with result do begin

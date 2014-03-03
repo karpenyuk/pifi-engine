@@ -380,7 +380,7 @@ Type
     function CreateTexture: TTexture;
 
     procedure Allocate(aWithMipmaps: boolean = false);
-    procedure SaveToStream(aStream: TStream); override;
+    procedure SaveToStream(aStream: TStream); virtual;
     procedure LoadFromStream(aStream: TStream); override;
     //virtual function for implementing different image format loader
     procedure LoadImageFromStream(aStream: TStream); virtual;
@@ -454,6 +454,7 @@ Type
   public
 
     constructor CreateFrom(aImageHolder: TImageHolder; aOwner: TObject = nil);
+    destructor Destroy; override;
     class function IsInner: boolean; override;
 
     property ImageHolder: TImageHolder read FImageDescriptor;
@@ -651,6 +652,7 @@ Type
       BuffType: TBufferType = btArray; aOwner: TObject = nil); virtual;
     constructor CreateClone(ASample: TAttribObject);
     destructor Destroy; override;
+
     class function IsInner: boolean; override;
 
     procedure Notify(Sender: TObject; Msg: Cardinal;
@@ -678,6 +680,8 @@ Type
 
   TAttribBuffer = class(TAttribObject)
   public
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
     constructor CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
       AType: TValueType = vtFloat; AStride: integer = 0;
       BuffType: TBufferType = btArray; aOwner: TObject = nil); override;
@@ -747,11 +751,9 @@ Type
     constructor Create; override;
     destructor Destroy; override;
     procedure Assign(ASource: TVertexObject);
-    procedure Notify(Sender: TObject; Msg: Cardinal;
-      Params: pointer = nil); override;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
-    function AddAttrib(Attrib: TAttribObject;
-      aVertices: boolean = false): integer;
+    function AddAttrib(Attrib: TAttribObject; aVertices: boolean = false): integer;
     procedure RemoveAttrib(Index: integer);
 
     procedure AddPoint(Index: integer);
@@ -800,6 +802,10 @@ Type
     constructor CreateFrom(const aVertexObject: TVertexObject; const aGUID: TGUID); overload;
     constructor CreateFrom(const aVertexObject: TVertexObject); overload;
     constructor CreateFrom(const aVertexObject: TVertexObject; aName: string); overload;
+    destructor Destroy; override;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
     class function IsInner: boolean; override;
 
     property VertexObject: TVertexObject read FVertexObject;
@@ -976,7 +982,7 @@ Type
     constructor Create; override;
     destructor Destroy; override;
     class function IsInner: boolean; override;
-
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     procedure AttachRenderBuffer(aFormat: TRenderBufferFormat; aMode: TBufferMode = bmBuffer);
     procedure AttachColor(aTexture: TTexture);
@@ -1377,6 +1383,12 @@ begin
   FName := Value;
 end;
 
+destructor TTexture.Destroy;
+begin
+
+  inherited;
+end;
+
 function TTexture.getImageFormat: TImageFormat;
 begin
   if assigned(FImageDescriptor)
@@ -1412,7 +1424,7 @@ begin
   CreateOwned(aOwner);
   FTexMatrixChanged := false;
   FImageDescriptor := aImageHolder;
-  aImageHolder.Subscribe(Self);
+  aImageHolder.AttachResource(Self);
 
   case FImageDescriptor.ImageType of
     itBitmap: begin
@@ -1682,6 +1694,8 @@ end;
 
 destructor TBufferObject.Destroy;
 begin
+  if assigned(Owner) then
+    TPersistentResource(Owner).DetachResource(Self);
   if Assigned(FDataHandler) then
   begin
     if FHandlerOwned then
@@ -1744,11 +1758,9 @@ end;
 
 procedure TAttribObject.AssignBuffer(aBuffer: TBufferObject);
 begin
-  if Assigned(FBuffer) then
-    FBuffer.UnSubscribe(Self);
+  if Assigned(FBuffer) then DetachResource(Self);
   FBuffer := aBuffer;
-  if Assigned(FBuffer) then
-    FBuffer.Subscribe(Self);
+  if Assigned(FBuffer) then AttachResource(FBuffer);
 end;
 
 constructor TAttribObject.Create;
@@ -1784,25 +1796,21 @@ end;
 
 constructor TAttribObject.CreateClone(ASample: TAttribObject);
 begin
-  CreateAndSetup(ASample.FAttribName, ASample.FSize, ASample.FType,
-    ASample.FStride);
+  CreateAndSetup(ASample.FAttribName, ASample.FSize, ASample.FType, ASample.FStride);
   FNormalized := ASample.FNormalized;
   FSemantic := ASample.FSemantic;
-  if Assigned(ASample.FBuffer) then
-  begin
+  if Assigned(ASample.FBuffer) then begin
     FBuffer := TBufferObject.Create(ASample.FBuffer.FBuffType);
     FBuffer.SetDataHandler(TAbstractDataListClass(ASample.FBuffer.DataHandler.ClassType).Create);
     FBuffer.DataHandler.Join(ASample.FBuffer.DataHandler, TMatrix.IdentityMatrix);
-    FBuffer.Subscribe(Self);
+    AttachResource(FBuffer);
   end;
 end;
 
 destructor TAttribObject.Destroy;
 begin
-  if assigned(FBuffer) then begin
-    FBuffer.UnSubscribe(Self);
-    if FBuffer.Owner = self then FBuffer.Free;
-    FBuffer := nil;
+  if assigned(FBuffer) then begin DetachResource(FBuffer);
+    if FBuffer.Owner=self then FreeAndNil(FBuffer);
   end;
   inherited;
 end;
@@ -1847,13 +1855,15 @@ end;
 
 procedure TAttribObject.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
+  if not assigned(Sender) then exit;
+
   case Msg of
     NM_ResourceChanged: DispatchMessage(NM_ResourceChanged);
-    NM_ObjectDestroyed:
-    begin
-      if Sender = FBuffer then
+    NM_ObjectDestroyed: begin
+      if Sender = FBuffer then begin
         FBuffer := nil;
-      DispatchMessage(NM_ResourceChanged);
+        DispatchMessage(NM_ResourceChanged);
+      end;
     end;
   end;
 end;
@@ -1904,16 +1914,27 @@ constructor TAttribBuffer.CreateAndSetup(AttrName: ansistring; aSize: TValueComp
 begin
   inherited CreateAndSetup(AttrName, aSize, AType, AStride, BuffType);
   FBuffer := TBufferObject.Create(BuffType);
-  FBuffer.Subscribe(Self);
   FBuffer.Owner:=self;
+  AttachResource(FBuffer);
   Owner := aOwner;
 end;
 
 destructor TAttribBuffer.Destroy;
 begin
   if Assigned(FBuffer) then begin
-    FBuffer.UnSubscribe(Self);
-    FBuffer.Free;
+    DetachResource(FBuffer);
+    if FBuffer.Owner = Self then FreeAndNil(FBuffer);
+    FBuffer:=nil;
+  end;
+  inherited;
+end;
+
+procedure TAttribBuffer.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  case Msg of
+    NM_ObjectDestroyed: begin
+      if Sender = FBuffer then FBuffer := nil;
+    end;
   end;
   inherited;
 end;
@@ -1926,17 +1947,14 @@ var
   attr: TAttribObject;
 begin
   attr := FAttribs.GetAttribObject(Attrib.Semantic);
-  if Assigned(attr) then
-  begin
+  if Assigned(attr) then begin
     // Заменяем атрибут с той же семантикой
-    attr.UnSubscribe(Self);
+    DetachResource(attr);
     Result := FAttribs.IndexOf(attr);
     FAttribs[Result] := Attrib;
-  end
-  else
+  end else
     Result := FAttribs.Add(Attrib);
-  Attrib.Subscribe(Self);
-
+  AttachResource(Attrib);
   FStructureChanged := true;
   if aVertices then
     FVertexAttribIndex := Result;
@@ -2058,15 +2076,15 @@ var
   I: Integer;
 begin
   Clear;
-  for I := 0 to ASource.AttribsCount - 1 do
-  begin
+  FreeList(FSubMeshes,false);
+  for I := 0 to ASource.AttribsCount - 1 do begin
     AttribClass := TAttribObjectClass(ASource.Attribs[I].ClassType);
     attr := AttribClass.CreateClone(ASource.Attribs[I]);
     FAttribs.Add(attr);
-    attr.Subscribe(Self);
+    AttachResource(attr);
   end;
+  FSubMeshes.Assign(ASource.FSubMeshes);
   FVertexAttribIndex := ASource.FVertexAttribIndex;
-  // FSubMeshes попосжее
   FIndices := ASource.FIndices;
   FAdjacencyIndices := ASource.FAdjacencyIndices;
   FIndiceCount := ASource.FIndiceCount;
@@ -2084,8 +2102,10 @@ procedure TVertexObject.Clear;
 var
   I: Integer;
 begin
-  for I := 0 to FAttribs.Count - 1 do
-    Attribs[I].UnSubscribe(Self);
+  for i := 0 to FAttribs.Count-1 do begin
+    DetachResource(FAttribs[i]);
+    if FAttribs[i].Owner = Self then FAttribs[i].Free;
+  end;
   FAttribs.Clear;
   FAdjacencyIndices := nil;
   FIndiceCount := 0;
@@ -2116,8 +2136,7 @@ destructor TVertexObject.Destroy;
 var
   I: Integer;
 begin
-  for I := 0 to AttribsCount - 1 do
-    Attribs[I].UnSubscribe(Self);
+  Clear;
   FreeAndNil(FAttribs);
   FreeList(FSubMeshes);
   inherited;
@@ -2191,27 +2210,34 @@ procedure TVertexObject.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 var
   I: Integer;
 begin
-  for I := 0 to FAttribs.Count - 1 do
-    if Attribs[I] = Sender then
-    begin
-      if Msg = NM_ObjectDestroyed then
-      begin
-        FAttribs[I] := nil;
-        FAttribs.Pack;
-        DispatchMessage(NM_ResourceChanged);
-        exit;
-      end
-      else if Msg = NM_ResourceChanged then
-      begin
-        DispatchMessage(NM_ResourceChanged);
-        exit;
-      end;
+  if Msg = NM_ObjectDestroyed then begin
+    if assigned(Sender) and (Sender is TPersistentResource)
+    then begin
+      DetachResource(TPersistentResource(Sender));
+      if Sender is TAttribObject then
+        if FAttribs.IndexOf(TAttribObject(Sender))<0 then exit;
+      for I := 0 to FAttribs.Count - 1 do
+        if Attribs[I] = Sender then begin
+          FAttribs[I] := nil;
+          break;
+        end;
+      FAttribs.Pack;
+      DispatchMessage(NM_ResourceChanged);
     end;
+  end else begin
+    if Msg = NM_ResourceChanged then begin
+      //Do nothing
+    end;
+  end;
+
+  inherited;
 end;
 
 procedure TVertexObject.RemoveAttrib(Index: integer);
 begin
+  DetachResource(FAttribs[Index]);
   FAttribs.Delete(Index);
+  FAttribs.Pack;
   FStructureChanged := true;
   DispatchMessage(NM_ResourceChanged);
 end;
@@ -2443,7 +2469,8 @@ constructor TMesh.CreateFrom(const aVertexObject: TVertexObject;
   const aGUID: TGUID);
 begin
   Create;
-  FVertexObject := aVertexObject; // Возможно надо добавить Subscribe(aVertexObject)
+  FVertexObject := aVertexObject;
+  AttachResource(FVertexObject);
   GUID := aGUID;
   FriendlyName := '';
 end;
@@ -2452,6 +2479,7 @@ constructor TMesh.CreateFrom(const aVertexObject: TVertexObject);
 begin
   Create;
   FVertexObject := aVertexObject;
+  AttachResource(FVertexObject);
   FriendlyName := '';
 end;
 
@@ -2459,12 +2487,34 @@ constructor TMesh.CreateFrom(const aVertexObject: TVertexObject; aName: string);
 begin
   Create;
   FVertexObject := aVertexObject;
+  AttachResource(FVertexObject);
   FriendlyName := aName;
+end;
+
+destructor TMesh.Destroy;
+begin
+  if assigned(FVertexObject) then begin
+    DetachResource(FVertexObject);
+    if FVertexObject.Owner = Self then
+      FreeAndNil(FVertexObject);
+  end;
+
+  inherited;
 end;
 
 class function TMesh.IsInner: boolean;
 begin
   Result := true;
+end;
+
+procedure TMesh.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  if Msg = NM_ObjectDestroyed then begin
+    if Sender is TPersistentResource then
+      DetachResource(TPersistentResource(Sender));
+    if Sender = FVertexObject then FVertexObject := nil;
+  end;
+  inherited;
 end;
 
 { TShaderProgram }
@@ -2658,13 +2708,23 @@ end;
 
 procedure TMaterialObject.AddExTextures(tex: TTexture);
 begin
+  if assigned(TextureSlot[FLastAddTex + 1]) then begin
+    DetachResource(TextureSlot[FLastAddTex + 1]);
+    if TextureSlot[FLastAddTex + 1].Owner = Self then
+      TextureSlot[FLastAddTex + 1].Free
+  end;
   TextureSlot[FLastAddTex + 1] := tex;
+  AttachResource(TextureSlot[FLastAddTex + 1]);
 end;
 
 function TMaterialObject.AddNewMaterial(aName: string): TMaterial;
 begin
-  if assigned(FMaterial) and (FMaterial.Owner = Self) then FMaterial.Free;
+  if assigned(FMaterial) then begin
+    DetachResource(FMaterial);
+    if (FMaterial.Owner = Self) then FMaterial.Free;
+  end;
   FMaterial := TMaterial.CreateOwned(Self);
+  AttachResource(FMaterial);
   FMaterial.Name := aName;
   FUseMaterial := true;
   result := FMaterial;
@@ -2673,9 +2733,12 @@ end;
 
 function TMaterialObject.AddNewShader(aName: string): TShaderProgram;
 begin
-  if assigned(FShader) and (FShader.Owner = Self) then
-    FShader.Free;
+  if assigned(FShader) then begin
+    DetachResource(FShader);
+    if (FShader.Owner = Self) then FShader.Free;
+  end;
   FShader := TShaderProgram.CreateOwned(Self);
+  AttachResource(FShader);
   FShader.Name := aName;
   FUseShader := true;
   result := FShader;
@@ -2684,9 +2747,12 @@ end;
 
 function TMaterialObject.AddNewTexture(aName: string): TTexture;
 begin
-  if assigned(FTexture) and (FTexture.Owner = Self) then
-    FTexture.Free;
+  if assigned(FTexture) then begin
+    DetachResource(FTexture);
+    if (FTexture.Owner = Self) then FTexture.Free;
+  end;
   FTexture := TTexture.CreateFrom(nil, Self);
+  AttachResource(FTexture);
   FTexture.Name := aName;
   FUseTexture := true;
   result := FTexture;
@@ -2697,25 +2763,35 @@ procedure TMaterialObject.Assign(MaterialObject: TMaterialObject);
 var
   i: integer;
 begin
+  assert(assigned(MaterialObject), 'Material object is not assigned');
+
   FBlending.Assign(MaterialObject.FBlending);
-  FTexture := MaterialObject.FTexture;
-  FMaterial := MaterialObject.FMaterial;
-  FShader := MaterialObject.FShader;
+  if assigned(FTexture) then DetachResource(FTexture);
+  FTexture := MaterialObject.FTexture; AttachResource(FTexture);
+  if assigned(FMaterial) then DetachResource(FMaterial);
+  FMaterial := MaterialObject.FMaterial; AttachResource(FMaterial);
+  if assigned(FShader) then DetachResource(FShader);
+  FShader := MaterialObject.FShader; AttachResource(FShader);
   FUseTexture := MaterialObject.FUseTexture;
   FUseMaterial := MaterialObject.FUseMaterial;
   FUseShader := assigned(FShader);
   FActive := MaterialObject.Active;
-  for i := 0 to MaterialObject.FLastAddTex - 1 do
+  for i := 0 to MaterialObject.FLastAddTex - 1 do begin
+    if assigned(FAdditionalTextures[i]) then DetachResource(FAdditionalTextures[i]);
     FAdditionalTextures[i] := MaterialObject.FAdditionalTextures[i];
+    AttachResource(FAdditionalTextures[i]);
+  end;
   FLastAddTex := MaterialObject.FLastAddTex;
   UseAddinionalTextures := MaterialObject.UseAddinionalTextures;
 end;
 
 procedure TMaterialObject.AttachMaterial(mat: TMaterial);
 begin
-  if assigned(FMaterial) and (FMaterial.Owner = Self) then
-    FMaterial.Free;
-  FMaterial := mat;
+  if assigned(FMaterial) then begin
+    DetachResource(FMaterial);
+    if (FMaterial.Owner = Self) then FMaterial.Free;
+  end;
+  FMaterial := mat; AttachResource(FMaterial);
   FHashKey := -1;
   if assigned(mat) and (mat.UseMaterial) then
     FUseMaterial := true
@@ -2726,28 +2802,33 @@ end;
 
 procedure TMaterialObject.AttachSampler(aSampler: TTextureSampler);
 begin
-  if assigned(FSampler) and (FSampler.Owner = Self) then
-    FSampler.Free;
-  FSampler := aSampler;
+  if assigned(FSampler) then begin
+    DetachResource(FSampler);
+    if (FSampler.Owner = Self) then  FSampler.Free;
+  end;
+  FSampler := aSampler; AttachResource(FSampler);
   FHashKey := -1;
 end;
 
 procedure TMaterialObject.AttachShader(Shader: TShaderProgram);
 begin
-  if assigned(FShader) and (FShader.Owner = Self) then
-    FShader.Free;
-  FShader := Shader;
+  if assigned(FShader) then begin
+    DetachResource(FShader);
+    if (FShader.Owner = Self) then FShader.Free;
+  end;
+  FShader := Shader; AttachResource(FShader);
   FHashKey := -1;
-  if assigned(FShader) then
-    FUseShader := true;
+  if assigned(FShader) then FUseShader := true;
   FActive := true;
 end;
 
 procedure TMaterialObject.AttachTexture(tex: TTexture);
 begin
-  if assigned(FTexture) and (FTexture.Owner = Self) then
-    FTexture.Free;
-  FTexture := tex;
+  if assigned(FTexture) then begin
+    DetachResource(FTexture);
+    if FTexture.Owner = Self then FTexture.Free;
+  end;
+  FTexture := tex; AttachResource(FTexture);
   FHashKey := -1;
   if assigned(tex) and (not tex.Disabled) then
     FUseTexture := true
@@ -2800,18 +2881,14 @@ end;
 destructor TMaterialObject.Destroy;
 begin
   FBlending.Free;
-  if assigned(FMaterial) and (FMaterial.Owner = Self) then begin
-    FMaterial.Unsubscribe(Self); Unsubscribe(FMaterial);
-    FMaterial.Free;
-  end;
-  if assigned(FTexture) and (FTexture.Owner = Self) then begin
-    FTexture.Unsubscribe(Self); Unsubscribe(FTexture);
-    FTexture.Free;
-  end;
-  if assigned(FShader) and (FShader.Owner = Self) then begin
-    FShader.Unsubscribe(Self); Unsubscribe(FShader);
-    FShader.Free;
-  end;
+  DetachResource(FMaterial);
+  DetachResource(FTexture);
+  DetachResource(FShader);
+
+  if assigned(FMaterial) and (FMaterial.Owner = Self) then FMaterial.Free;
+  if assigned(FTexture) and (FTexture.Owner = Self) then FTexture.Free;
+  if assigned(FShader) and (FShader.Owner = Self) then FShader.Free;
+
   inherited;
 end;
 
@@ -3035,7 +3112,13 @@ begin
 end;
 
 destructor TAttribList.Destroy;
+var
+  i: Integer;
 begin
+  for i := Count - 1 downto 0 do
+    if assigned(FItems[i]) and (FItems[i].Owner = Self)
+    then FItems[i].Free;
+  Clear;
   inherited;
 end;
 
@@ -3698,12 +3781,9 @@ procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
 begin
   if Value <> FViewTarget then
   begin
-    if Assigned(FViewTarget) then
-      UnSubscribe(FViewTarget);
+    if Assigned(FViewTarget) then DetachResource(FViewTarget);
     FViewTarget := Value;
-    if assigned(FViewTarget) then begin
-      FViewTarget.Subscribe(self);
-    end;
+    if assigned(FViewTarget) then AttachResource(FViewTarget);
     NotifyViewMatrixChanged;
   end;
 end;
@@ -3729,6 +3809,7 @@ end;
 procedure TFrameBuffer.AttachColor(aTexture: TTexture);
 begin
   FColorAttachments.Add(aTexture);
+  AttachResource(aTexture);
   DispatchMessage(NM_ResourceChanged);
 end;
 
@@ -3756,9 +3837,11 @@ begin
 
   buffptr.Mode := aMode;
   buffptr.Format := aFormat;
-  if assigned(buffptr.Texture) then buffptr.Texture.Free;
-  buffptr.Texture := nil;
-
+  if assigned(buffptr.Texture) then begin
+    DetachResource(buffptr.Texture);
+    buffptr.Texture.Free;
+    buffptr.Texture := nil;
+  end;
   DispatchMessage(NM_ResourceChanged);
 end;
 
@@ -3825,8 +3908,28 @@ begin
   Result := true;
 end;
 
-procedure TFrameBuffer.ResetColorAttachments;
+procedure TFrameBuffer.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+var n: integer;
 begin
+  if Sender is TTexture then begin
+    n:=FColorAttachments.IndexOf(TTexture(Sender));
+    if (n>=0) and (assigned(FColorAttachments[n])) then begin
+      if msg = NM_ObjectDestroyed then begin
+        DetachResource(FColorAttachments[n]);
+        FColorAttachments[n]:=nil;
+      end;
+    end;
+  end;
+
+  inherited;
+end;
+
+procedure TFrameBuffer.ResetColorAttachments;
+var i: integer;
+begin
+  for i:=0 to FColorAttachments.Count-1 do
+    if assigned(FColorAttachments[i]) then
+      DetachResource(FColorAttachments[i]);
   FColorAttachments.Clear;
   DispatchMessage(NM_ResourceChanged);
 end;
@@ -3841,11 +3944,23 @@ procedure TFrameBuffer.ResetRenderBuffers;
 begin
   FRenderBuffers:=[];
   FDepthBuffer.Mode:=bmNone;
-  if assigned(FDepthBuffer.Texture) then FDepthBuffer.Texture.Free;
+  if assigned(FDepthBuffer.Texture) then begin
+    DetachResource(FDepthBuffer.Texture);
+    FDepthBuffer.Texture.Free;
+    FDepthBuffer.Texture:=nil;
+  end;
   FStencilBuffer.Mode:=bmNone;
-  if assigned(FStencilBuffer.Texture) then FStencilBuffer.Texture.Free;
+  if assigned(FStencilBuffer.Texture) then begin
+    DetachResource(FStencilBuffer.Texture);
+    FStencilBuffer.Texture.Free;
+    FStencilBuffer.Texture:=nil;
+  end;
   FDepthStencilBuffer.Mode:=bmNone;
-  if assigned(FDepthStencilBuffer.Texture) then FDepthStencilBuffer.Texture.Free;
+  if assigned(FDepthStencilBuffer.Texture) then begin
+    DetachResource(FDepthStencilBuffer.Texture);
+    FDepthStencilBuffer.Texture.Free;
+    FDepthStencilBuffer.Texture:=nil;
+  end;
   DispatchMessage(NM_ResourceChanged);
 end;
 

@@ -310,6 +310,7 @@ const
   NM_ResourceLoaded  = 10101;
   NM_ResourceChanged = 10102;
   NM_ObjectDestroyed = 10201;
+  NM_DebugMessageStr = 10301;
 
 implementation
 

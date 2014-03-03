@@ -13,17 +13,21 @@ type
 
   TFreeingBehavior = (fbManual, fbNoSubscibers, fbGarbageCollector);
 
+  TPersistentResource = class;
+
   TNotifiableObject = class(TObject)
   private
     FSubscribers: TList; // List of TNotifiableObject
+    procedure FreeSubscriptions;
   public
     constructor Create; virtual;
     destructor Destroy; override;
     procedure Subscribe(Subscriber: TNotifiableObject); virtual;
     procedure UnSubscribe(Subscriber: TNotifiableObject); virtual;
     procedure DispatchMessage(Msg: Cardinal; Params: pointer = nil); virtual;
-    procedure Notify(Sender: TObject; Msg: Cardinal;
-      Params: pointer = nil); virtual;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); virtual;
+    procedure AttachResource(Resource: TPersistentResource); virtual;
+    procedure DetachResource(Resource: TPersistentResource); virtual;
   end;
 
   { TODO : Äîðàáîòàòü êëàññ TPersistentResource, ðåàëèçîâàâ ðåãèñòðàöèþ çàãðóæåííûõ ðåñóðñîâ â êîëëåêöèè îáúåêòîâ.
@@ -161,10 +165,10 @@ end;
 procedure TPersistentResource.setOwner(const Value: TObject);
 begin
   if assigned(FOwner) and (FOwner is TPersistentResource)
-  then TPersistentResource(FOwner).UnSubscribe(Self);
+  then DetachResource(TPersistentResource(Owner));
   FOwner := Value;
   if assigned(FOwner) and (FOwner is TPersistentResource)
-  then TPersistentResource(FOwner).Subscribe(Self);
+  then AttachResource(TPersistentResource(FOwner));
 end;
 
 procedure TPersistentResource.WriteBool(const Value: boolean;
@@ -206,6 +210,13 @@ end;
 
 { TNotifiableObject }
 
+procedure TNotifiableObject.AttachResource(Resource: TPersistentResource);
+begin
+  if not assigned(Resource) then exit;
+  Resource.Subscribe(Self);
+  Self.Subscribe(Resource);
+end;
+
 constructor TNotifiableObject.Create;
 begin
   inherited;
@@ -214,18 +225,40 @@ end;
 
 destructor TNotifiableObject.Destroy;
 begin
-  DispatchMessage(NM_ObjectDestroyed);
-  FSubscribers.Clear;
+  FreeSubscriptions;
   FreeAndNil(FSubscribers);
   inherited;
+end;
+
+procedure TNotifiableObject.DetachResource(Resource: TPersistentResource);
+begin
+  if not assigned(Resource) then exit;
+  Resource.UnSubscribe(Self);
+  Self.UnSubscribe(Resource);
 end;
 
 procedure TNotifiableObject.DispatchMessage(Msg: Cardinal; Params: pointer);
 var i: integer;
 begin
-  for i := 0 to FSubscribers.Count - 1 do
-    if assigned(FSubscribers[i]) then
+  for i:=0 to FSubscribers.Count - 1 do begin
+    if assigned(FSubscribers[i]) then begin
       TNotifiableObject(FSubscribers[i]).Notify(Self, Msg, Params);
+      if msg = NM_ObjectDestroyed then
+        TNotifiableObject(FSubscribers[i]).UnSubscribe(Self);
+    end;
+  end;
+  FSubscribers.Pack;
+end;
+
+procedure TNotifiableObject.FreeSubscriptions;
+begin
+  while FSubscribers.Count>0 do begin
+    if assigned(FSubscribers[0]) then begin
+      TNotifiableObject(FSubscribers[0]).Notify(Self,NM_ObjectDestroyed);
+      DetachResource(FSubscribers[0]);
+    end;
+    FSubscribers.Delete(0);
+  end;
 end;
 
 procedure TNotifiableObject.Notify(Sender: TObject; Msg: Cardinal;
@@ -234,22 +267,29 @@ begin
 if not assigned(Sender) then exit;
     case Msg of
       NM_ObjectDestroyed: UnSubscribe(TNotifiableObject(Sender));
+//      NM_DebugMessageStr:
+//        writetolog('['+inttostr(integer(Self))+']'+'['+ClassName+']'+pchar(Params));
     end;
 end;
 
 procedure TNotifiableObject.Subscribe(Subscriber: TNotifiableObject);
 begin
-  if FSubscribers.IndexOf(Subscriber) < 0 then
+  if not assigned(FSubscribers) then exit;
+  if FSubscribers.IndexOf(Subscriber) < 0 then begin
     FSubscribers.Add(Subscriber);
+  end;
 end;
 
 procedure TNotifiableObject.UnSubscribe(Subscriber: TNotifiableObject);
 var
   n: integer;
 begin
+  if not assigned(FSubscribers) then exit;
+
   n := FSubscribers.IndexOf(Subscriber);
-  if n >= 0 then
-    FSubscribers.Delete(n);
+  if n >= 0 then begin
+    FSubscribers[n]:=nil;
+  end;
 end;
 
 end.

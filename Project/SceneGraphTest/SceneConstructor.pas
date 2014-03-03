@@ -202,7 +202,8 @@ begin
   FRGBAfloatImage:=TImageSampler.CreateBitmap(
     TImageFormatSelector.CreateSpecial(sfR11FG11FB10F), 2048, 2048, false);
   ColorAttachment := Storage.CreateTexture(FRGBAfloatImage);
-//  Material[4].AttachTexture(ColorAttachment);
+  Material[4]:=Storage.CreateMaterialObject;
+  Material[4].AttachTexture(ColorAttachment);
 
   FrameBuffer := Storage.CreateFrameBuffer;
   FrameBuffer.Size := Vec2iMake(2048, 2048);
