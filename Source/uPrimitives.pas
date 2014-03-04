@@ -845,19 +845,19 @@ begin
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   result.AddAttrib(attr,true);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atNormal].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Normals.Size,Normals.Data);
-  attr.Buffer.SetDataHandler(Normals);
+  attr.Buffer.SetDataHandler(Normals,true);
   attr.SetAttribSemantic(atNormal);
   result.AddAttrib(attr);
 
   attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   result.AddAttrib(attr);
 

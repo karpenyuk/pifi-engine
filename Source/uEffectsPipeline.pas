@@ -2,7 +2,8 @@ unit uEffectsPipeline;
 
 interface
 
-uses uPersistentClasses, uLists, uRenderResource, uBaseTypes, uvMath;
+uses uPersistentClasses, uLists, uRenderResource, uBaseTypes,
+     uvMath, uMiscUtils;
 
 Type
 
@@ -29,10 +30,12 @@ Type
     procedure SetBlurWidth(const Value: Single);
     function GetWeigts: PSingle;
     function GetWeightCount: integer;
+    class destructor FreeInnerResource;
   public
     constructor CreateFrom(aSceneTexture: TTexture);
     destructor Destroy; override;
     class function IsInner: boolean; override;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     property SceneTexture: TTexture read FSceneTexture;
     property SceneSampler: TTextureSampler read GetSceneSampler;
@@ -58,6 +61,7 @@ begin
   FSceneTexture := aSceneTexture;
   AttachResource(aSceneTexture);
   FShaderProgram := ShaderGenerator.GenCompositionShader;
+  AttachResource(FShaderProgram);
   SetBlurWidth(4.0);
   FBlurAmount := 0.005;
 end;
@@ -68,12 +72,34 @@ begin
     DetachResource(FSceneTexture);
     FSceneTexture := nil;
   end;
+
+  if assigned(FScreenQuad) then begin
+    DetachResource(FScreenQuad);
+  end;
+  if assigned(FSceneSampler) then begin
+    DetachResource(FSceneSampler);
+  end;
+  if assigned(FConvolutionShader) then begin
+    DetachResource(FConvolutionShader);
+  end;
+
   inherited;
+end;
+
+class destructor TGlowPipelineEffect.FreeInnerResource;
+begin
+  FreeAndNil(FScreenQuad);
+  FreeAndNil(FSceneSampler);
+  FreeAndNil(FConvolutionShader);
 end;
 
 function TGlowPipelineEffect.GetConvolutionShader: TShaderProgram;
 begin
-  if not Assigned(FConvolutionShader) then FConvolutionShader := ShaderGenerator.Gen1DConvolution;
+  if not Assigned(FConvolutionShader) then begin
+    FConvolutionShader := ShaderGenerator.Gen1DConvolution;
+    AttachResource(FConvolutionShader);
+  end;
+
   Result := FConvolutionShader;
 end;
 
@@ -81,6 +107,7 @@ function TGlowPipelineEffect.GetSceneSampler: TTextureSampler;
 begin
   if not Assigned(FSceneSampler) then begin
     FSceneSampler := Storage.CreateTextureSample;
+    AttachResource(FSceneSampler);
     FSceneSampler.WrapS := twClampToBorder;
     FSceneSampler.WrapT := twClampToBorder;
     FSceneSampler.BorderColor := Vector(0, 0, 0, 1);
@@ -92,7 +119,10 @@ end;
 
 function TGlowPipelineEffect.GetScreenQuad: TVertexObject;
 begin
-  if not Assigned(FScreenQuad) then FScreenQuad := CreateSprite(2, 2);
+  if not Assigned(FScreenQuad) then begin
+    FScreenQuad := CreateSprite(2, 2);
+    AttachResource(FScreenQuad);
+  end;
   Result := FScreenQuad;
 end;
 
@@ -109,6 +139,21 @@ end;
 class function TGlowPipelineEffect.IsInner: boolean;
 begin
   Result := true;
+end;
+
+procedure TGlowPipelineEffect.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  if Sender is TPersistentResource then begin
+    if msg = NM_ObjectDestroyed then begin
+      if Sender = FSceneTexture then FSceneTexture:=nil;
+      if Sender = FScreenQuad then FScreenQuad:=nil;
+      if Sender = FSceneSampler then FSceneSampler:=nil;
+      if Sender = FConvolutionShader then FConvolutionShader:=nil
+    end;
+  end;
+
+  inherited;
 end;
 
 procedure TGlowPipelineEffect.SetBlurWidth(const Value: Single);

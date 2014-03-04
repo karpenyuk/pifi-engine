@@ -225,6 +225,7 @@ begin
   FImageLoader.Free;
   FMeshList.Free;
   FSceneGraph.Free;
+  effects.Free;
   inherited;
 end;
 
