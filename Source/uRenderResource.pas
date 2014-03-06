@@ -380,14 +380,14 @@ Type
     function CreateTexture: TTexture;
 
     procedure Allocate(aWithMipmaps: boolean = false);
-    procedure SaveToStream(aStream: TStream); virtual;
+    procedure SaveToStream(aStream: TStream); override;
     procedure LoadFromStream(aStream: TStream); override;
     //virtual function for implementing different image format loader
     procedure LoadImageFromStream(aStream: TStream); virtual;
-    procedure LoadImageFromFile(aFileName: string);
+    procedure LoadImageFromFile(aFileName: string); virtual;
     //save image to stream/file, image format settet by extention: bmp, jpg, tga, dds etc.
     procedure SaveImageToStream(aStream: TStream; ImageFormat: string = ''); virtual;
-    procedure SaveImageToFile(aFileName: string; ImageFormat: string = '');
+    procedure SaveImageToFile(aFileName: string; ImageFormat: string = ''); virtual;
 
     procedure DiscardLods;
     procedure VolumeToArray;
@@ -1089,10 +1089,10 @@ Type
     constructor Create; override;
     destructor Destroy; override;
 
-    procedure Initialize; virtual; abstract;
-    procedure Apply; virtual; abstract;
-    procedure UnApply; virtual; abstract;
-    procedure Setup; virtual; abstract;
+    procedure Initialize; virtual;
+    procedure Apply; virtual;
+    procedure UnApply; virtual;
+    procedure Setup; virtual;
 
     property ShaderProgram: TShaderProgram read FShaderProgram write FShaderProgram;
     property onApply: TEffectNotifyEvent read FonApply write FonApply;
@@ -2133,8 +2133,6 @@ begin
 end;
 
 destructor TVertexObject.Destroy;
-var
-  I: Integer;
 begin
   Clear;
   FreeAndNil(FAttribs);
@@ -2367,13 +2365,14 @@ procedure TMeshAssembly.Add(aMesh: TMesh; const aLocalMatrix: TMatrix);
 begin
   FMeshes.Add(aMesh);
   FLocalMatrices.Add(aLocalMatrix);
-  aMesh.Subscribe(Self);
+  AttachResource(aMesh);
 end;
 
 function TMeshAssembly.AddNewMesh(aVertexObject: TVertexObject;
   const aLocalMatrix: TMatrix): TMesh;
 begin
   Result := AddNewMesh(aVertexObject);
+  AttachResource(Result);
   Add(Result, aLocalMatrix);
 end;
 
@@ -2400,7 +2399,7 @@ var
   mesh: TMesh;
 begin
   mesh := Items[Index];
-  mesh.UnSubscribe(Self);
+  if assigned(Mesh) then DetachResource(Mesh);
   FMeshes.Delete(Index);
   FLocalMatrices.Delete(Index);
   DispatchMessage(NM_ResourceChanged, mesh);
@@ -2409,8 +2408,11 @@ end;
 procedure TMeshAssembly.DeleteMesh(aMesh: TMesh);
 var i: integer;
 begin
+  if assigned(aMesh) then DetachResource(aMesh);
   i := FMeshes.IndexOf(aMesh);
-  if i > -1 then Delete(i);
+  if i > -1 then begin
+    Delete(i);
+  end;
 end;
 
 destructor TMeshAssembly.Destroy;
@@ -2418,7 +2420,7 @@ var
   i: Integer;
 begin
   for i := 0 to FMeshes.Count - 1 do
-    Items[i].UnSubscribe(Self);
+    DetachResource(Items[i]);
   FMeshes.Free;
   FLocalMatrices.Free;
   inherited;
@@ -3284,7 +3286,7 @@ end;
 
 constructor TImageHolder.Create;
 begin
-  inherited;
+  inherited Create;
   FImageFormat:=$FFFFFFFF;
   FImageType:=itBitmap;
 
@@ -3304,7 +3306,7 @@ end;
 
 constructor TImageHolder.Create(aFormatCode: cardinal; aImageType: TImageType);
 begin
-  Create;
+  Create();
   FImageFormat := aFormatCode;
   setImageType(aImageType);
 end;
@@ -3317,7 +3319,6 @@ begin
     FDataSize:=-1;
     FReservedMem:=-1;
   end;
-
 end;
 
 destructor TImageHolder.Destroy;
@@ -3431,6 +3432,7 @@ end;
 
 procedure TImageHolder.LoadFromStream(aStream: TStream);
 begin
+  inherited;
   assert(false, 'Not implemented yet :(');
 end;
 
@@ -3462,6 +3464,7 @@ end;
 
 procedure TImageHolder.SaveToStream(aStream: TStream);
 begin
+  inherited;
   assert(false, 'Not implemented yet :(');
 end;
 
@@ -3832,17 +3835,22 @@ begin
           if aMode<>bmNone then include(FRenderBuffers,rbDepthStencil)
           else exclude(FRenderBuffers,rbDepthStencil);
       end;
-    else assert(false, 'Unknown render buffer format!');
+    else begin
+      buffptr := nil;
+      assert(false, 'Unknown render buffer format!');
+    end;
   end;
 
-  buffptr.Mode := aMode;
-  buffptr.Format := aFormat;
-  if assigned(buffptr.Texture) then begin
-    DetachResource(buffptr.Texture);
-    buffptr.Texture.Free;
-    buffptr.Texture := nil;
+  if assigned(buffptr) then begin
+    buffptr.Mode := aMode;
+    buffptr.Format := aFormat;
+    if assigned(buffptr.Texture) then begin
+      DetachResource(buffptr.Texture);
+      buffptr.Texture.Free;
+      buffptr.Texture := nil;
+    end;
+    DispatchMessage(NM_ResourceChanged);
   end;
-  DispatchMessage(NM_ResourceChanged);
 end;
 
 constructor TFrameBuffer.Create;
@@ -4179,6 +4187,11 @@ end;
 
 { TAbstractPipelineEffect }
 
+procedure TPipelineAbstractEffect.Apply;
+begin
+  if assigned(FonApply) then FonApply(Self);
+end;
+
 constructor TPipelineAbstractEffect.Create;
 begin
   inherited;
@@ -4194,6 +4207,23 @@ end;
 destructor TPipelineAbstractEffect.Destroy;
 begin
   inherited;
+end;
+
+procedure TPipelineAbstractEffect.Initialize;
+begin
+  if assigned(FonInitialize) then FonInitialize(Self);
+end;
+
+procedure TPipelineAbstractEffect.Setup;
+begin
+  if assigned(FonSetup) then FonSetup(Self);
+  
+end;
+
+procedure TPipelineAbstractEffect.UnApply;
+begin
+  if assigned(FonUnapply) then FonUnapply(Self);
+
 end;
 
 { TEffectPipeline }
