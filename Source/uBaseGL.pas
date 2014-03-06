@@ -19,6 +19,7 @@ Type
   TGLBaseResource = class(TBaseRenderResource)
   public
     BaseResource: TBaseRenderResource;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
     constructor Create; override;
     procedure Update(aRender: TBaseRender); virtual;
     procedure Apply(aRender: TBaseRender); virtual;
@@ -3454,6 +3455,18 @@ begin
   inherited Create;
   Owner := nil;
   BaseResource := nil;
+end;
+
+procedure TGLBaseResource.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  case msg of
+    NM_ResourceApply: Apply(TBaseRender(Params));
+    NM_ResourceUnApply: UnApply(TBaseRender(Params));
+    NM_ResourceUpdate: Update(TBaseRender(Params));
+  end;
+
+  inherited;
 end;
 
 procedure TGLBaseResource.UnApply(aRender: TBaseRender);
