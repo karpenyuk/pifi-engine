@@ -8,7 +8,7 @@ uses
 type
 
   TRobotController = class
-  private type TStatus = (rcsBaseDone, rcsForearmDone, rcsArmDone);
+  private type TStatus = (rcsBaseDone, rcsForearmDone, rcsArmDone, rcsPalmDone);
   private
     FBase: TSceneObject;
     FHinge1: TSceneObject;
@@ -27,6 +27,8 @@ type
     FForearmBendStep: Single;
     FArmBendDest: Single;
     FArmBendStep: Single;
+    FPalmBendDest: Single;
+    FPalmBendStep: Single;
   public
     constructor Create(aBase: TSceneObject);
     procedure Progress(aDeltaTime: Single);
@@ -62,17 +64,17 @@ begin
   FPalm := FHinge3.Childs[0] as TSceneObject;
   FFinger1 := FPalm.Childs[0] as TSceneObject;
   FFinger2 := FPalm.Childs[1] as TSceneObject;
-  FStatus := [rcsBaseDone, rcsForearmDone, rcsArmDone];
+  FStatus := [rcsBaseDone, rcsForearmDone, rcsArmDone, rcsPalmDone];
   FWaitTime := 1500;
 end;
 
 procedure TRobotController.Progress(aDeltaTime: Single);
 var
-  distance, sideC, alpha, betta: Single;
+  distance, sideC, alpha, betta, gamma: Single;
   delta: Single;
 
 begin
-  if FStatus <> [rcsBaseDone, rcsForearmDone, rcsArmDone] then begin
+  if FStatus <> [rcsBaseDone, rcsForearmDone, rcsArmDone, rcsPalmDone] then begin
 
     if not(rcsBaseDone in FStatus) then begin
       delta := FBaseTurnStep * aDeltaTime;
@@ -98,6 +100,14 @@ begin
       else FHinge2.RollObject(delta);
     end;
 
+    if not(rcsPalmDone in FStatus) then begin
+      delta := FPalmBendStep * aDeltaTime;
+      if Sign(SignedStep(FPalmBendDest - FHinge3.RollAngle)) <> Sign(delta) then begin
+        Include(FStatus, rcsPalmDone);
+      end
+      else FHinge3.RollObject(delta);
+    end;
+
   end
   else begin
     FWaitTime := FWaitTime + aDeltaTime;
@@ -108,12 +118,15 @@ begin
       FBaseTurnStep := SignedStep(FBaseTurnDest - FBase.TurnAngle);
       distance := 3.345 + Random * 9.855;
       sideC := sqr(distance) + sqr(1.05);
-      alpha := arcCos( (88.0625 - sideC) / 87.5 );
-      betta := arcSin( 7 * sin( alpha ) / sqrt(sideC) );
-      FForearmBendDest := RadToDeg( betta );
+      alpha := arcCos( (88.0625 - sideC) / 87.5 );  sideC := sqrt( sideC );
+      betta := arcSin( 7 * sin( alpha ) / sideC );
+      gamma := alpha + betta - arcCos( 1.05 / sideC);
+      FForearmBendDest := RadToDeg( Pi / 2 - betta - arcSin( 1.05 / sideC ) );
       FForearmBendStep := SignedStep(FForearmBendDest - FHinge1.RollAngle);
-      FArmBendDest := RadToDeg( alpha );
+      FArmBendDest := RadToDeg( Pi - alpha );
       FArmBendStep := SignedStep(FArmBendDest - FHinge2.RollAngle);
+      FPalmBendDest := RadToDeg( gamma );
+      FPalmBendStep := SignedStep(FPalmBendDest - FHinge3.RollAngle);
       FStatus := [];
       FWaitTime := 0;
     end;
