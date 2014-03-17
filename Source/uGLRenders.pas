@@ -718,96 +718,53 @@ var idx: integer;
 begin
   inherited;
   if not assigned(Resource) then exit(nil);
-  
+
   idx:=FSupportedResources.IndexOf(Resource.ClassType);
   if idx < 0 then begin result:=nil; exit; end;
   //assert(idx>=0,'Unsupported resource: "'+Resource.ClassName+'"!');
 
   //Resource already exists?
   result:=GetResource(Resource); if assigned(result) then exit;
+
+  AttachResource(Resource);
+
   glres:=nil;
 
   //Create new GLResources
 
-  if Resource.ClassType = TShaderProgram then begin
-    //Create GLSL Shader program
-    glres:=TGLSLShaderProgramExt.CreateFrom(Self, Resource as TShaderProgram);
-    FResList[idx].Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TVertexObject then begin
-    //Create Vertex object
-    glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject);
-    FResList[idx].Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TMesh then begin
-    //Create Mesh
-    glres:=TGLMesh.CreateFrom(self, Resource as TMesh);
-    FInnerResource.Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TMeshObject then begin
-    //Create Mesh object
-    glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject);
-    FResList[idx].Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TSceneObject then begin
-    //Create Scene object
-    glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject);
-    FResList[idx].Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TBuiltinUniformLightNumber then begin
-    //Create uniform setter of LightNumber
-    glres:=TGLUniformLightNumber.CreateFrom(self, Resource as TBaseBuiltinUniform);
-    FInnerResource.Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TMaterialObject then begin
-    //Create Material object
-    glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject);
-    FResList[idx].Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TLightSource then begin
-    //Create Material object
-    glres:=TGLLight.CreateFrom(self, Resource as TLightSource);
-    FResList[idx].Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TTexture then begin
-    // Create Texture object
-    glres:=TGLTextureObject.CreateFrom(Resource as TTexture);
-    FInnerResource.Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TTextureSampler then begin
-    // Create Sampler object
-    glres:=TGLTextureSampler.CreateFrom(Resource as TTextureSampler);
-    FInnerResource.Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TFrameBuffer then begin
-    // Create Sampler object
-    glres:=TGLFrameBufferObjectExt.CreateFrom(Self, Resource as TFrameBuffer);
-    FInnerResource.Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TSceneCamera then begin
-    // Create Sampler object
-    glres:=TGLCamera.CreateFrom(Self, Resource as TSceneCamera);
-    FInnerResource.Add(Resource, glres);
-  end;
-
-  if Resource.ClassType = TGlowPipelineEffect then begin
-    // Create Sampler object
+  if Resource.ClassType = TShaderProgram then
+    glres:=TGLSLShaderProgramExt.CreateFrom(Self, Resource as TShaderProgram)
+  else if Resource.ClassType = TVertexObject then
+    glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject)
+  else if Resource.ClassType = TMesh then
+    glres:=TGLMesh.CreateFrom(self, Resource as TMesh)
+  else if Resource.ClassType = TMeshObject then
+    glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject)
+  else if Resource.ClassType = TSceneObject then
+    glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject)
+  else if Resource.ClassType = TBuiltinUniformLightNumber then
+    glres:=TGLUniformLightNumber.CreateFrom(self, Resource as TBaseBuiltinUniform)
+  else if Resource.ClassType = TMaterialObject then
+    glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject)
+  else if Resource.ClassType = TLightSource then
+    glres:=TGLLight.CreateFrom(self, Resource as TLightSource)
+  else if Resource.ClassType = TTexture then
+    glres:=TGLTextureObject.CreateFrom(Resource as TTexture)
+  else if Resource.ClassType = TTextureSampler then
+    glres:=TGLTextureSampler.CreateFrom(Resource as TTextureSampler)
+  else if Resource.ClassType = TFrameBuffer then
+    glres:=TGLFrameBufferObjectExt.CreateFrom(Self, Resource as TFrameBuffer)
+  else if Resource.ClassType = TSceneCamera then
+    glres:=TGLCamera.CreateFrom(Self, Resource as TSceneCamera)
+  else if Resource.ClassType = TGlowPipelineEffect then
     glres:=TGLGlowEffect.CreateFrom(Self, Resource as TGlowPipelineEffect);
-    FInnerResource.Add(Resource, glres);
-  end;
 
   if assigned(glres) then begin
+    if Resource.IsInner then
+      FInnerResource.Add(Resource, glres)
+    else
+      FResList[idx].Add(Resource, glres);
+
     glres.Owner:=self;
     Resource.Subscribe(self);
     glres.Subscribe(Self);
@@ -1572,14 +1529,14 @@ begin
   Assert(assigned(aEffect) and (aEffect is TGlowPipelineEffect),'Effect invalide or not assigned');
   Create;
   FEffect := aEffect;
-  FEffect.Subscribe(Self);
+  AttachResource(aEffect);
   FStructureChanged := true;
 end;
 
 destructor TGLGlowEffect.Destroy;
 begin
   if Assigned(FEffect) then begin
-    FEffect.UnSubscribe(Self);
+    DetachResource(FEffect);
     FEffect := nil;
   end;
   inherited;

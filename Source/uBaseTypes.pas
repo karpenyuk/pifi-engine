@@ -310,6 +310,9 @@ const
   NM_LocalMatrixChanged = 10004;
   NM_ResourceLoaded  = 10101;
   NM_ResourceChanged = 10102;
+  NM_ResourceApply   = 10103;
+  NM_ResourceUnApply = 10104;
+  NM_ResourceUpdate  = 10105;
   NM_ObjectDestroyed = 10201;
   NM_DebugMessageStr = 10301;
 
