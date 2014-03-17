@@ -258,6 +258,7 @@ Type
   TCShiftState = set of (ssShift, ssAlt, ssCtrl,
     ssLeft, ssRight, ssMiddle, ssDouble, ssTouch, ssPen, ssCommand);
 
+  TGLProgressEvent = procedure(Sender: TObject; const deltaTime, newTime: Double) of object;
   TRenderEvent = procedure (Sender: TObject; aFrameTime: double) of object;
   TResizeEvent = procedure (Sender: TObject; aWidth, aHeight: integer) of object;
 

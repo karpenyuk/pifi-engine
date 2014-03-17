@@ -5,7 +5,7 @@ interface
 uses
   SysUtils, Classes, uBaseGL, uBaseTypes, uVMath, dglOpenGL,
   uPrimitives, uMiscUtils, uRenderResource, uBaseRenders, uGLRenders,
-  uLists, uImageFormats, uImageLoader, uWorldSpace;
+  uLists, uImageFormats, uImageLoader, uWorldSpace, uAI;
 
 type
 
@@ -19,11 +19,13 @@ type
       Buttons: TCMouseButtons);
     procedure onMouseWheel(Sender: TObject; Shift: TCShiftState; WheelDelta: Integer; var Handled: Boolean);
     procedure onDebugMessage(const AMessage: string);
+    procedure OnProgress(Sender: TObject; const deltaTime, newTime: Double);
   private
     { Private declarations }
     FSceneGraph: TSceneGraph;
     FRender: TBaseRender;
     MX, MY: Integer;
+    FAIs: array[0..11*11-1] of TRobotController;
   public
     { Public declarations }
     constructor Create;
@@ -70,6 +72,13 @@ begin
     else FSceneGraph.Camera.AdjustDistanceToTarget(1/1.1);
 end;
 
+procedure TDemo.OnProgress(Sender: TObject; const deltaTime, newTime: Double);
+var
+  i: integer;
+begin
+  for i := Low(FAIs) to High(FAIs) do FAIs[i].Progress(deltaTime);
+end;
+
 procedure TDemo.onResize(Sender: TObject; NewWidth, NewHeight: Integer);
 begin
   FSceneGraph.Camera.ViewPortSize := Vec2iMake(NewWidth, NewHeight);
@@ -98,7 +107,7 @@ var
   Material: TMaterialObject;
   SceneObject, Last, Etalon: TSceneObject;
   Light: TLightSource;
-  i, j: Integer;
+  i, j, k: Integer;
   x, z: Single;
 begin
   FSceneGraph := TSceneGraph.Create;
@@ -222,6 +231,8 @@ begin
   Light.Specular.SetColor(250, 250, 250, 255);
   FSceneGraph.AddItem(light);
 
+  FAIs[0]:= TRobotController.Create(Etalon);
+  k := 1;
   for i := -5 to 5 do
     for j := -5 to 5 do begin
       if (i = 0) and (j = 0) then continue;
@@ -230,6 +241,8 @@ begin
       SceneObject := Etalon.MakeClone(True) as TSceneObject;
       SceneObject.ShiftObject(x, 0, z);
       SceneObject.TurnObject(360*random);
+      FAIs[k] := TRobotController.Create(SceneObject);
+      Inc(k);
     end;
 
   FSceneGraph.Camera.FoV:=60;
@@ -239,7 +252,10 @@ begin
 end;
 
 destructor TDemo.Destroy;
+var
+  i: integer;
 begin
+  for i := Low(FAIs) to High(FAIs) do FAIs[i].Free;
   FSceneGraph.Free;
   inherited;
 end;

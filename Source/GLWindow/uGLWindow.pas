@@ -25,10 +25,10 @@ type
 
   TCadencer = class(TThread)
   private
+    FDeltaTime: double;
     FLastTime: double;
     FUpdateTime: double;
     FGLWindow: TGLWindow;
-    procedure update;
   protected
     procedure Execute; override;
   end;
@@ -37,6 +37,7 @@ type
 
   TGLWindow = class
   private
+    FCadencer: TCadencer;
     FKeys: array [0..255] of boolean;
     FButtons: TCMouseButtons;
     FMouseX,FMouseY: integer;
@@ -62,6 +63,7 @@ type
     FOnKeyUp: TKeyEvent;
     FOnMouseWheel: TMouseWheelEvent;
     FOnDebugMessage: TOnDebugMessage;
+    FOnProgress: TGLProgressEvent;
     procedure setActive(const Value: boolean);
     procedure KillGLWindow;
     procedure GetOGLVersion;
@@ -79,6 +81,8 @@ type
     procedure SetonResize(const Value: TResizeEvent);
     function getButton(index: TCMouseButton): boolean;
     procedure SetOnDebugMessage(const Value: TOnDebugMessage);
+    function GetDeltaTime: double;
+    procedure Update;
   public
     constructor Create;
     destructor Destroy; override;
@@ -99,7 +103,9 @@ type
     property DebugContext: boolean read FDebugContext;
     property Caption: string read FCaption write setCaption;
     property FrameTime: double read getFrameTime;
+    property DeltaTime: double read GetDeltaTime;
 
+    property OnProgress: TGLProgressEvent read FOnProgress write FOnProgress;
     property onRender: TRenderEvent read FonRender write SetonRender;
     property onInitialize: TNotifyEvent read FonInitialize write SetonInitialize;
     property OnDebugMessage: TOnDebugMessage read FOnDebugMessage write SetOnDebugMessage;
@@ -253,6 +259,8 @@ end;
 
 destructor TGLWindow.Destroy;
 begin
+  FCadencer.Terminate;
+  FCadencer.Free;
   killGLwindow;
   inherited;
 end;
@@ -286,6 +294,11 @@ end;
 function TGLWindow.getButton(index: TCMouseButton): boolean;
 begin
   result := index in FButtons;
+end;
+
+function TGLWindow.GetDeltaTime: double;
+begin
+  Result := FCadencer.FDeltaTime;
 end;
 
 function TGLWindow.getFrameTime: double;
@@ -435,6 +448,9 @@ begin
   FForwardContext := False;
   FDebugContext := False;
   FFrameTime:=-1;
+  FCadencer := TCadencer.Create(true);
+  FCadencer.FUpdateTime := 0.2;
+  FCadencer.FGLWindow := Self;
 end;
 
 procedure TGLWindow.CreateWindow(Title: Pchar; width,height: integer;
@@ -444,6 +460,7 @@ var
   pfd: pixelformatdescriptor;
   dmScreenSettings: Devmode;
 begin
+  FActive := false;
   FillChar(FKeys,Sizeof(FKeys),0);
   FButtons := [];
   FMouseX := -1; FMouseY := -1;
@@ -526,6 +543,7 @@ begin
       assert(false,'initialization failed.');
   end;
   FActive:=true;
+  FCadencer.Start;
 end;
 
 
@@ -612,6 +630,12 @@ begin
   SwapBuffers(FDC);
 end;
 
+procedure TGLWindow.Update;
+begin
+  if Assigned(FOnProgress) then
+    FOnProgress(Self, FCadencer.FDeltaTime, FCadencer.FLastTime);
+end;
+
 procedure TGLWindow.WindProc(var Message: TMessage);
 var res: integer; H: Boolean;
 begin
@@ -686,22 +710,30 @@ end;
 
 procedure TCadencer.Execute;
 var t: double;
+
+  function GetTime: double;
+  var SystemTime: TSystemTime;
+  begin
+    GetLocalTime(SystemTime);
+    with SystemTime do
+      Result := (wHour * (MinsPerHour * SecsPerMin * MSecsPerSec) +
+               wMinute * (SecsPerMin * MSecsPerSec) +
+               wSecond * MSecsPerSec +
+               wMilliSeconds);
+  end;
+
 begin
+  FLastTime := GetTime;
   while not Terminated do begin
-    if  false {not isRendering} then begin
-      t := GetTime;
-      if t - FLastTime > FUpdateTime then
-      begin
-        synchronize(update);
-        FLastTime := t;
-      end;
+    t := GetTime;
+    if t - FLastTime > FUpdateTime then
+    begin
+      FDeltaTime := t - FLastTime;
+      FLastTime := t;
+      if Assigned(FGLWindow) and FGLWindow.Active then
+        Synchronize(FGLWindow.Update);
     end;
   end;
-end;
-
-procedure TCadencer.update;
-begin
-//  if assigned(FGLViewer) then FGLViewer.Paint;
 end;
 
 end.

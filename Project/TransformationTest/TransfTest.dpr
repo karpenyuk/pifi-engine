@@ -1,55 +1,89 @@
 program TransfTest;
 
 uses
-  FMX.Platform.Win,
-  FMX.Forms,
   Math,
   Windows,
+  Classes,
   Messages,
   SysUtils,
   uGLWindow,
   dglOpenGL,
-  uTest in 'uTest.pas' {Form1} ,
-  uMain in 'uMain.pas';
+  uMain in 'uMain.pas',
+  uAI in 'uAI.pas';
 
 {$R *.res}
 
-//function newWndProc(hwnd: hwnd; uMsg: UINT; wParam: wParam; lParam: lParam)
-//  : LRESULT; stdcall;
-//var
-//  Mess: TMessage;
-//begin
-//  if hwnd = FmxHandleToHWND(Form1.Handle) then
-//  begin
-//    Result := CallWindowProc(OldWindowProc, hwnd, uMsg, wParam, lParam);
-//    glwnd.DrawGLScene;
-//    if glwnd.FrameTime <> 0 then
-//      glwnd.Caption := '[' +
-//        floattostr(roundto(1 / glwnd.FrameTime, 2)) + ']'
-//    else
-//      glwnd.Caption := '[NAN]';
-//    glwnd.SwapBuffer;
-//  end;
-//end;
+const
+  WINCAPTION = 'Transformation test';
 
+function WinMain(hInstance: HINST): integer; stdcall;
+var
+  msg: TMsg;
+  done: Bool;
+  fs: boolean;
+  glwnd: TGLWindow;
 begin
-  Application.Initialize;
-  InitOpenGL;
+  done := false;
+  fs := false;
   Demo := TDemo.Create;
   glwnd := TGLWindow.Create;
   glwnd.onInitialize := Demo.ContextReady;
   glwnd.onResize := Demo.onResize;
   glwnd.onRender := Demo.SceneRender;
-  glwnd.OnDebugMessage := Demo.OnDebugMessage;
+  glwnd.OnDebugMessage := Demo.onDebugMessage;
   glwnd.onMouseDown := Demo.onMouseDown;
   glwnd.onMouseMove := Demo.onMouseMove;
   glwnd.onMouseWheel := Demo.onMouseWheel;
+  glwnd.OnProgress := Demo.OnProgress;
   glwnd.SetPixelFormatBits(32, 24, 0, 0, true, true);
-  glwnd.CreateWindow('[NAN]', 640, 480, false);
+  glwnd.CreateWindow(WINCAPTION, 640, 480, fs);
   glwnd.VSync := true;
-  //nwp := Integer(@newWndProc);
-  Application.CreateForm(TForm1, Form1);
+  while not done do begin
+    if (PeekMessage(msg, 0, 0, 0, PM_REMOVE)) then begin
+      if msg.message = WM_QUIT then done := true
+      else begin
+        TranslateMessage(msg);
+        DispatchMessage(msg);
+      end;
+    end else begin
+      if glwnd.keys[VK_ESCAPE]
+      then done := true
+      else begin
+        CheckSynchronize;
+        glwnd.DrawGLScene;
+        if glwnd.FrameTime <> 0 then
+            glwnd.Caption := WINCAPTION + ' [' +
+            floattostr(roundto(1 / glwnd.FrameTime, 2)) + ']'
+        else
+            glwnd.Caption := WINCAPTION + ' [NAN]';
+        glwnd.SwapBuffer;
+      end;
+      if glwnd.keys[VK_F1] then begin
+        glwnd.keys[VK_F1] := false;
+        glwnd.Free;
+        fs := not fs;
+        glwnd := TGLWindow.Create;
+        glwnd.SetPixelFormatBits(32, 24, 0, 0, true, true);
+        glwnd.CreateWindow(WINCAPTION, 640, 480, fs);
+        glwnd.VSync := true;
+      end;
+      if glwnd.keys[VK_SPACE] then begin
+        glwnd.keys[VK_SPACE] := false;
+        glwnd.VSync := not glwnd.VSync;
+      end;
 
-  Application.Run;
+    end;
+  end;
   glwnd.Free;
+  result := msg.wParam;
+end;
+
+begin
+  try
+    InitOpenGL;
+    WinMain(hInstance);
+  except
+    on E: Exception do
+        Writeln(E.ClassName, ': ', E.message);
+  end;
 end.
