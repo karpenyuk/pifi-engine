@@ -1651,10 +1651,10 @@ procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat2; Count: GLsizei; transpose: boolean);
 begin
   if vActiveShader = Self then
-    glUniformMatrix2fv(glGetUniformLocation(FShaderId, PGLChar(name)), Count,
+    glUniformMatrix2fv(GetUniformLocation(FShaderId, PGLChar(name)), Count,
       transpose, @Value)
   else
-    glProgramUniformMatrix2fv(FShaderId, glGetUniformLocation(FShaderId, PGLChar(name)),
+    glProgramUniformMatrix2fv(FShaderId, GetUniformLocation(FShaderId, PGLChar(name)),
       Count, transpose, @Value)
 end;
 
