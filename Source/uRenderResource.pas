@@ -3766,7 +3766,10 @@ end;
 
 procedure TSceneCamera.SetEffectPipeline(const Value: TEffectPipeline);
 begin
+  if assigned(FEffectPipeline) then
+    DetachResource(FEffectPipeline);
   FEffectPipeline := Value;
+  AttachResource(FEffectPipeline);
 end;
 
 procedure TSceneCamera.SetFoV(const Value: single);

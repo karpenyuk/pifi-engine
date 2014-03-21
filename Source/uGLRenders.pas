@@ -196,6 +196,8 @@ Type
     FResList: array of TResourceTree;
     FInnerResource: TResourceTree;
     function GetResource(const Resource: TBaseRenderResource): TGLBaseResource;
+    function CreateResource(const Resource: TBaseRenderResource): TGLBaseResource;
+
   public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
@@ -258,6 +260,10 @@ Type
     FVertexObject: TGLVertexObject;
     FSampler: TGLTextureSampler;
     FStructureChanged: boolean;
+
+    fbh,fbv: TFrameBuffer;
+    texv,texh: TTexture;
+
   public
     constructor CreateFrom(aOwner: TGLResources; aEffect: TBaseRenderResource);
     destructor Destroy; override;
@@ -659,6 +665,43 @@ begin
 
 end;
 
+function TGLResources.CreateResource(const Resource: TBaseRenderResource): TGLBaseResource;
+var glres: TGLBaseResource;
+begin
+  glres:=nil;
+
+  //Create new GLResources
+
+  if Resource.ClassType = TShaderProgram then
+    glres:=TGLSLShaderProgramExt.CreateFrom(Self, Resource as TShaderProgram)
+  else if Resource.ClassType = TVertexObject then
+    glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject)
+  else if Resource.ClassType = TMesh then
+    glres:=TGLMesh.CreateFrom(self, Resource as TMesh)
+  else if Resource.ClassType = TMeshObject then
+    glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject)
+  else if Resource.ClassType = TSceneObject then
+    glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject)
+  else if Resource.ClassType = TBuiltinUniformLightNumber then
+    glres:=TGLUniformLightNumber.CreateFrom(self, Resource as TBaseBuiltinUniform)
+  else if Resource.ClassType = TMaterialObject then
+    glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject)
+  else if Resource.ClassType = TLightSource then
+    glres:=TGLLight.CreateFrom(self, Resource as TLightSource)
+  else if Resource.ClassType = TTexture then
+    glres:=TGLTextureObject.CreateFrom(Resource as TTexture)
+  else if Resource.ClassType = TTextureSampler then
+    glres:=TGLTextureSampler.CreateFrom(Resource as TTextureSampler)
+  else if Resource.ClassType = TFrameBuffer then
+    glres:=TGLFrameBufferObjectExt.CreateFrom(Self, Resource as TFrameBuffer)
+  else if Resource.ClassType = TSceneCamera then
+    glres:=TGLCamera.CreateFrom(Self, Resource as TSceneCamera)
+  else if Resource.ClassType = TGlowPipelineEffect then
+    glres:=TGLGlowEffect.CreateFrom(Self, Resource as TGlowPipelineEffect);
+
+  result := glres;
+end;
+
 destructor TGLResources.Destroy;
 var i, j: integer;
     res: TBaseRenderResource;
@@ -726,41 +769,9 @@ begin
   if idx < 0 then begin result:=nil; exit; end;
   //assert(idx>=0,'Unsupported resource: "'+Resource.ClassName+'"!');
 
-  //Resource already exists?
   result:=GetResource(Resource); if assigned(result) then exit;
-
   AttachResource(Resource);
-
-  glres:=nil;
-
-  //Create new GLResources
-
-  if Resource.ClassType = TShaderProgram then
-    glres:=TGLSLShaderProgramExt.CreateFrom(Self, Resource as TShaderProgram)
-  else if Resource.ClassType = TVertexObject then
-    glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject)
-  else if Resource.ClassType = TMesh then
-    glres:=TGLMesh.CreateFrom(self, Resource as TMesh)
-  else if Resource.ClassType = TMeshObject then
-    glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject)
-  else if Resource.ClassType = TSceneObject then
-    glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject)
-  else if Resource.ClassType = TBuiltinUniformLightNumber then
-    glres:=TGLUniformLightNumber.CreateFrom(self, Resource as TBaseBuiltinUniform)
-  else if Resource.ClassType = TMaterialObject then
-    glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject)
-  else if Resource.ClassType = TLightSource then
-    glres:=TGLLight.CreateFrom(self, Resource as TLightSource)
-  else if Resource.ClassType = TTexture then
-    glres:=TGLTextureObject.CreateFrom(Resource as TTexture)
-  else if Resource.ClassType = TTextureSampler then
-    glres:=TGLTextureSampler.CreateFrom(Resource as TTextureSampler)
-  else if Resource.ClassType = TFrameBuffer then
-    glres:=TGLFrameBufferObjectExt.CreateFrom(Self, Resource as TFrameBuffer)
-  else if Resource.ClassType = TSceneCamera then
-    glres:=TGLCamera.CreateFrom(Self, Resource as TSceneCamera)
-  else if Resource.ClassType = TGlowPipelineEffect then
-    glres:=TGLGlowEffect.CreateFrom(Self, Resource as TGlowPipelineEffect);
+  glres:=CreateResource(Resource);;
 
   if assigned(glres) then begin
     if Resource.IsInner then
@@ -1547,17 +1558,32 @@ begin
     DetachResource(FEffect);
     FEffect := nil;
   end;
+  //FImageHolder.Free;
+
+
+  FreeAndNil(fbh);
+  FreeAndNil(fbv);
+  FreeAndNil(texv);
+  FreeAndNil(texh);
+  FreeAndNil(FImageHolder);
   inherited;
 end;
 
 procedure TGLGlowEffect.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
-  inherited;
-  if Msg = NM_ObjectDestroyed then
-  begin
-    if Sender = FEffect then
-      FEffect := nil;
+  if Msg = NM_ObjectDestroyed then  begin
+    if Sender = FEffect then FEffect := nil;
+    if Sender = FShader then FShader := nil;
+    if Sender = FBlurShader then FBlurShader := nil;
+    if Sender = FFrameH then FFrameH := nil;
+    if Sender = FFrameV then FFrameV := nil;
+    if Sender = FImageHolder then FImageHolder := nil;
+    if Sender = FBluredH then FBluredH := nil;
+    if Sender = FBluredV then FBluredV := nil;
+    if Sender = FVertexObject then FVertexObject := nil;
+    if Sender = FSampler then FSampler := nil;
   end;
+  inherited;
 end;
 
 procedure TGLGlowEffect.Update(aRender: TBaseRender);
@@ -1565,44 +1591,57 @@ var
   glRender: TGLRender absolute aRender;
   eff: TGlowPipelineEffect;
 begin
-  if Assigned(FEffect) then begin
-    eff := TGlowPipelineEffect(FEffect);
-    if FStructureChanged then begin
-      FShader := glRender.FResourceManager.GetOrCreateResource(eff.ShaderProgram) as TGLSLShaderProgramExt;
-      FShader.Bind;
-      FShader.SetUniform('BlurAmount', eff.BlurAmount);
-      FShader.UnBind;
-      FBlurShader := glRender.FResourceManager.GetOrCreateResource(eff.ConvolutionShader) as TGLSLShaderProgramExt;
-      FBlurShader.Bind;
-      FBlurShader.SetUniform('Weights', eff.Weights, eff.WeightCount);
-      FBlurShader.SetUniform('Width', eff.WeightCount div 2);
-      FBlurShader.UnBind;
-      FVertexObject := glRender.FResourceManager.GetOrCreateResource(eff.ScreenQuad) as TGLVertexObject;
-      FSampler := glRender.FResourceManager.GetOrCreateResource(eff.SceneSampler) as TGLTextureSampler;
-      FStructureChanged := false;
-    end;
+  if not assigned(FEffect) then exit;
 
-    if not Assigned(FImageHolder) then
-      FImageHolder := TImageSampler.CreateBitmap(eff.SceneTexture.ImageFormat,
-        eff.SceneTexture.ImageHolder.Width div 4,
-        eff.SceneTexture.ImageHolder.Height div 4, false);
+  eff := TGlowPipelineEffect(FEffect);
+  if FStructureChanged then begin
+    FShader := glRender.FResourceManager.GetOrCreateResource(eff.ShaderProgram) as TGLSLShaderProgramExt;
+    AttachResource(FShader);
 
-    if not Assigned(FFrameH) then begin
-      FFrameH := TGLFrameBufferObject.CreateOwned(Self);
-      FFrameH.InitFBO(Vec2iMake(FImageHolder.Width, FImageHolder.Height));
-      FBluredH := TGLTextureObject.CreateFrom(ttTexture2D, FImageHolder);
-      FBluredH.AllocateStorage;
-      FFrameH.AttachTexture(FBluredH);
-    end;
+    FShader.SetUniform('BlurAmount', eff.BlurAmount);
+    FBlurShader := glRender.FResourceManager.GetOrCreateResource(eff.ConvolutionShader) as TGLSLShaderProgramExt;
+    AttachResource(FBlurShader);
 
-    if not Assigned(FFrameV) then begin
-      FFrameV := TGLFrameBufferObject.CreateOwned(Self);
-      FFrameV.InitFBO(Vec2iMake(FImageHolder.Width, FImageHolder.Height));
-      FBluredV := TGLTextureObject.CreateFrom(ttTexture2D, FImageHolder);
-      FBluredV.AllocateStorage;
-      FFrameV.AttachTexture(FBluredV);
-    end;
+    FBlurShader.SetUniform('Weights', eff.Weights, eff.WeightCount);
+    FBlurShader.SetUniform('Width', eff.WeightCount div 2);
 
+    FVertexObject := glRender.FResourceManager.GetOrCreateResource(eff.ScreenQuad) as TGLVertexObject;
+    AttachResource(FVertexObject);
+
+    FSampler := glRender.FResourceManager.GetOrCreateResource(eff.SceneSampler) as TGLTextureSampler;
+    AttachResource(FSampler);
+
+    FStructureChanged := false;
+  end;
+
+  if not Assigned(FImageHolder) then begin
+    FImageHolder := TImageSampler.CreateBitmap(eff.SceneTexture.ImageFormat,
+      eff.SceneTexture.ImageHolder.Width div 4,
+      eff.SceneTexture.ImageHolder.Height div 4, false);
+  end;
+
+  if not Assigned(FFrameH) then begin
+    fbh := Storage.CreateFrameBuffer;
+    fbh.Size:=Vec2iMake(FImageHolder.Width, FImageHolder.Height);
+    FFrameH := glRender.FResourceManager.GetOrCreateResource(fbh) as TGLFrameBufferObject;
+    AttachResource(FFrameH);
+    texh := Storage.CreateTexture(FImageHolder);
+    FBluredH := glRender.FResourceManager.GetOrCreateResource(texh) as TGLTextureObject;
+    AttachResource(FBluredH);
+    FBluredH.AllocateStorage;
+    FFrameH.AttachTexture(FBluredH);
+  end;
+
+  if not Assigned(FFrameV) then begin
+    fbv := Storage.CreateFrameBuffer;
+    fbv.Size:=Vec2iMake(FImageHolder.Width, FImageHolder.Height);
+    FFrameV := glRender.FResourceManager.GetOrCreateResource(fbv) as TGLFrameBufferObject;
+    AttachResource(FFrameV);
+    texv := Storage.CreateTexture(FImageHolder);
+    FBluredV := glRender.FResourceManager.GetOrCreateResource(texv) as TGLTextureObject;
+    AttachResource(FBluredV);
+    FBluredV.AllocateStorage;
+    FFrameV.AttachTexture(FBluredV);
   end;
 end;
 

@@ -2216,27 +2216,21 @@ begin
     FAttachments.Textures.Add(tex);
   end else begin
     case aTarget of
-      tgDepth:
-        AttachDepthTexture(tex);
-      tgDepthStencil:
-        AttachDepthStencilTexture(tex);
-      tgMRT0:
-        begin
+      tgDepth: AttachDepthTexture(tex);
+      tgDepthStencil: AttachDepthStencilTexture(tex);
+      tgMRT0: begin
           AttachTextureTarget(tex, GL_COLOR_ATTACHMENT0);
           n := 0;
         end;
-      tgMRT1:
-        begin
+      tgMRT1: begin
           AttachTextureTarget(tex, GL_COLOR_ATTACHMENT1);
           n := 1;
         end;
-      tgMRT2:
-        begin
+      tgMRT2: begin
           AttachTextureTarget(tex, GL_COLOR_ATTACHMENT2);
           n := 2;
         end;
-      tgMRT3:
-        begin
+      tgMRT3: begin
           AttachTextureTarget(tex, GL_COLOR_ATTACHMENT3);
           n := 3;
         end;
@@ -2279,8 +2273,7 @@ end;
 constructor TGLFrameBufferObject.Create;
 begin
   inherited;
-  with FAttachments do
-  begin
+  with FAttachments do begin
     Textures := TGLTextureList.Create;
     DepthBuffer.Mode := bmNone;
     StencilBuffer.Mode := bmNone;
@@ -2313,12 +2306,12 @@ begin
   glDeleteFramebuffers(1, @FBOId);
   glDeleteFramebuffers(1, @FMSFBOId);
   FReadBackBuffers.Free;
-  with FAttachments do
-  begin
+  with FAttachments do begin
     glDeleteRenderbuffers(1, @DepthBuffer.BuffId);
     glDeleteRenderbuffers(1, @StencilBuffer.BuffId);
     glDeleteRenderbuffers(1, @DepthStencilBuffer.BuffId);
   end;
+
   inherited;
 end;
 
