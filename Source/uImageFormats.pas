@@ -26,6 +26,7 @@ Type
     cfSRGBA_DXT1, cfRGBA_DXT3, cfSRGBA_DXT3, cfRGBA_DXT5, cfSRGBA_DXT5);
 
   TAbstractPixelFormatSelector<T> = class
+  public
     class function CreateInt8(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
     class function CreateInt16(aPixelFormat: TBaseImageFormat): T; virtual; abstract;
     class function CreateInt32(aPixelFormat: TBaseImageFormat): T; virtual; abstract;

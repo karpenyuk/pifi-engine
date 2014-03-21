@@ -24,6 +24,7 @@ type
       TForEachProc = procedure (AKey: TKey; AValue: TValue; out AContinue: Boolean);
     { Private Declarations }
        TRBNode = class
+       public
          Key: TKey;
          Left, Right, Parent, Twin: TRBNode;
          Color: TRBColor;
