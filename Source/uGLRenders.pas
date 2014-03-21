@@ -66,6 +66,7 @@ Type
     FStructureChanged: Boolean;
   public
     constructor CreateFrom(aOwner: TGLResources; const aFrameBuffer: TFrameBuffer);
+    destructor Destroy; override;
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
     procedure Update(aRender: TBaseRender); override;
   end;
@@ -1351,7 +1352,7 @@ begin
   Create;
   Owner := aOwner;
   FFrameBuffer := aFrameBuffer;
-  FFrameBuffer.Subscribe(Self);
+  AttachResource(FFrameBuffer);
 
   ConfigFBO(FFrameBuffer.RenderBuffers);
   ConfigDepthBuffer(bmBuffer);
@@ -1360,39 +1361,44 @@ begin
   for i := 0 to FFrameBuffer.ColorAttachmentCount - 1 do begin
     texture := FFrameBuffer.ColorAttachments[i];
     gltexture := aOwner.GetOrCreateResource(texture) as TGLTextureObject;
+    AttachResource(gltexture);
     gltexture.AllocateStorage;
     AttachTexture(gltexture);
   end;
-
   FStructureChanged := false;
 end;
 
 
+destructor TGLFrameBufferObjectExt.Destroy;
+begin
+  inherited;
+end;
+
 procedure TGLFrameBufferObjectExt.Notify(Sender: TObject; Msg: Cardinal;
   Params: pointer);
 begin
-  inherited;
-  if Msg = NM_ResourceChanged then
-  begin
+  if Msg = NM_ResourceChanged then begin
     if Sender = FFrameBuffer then begin
       FStructureChanged := true;
       DispatchMessage(NM_ResourceChanged);
     end;
-  end
-  else if Msg = NM_ObjectDestroyed then begin
-    if Sender = FFrameBuffer then FFrameBuffer := nil;
-  end;
+  end else
+    if Msg = NM_ObjectDestroyed then begin
+      if Sender = FFrameBuffer then FFrameBuffer := nil;
+    end;
+  inherited;
 end;
 
 procedure TGLFrameBufferObjectExt.Update(aRender: TBaseRender);
 var
   size: vec2i;
 begin
-  if FStructureChanged then
-  begin
-    size := FFrameBuffer.Size;
-    if (size[0] <> FWidth) or (size[1] <> FHeight) then InitFBO(size);
-    FStructureChanged := false;
+  if FStructureChanged then begin
+    if assigned(FFrameBuffer) then begin
+      size := FFrameBuffer.Size;
+      if (size[0] <> FWidth) or (size[1] <> FHeight) then InitFBO(size);
+      FStructureChanged := false;
+    end;
   end;
 end;
 

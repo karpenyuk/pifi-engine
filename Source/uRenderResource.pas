@@ -1107,7 +1107,10 @@ Type
 
   end;
 
-  TBaseEffectList = TDataList<TPipelineAbstractEffect>;
+  TBaseEffectList = class (TDataList<TPipelineAbstractEffect>)
+  public
+    destructor Destroy; override;
+  end;
 
   TEffectPipeline = class (TPersistentResource)
   private
@@ -3716,8 +3719,11 @@ begin
         NotifyViewMatrixChanged;
       end;
       NM_ObjectDestroyed: begin
-        FViewTarget := nil;
-        NotifyViewMatrixChanged;
+        if Sender = FViewTarget then begin
+          FViewTarget := nil;
+          NotifyViewMatrixChanged;
+        end;
+        if Sender = FRenderTarget then FRenderTarget := nil;
       end;
     end;
 end;
@@ -3780,9 +3786,13 @@ end;
 procedure TSceneCamera.SetRenderTarget(const Value: TFrameBuffer);
 begin
   if assigned(FRenderTarget) and (FRenderTarget.Owner = self)
-  then FRenderTarget.Free;
+  then begin
+    DetachResource(FRenderTarget);
+    FRenderTarget.Free;
+  end;
 
   FRenderTarget := Value;
+  AttachResource(FRenderTarget);
   if assigned(FRenderTarget) then FRenderTarget.SetSize(FViewPortSize);
 end;
 
@@ -3941,13 +3951,17 @@ end;
 procedure TFrameBuffer.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 var n: integer;
 begin
-  if Sender is TTexture then begin
-    n:=FColorAttachments.IndexOf(TTexture(Sender));
-    if (n>=0) and (assigned(FColorAttachments[n])) then begin
-      if msg = NM_ObjectDestroyed then begin
+  if msg = NM_ObjectDestroyed then begin
+    if Sender is TTexture then begin
+      n:=FColorAttachments.IndexOf(TTexture(Sender));
+      if (n>=0) and (assigned(FColorAttachments[n])) then begin
         DetachResource(FColorAttachments[n]);
         FColorAttachments[n]:=nil;
       end;
+      if Sender = FDepthBuffer.Texture then FDepthBuffer.Texture := nil;
+      if Sender = FStencilBuffer.Texture then FStencilBuffer.Texture := nil;
+      if Sender = FDepthStencilBuffer.Texture then FDepthStencilBuffer.Texture := nil;
+      DispatchMessage(NM_ResourceChanged);
     end;
   end;
 
@@ -4277,6 +4291,15 @@ end;
 function TEffectPipeline.getEffectCount: Integer;
 begin
   Result := FEffectsList.Count;
+end;
+
+{ TBaseEffectList }
+
+destructor TBaseEffectList.Destroy;
+var i: integer;
+begin
+  for i:=0 to Count-1 do if assigned(Items[i]) then Items[i].Free;
+  inherited;
 end;
 
 initialization

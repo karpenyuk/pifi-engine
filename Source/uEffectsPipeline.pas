@@ -68,21 +68,6 @@ end;
 
 destructor TGlowPipelineEffect.Destroy;
 begin
-  if Assigned(FSceneTexture) then begin
-    DetachResource(FSceneTexture);
-    FSceneTexture := nil;
-  end;
-
-  if assigned(FScreenQuad) then begin
-    DetachResource(FScreenQuad);
-  end;
-  if assigned(FSceneSampler) then begin
-    DetachResource(FSceneSampler);
-  end;
-  if assigned(FConvolutionShader) then begin
-    DetachResource(FConvolutionShader);
-  end;
-
   inherited;
 end;
 
@@ -180,8 +165,7 @@ begin
   size := width * 2 + 1;
   SetLength(FWeigts, size);
   sum := 0.0;
-  for x := 0 to size - 1 do
-  begin
+  for x := 0 to size - 1 do begin
     FWeigts[x] := Gaussian(x - width, FBlurWidth);
     sum := sum + FWeigts[x];
   end;

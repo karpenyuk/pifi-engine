@@ -524,21 +524,21 @@ Type
   public
     constructor Create; override;
     destructor Destroy; override;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     procedure InitFBO(const aSize: vec2i);
     procedure ResetFBO(ResetConfig: boolean = true);
 
     procedure ConfigFBO(RenderBuffers: TRenderBuffers);
-    procedure ConfigDepthBuffer(Mode: TBufferMode;
-      Precision: TDepthPrecision = dpDefault);
-    procedure ConfigStencilBuffer(Mode: TBufferMode;
-      Precision: TStencilPrecision = spDefault);
+    procedure ConfigDepthBuffer(Mode: TBufferMode; Precision: TDepthPrecision = dpDefault);
+    procedure ConfigStencilBuffer(Mode: TBufferMode; Precision: TStencilPrecision = spDefault);
     procedure ConfigDepthStencilBuffer(Mode: TBufferMode);
-    procedure AttachTexture(tex: TGLTextureObject;
-      aTarget: TMRTTarget = tgTexture);
+
+    procedure AttachTexture(tex: TGLTextureObject; aTarget: TMRTTarget = tgTexture);
     procedure AttachDepthTexture(tex: TGLTextureObject);
     procedure AttachStencilTexture(tex: TGLTextureObject);
     procedure AttachDepthStencilTexture(tex: TGLTextureObject);
+
     procedure DetachDepthTexture;
     procedure DetachStencilTexture;
     procedure DetachDepthStencilTexture;
@@ -2211,14 +2211,10 @@ begin
   AttachResource(tex);
   glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
   n := -1;
-  if aTarget = tgTexture then
-  begin
-    AttachTextureTarget(tex, GL_COLOR_ATTACHMENT0 +
-      FAttachments.Textures.Count);
+  if aTarget = tgTexture then begin
+    AttachTextureTarget(tex, GL_COLOR_ATTACHMENT0 + FAttachments.Textures.Count);
     FAttachments.Textures.Add(tex);
-  end
-  else
-  begin
+  end else begin
     case aTarget of
       tgDepth:
         AttachDepthTexture(tex);
@@ -2264,8 +2260,7 @@ procedure TGLFrameBufferObject.DetachTexture(Index: integer);
 var
   texture: TGLTextureObject;
 begin
-  if (index < FAttachments.Textures.Count) and (index >= 0) then
-  begin
+  if (index < FAttachments.Textures.Count) and (index >= 0) then begin
     texture := FAttachments.Textures[index];
     DetachResource(Texture);
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
@@ -2483,6 +2478,25 @@ begin
   // CheckCompleteness;
 end;
 
+procedure TGLFrameBufferObject.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+var idx: integer;
+begin
+  if Sender is TGLTextureObject then begin
+    if Msg = NM_ObjectDestroyed then begin
+      idx := FAttachments.Textures.IndexOf(TGLTextureObject(Sender));
+      if idx >= 0 then DetachTexture(idx);
+      if FAttachments.DepthBuffer.Texture = Sender
+      then DetachDepthTexture;
+      if FAttachments.StencilBuffer.Texture = Sender
+      then DetachStencilTexture;
+      if FAttachments.DepthStencilBuffer.Texture = Sender
+      then DetachDepthStencilTexture;
+    end;
+  end;
+  inherited;
+end;
+
 procedure TGLFrameBufferObject.AttachDepthTexture(tex: TGLTextureObject);
 begin
   if FAttachments.DepthBuffer.Mode <> bmBuffer then
@@ -2544,8 +2558,7 @@ var
   i: integer;
 begin
   glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
-  for i := 0 to FAttachments.Textures.Count - 1 do
-  begin
+  for i := 0 to FAttachments.Textures.Count - 1 do begin
     tex := FAttachments.Textures[i];
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
       CTexTargets[tex.Target], 0, 0);
@@ -2557,13 +2570,13 @@ end;
 
 procedure TGLFrameBufferObject.DetachDepthStencilTexture;
 begin
-  if FAttachments.DepthStencilBuffer.Mode = bmTexture then
-  begin
+  if FAttachments.DepthStencilBuffer.Mode = bmTexture then begin
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     AttachTextureTarget(nil, GL_DEPTH_ATTACHMENT);
     AttachTextureTarget(nil, GL_STENCIL_ATTACHMENT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    DetachResource(FAttachments.DepthStencilBuffer.Texture);
+    if assigned(FAttachments.DepthStencilBuffer.Texture)
+    then DetachResource(FAttachments.DepthStencilBuffer.Texture);
     FAttachments.DepthStencilBuffer.Texture := nil;
     FAttachments.DepthStencilBuffer.Mode := bmNone;
   end;
@@ -2571,12 +2584,12 @@ end;
 
 procedure TGLFrameBufferObject.DetachDepthTexture;
 begin
-  if FAttachments.DepthBuffer.Mode = bmTexture then
-  begin
+  if FAttachments.DepthBuffer.Mode = bmTexture then begin
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     AttachTextureTarget(nil, GL_DEPTH_ATTACHMENT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    DetachResource(FAttachments.DepthBuffer.Texture);
+    if assigned(FAttachments.DepthBuffer.Texture)
+    then DetachResource(FAttachments.DepthBuffer.Texture);
     FAttachments.DepthBuffer.Texture := nil;
     FAttachments.DepthBuffer.Mode := bmNone;
   end;
@@ -2584,12 +2597,12 @@ end;
 
 procedure TGLFrameBufferObject.DetachStencilTexture;
 begin
-  if FAttachments.StencilBuffer.Mode = bmTexture then
-  begin
+  if FAttachments.StencilBuffer.Mode = bmTexture then begin
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     AttachTextureTarget(nil, GL_STENCIL_ATTACHMENT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    DetachResource(FAttachments.StencilBuffer.Texture);
+    if assigned(FAttachments.StencilBuffer.Texture)
+    then DetachResource(FAttachments.StencilBuffer.Texture);
     FAttachments.StencilBuffer.Texture := nil;
     FAttachments.StencilBuffer.Mode := bmNone;
   end;
@@ -2638,10 +2651,9 @@ var
   th: integer;
 begin
   FBTarget := GL_FRAMEBUFFER;
-  if assigned(tex) then
-    th := tex.Id
-  else
-  begin
+  if assigned(tex) then begin
+    th := tex.Id;
+  end else begin
     glFramebufferTexture2D(FBTarget, attachement, GL_TEXTURE_2D, 0, 0);
     exit;
   end;
