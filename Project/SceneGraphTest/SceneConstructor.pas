@@ -72,31 +72,32 @@ begin
 
   vo := CreateTeapod(4); FMeshList.AddNewMesh(vo);
 
-  vo := CreatePlane(3,3);Mesh := FMeshList.AddNewMesh(vo);
+  vo := CreatePlane(3,3); Mesh := FMeshList.AddNewMesh(vo);
   FMeshList.LocalMatrices[3] := TMatrix.RotationMatrix(Vector(1.0,0.0,0.0),Pi/180*90);
 
-  MeshObject:=TMeshObject.CreateFrom(FMeshList);
+  MeshObject:=Storage.CreateMeshObject(FMeshList);
 
   SceneObject:= Storage.CreateSceneObject;
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(SceneObject);
 
   Sprite_VO := CreateSprite(1, 1);
-  Mesh := TMesh.CreateFrom(Sprite_VO);
+  Mesh := Storage.CreateMesh(Sprite_VO);
 
   Sprite[0] := Storage.CreateSceneObject;
   Sprite[0].DirectionBehavior := dbSphericalSprite;
-  MeshObject:=TMeshObject.CreateFrom(Mesh); Sprite[0].MeshObjects.AddMeshObject(MeshObject);
+  MeshObject:=Storage.CreateMeshObject(Mesh);
+  Sprite[0].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(Sprite[0]);
 
   Sprite[1] := Storage.CreateSceneObject;
   Sprite[1].DirectionBehavior := dbSphericalSprite;
-  MeshObject:=TMeshObject.CreateFrom(Mesh); Sprite[1].MeshObjects.AddMeshObject(MeshObject);
+  MeshObject:=Storage.CreateMeshObject(Mesh); Sprite[1].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(Sprite[1]);
 
   Sprite[2] := Storage.CreateSceneObject;
   Sprite[2].DirectionBehavior := dbSphericalSprite;
-  MeshObject:=TMeshObject.CreateFrom(Mesh); Sprite[2].MeshObjects.AddMeshObject(MeshObject);
+  MeshObject:=Storage.CreateMeshObject(Mesh); Sprite[2].MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(Sprite[2]);
 
   // Create material which use shader
@@ -204,28 +205,30 @@ begin
   ColorAttachment := Storage.CreateTexture(FRGBAfloatImage);
   Material[4]:=Storage.CreateMaterialObject;
   Material[4].AttachTexture(ColorAttachment);
-
   FrameBuffer := Storage.CreateFrameBuffer;
   FrameBuffer.Size := Vec2iMake(2048, 2048);
+
   // frize size
   FrameBuffer.Resizable := false;
   FrameBuffer.AttachColor(ColorAttachment);
   FrameBuffer.AttachRenderBuffer(rbDepth24, bmBuffer);
-  FSceneGraph.Camera.RenderTarget := FrameBuffer;
 
+  FSceneGraph.Camera.RenderTarget := FrameBuffer;
   effects := Storage.CreateEffectPipeline;
+
   effects.AddEffect(TGlowPipelineEffect.CreateFrom(ColorAttachment));
+
   FSceneGraph.Camera.EffectPipeline := effects;
 end;
 
 destructor TDemoScene.Destroy;
 begin
+  effects.Free;
   FTexture.Free;
   FRGBAfloatImage.Free;
   FImageLoader.Free;
   FMeshList.Free;
   FSceneGraph.Free;
-  effects.Free;
   inherited;
 end;
 
