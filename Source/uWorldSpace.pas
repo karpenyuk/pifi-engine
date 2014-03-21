@@ -34,7 +34,7 @@ type
     function AddLight(aLight: TLightSource): integer;
     function GetLights: TLightsList;
 
-    function AddMaterial(aMat: TMaterialObject; aCapture: boolean=false): integer;
+    function AddMaterial(aMat: TMaterialObject): integer;
     function AddNewMaterial(aName: string): TMaterialObject;
     function GetMaterials: TMaterialList;
 
@@ -88,12 +88,11 @@ begin
   AttachResource(aLight);
 end;
 
-function TSceneGraph.AddMaterial(aMat: TMaterialObject; aCapture: boolean): integer;
+function TSceneGraph.AddMaterial(aMat: TMaterialObject): integer;
 begin
   if not assigned(aMat) then exit(-1);
   result := FMaterials.AddMaterial(aMat);
   AttachResource(aMat);
-  if aCapture then aMat.Owner:=self;
 end;
 
 function TSceneGraph.AddNewMaterial(aName: string): TMaterialObject;
@@ -117,10 +116,10 @@ begin
   inherited Create;
   FRoot := TSceneObject.Create;
   FRoot.FriendlyName := 'Root';
-  camera := TSceneCamera.Create;
+  FCameras := TCamerasList.Create;
+  camera := TSceneCamera.CreateOwned(FCameras);
   camera.Parent := FRoot;
   camera.FriendlyName := 'Main camera';
-  FCameras := TCamerasList.Create;
   FCameras.AddCamera(camera);
   FMaterials:=TMaterialList.Create;
   FLights := TLightsList.Create;
@@ -129,20 +128,9 @@ end;
 destructor TSceneGraph.Destroy;
 var i: integer;
 begin
-  for i:=0 to FRoot.Childs.Count-1 do
-    if assigned(FRoot.Childs[i]) then DetachResource(FRoot.Childs[i]);
   FRoot.Free;
-  for i:=0 to Camera.Childs.Count-1 do
-    if assigned(Camera.Childs[i]) then DetachResource(Camera.Childs[i]);
-  for i:=0 to FCameras.Count-1 do
-    if assigned(FCameras[i]) then DetachResource(FCameras[i]);
-  Camera.Free;
   FCameras.Free;
-  for i:=0 to FMaterials.Count-1 do
-    if assigned(FMaterials[i]) then DetachResource(FMaterials[i]);
   FMaterials.Free;
-  for i:=0 to FLights.Count-1 do
-    if assigned(FLights[i]) then DetachResource(FLights[i]);
   FLights.Free;
   inherited;
 end;
@@ -218,9 +206,9 @@ end;
 procedure TSceneGraph.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   if assigned(Sender) then begin
-    case Msg of
-      NM_ObjectDestroyed:
-        if Sender is TNotifiableObject then DetachResource(TPersistentResource(Sender));
+    if Msg = NM_ObjectDestroyed then begin
+      if Sender is TMaterialObject then
+        FMaterials.RemoveMaterial(TMaterialObject(Sender));
     end;
   end;
   inherited;

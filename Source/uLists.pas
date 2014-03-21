@@ -164,6 +164,7 @@ Type
     procedure Assign(aSource: TObjectsDictionary);
     property Count: Integer read FCount;
     function inList(const aItem: TObject): boolean;
+    function IndexOf(const aItem: TObject): integer;
   end;
 
   TLinkedObjectItem = record
@@ -501,6 +502,13 @@ begin
       exit;
     end;
   result := nil;
+end;
+
+function TObjectsDictionary.IndexOf(const aItem: TObject): integer;
+var i: integer;
+begin
+  for i := 0 to FCount - 1 do if FItems[i].Value = aItem then exit(i);
+  result:=-1;
 end;
 
 function TObjectsDictionary.inList(const aItem: TObject): boolean;

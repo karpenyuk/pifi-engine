@@ -207,6 +207,7 @@ end;
 procedure FreeAndNil(var Obj);
 var Temp: TObject;
 begin
+  if TObject(Obj)=nil then exit;
   Temp := TObject(Obj);
   Pointer(Obj) := nil;
   if assigned(Temp) then Temp.Free;

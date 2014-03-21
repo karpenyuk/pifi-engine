@@ -247,7 +247,6 @@ Type
   TMaterial = class(TBaseRenderResource)
   private
     FMaterialProperties: TMaterialProperties;
-    FLightProperties: TLightSource;
     FColorReplacing: TColorReplacing;
     FMaterialType: TMaterialType;
     FUseMaterial: boolean;
@@ -259,7 +258,6 @@ Type
     constructor CreateOwned(aOwner: TObject = nil); override;
     destructor Destroy; override;
 
-    property Light: TLightSource read FLightProperties;
     property Properties: TMaterialProperties read FMaterialProperties;
     property ColorReplacing: TColorReplacing read FColorReplacing
       write FColorReplacing;
@@ -794,10 +792,11 @@ Type
     FExtents: TExtents;
     FbbPosition: vec3;
     FbbRadius: single;
+    FMaterialObject: TMaterialObject;
+    procedure setMatObj(const Value: TMaterialObject);
   public
     Visible: boolean;
     FriendlyName: string;
-    MaterialObject: TMaterialObject;
 
     constructor CreateFrom(const aVertexObject: TVertexObject; const aGUID: TGUID); overload;
     constructor CreateFrom(const aVertexObject: TVertexObject); overload;
@@ -808,6 +807,7 @@ Type
 
     class function IsInner: boolean; override;
 
+    property MaterialObject: TMaterialObject read FMaterialObject write setMatObj;
     property VertexObject: TVertexObject read FVertexObject;
     property Extents: TExtents read FExtents;
     property bbPosition: vec3 read FbbPosition;
@@ -816,7 +816,7 @@ Type
 
   TMatrixList = TDataList<TMatrix>;
 
-  TMeshAssembly = class(TNotifiableObject)
+  TMeshAssembly = class(TPersistentResource)
   private
     FMeshes: TList;
     FLocalMatrices: TMatrixList;
@@ -845,7 +845,7 @@ Type
 
   TLodFunction = function (aDistance: single): integer;
 
-  TMeshLOD = class(TNotifiableObject)
+  TMeshLOD = class(TPersistentResource)
   private
     FAssembly: TMeshAssembly;
     FDistance: Single;
@@ -864,7 +864,7 @@ Type
            по расстоянию из библиотеки ЛОДов.
   }
 
-  TLODsController = class (TNotifiableObject)
+  TLODsController = class (TPersistentResource)
   private
     FList: TLodsDataList;
     FLodFunction: TLodFunction;
@@ -900,6 +900,7 @@ Type
     FOccluder: TMeshAssembly;
     FCollider: TTriangleList;
     FExtents: TExtents;
+    FOwnedAssembly: TMeshAssembly;
     function GetAssembly: TMeshAssembly;
   public
     FriendlyName: string;
@@ -920,6 +921,8 @@ Type
   private
     function getMeshObj(Index: integer): TMeshObject;
   public
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
     function AddMeshObject(const aMeshObject: TMeshObject): integer;
     function GetMeshObject(aKey: TGUID): TMeshObject; overload;
     function GetMeshObject(aFriendlyName: string): TMeshObject; overload;
@@ -1126,7 +1129,7 @@ var
 implementation
 
 uses
-  uMath;
+  uMath, uStorage;
 
 { TColorVectorClass }
 
@@ -1347,7 +1350,6 @@ begin
   inherited Create;
   Owner := aOwner;
   FMaterialProperties := TMaterialProperties.Create;
-  FLightProperties := TLightSource.Create;
   FUseMaterial := true;
   FColorReplacing := crDisable;
   FMaterialType := mtFFP;
@@ -1356,7 +1358,6 @@ end;
 destructor TMaterial.Destroy;
 begin
   FMaterialProperties.Free;
-  FLightProperties.Free;
   inherited;
 end;
 
@@ -2273,8 +2274,8 @@ end;
 constructor TMeshObject.CreateFrom(aMesh: TMeshAssembly);
 begin
   inherited Create;
+  FOwnedAssembly := nil;
   FLods := TLODsController.CreateFrom(aMesh);
-  FLods.Subscribe(Self);
   FOccluder := TMeshAssembly.Create;
   FCollider := TTriangleList.Create;
 end;
@@ -2282,18 +2283,18 @@ end;
 constructor TMeshObject.CreateFrom(aMesh: TMesh);
 begin
   inherited Create;
-  FLods := TLODsController.CreateFrom(TMeshAssembly.CreateFrom(aMesh));
-  FLods.Subscribe(Self);
+  FOwnedAssembly := TMeshAssembly.CreateFrom(aMesh);
+  FLods := TLODsController.CreateFrom(FOwnedAssembly);
   FOccluder := TMeshAssembly.Create;
   FCollider := TTriangleList.Create;
 end;
 
 destructor TMeshObject.Destroy;
 begin
-  if Assigned(FLods) then FLods.UnSubscribe(Self);
   FLods.Free;
   FOccluder.Free;
   FCollider.Free;
+  FreeAndNil(FOwnedAssembly);
   inherited;
 end;
 
@@ -2352,13 +2353,15 @@ end;
 
 function TMeshAssembly.AddNewMesh(aVertexObject: TVertexObject): TMesh;
 begin
-  Result := TMesh.CreateFrom(aVertexObject,'VertexObject'+inttostr(FMeshes.Count));
+  Result := Storage.CreateMesh(aVertexObject);
+  Result.FriendlyName := 'VertexObject'+inttostr(FMeshes.Count);
   Add(Result);
 end;
 
 procedure TMeshAssembly.Add(aMesh: TMesh);
 begin
   Add(aMesh, TMatrix.IdentityMatrix);
+  AttachResource(aMesh);
 end;
 
 procedure TMeshAssembly.Add(aMesh: TMesh; const aLocalMatrix: TMatrix);
@@ -2387,11 +2390,15 @@ constructor TMeshAssembly.CreateFrom(aMesh: TMesh);
 begin
   Create;
   Add(aMesh);
+  AttachResource(aMesh);
 end;
 
 constructor TMeshAssembly.CreateFrom(aVertexObject: TVertexObject);
+var mesh: TMesh;
 begin
-  CreateFrom(TMesh.CreateFrom(aVertexObject, 'VertexObject'+inttostr(FMeshes.Count)));
+  mesh := Storage.CreateMesh(aVertexObject);
+  mesh.FriendlyName := 'VertexObject'+inttostr(FMeshes.Count);
+  CreateFrom(mesh);
 end;
 
 procedure TMeshAssembly.Delete(Index: Integer);
@@ -2496,11 +2503,11 @@ end;
 destructor TMesh.Destroy;
 begin
   if assigned(FVertexObject) then begin
-    DetachResource(FVertexObject);
-    if FVertexObject.Owner = Self then
+    if FVertexObject.Owner = Self then begin
+      DetachResource(FVertexObject);
       FreeAndNil(FVertexObject);
+    end;
   end;
-
   inherited;
 end;
 
@@ -2512,11 +2519,17 @@ end;
 procedure TMesh.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   if Msg = NM_ObjectDestroyed then begin
-    if Sender is TPersistentResource then
-      DetachResource(TPersistentResource(Sender));
     if Sender = FVertexObject then FVertexObject := nil;
+    if Sender = MaterialObject then FMaterialObject := nil;
   end;
   inherited;
+end;
+
+procedure TMesh.setMatObj(const Value: TMaterialObject);
+begin
+  if assigned(FMaterialObject) then DetachResource(FMaterialObject);
+  FMaterialObject := Value;
+  AttachResource(FMaterialObject);
 end;
 
 { TShaderProgram }
@@ -2725,7 +2738,7 @@ begin
     DetachResource(FMaterial);
     if (FMaterial.Owner = Self) then FMaterial.Free;
   end;
-  FMaterial := TMaterial.CreateOwned(Self);
+  FMaterial := Storage.CreateMaterial;
   AttachResource(FMaterial);
   FMaterial.Name := aName;
   FUseMaterial := true;
@@ -2739,7 +2752,7 @@ begin
     DetachResource(FShader);
     if (FShader.Owner = Self) then FShader.Free;
   end;
-  FShader := TShaderProgram.CreateOwned(Self);
+  FShader := Storage.CreateProgram;
   AttachResource(FShader);
   FShader.Name := aName;
   FUseShader := true;
@@ -2753,7 +2766,8 @@ begin
     DetachResource(FTexture);
     if (FTexture.Owner = Self) then FTexture.Free;
   end;
-  FTexture := TTexture.CreateFrom(nil, Self);
+  FTexture := Storage.CreateTexture(nil);
+
   AttachResource(FTexture);
   FTexture.Name := aName;
   FUseTexture := true;
@@ -2883,13 +2897,15 @@ end;
 destructor TMaterialObject.Destroy;
 begin
   FBlending.Free;
-  DetachResource(FMaterial);
-  DetachResource(FTexture);
-  DetachResource(FShader);
-
-  if assigned(FMaterial) and (FMaterial.Owner = Self) then FMaterial.Free;
-  if assigned(FTexture) and (FTexture.Owner = Self) then FTexture.Free;
-  if assigned(FShader) and (FShader.Owner = Self) then FShader.Free;
+  if assigned(FTexture) and (FTexture.Owner = Self) then begin
+    DetachResource(FTexture); FreeAndNil(FTexture);
+  end;
+  if assigned(FMaterial) and (FMaterial.Owner = Self) then begin
+    DetachResource(FMaterial); FreeAndNil(FMaterial);
+  end;
+  if assigned(FShader) and (FShader.Owner = Self) then begin
+    DetachResource(FShader); FreeAndNil(FShader);
+  end;
 
   inherited;
 end;
@@ -3002,18 +3018,9 @@ end;
 { TMeshObjectsList }
 
 function TMeshObjectsList.AddMeshObject(const aMeshObject: TMeshObject): integer;
-var
-  list: TMeshObjectsList;
 begin
-  if Assigned(aMeshObject.Owner) and (aMeshObject.Owner <> Self) then
-  begin
-    // transmit MeshObject from other list without it destroying
-    list := TMeshObjectsList(aMeshObject.Owner);
-    aMeshObject.Owner := nil;
-    list.RemoveMeshObject(aMeshObject);
-  end;
   result := AddKey(aMeshObject.GUID, aMeshObject);
-  aMeshObject.Owner:=self;
+  AttachResource(aMeshObject);
 end;
 
 destructor TMeshObjectsList.Destroy;
@@ -3024,6 +3031,7 @@ begin
   for i := 0 to FCount - 1 do begin
     if assigned(FItems[i].Value) then begin
       mo := TMeshObject(FItems[i].Value);
+      DetachResource(mo);
       if mo.Owner=self then FreeAndNil(mo);
     end;
   end;
@@ -3051,6 +3059,20 @@ begin
     end;
   end;
   result := nil;
+end;
+
+procedure TMeshObjectsList.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+var idx: integer;
+begin
+  idx := IndexOf(Sender);
+  if idx>=0 then begin
+    FItems[idx].Key := -1;
+    FItems[idx].KeyName := '';
+    FItems[idx].KeyGUID := TGUIDEx.Empty;
+    FItems[idx].Value := nil;
+  end;
+  inherited;
 end;
 
 procedure TMeshObjectsList.RemoveMeshObject(const aMeshObject: TMeshObject);
@@ -4003,7 +4025,7 @@ end;
 function TLODsController.AddLod(aLoD: TMeshLOD): integer;
 begin
   Result := FList.Add(aLod);
-  aLod.Subscribe(Self);
+  AttachResource(aLod);
 end;
 
 constructor TLODsController.CreateFrom(aBaseLod: TMeshAssembly);
@@ -4015,10 +4037,13 @@ begin
 end;
 
 destructor TLODsController.Destroy;
-var
-  i: integer;
+var i: integer;
 begin
-  for i := 0 to FList.Count - 1 do FList[i].UnSubscribe(Self);
+  for i := 0 to FList.Count - 1 do begin
+    DetachResource(FList[i]);
+    TMeshLOD(FList[i]).Free;
+    FList[i]:=nil;
+  end;
   FList.Free;
   inherited;
 end;
@@ -4093,12 +4118,11 @@ begin
   inherited Create;
   FAssembly := anAssembly;
   FDistance := aDistance;
-  FAssembly.Subscribe(Self);
+  AttachResource(FAssembly);
 end;
 
 destructor TMeshLOD.Destroy;
 begin
-  if Assigned(FAssembly) then FAssembly.UnSubscribe(Self);
   inherited;
 end;
 

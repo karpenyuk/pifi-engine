@@ -478,6 +478,8 @@ Type
 
     destructor Destroy; override;
 
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
     procedure Bind(aUnit: cardinal);
     procedure UnBind(aUnit: cardinal);
 
@@ -1498,6 +1500,7 @@ begin
     ui.Shader:=FShaderId; ui.Name:=ansistring(pName);
     glGetActiveUniform(FShaderId,i,0,l,ui.Size,ui.ValueType,nil);
   end;
+  FreeMem(pName);
 
   if GL_ARB_shader_subroutine then
   begin
@@ -2031,6 +2034,7 @@ begin
   Create;
   FTexDesc := aTexDesc;
   FImageHolder:= aImageHolder;
+  AttachResource(aImageHolder);
   if assigned(FImageHolder) then
     FFormatDescr := TGLTextureFormatSelector.GetTextureFormat(FImageHolder.ImageFormat);
   FTarget := aTarget;
@@ -2092,6 +2096,17 @@ begin
   for I := 0 to High(aTextures) do
     ids[I] := aTextures[I].Id;
   glBindTextures(aUnit, Length(ids), @ids[0]);
+end;
+
+procedure TGLTextureObject.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  if Msg = NM_ObjectDestroyed then begin
+    if Sender = FImageHolder then FImageHolder := nil;
+  end;
+
+  inherited;
+
 end;
 
 procedure TGLTextureObject.UnBind(aUnit: cardinal);
@@ -2193,7 +2208,7 @@ procedure TGLFrameBufferObject.AttachTexture(tex: TGLTextureObject;
 var
   i, n, m: integer;
 begin
-  Subscribe(tex);
+  AttachResource(tex);
   glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
   n := -1;
   if aTarget = tgTexture then
@@ -2252,7 +2267,7 @@ begin
   if (index < FAttachments.Textures.Count) and (index >= 0) then
   begin
     texture := FAttachments.Textures[index];
-    UnSubscribe(texture);
+    DetachResource(Texture);
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index,
       CTexTargets[texture.Target], 0, 0);
@@ -2534,6 +2549,7 @@ begin
     tex := FAttachments.Textures[i];
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
       CTexTargets[tex.Target], 0, 0);
+    DetachResource(Tex);
   end;
   FAttachments.Textures.Clear;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2547,6 +2563,7 @@ begin
     AttachTextureTarget(nil, GL_DEPTH_ATTACHMENT);
     AttachTextureTarget(nil, GL_STENCIL_ATTACHMENT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    DetachResource(FAttachments.DepthStencilBuffer.Texture);
     FAttachments.DepthStencilBuffer.Texture := nil;
     FAttachments.DepthStencilBuffer.Mode := bmNone;
   end;
@@ -2559,6 +2576,7 @@ begin
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     AttachTextureTarget(nil, GL_DEPTH_ATTACHMENT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    DetachResource(FAttachments.DepthBuffer.Texture);
     FAttachments.DepthBuffer.Texture := nil;
     FAttachments.DepthBuffer.Mode := bmNone;
   end;
@@ -2571,6 +2589,7 @@ begin
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     AttachTextureTarget(nil, GL_STENCIL_ATTACHMENT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    DetachResource(FAttachments.StencilBuffer.Texture);
     FAttachments.StencilBuffer.Texture := nil;
     FAttachments.StencilBuffer.Mode := bmNone;
   end;

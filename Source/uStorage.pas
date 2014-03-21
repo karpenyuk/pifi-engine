@@ -52,8 +52,10 @@ type
                      AType: TValueType = vtFloat; AStride: integer = 0;
                      BuffType: TBufferType = btArray): TAttribBuffer;
     class function CreateVertexObject: TVertexObject;
-    class function CreateMesh: TMesh;
-    class function CreateMeshObject: TMeshObject;
+    class function CreateMesh(vo: TVertexObject = nil): TMesh;
+    class function CreateMeshObject: TMeshObject; overload;
+    class function CreateMeshObject(aMesh: TMeshAssembly): TMeshObject; overload;
+    class function CreateMeshObject(aMesh: TMesh): TMeshObject; overload;
     class function CreateSceneObject: TSceneObject;
     class function CreateFrameBuffer: TFrameBuffer;
     class function CreateCamera: TSceneCamera;
@@ -182,9 +184,29 @@ begin
   result.Subscribe(FStorageHandle);
 end;
 
-class function Storage.CreateMesh: TMesh;
+class function Storage.CreateMesh(vo: TVertexObject): TMesh;
 begin
-  result := TMesh.CreateOwned(FStorageHandle);
+  if assigned(vo) then begin
+    result := TMesh.CreateFrom(vo);
+    result.Owner := FStorageHandle;
+  end else
+    result := TMesh.CreateOwned(FStorageHandle);
+  FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
+end;
+
+class function Storage.CreateMeshObject(aMesh: TMeshAssembly): TMeshObject;
+begin
+  result := TMeshObject.CreateFrom(aMesh);
+  result.Owner:=FStorageHandle;
+  FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
+end;
+
+class function Storage.CreateMeshObject(aMesh: TMesh): TMeshObject;
+begin
+  result := TMeshObject.CreateFrom(aMesh);
+  result.Owner:=FStorageHandle;
   FResources.Add(result.GUID, result);
   result.Subscribe(FStorageHandle);
 end;

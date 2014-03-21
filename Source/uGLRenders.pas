@@ -550,9 +550,11 @@ begin
         if MeshObject.FLods[0,j].IsIdentity
         then Render.BindObjectBuffer(SceneObject.FIdexInPool)
         else Render.BindObjectBuffer(MeshObject.FLods[0,j].IdexInPool);
-        Mesh.FMaterialObject.Apply(Render);
-        Mesh.FVertexObject.RenderVO();
-        Mesh.FMaterialObject.UnApply(nil);
+        if assigned(Mesh.FMaterialObject) then begin
+          Mesh.FMaterialObject.Apply(Render);
+          Mesh.FVertexObject.RenderVO();
+          Mesh.FMaterialObject.UnApply(nil);
+        end;
       end;
     end;
   end;
