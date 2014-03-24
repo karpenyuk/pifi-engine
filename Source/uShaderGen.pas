@@ -143,7 +143,8 @@ const
   'layout(std140, binding = 2) uniform Objects'+#10#13 +
   '{'+#10#13 +
   '    World object;'+#10#13 +
-  '} objects;'+#10#13;
+  '} objects;'+#10#13+
+  'uniform mat4 InstanceMatrix;'+#10#13;
 
   SG_BLOCK_CAMERA: ansistring =
   'layout(std140, binding = 1) uniform Cameras'+#10#13 +
@@ -166,6 +167,8 @@ const
     'subroutine mat4 TGetWorldMatrix();'#10#13 +
     'subroutine(TGetWorldMatrix) mat4 defaultWorldMatrix() {'#10#13 +
     '  return objects.object.world; }'#10#13 +
+    'subroutine(TGetWorldMatrix) mat4 instanceWorldMatrix() {'#10#13 +
+    '  return InstanceMatrix * objects.object.pivot; }'#10#13 +
     'subroutine(TGetWorldMatrix) mat4 sphereSpriteMatrix() {'#10#13 +
     '  mat4 m = cameras.camera.View * objects.object.world;'#10#13 +
     '  m[0].xyz = vec3(1.0, 0.0, 0.0);'#10#13 +
