@@ -141,7 +141,7 @@ begin
 
   with Shader1 do
   begin
-    Apply;
+    Bind;
     SetUniform('steps', Projection_length);
     SetUniform('brightness', 1.0);
     SetUniform('density', 1.0);
@@ -149,7 +149,7 @@ begin
     SetUniform('boxMin', TVector.Make(-1.0, -1.0, -1.0).Vec3);
     SetUniform('boxMax', TVector.Make(1.0, 1.0, 1.0).Vec3);
     SetUniform('texSize', TVector.Make(2.0, 2.0, 2.0).Vec3);
-    UnApply;
+    UnBind;
   end;
 end;
 
@@ -171,10 +171,10 @@ begin
   mv := Model * View;
   mvp := mv * Proj;
 
-  Shader1.Apply;
+  Shader1.Bind;
   Shader1.SetUniform('ModelViewProjMatrix', mvp.Matrix4);
   Shader1.SetUniform('eyerayOrigin', mv.Invert.Transform(TVector.Make(0, 0, 0, 1)).vec3);
-  Shader1.UnApply;
+  Shader1.UnBind;
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_3D, glTexture.Id);
   glSampler.Bind(0);

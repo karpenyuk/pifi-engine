@@ -117,12 +117,12 @@ type
     procedure ChooseGLXFormat;
 {$ENDIF}
     procedure ClearIAttribs;
-    procedure FreeIAttribs;
+//    procedure FreeIAttribs;
     procedure AddIAttrib(attrib, Value: integer);
-    procedure ChangeIAttrib(attrib, newValue: integer);
-    procedure DropIAttrib(attrib: integer);
+//    procedure ChangeIAttrib(attrib, newValue: integer);
+//    procedure DropIAttrib(attrib: integer);
 
-    procedure ChangePixelFormat;
+//    procedure ChangePixelFormat;
     procedure GetOGLVersion;
     function InitForwardContext: boolean;
     function ParseDebug(aSource, aType, aId, aSeverity: cardinal;
@@ -704,12 +704,12 @@ begin
   SetLength(FiAttribs, 1);
   FiAttribs[0] := 0;
 end;
-
+{
 procedure TGLContext.FreeIAttribs;
 begin
   SetLength(FiAttribs, 0);
 end;
-
+}
 procedure TGLContext.AddIAttrib(attrib, Value: integer);
 var
   n: integer;
@@ -720,7 +720,7 @@ begin
   FiAttribs[n] := Value;
   FiAttribs[n + 1] := 0;
 end;
-
+{
 procedure TGLContext.ChangeIAttrib(attrib, newValue: integer);
 var
   i: integer;
@@ -759,7 +759,7 @@ begin
     inc(i, 2);
   end;
 end;
-
+}
 procedure TGLContext.Activate;
 begin
   inherited;
@@ -793,63 +793,61 @@ begin
   end;
 end;
 
-procedure TGLContext.ChangePixelFormat;
-var
-  temp: HGLRC;
-begin
-{$IFDEF MSWINDOWS}
-  DeactivateRenderingContext;
-  if FGLRCx <> 0 then
-    wglDeleteContext(FGLRCx);
-  SetDCPixelFormat(DeviceContext);
-  FPfdChanged := False;
-  FGLRCx := wglCreateContext(DeviceContext);
-  ActivateRenderingContext(DeviceContext, FGLRCx);
-  DeactivateRenderingContext;
-  FPfdChanged := False;
-  if FForwardContext then
-  begin
-    temp := FGLRCx;
-    if InitForwardContext then
-      wglDeleteContext(temp)
-    else
-    begin
-      FForwardContext := False;
-      FDebugContext := False;
-    end;
-  end;
-{$ENDIF}
-{$IFDEF Linux}
-  DeactivateRenderingContext(FDisplay);
-  if FGLRCx <> nil then
-    glXDestroyContext(FDisplay, FGLRCx);
-
-  ClearIAttribs;
-  ChooseGLXFormat;
-
-  AddIAttrib(GLX_X_RENDERABLE, GL_True);
-  AddIAttrib(GLX_RENDER_TYPE, GLX_RGBA_BIT);
-  AddIAttrib(GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT);
-
-  FPfdChanged := False;
-  FGLRCx := glXCreateNewContext(FDisplay, FFBConfigs[0], GLX_RGBA_TYPE,
-    nil, true);
-  ActivateRenderingContext(FDisplay, DeviceContext, FGLRCx);
-  DeactivateRenderingContext(FDisplay);
-  FPfdChanged := False;
-  if FForwardContext then
-  begin
-    temp := FGLRCx;
-    if InitForwardContext then
-      glXDestroyContext(FDisplay, temp)
-    else
-    begin
-      FForwardContext := False;
-      FDebugContext := False;
-    end;
-  end;
-{$ENDIF}
-end;
+//procedure TGLContext.ChangePixelFormat;
+//var
+//  temp: HGLRC;
+//begin
+//{$IFDEF MSWINDOWS}
+//  DeactivateRenderingContext;
+//  if FGLRCx <> 0 then
+//    wglDeleteContext(FGLRCx);
+//  SetDCPixelFormat(DeviceContext);
+//  FPfdChanged := False;
+//  FGLRCx := wglCreateContext(DeviceContext);
+//  ActivateRenderingContext(DeviceContext, FGLRCx);
+//  FPfdChanged := False;
+//  if FForwardContext then
+//  begin
+//    temp := FGLRCx;
+//    if InitForwardContext then
+//      wglDeleteContext(temp)
+//    else
+//    begin
+//      FForwardContext := False;
+//      FDebugContext := False;
+//    end;
+//  end;
+//{$ENDIF}
+//{$IFDEF Linux}
+//  DeactivateRenderingContext(FDisplay);
+//  if FGLRCx <> nil then
+//    glXDestroyContext(FDisplay, FGLRCx);
+//
+//  ClearIAttribs;
+//  ChooseGLXFormat;
+//
+//  AddIAttrib(GLX_X_RENDERABLE, GL_True);
+//  AddIAttrib(GLX_RENDER_TYPE, GLX_RGBA_BIT);
+//  AddIAttrib(GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT);
+//
+//  FPfdChanged := False;
+//  FGLRCx := glXCreateNewContext(FDisplay, FFBConfigs[0], GLX_RGBA_TYPE,
+//    nil, true);
+//  ActivateRenderingContext(FDisplay, DeviceContext, FGLRCx);
+//  FPfdChanged := False;
+//  if FForwardContext then
+//  begin
+//    temp := FGLRCx;
+//    if InitForwardContext then
+//      glXDestroyContext(FDisplay, temp)
+//    else
+//    begin
+//      FForwardContext := False;
+//      FDebugContext := False;
+//    end;
+//  end;
+//{$ENDIF}
+//end;
 
 procedure TGLContext.CheckDebugLog;
 const
@@ -1192,7 +1190,10 @@ begin
   AddIAttrib(WGL_CONTEXT_MINOR_VERSION_ARB, FMinorVersion);
   if FDebugContext then
     AddIAttrib(WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB);
-  AddIAttrib(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB);
+  if FForwardContext then
+    AddIAttrib(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB)
+  else
+    AddIAttrib(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB);
   RC := wglCreateContextAttribsARB(DeviceContext, 0, @FiAttribs[0]);
   if (RC <> 0) then begin
     FGLRCx := RC;
@@ -1229,6 +1230,8 @@ begin
 end;
 
 procedure TGLContext.InitializeContext(aDC: HDC);
+const
+  DEBUGMSG: ansistring = 'End of context initialization';
 var
   temp: HGLRC;
 {$IFDEF Linux}
@@ -1247,19 +1250,13 @@ begin
   FGLRCx := wglCreateContext(DeviceContext);
   ActivateRenderingContext(DeviceContext, FGLRCx);
   GetOGLVersion;
-  DeactivateRenderingContext;
-  if FForwardContext then
-  begin
-    temp := FGLRCx;
-    if InitForwardContext then begin
-      wglDeleteContext(temp);
-      Activate;
-    end else begin
-      FForwardContext := False;
-      FDebugContext := False;
-      FGLRCx := temp;
-      Activate;
-    end;
+  temp := FGLRCx;
+  if InitForwardContext then begin
+    wglDeleteContext(temp);
+  end else begin
+    FForwardContext := False;
+    FDebugContext := False;
+    FGLRCx := temp;
   end;
 {$ENDIF}
 {$IFDEF Linux}
@@ -1289,22 +1286,20 @@ begin
     nil, true);
   ActivateRenderingContext(FDisplay, FDC, FGLRCx);
   GetOGLVersion;
-  FForwardContext := true;
-  DeactivateRenderingContext(FDisplay);
-  if FForwardContext then
+  temp := FGLRCx;
+  if InitForwardContext then
+    glXDestroyContext(FDisplay, temp)
+  else
   begin
-    temp := FGLRCx;
-    if InitForwardContext then
-      glXDestroyContext(FDisplay, temp)
-    else
-    begin
-      FForwardContext := False;
-      FDebugContext := False;
-      FGLRCx := temp;
-      Activate;
-    end;
+    FForwardContext := False;
+    FDebugContext := False;
+    FGLRCx := temp;
   end;
 {$ENDIF}
+  if GL_GREMEDY_frame_terminator and GL_GREMEDY_string_marker then begin
+    StringMarkerGREMEDY(Length(DEBUGMSG), @DEBUGMSG);
+    FrameTerminatorGREMEDY();
+  end;
 end;
 
 {$IFDEF Linux}

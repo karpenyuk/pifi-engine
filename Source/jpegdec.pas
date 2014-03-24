@@ -114,6 +114,7 @@ type
    !  end;
    !end; }
   TJpegDecode = object
+  public
     /// picture width
     width: integer;
     /// picture height

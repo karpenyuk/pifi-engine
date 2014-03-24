@@ -37,6 +37,7 @@ Type
   TValueComponent = 1..4;
 
   TShaderType = (stVertex, stTessControl, stTessEval,stGeometry, stFragment, stCompute);
+  TShaderTypeSet = set of TShaderType;
 
   TBufferType = (btArray, btAtomicCounter, btCopyRead, btCopyWrite, btDrawIndirect,
                  btDispatchIndirect, btElementArray, btPixelPack, btPixelUnpack,
@@ -80,7 +81,8 @@ Type
 
   TTextureUpdate = (tuWrapS, tuWrapT, tuWrapR, tuminFilter, tumagFilter, tuTextureGenS,
                      tuTextureGenT, tuTextureGenR, tuGenMipMaps, tuAnisotropyLevel,
-                     tuMinLod, tuMaxLod, tuLodBias, tuCompareMode, tuCompareFunc);
+                     tuMinLod, tuMaxLod, tuLodBias, tuCompareMode, tuCompareFunc,
+                     tuBorderColor);
   TTextureUpdates = set of TTextureUpdate;
 
   TTextureCompareMode = (cmNone, cmCompareRefToTexture);
@@ -98,6 +100,7 @@ Type
      CompareMode: TTextureCompareMode;
      CompareFunc: TTextureCompareFunc;
      AnisotropyLevel: single;
+     BorderColor: vec4;
   end;
   PTextureDesc = ^TTextureDesc;
 
@@ -149,7 +152,7 @@ Type
     Location: integer;
   end;
 
-  TUniformBlocksType = (ubTransforms, ubMaterial, ubLights, ubUnknown);
+  TUniformBlocksType = (ubCamera, ubObject, ubMaterial, ubLights, ubUnknown);
   TUBOMaterialProperties = (umAmbient, umDiffuse, umSpecular, umEmissive, umShininess);
   TUBOLightProperties = (ulAmbient, ulDiffuse, ulSpecular, ulSceneColor,
     ulSpotDirection, ulSpotCutOff, ulSpotExponent, ulPosition, ulConstAttenuation,
@@ -187,7 +190,21 @@ Type
     crAmbientAndDiffuse);
 
   TMaterialType = (mtFFP, mtShader);
-  TLightStyle = (lsSpot, lsOmni, lsParallel, lsDirectional);
+
+  { Defines the various styles for lightsources.
+
+     lsSpot : a spot light, oriented and with a cutoff zone (note that if
+        cutoff is 180, the spot is rendered as an omni source)
+
+     lsOmni : an omnidirectionnal source, punctual and sending light in
+        all directions uniformously
+
+     lsParallel : a parallel light, oriented as the light source is (this
+        type of light can help speed up rendering)
+
+     lsParallelSpot : a parallel light with a cutoff where spot exponent define gain
+   }
+  TLightStyle = (lsSpot, lsOmni, lsParallel, lsParallelSpot);
 
   //Логика использования шейдеров рендером вершинных объектов
   //slDisableShader - деактивировать активный шейдер и не использовать собственный
@@ -238,13 +255,16 @@ Type
   //Window events procs
   TCMouseButton = (mbLeft, mbRight, mbMiddle);
   TCMouseButtons = set of TCMouseButton;
+  TCShiftState = set of (ssShift, ssAlt, ssCtrl,
+    ssLeft, ssRight, ssMiddle, ssDouble, ssTouch, ssPen, ssCommand);
 
+  TGLProgressEvent = procedure(Sender: TObject; const deltaTime, newTime: Double) of object;
   TRenderEvent = procedure (Sender: TObject; aFrameTime: double) of object;
   TResizeEvent = procedure (Sender: TObject; aWidth, aHeight: integer) of object;
 
   TKeyEvent = procedure (Sender: TObject; Key: byte) of object;
   TMouseEvent = procedure (Sender: TObject; X,Y: integer; Buttons: TCMouseButtons) of object;
-
+  TMouseWheelEvent = procedure(Sender: TObject; Shift: TCShiftState; WheelDelta: Integer; var Handled: Boolean) of object;
 
 const
   CValueSizes: array[TValueType] of byte = (1, 2, 4, 4, 4, 8);
@@ -270,10 +290,11 @@ const
 
   CUBOSemantics: array[TUniformBlocksType] of TAttribSemantic =
     (
-      (Name: 'Transforms'; Location: 1),
-      (Name: 'Material'; Location: 2),
-      (Name: 'Lights'; Location: 3),
-      (Name: ''; Location: 4)
+      (Name: 'Cameras'; Location: 1),
+      (Name: 'Objects'; Location: 2),
+      (Name: 'Material'; Location: 3),
+      (Name: 'LightIndices'; Location: 4),
+      (Name: ''; Location: 5)
     );
   CUBOMatPropertySemantics: array [TUBOMaterialProperties] of ansistring =
     ('ambient', 'diffuse', 'specular', 'emissive', 'shininess');
@@ -284,9 +305,16 @@ const
 const
   // Notification Messages
   NM_WorldMatrixChanged = 10001;
+  NM_ViewMatrixChanged = 10002;
+  NM_ProjMatrixChanged = 10003;
+  NM_LocalMatrixChanged = 10004;
   NM_ResourceLoaded  = 10101;
   NM_ResourceChanged = 10102;
+  NM_ResourceApply   = 10103;
+  NM_ResourceUnApply = 10104;
+  NM_ResourceUpdate  = 10105;
   NM_ObjectDestroyed = 10201;
+  NM_DebugMessageStr = 10301;
 
 implementation
 

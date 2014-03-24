@@ -1,0 +1,71 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  BiDiMode = bdLeftToRight
+  Caption = 'Transformation test'
+  BorderStyle = bsToolWindow
+  ClientHeight = 106
+  ClientWidth = 445
+  Position = poDesktopCenter
+  Transparency = False
+  Visible = False
+  OnCreate = FormCreate
+  OnClose = FormClose
+  StyleLookup = 'backgroundstyle'
+  object ArcDial1: TArcDial
+    Position.Point = '(8,16)'
+    Width = 65.000000000000000000
+    Height = 57.000000000000000000
+    TabOrder = 0
+    ShowValue = True
+    OnChange = ArcDial1Change
+  end
+  object ArcDial2: TArcDial
+    Position.Point = '(80,16)'
+    Width = 65.000000000000000000
+    Height = 57.000000000000000000
+    TabOrder = 1
+    ShowValue = True
+    Value = 45.000000000000000000
+    OnChange = ArcDial2Change
+  end
+  object ArcDial3: TArcDial
+    Position.Point = '(152,16)'
+    Width = 65.000000000000000000
+    Height = 57.000000000000000000
+    TabOrder = 2
+    ShowValue = True
+    Value = -90.000000000000000000
+    OnChange = ArcDial3Change
+  end
+  object ArcDial4: TArcDial
+    Position.Point = '(224,16)'
+    Width = 65.000000000000000000
+    Height = 57.000000000000000000
+    TabOrder = 3
+    ShowValue = True
+    Value = -45.000000000000000000
+    OnChange = ArcDial4Change
+  end
+  object ArcDial5: TArcDial
+    Position.Point = '(296,16)'
+    Width = 65.000000000000000000
+    Height = 57.000000000000000000
+    TabOrder = 4
+    ShowValue = True
+    OnChange = ArcDial5Change
+  end
+  object ArcDial6: TArcDial
+    Position.Point = '(368,16)'
+    Width = 65.000000000000000000
+    Height = 57.000000000000000000
+    TabOrder = 5
+    ShowValue = True
+    OnChange = ArcDial6Change
+  end
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    Top = 56
+  end
+end

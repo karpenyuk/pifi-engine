@@ -12,6 +12,7 @@ object Form5: TForm5
   Font.Style = []
   OldCreateOrder = True
   OnClose = FormClose
+  OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
   object GLViewer1: TGLViewer
@@ -21,9 +22,6 @@ object Form5: TForm5
     Height = 479
     OnRender = GLViewer1Render
     OnContextReady = GLViewer1ContextReady
-    Context.DepthBits = 24
-    Context.StencilBits = 8
-    Context.AALevel = 0
     Align = alClient
     OnCanResize = GLViewer1CanResize
     OnMouseDown = GLViewer1MouseDown

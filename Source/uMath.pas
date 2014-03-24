@@ -34,7 +34,8 @@ type
   public
 
     // Clamp = max( aMin, min( aMax, aValue ))
-    class function Clamp( aValue,aMin,aMax: Float ): Float; static;
+    class function Clamp( aValue,aMin,aMax: Float ): Float; overload; static;
+    class function Clamp( aValue,aMin,aMax: Int ): Int; overload; static;
 
     // Delta = ( aCurr - aStart ) / ( aStop - aStart )
     class function Delta( aStart,aStop,aCurr: Float ): Float; static;
@@ -80,6 +81,8 @@ type
     class function Min(a,b: Int): Int; overload; static;
     class function Max(a,b: Int): Int; overload; static;
 
+    class function SameValue(a,b: Float; Epsilon: Float = 0): Boolean; overload; static;
+
     class function IsPowerOfTwo(a: Integer): Boolean; static;
   end;
 
@@ -92,6 +95,13 @@ implementation
 class function TMath.ArcCos(aTheta: Float): Float;
 begin
    Result:= Math.ArcTan2(Sqrt(1 - Sqr(aTheta)), aTheta);
+end;
+
+class function TMath.Clamp(aValue, aMin, aMax: Int): Int;
+begin
+  if aValue < aMin then result := aMin
+    else if aValue > aMax then result := aMax
+      else result := aValue;
 end;
 
 //
@@ -350,10 +360,25 @@ begin
 
 end;
 
+class function TMath.SameValue(a, b: Float; Epsilon: Float = 0): Boolean;
+const
+  FuzzFactorSingle = 10;
+  SingleResolution: Single = 1.25E-7 * FuzzFactorSingle;
+  SingleZero: Single = 6.25E-37;
+begin
+  if Epsilon = 0 then
+    Epsilon := Max(Abs(A), Abs(B)) * SingleResolution;
+  if Epsilon = 0 then
+    Epsilon := SingleZero; // both A and B are very little, Epsilon was 0 because of normalization
+  if A > B
+    then Result := (A - B) <= Epsilon
+    else Result := (B - A) <= Epsilon;
+end;
 
 //
 // TMath.SinCos
 //
+
 class procedure TMath.SinCos( aTheta,aRadius: Float;
   out aSVar,aCVar: Float );
 var

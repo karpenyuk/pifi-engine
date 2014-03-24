@@ -319,13 +319,13 @@ begin
     t := _GetTime - t;
     Label3.Caption := floattostr(t * 1000);
 
-    Shader1.Apply;
+    Shader1.Bind;
     Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
     for i := 0 to high(Instances) do begin
       Shader1.SetUniform('ModelView', InstMVP[i].Matrix4);
       Box.RenderVO;
     end;
-    Shader1.UnApply;
+    Shader1.UnBind;
 
   end else begin
     t := _GetTime;
@@ -334,7 +334,7 @@ begin
     ssbo.BindAllRange(3);
     mvbo.BindAllRange(1);
 
-    ComputeMV.Apply;
+    ComputeMV.Bind;
 
     ComputeMV.SetUniform('ViewMatrix', View.Matrix4);
     ComputeMV.SetUniform('ProjMatrix', Proj.Matrix4);
@@ -344,26 +344,26 @@ begin
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    ComputeMV.UnApply;
+    ComputeMV.UnBind;
 
     if rgUsage.ItemIndex = 0 then begin
       t := _GetTime - t;
       Label3.Caption := floattostr(t * 1000);
 
       Box.Shader := SSBOShader;
-      SSBOShader.Apply;
+      SSBOShader.Bind;
       SSBOShader.SetUniform('ProjMatrix', Proj.Matrix4);
 
       for i := 0 to ObjCount - 1 do begin
         SSBOShader.SetUniform('ObjectIndex', i);
         Box.RenderVO;
       end;
-      SSBOShader.UnApply;
+      SSBOShader.UnBind;
     end;
 
     if rgUsage.ItemIndex = 1 then begin
       Box.Shader := UBOShader;
-      UBOShader.Apply;
+      UBOShader.Bind;
       UBOShader.SetUniform('ProjMatrix', Proj.Matrix4);
 
       count := mvBlock.BlockSize div sizeof(mat4);
@@ -386,7 +386,7 @@ begin
           Box.RenderVO;
         end;
       end;
-      UBOShader.UnApply;
+      UBOShader.UnBind;
     end;
 
     if rgUsage.ItemIndex = 2 then begin
@@ -394,13 +394,13 @@ begin
       t := _GetTime - t;
       Label3.Caption := floattostr(t * 1000);
       Box.Shader := Shader1;
-      Shader1.Apply;
+      Shader1.Bind;
       Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
       for i := 0 to high(Instances) do begin
         Shader1.SetUniform('ModelView', InstMVP[i].Matrix4);
         Box.RenderVO;
       end;
-      Shader1.UnApply;
+      Shader1.UnBind;
     end;
   end;
 end;

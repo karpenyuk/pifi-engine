@@ -74,6 +74,7 @@ type
       var NewWidth, NewHeight: Integer; var Resize: Boolean);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure GLViewer1Render(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
     MX, MY: Integer;
@@ -95,7 +96,9 @@ var
   IndiBuffer: TBufferObject;
   IndiGLBuffer: TGLBufferObject;
 
+
   SymbolOffesetAttr: TAttribBuffer;
+  SymbolOffesetBuffer: TGLBufferObject;
   Shader1, Shader2: TGLSLShaderProgram;
   TextObject, IndiObject: TGLVertexObject;
   FontGLMesh: TGLVertexObject;
@@ -147,17 +150,24 @@ begin
   GLViewer1.Context.Deactivate;
 end;
 
+procedure TForm5.FormCreate(Sender: TObject);
+begin
+  GLViewer1.Context.DebugContext := true;
+  GLViewer1.Context.ForwardContext := true;
+end;
+
 procedure TForm5.GenIndirectBuffer;
 var
   pos: TVec2List;
-  Attr: TAttribBuffer;
   VDA: IVectorDataAccess;
   I, C, P: Integer;
   Offset, Len: Integer;
   V: TVector;
 begin
   pos := VectorFontLibrary.CreatePositionList(strGOST2D, Text, 500, 4);
-  FontGLMesh.Attribs[1].Buffer.Upload(pos.Data, pos.Size, 0);
+//  FontGLMesh.Attribs[1].Buffer.Upload(pos.Data, pos.Size, 0);
+  SymbolOffesetBuffer.Upload(pos.Data, pos.Size, 0);
+
 
   VDA := TVectorDataAccess.Create(FontMap.Data, vtUInt, 2, 2*SizeOf(Integer), 65535);
   SetLength(Commands, Length(Text));
@@ -179,23 +189,6 @@ begin
     end;
   end;
   SetLength(Commands, P);
-
-//  Indi := TVertexObject.Create;
-//
-//  Attr := TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name, 2,
-//    vtFloat, 0, btArray);
-//  Attr.Buffer.Allocate(V.Size, V.Data);
-//  Attr.Buffer.SetDataHandler(V);
-//  Attr.SetAttribSemantic(atVertex);
-//  Indi.AddAttrib(Attr, True);
-//
-//  IndiObject := TGLVertexObject.CreateFrom(Indi);
-//  IndiObject.Shader := Shader2;
-//  IndiObject.Build(Shader2.Id);
-//
-//  IndiBuffer := TBufferObject.Create(btDrawIndirect);
-//  IndiBuffer.Allocate(SizeOf(batch), @batch);
-//  IndiGLBuffer := TGLBufferObject.CreateFrom(IndiBuffer);
 
   Changed := False;
 end;
@@ -247,7 +240,7 @@ begin
 
   if Shader1.Error then
   begin
-    showmessage(Shader2.Log);
+    showmessage(Shader1.Log);
     Halt(0);
   end;
 
@@ -259,7 +252,7 @@ begin
 
   if Shader2.Error then
   begin
-    showmessage(Shader1.Log);
+    showmessage(Shader2.Log);
     Halt(0);
   end;
 
@@ -288,11 +281,13 @@ begin
 
   VectorFontLibrary.BuildFontFromFile(strGOST2D, path + 'GOST type A.ttf', cChars, 30, 0);
   FontMesh := VectorFontLibrary.CreateFont(strGOST2D, False, False);
-  SymbolOffesetAttr := TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord1].Name, 2,
-    vtFloat, 0, btArray);
-  SymbolOffesetAttr.Buffer.Allocate(510*2*SizeOf(Single), nil);
-  SymbolOffesetAttr.SetAttribSemantic(atTexCoord1);
-  FontMesh.AddAttrib(SymbolOffesetAttr, False);
+//  SymbolOffesetAttr := TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord1].Name, 2,
+//    vtFloat, 0, btArray);
+//  SymbolOffesetAttr.Buffer.Allocate(510*2*SizeOf(Single), nil);
+//  SymbolOffesetAttr.SetAttribSemantic(atTexCoord1);
+//  FontMesh.AddAttrib(SymbolOffesetAttr, False);
+  SymbolOffesetBuffer := TGLBufferObject.Create(btTexture);
+  SymbolOffesetBuffer.Allocate(510*2*SizeOf(Single), nil);
 
   FontGLMesh := TGLVertexObject.CreateFrom(FontMesh);
   FontGLMesh.Build(Shader2.Id);
@@ -326,6 +321,7 @@ end;
 procedure TForm5.GLViewer1Render(Sender: TObject);
 var
   MV, MVP: TMatrix;
+  i: integer;
 begin
   if Changed then
     GenIndirectBuffer;
@@ -333,29 +329,35 @@ begin
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
   MV := Model * View;
   MVP := MV * Proj;
-  Shader1.Apply;
+  Shader1.Bind;
   Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
   Shader1.SetUniform('ModelView', MV.Matrix4);
   Shader1.SetUniform('MVP', MVP.Matrix4);
   TextObject.RenderVO();
-  Shader1.UnApply;
+  Shader1.UnBind;
 
   if Length(Commands) > 0 then
   begin
     glDisable(GL_DEPTH_TEST);
-    Shader2.Apply;
+    Shader2.Bind;
     Shader2.SetUniform('Projection', OrthoProj.Matrix4);
     Shader2.SetUniform('Origin', TVector.Make(0, Height - 60).Vec2);
     glBindVertexArray(FontGLMesh.VAOid);
-    glVertexAttribDivisor(4, 1);
-//    IndiGLBuffer.Bind;
+//    glVertexAttribDivisor(4, 1);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, FontGLMesh.IndiceId);
+    glActiveTexture(GL_TEXTURE11);
+    SymbolOffesetBuffer.BindTexture(GL_RG32F);
     glVertexAttrib3f(3, 1, 1, 1);
-//    glDrawElements(GL_TRIANGLES, Commands[0].count, GL_UNSIGNED_INT, Pointer(Commands[0].firstIndex*SizeOf(Integer)));
-    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, @Commands[0], Length(Commands), 0);
-//    IndiGLBuffer.UnBindBuffer;
+//    if GL_AMD_multi_draw_indirect then // workaround for AMD driver bug
+//    begin
+//      for i := 0 to High(Commands) do
+//        glDrawElementsInstancedBaseInstance(GL_TRIANGLES, Commands[i].count, GL_UNSIGNED_INT,
+//          pointer(Commands[i].firstIndex*SizeOf(GLint)), Commands[i].primCount, Commands[i].baseInstance);
+//    end
+//    else
+      glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, @Commands[0], Length(Commands), 0);
     glBindVertexArray(0);
-    Shader2.UnApply;
+    Shader2.UnBind;
     glEnable(GL_DEPTH_TEST);
   end;
 end;

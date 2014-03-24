@@ -128,6 +128,7 @@ procedure CLog( const aMsg: String );
 
 function CompareMem(const p1,p2: pointer; aSize: integer): boolean;
 function CompareMemory(const p1,p2: pointer; aSize: integer): Integer;
+function CompareGUID(const GUID1, GUID2: TGUID): integer;
 
 {: Returns the current value of the highest-resolution counter.<p>
    If the platform has none, should return a value derived from the highest
@@ -206,6 +207,7 @@ end;
 procedure FreeAndNil(var Obj);
 var Temp: TObject;
 begin
+  if TObject(Obj)=nil then exit;
   Temp := TObject(Obj);
   Pointer(Obj) := nil;
   if assigned(Temp) then Temp.Free;
@@ -1023,6 +1025,11 @@ begin
   while (i<aSize) and (pb1^=pb2^) do begin inc(i); inc(pb1); inc(pb2); end;
   if i<>aSize then
     if pb1^<pb2^ then Result:=-1 else Result := 1;
+end;
+
+function CompareGUID(const GUID1, GUID2: TGUID): integer;
+begin
+  result := CompareMemory(@GUID1, @GUID2, sizeof(TGUID));
 end;
 
 // QueryPerformanceCounter

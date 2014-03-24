@@ -6,16 +6,16 @@ uses Classes, uMiscUtils, uBaseTypes, uBaseClasses, uPersistentClasses, uRenderR
 
 type
 
-  TSceneGraph = class(TSceneItemList)
+  TSceneGraph = class(TNotifiableObject)
     // Решить вопрос со скриптовым рендером - добавить вместе с камерами в корень графа?
     // Или передавать их в рендер через ProcessScene(Scene, Camera, Target, Script)?
   private
-    FRoot: TSceneCamera;
+    FRoot: TSceneObject;
     FLights: TLightsList;
     FMaterials: TMaterialList;
     FCameras: TCamerasList;
 
-    function getItem(Index: integer): TBaseSceneItem;
+    function getItem(const aName: string): TBaseSceneItem;
     function getCount: integer;
     function getLight(Index: integer): TLightSource;
     function getLightCount: integer;
@@ -23,9 +23,12 @@ type
     function getMaterial(Index: integer): TMaterialObject;
     function getCamCount: integer;
     function getCamera(index: integer): TSceneCamera;
+    function getMainCamera: TSceneCamera;
   public
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     function AddItem(aItem: TBaseSceneItem): integer;
     function AddLight(aLight: TLightSource): integer;
@@ -35,7 +38,7 @@ type
     function AddNewMaterial(aName: string): TMaterialObject;
     function GetMaterials: TMaterialList;
 
-    property Items[index: integer]: TBaseSceneItem read getItem; default;
+    property Items[const aName: string]: TBaseSceneItem read getItem; default;
 
     property Lights[index: integer]: TLightSource read getLight;
     property LightsCount: integer read getLightCount;
@@ -43,8 +46,9 @@ type
     property Materials[index: integer]: TMaterialObject read getMaterial;
     property MaterialsCount: integer read getMatCount;
 
-    property Camera: TSceneCamera read FRoot;
+    property Root: TSceneObject read FRoot;
 
+    property Camera: TSceneCamera read getMainCamera;
     property Cameras[index: integer]: TSceneCamera read getCamera;
     property CamerasCount: integer read getCamCount;
 
@@ -53,10 +57,10 @@ type
 
   TWorldSpace = class(TBaseRenderResource)
   private
-    FCameras: TList; // List of Cameras
-    FScripts: TList; // List of lua scripts?
-    FGraphs: TList; // List of TSceneGraph
-    FTimerActions: TList; // List of timer events
+//    FCameras: TList; // List of Cameras
+//    FScripts: TList; // List of lua scripts?
+//    FGraphs: TList; // List of TSceneGraph
+//    FTimerActions: TList; // List of timer events
 
   end;
 
@@ -68,6 +72,7 @@ implementation
 function TSceneGraph.AddItem(aItem: TBaseSceneItem): integer;
 begin
   result := FRoot.Childs.AddSceneItem(aItem);
+  AttachResource(aItem);
   //If aItem is Camera - add it to Camera List
   if (aItem is TSceneCamera) and (not FCameras.inList(aItem))
   then FCameras.AddCamera(aItem as TSceneCamera);
@@ -80,11 +85,14 @@ end;
 function TSceneGraph.AddLight(aLight: TLightSource): integer;
 begin
   result := FLights.AddLight(aLight);
+  AttachResource(aLight);
 end;
 
 function TSceneGraph.AddMaterial(aMat: TMaterialObject): integer;
 begin
+  if not assigned(aMat) then exit(-1);
   result := FMaterials.AddMaterial(aMat);
+  AttachResource(aMat);
 end;
 
 function TSceneGraph.AddNewMaterial(aName: string): TMaterialObject;
@@ -97,20 +105,31 @@ begin
   aMat.Name := aName;
   aMat.Owner:=FMaterials;
   FMaterials.AddMaterial(aMat);
+  AttachResource(aMat);
   result := aMat;
 end;
 
 constructor TSceneGraph.Create;
+var
+  camera: TSceneCamera;
 begin
-  FRoot := TSceneCamera.Create;
-  FCameras.AddCamera(FRoot);
+  inherited Create;
+  FRoot := TSceneObject.Create;
+  FRoot.FriendlyName := 'Root';
+  FCameras := TCamerasList.Create;
+  camera := TSceneCamera.CreateOwned(FCameras);
+  camera.Parent := FRoot;
+  camera.FriendlyName := 'Main camera';
+  FCameras.AddCamera(camera);
   FMaterials:=TMaterialList.Create;
   FLights := TLightsList.Create;
 end;
 
 destructor TSceneGraph.Destroy;
+var i: integer;
 begin
   FRoot.Free;
+  FCameras.Free;
   FMaterials.Free;
   FLights.Free;
   inherited;
@@ -131,9 +150,21 @@ begin
   result := FRoot.Childs.Count;
 end;
 
-function TSceneGraph.getItem(Index: integer): TBaseSceneItem;
+function TSceneGraph.getItem(const aName: string): TBaseSceneItem;
+
+  function DownToTree(aItem: TBaseSceneItem): TBaseSceneItem;
+  var i: integer;
+  begin
+    if aItem.FriendlyName = aName then exit(aItem);
+    for i := 0 to aItem.Childs.Count - 1 do begin
+      Result := DownToTree(aItem.Childs[i]);
+      if Assigned(Result) then exit;
+    end;
+    Result := nil;
+  end;
+
 begin
-  result := TBaseSceneItem(FRoot.Childs[index]);
+  result := DownToTree(FRoot);
 end;
 
 function TSceneGraph.getLight(Index: integer): TLightSource;
@@ -151,6 +182,12 @@ begin
   result := FLights;
 end;
 
+function TSceneGraph.getMainCamera: TSceneCamera;
+begin
+  if FCameras.Count > 0 then
+    Result := FCameras[0] else Result := nil;
+end;
+
 function TSceneGraph.getMatCount: integer;
 begin
   result := FMaterials.Count;
@@ -164,6 +201,17 @@ end;
 function TSceneGraph.GetMaterials: TMaterialList;
 begin
   result := FMaterials;
+end;
+
+procedure TSceneGraph.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  if assigned(Sender) then begin
+    if Msg = NM_ObjectDestroyed then begin
+      if Sender is TMaterialObject then
+        FMaterials.RemoveMaterial(TMaterialObject(Sender));
+    end;
+  end;
+  inherited;
 end;
 
 end.

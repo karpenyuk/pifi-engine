@@ -137,12 +137,12 @@ begin
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
   VP := View * Proj;
-  Shader1.Apply;
+  Shader1.Bind;
   Shader1.SetUniform('ModelMatrix', Model.Matrix4);
   Shader1.SetUniform('ViewProjectionMatrix', VP.Matrix4);
   Shader1.SetUniform('Color', clrRed);
   Shader1.SetUniform('EyePosition', cameraPos.Vec4);
-  Shader1.UnApply;
+  Shader1.UnBind;
   glLineWidth(3);
   Teapod.RenderVO();
 end;

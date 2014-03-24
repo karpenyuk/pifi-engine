@@ -149,10 +149,10 @@ begin
   GLViewer1.Context.ClearDevice;
 
   MVP := Model * View * Proj;
-  Shader1.Apply;
+  Shader1.Bind;
   Shader1.SetUniform('MVP', MVP.Matrix4);
   Drawer.RenderVO();
-  Shader1.UnApply;
+  Shader1.UnBind;
 end;
 
 end.

@@ -82,7 +82,10 @@ Type
   end;
 
   TPtrList = TDataList<Pointer>;
-  TObjectList = TDataList<TObject>;
+  TObjectList = class(TDataList<TObject>)
+  public
+    procedure FreeObjects;
+  end;
 
   TIntegerList = class(TDataList<Integer>)
   public
@@ -145,7 +148,7 @@ Type
   end;
 
   // Key+Value pair list with linear searching
-  TObjectsDictionary = class
+  TObjectsDictionary = class(TNotifiableObject)
   protected
     FCount: Integer;
     FItems: array of THashDictionaryNode;
@@ -157,9 +160,11 @@ Type
     function GetValue(const Key: string): TObject; overload; virtual;
     function GetValue(const Key: TGUID): TObject; overload; virtual;
   public
-    constructor Create;
+    constructor Create; override;
+    procedure Assign(aSource: TObjectsDictionary);
     property Count: Integer read FCount;
     function inList(const aItem: TObject): boolean;
+    function IndexOf(const aItem: TObject): integer;
   end;
 
   TLinkedObjectItem = record
@@ -472,8 +477,15 @@ begin
   Inc(FCount);
 end;
 
+procedure TObjectsDictionary.Assign(aSource: TObjectsDictionary);
+begin
+  FCount := aSource.FCount;
+  FItems := aSource.FItems;
+end;
+
 constructor TObjectsDictionary.Create;
 begin
+  inherited Create;
   Setlength(FItems, 128);
   FCount := 0;
 end;
@@ -490,6 +502,13 @@ begin
       exit;
     end;
   result := nil;
+end;
+
+function TObjectsDictionary.IndexOf(const aItem: TObject): integer;
+var i: integer;
+begin
+  for i := 0 to FCount - 1 do if FItems[i].Value = aItem then exit(i);
+  result:=-1;
 end;
 
 function TObjectsDictionary.inList(const aItem: TObject): boolean;
@@ -1238,6 +1257,17 @@ end;
 procedure TAbstractDataList.Transform(const AMatrix: TMatrix);
 begin
   Assert(false);
+end;
+
+{ TObjectList }
+
+procedure TObjectList.FreeObjects;
+var
+  i: Integer;
+begin
+  for i := Count - 1 downto 0 do
+    if assigned(FItems[i]) then FItems[i].Free;
+  Clear;
 end;
 
 end.

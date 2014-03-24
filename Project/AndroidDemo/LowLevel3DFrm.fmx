@@ -1,0 +1,22 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'FireMonkey Low-Level 3D Example'
+  Color = xFF284A5E
+  ClientHeight = 283
+  ClientWidth = 320
+  FormFactor.Width = 2077
+  FormFactor.Height = 1273
+  FormFactor.Devices = [dkDesktop]
+  OnRender = Form1Render
+  DesignerMobile = True
+  DesignerWidth = 320
+  DesignerHeight = 283
+  DesignerDeviceName = '1DE2F2DC06B8462A99857EFF39E0BA97'
+  DesignerOrientation = 0
+  DesignerOSVersion = ''
+  object Timer1: TTimer
+    Interval = 33
+    OnTimer = Timer1
+  end
+end

@@ -1046,6 +1046,7 @@ var
   GL_AMD_debug_output,
   GL_AMD_transform_feedback3_lines_triangles,
   GL_AMD_depth_clamp_separate,
+  GL_AMD_multi_draw_indirect,
   GL_EXT_422_pixels,
   GL_EXT_abgr,
   GL_EXT_bgra,
@@ -1293,6 +1294,8 @@ var
   GL_SUN_slice_accum,
   GL_SUN_triangle_list,
   GL_SUN_vertex,
+  GL_GREMEDY_frame_terminator,
+  GL_GREMEDY_string_marker,
 
   GL_WIN_phong_shading,
   GL_WIN_specular_fog,
@@ -14807,6 +14810,7 @@ procedure Read_GL_SUN_global_alpha;
 procedure Read_GL_SUN_mesh_array;
 procedure Read_GL_SUN_triangle_list;
 procedure Read_GL_SUN_vertex;
+procedure Read_GREMEDY;
 
 {$IFDEF DGL_WIN}
 procedure Read_WGL_ARB_buffer_region;
@@ -14915,8 +14919,6 @@ function dglGetProcAddress(ProcName: PAnsiChar; LibHandle: Pointer = nil {$IFDEF
 begin
   if LibHandle = nil then
     LibHandle := GL_LibHandle;
-
-  Result :=  nil;
 
   {$IFDEF DGL_WIN}
     Result := GetProcAddress(HMODULE(LibHandle), ProcName);
@@ -19473,6 +19475,7 @@ begin
   GL_AMD_debug_output := Int_CheckExtension(Buffer, 'GL_AMD_debug_output');
   GL_AMD_transform_feedback3_lines_triangles := Int_CheckExtension(Buffer, 'GL_AMD_transform_feedback3_lines_triangles');
   GL_AMD_depth_clamp_separate := Int_CheckExtension(Buffer, 'GL_AMD_depth_clamp_separate');
+  GL_AMD_multi_draw_indirect := Int_CheckExtension(Buffer, 'GL_AMD_multi_draw_indirect');
   // 4.3
   GL_AMD_pinned_memory := Int_CheckExtension(Buffer, 'GL_AMD_pinned_memory');
   GL_AMD_stencil_operation_extended := Int_CheckExtension(Buffer, 'GL_AMD_stencil_operation_extended');
@@ -19761,6 +19764,10 @@ begin
   GL_SUN_slice_accum := Int_CheckExtension(Buffer, 'GL_SUN_slice_accum');
   GL_SUN_triangle_list := Int_CheckExtension(Buffer, 'GL_SUN_triangle_list');
   GL_SUN_vertex := Int_CheckExtension(Buffer, 'GL_SUN_vertex');
+
+  // === GREMEDY =================================================================
+  GL_GREMEDY_frame_terminator := Int_CheckExtension(Buffer, 'GL_GREMEDY_frame_terminator');
+  GL_GREMEDY_string_marker := Int_CheckExtension(Buffer, 'GL_GREMEDY_string_marker');
 
   // === WIN =====================================================================
   GL_WIN_phong_shading := Int_CheckExtension(Buffer, 'GL_WIN_phong_shading');

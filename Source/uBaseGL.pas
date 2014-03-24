@@ -6,8 +6,8 @@
 
 interface
 
-uses Classes, uPersistentClasses, uVMath, uLists, uMiscUtils, {ImageLoader,}
-  uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, 
+uses Classes, uPersistentClasses, uVMath, uLists, uMiscUtils, Math,
+  uBaseTypes, uImageFormats, uBaseClasses, uRenderResource, uBaseRenders,
   {$IFDEF ANDROID}
   Androidapi.Egl, Androidapi.Gles2, Androidapi.Gles2ext;
   {$ELSE}dglOpenGL;{$ENDIF}
@@ -17,7 +17,13 @@ Type
 
   // Base GL Resource
   TGLBaseResource = class(TBaseRenderResource)
-    Owner: TObject;
+  public
+    BaseResource: TBaseRenderResource;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+    constructor Create; override;
+    procedure Update(aRender: TBaseRender); virtual;
+    procedure Apply(aRender: TBaseRender); virtual;
+    procedure UnApply(aRender: TBaseRender); virtual;
   end;
 
   TGLTextureObject = class;
@@ -29,8 +35,10 @@ Type
     Precision: GLEnum;
   end;
 
+  TGLTextureList = TDataList<TGLTextureObject>;
+
   TFBOAttachments = record
-    Textures: TList;
+    Textures: TGLTextureList;
     DepthBuffer: TFBORenderTarget;
     StencilBuffer: TFBORenderTarget;
     DepthStencilBuffer: TFBORenderTarget;
@@ -52,6 +60,7 @@ Type
   private
     FBuffer: TBufferObject;
     FBuffId: cardinal;
+    FTexId: cardinal;
     FLastTarget: TBufferType;
     FLocked: boolean;
     FMappedPointer: pointer;
@@ -74,6 +83,7 @@ Type
     procedure Upload(NewData: pointer; aSize, aOffset: integer);
     procedure Download(DestPtr: pointer; aSize, aOffset: integer; aMapBuffer: boolean = true);
     procedure Bind; overload;
+    procedure BindTexture(aFormat: GLenum = GL_RGBA32F);
     procedure Bind(AsTarget: TBufferType); overload;
     procedure BindBase(Index: cardinal); overload;
     procedure BindBase(AsTarget: TBufferType; Index: cardinal); overload;
@@ -223,16 +233,39 @@ Type
     constructor Create(const aProgram: cardinal = 0; aIndex: integer = -1);
   end;
 
+ TUniformSubroutine = class
+  private
+    FShaderType: TShaderType;
+    FSubs: array of record
+      FSubName: ansistring;
+      FSubIndex: integer;
+    end;
+    FIndex: integer;
+    FName: ansistring;
+    procedure QuerySubroutineInfo(aProgram: cardinal;
+      const aStages: TShaderTypeSet; anIndex: integer);
+  public
+    procedure SetSubroutine(const Name: ansistring);
+    property UniformName: ansistring read FName;
+    property UniformIndex: integer read FIndex;
+    property ShaderType: TShaderType read FShaderType;
+
+
+    constructor Create(const aProgram: cardinal;
+      const aStages: TShaderTypeSet; aIndex: integer = -1);
+  end;
+
   TGLBufferObjectsPool = class
   private
     FBuffer: TGLBufferObject;
     FFreeRooms: TIntegerList;
-    FBuffSize: integer;
+    FObjectSize: integer;
+    FObjectsCount: integer;
     FUsedCount: integer;
     FUBOSize: integer;
     FStackTop: integer;
   public
-    constructor Create(aObjectSize: integer; aObjectsCount: integer = 10000);
+    constructor Create(aObjectSize: integer; aObjectsCount: integer; aBufferType: TBufferType = btUniform);
     destructor Destroy; override;
 
     property Buffer: TGLBufferObject read FBuffer;
@@ -245,6 +278,8 @@ Type
     procedure WriteToPool(const Index: integer; Data: pointer);
     function BindUBO(const Index: integer; const aUBO: TGLUniformBlock): integer;
     procedure UnBindUBO(const Index: integer; const aUBO: TGLUniformBlock);
+
+    property ObjectSize: integer read FObjectSize;
   end;
 
   TUBOList = class
@@ -263,22 +298,44 @@ Type
     property UBOs[Index: integer]: TGLUniformBlock read getUBO;
   end;
 
+  TUSUBList = class
+  private
+    FItems: TList;
+    function getCount: integer;
+    function getSUB(Index: integer): TUniformSubroutine;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    function AddSUB(const aSubroutine: TUniformSubroutine): integer;
+    function GetSUBByName(const aName: ansistring): TUniformSubroutine;
+
+    property Count: integer read getCount;
+    property SUBs[Index: integer]: TUniformSubroutine read getSUB;
+  end;
+
   TGLSLShaderProgram = class(TGLBaseResource)
   private
     FShaderId: cardinal;
+    FStages: TShaderTypeSet;
     FLog: string;
     FDetachList: array of cardinal;
     FLinked: boolean;
     FError: boolean;
     FUniforms: TUniformList;
     FUBOList: TUBOList;
+    FUSUBList: TUSUBList;
     FActiveUniforms: integer;
     FActiveAttribs: integer;
     FActiveUniformsBlocks: integer;
+    FActiveUniformSubroutines: integer;
+    FStructureChanged: boolean;
     function getShaderId: cardinal;
     function GetUniformLocation(ShaderId: cardinal; const Name: ansistring): integer;
     procedure QueryProgramInfo;
   public
+    class var ActiveShader: TGLSLShaderProgram;
+
     property Id: cardinal read getShaderId;
     property Log: string read FLog;
     property Error: boolean read FError;
@@ -299,12 +356,14 @@ Type
     function ProgramBinary(Binary: pointer; Size: integer; Format: GLEnum): cardinal;
     procedure GetProgramBinary(var Binary: pointer; var Size: integer; var Format: GLEnum);
 
-    procedure Apply;
-    procedure UnApply;
+    procedure Bind;
+    procedure UnBind;
 
     procedure SetUniform(const Name: ansistring; const Value: array of TVector);
       overload;
     procedure SetUniform(const Name: ansistring; const Value: single;
+      Count: GLsizei = 1); overload;
+    procedure SetUniform(const Name: ansistring; const Value: PSingle;
       Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: vec2;
       Count: GLsizei = 1); overload;
@@ -314,12 +373,17 @@ Type
       Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: integer;
       Count: GLsizei = 1); overload;
+    procedure SetUniform(const Name: ansistring; const Value: vec2i;
+      Count: GLsizei = 1); overload;
     procedure SetUniform(const Name: ansistring; const Value: mat2;
       Count: GLsizei = 1; transpose: boolean = false); overload;
     procedure SetUniform(const Name: ansistring; const Value: mat3;
       Count: GLsizei = 1; transpose: boolean = false); overload;
     procedure SetUniform(const Name: ansistring; const Value: mat4;
       Count: GLsizei = 1; transpose: boolean = false); overload;
+    procedure SetSubroutine(const Name: ansistring; const Value: ansistring);
+
+    property Stages: TShaderTypeSet read FStages;
   end;
 
   TGLVertexObject = class(TGLBaseResource)
@@ -393,7 +457,6 @@ Type
   private
     FTexId: cardinal;
     FpboId: cardinal;
-    FPBOInit: boolean;
     FImageHolder: TImageHolder;
     FFormatDescr: TGLTextureFormatDescriptor;
     FTexDesc: PTextureDesc;
@@ -401,6 +464,7 @@ Type
     FTextureObject: TTexture;
     FTextureSampler: TTextureSampler;
     FGenerateMipMaps: boolean;
+    FPBOInit: boolean;
     FHandle: GLuint64;
 
     function getInternalFormat: cardinal;
@@ -416,7 +480,16 @@ Type
 
     destructor Destroy; override;
 
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
+    procedure Bind(aUnit: cardinal);
+    procedure UnBind(aUnit: cardinal);
+
+    class procedure MultiBind(const aTextures: array of TGLTextureObject; aUnit: cardinal);
+
     procedure UploadTexture(aData: pointer = nil; aLevel: integer = -1; aLevelsCount: integer = 1);
+    procedure AllocateStorage();
+    procedure Clear(const aColor: vec4);
 
     property TextureSampler: TTextureSampler read FTextureSampler write FTextureSampler;
 
@@ -431,14 +504,13 @@ Type
   end;
 
   TGLFrameBufferObject = class(TGLBaseResource)
-  private
+  protected
     FBOId: GLUInt;
     FMSFBOId: GLUInt;
     FAttachments: TFBOAttachments;
     FRenderBuffers: TRenderBuffers;
     FReadBackBuffers: TList;
     FWidth, FHeight: integer;
-    FViewport: array [0 .. 3] of integer;
     FInit: boolean;
     FActive: boolean;
     FDeactivate: boolean;
@@ -454,20 +526,21 @@ Type
   public
     constructor Create; override;
     destructor Destroy; override;
-    procedure InitFBO(Width, Height: integer);
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
+    procedure InitFBO(const aSize: vec2i);
     procedure ResetFBO(ResetConfig: boolean = true);
 
     procedure ConfigFBO(RenderBuffers: TRenderBuffers);
-    procedure ConfigDepthBuffer(Mode: TBufferMode;
-      Precision: TDepthPrecision = dpDefault);
-    procedure ConfigStencilBuffer(Mode: TBufferMode;
-      Precision: TStencilPrecision = spDefault);
+    procedure ConfigDepthBuffer(Mode: TBufferMode; Precision: TDepthPrecision = dpDefault);
+    procedure ConfigStencilBuffer(Mode: TBufferMode; Precision: TStencilPrecision = spDefault);
     procedure ConfigDepthStencilBuffer(Mode: TBufferMode);
-    procedure AttachTexture(tex: TGLTextureObject;
-      aTarget: TMRTTarget = tgTexture);
+
+    procedure AttachTexture(tex: TGLTextureObject; aTarget: TMRTTarget = tgTexture);
     procedure AttachDepthTexture(tex: TGLTextureObject);
     procedure AttachStencilTexture(tex: TGLTextureObject);
     procedure AttachDepthStencilTexture(tex: TGLTextureObject);
+
     procedure DetachDepthTexture;
     procedure DetachStencilTexture;
     procedure DetachDepthStencilTexture;
@@ -475,8 +548,8 @@ Type
     procedure DetachTexture(Index: integer);
     procedure DetachAllTextures;
 
-    procedure Apply(ClearBuffers: boolean = true);
-    procedure UnApply;
+    procedure Bind(ClearBuffers: boolean = true);
+    procedure UnBind; overload;
     procedure SetReadBackBuffer(const ColorBufers: array of GLUInt);
 
     property Textures[index: integer]: TGLTextureObject read GetTexture
@@ -516,8 +589,8 @@ function GetWorkgroupSize: vec3i;
 
 implementation
 
-var
-  vActiveShader: TGLSLShaderProgram = nil;
+uses
+  uMath;
 
 const
   CFaceTypeConst: array [TFaceType] of cardinal = (GL_POINTS, GL_LINE_STRIP,
@@ -686,6 +759,15 @@ begin
     assert(false, 'Bind Range not supported for this buffer type!');
 end;
 
+procedure TGLBufferObject.BindTexture(aFormat: GLenum);
+begin
+  if FTexId = 0 then begin
+    glGenTextures(1, @FTexId);
+    glBindTexture(GL_TEXTURE_BUFFER, FTexId);
+  end;
+  glTextureBufferEXT(FTexId, GL_TEXTURE_BUFFER, aFormat, FBuffId);
+end;
+
 constructor TGLBufferObject.CreateFrom(const aBuffer: TBufferObject);
 begin
   Create(aBuffer.BufferType);
@@ -784,6 +866,8 @@ end;
 destructor TGLBufferObject.Destroy;
 begin
   glDeleteBuffers(1, @FBuffId);
+  if FTexId <> 0 then
+    glDeleteTextures(1, @FTexId);
   if assigned(FBuffer) then FBuffer.UnSubscribe(self);
   inherited;
 end;
@@ -1132,21 +1216,23 @@ end;
 
 { TShaderProgram }
 
-procedure TGLSLShaderProgram.Apply;
+procedure TGLSLShaderProgram.Bind;
 begin
+  if FStructureChanged then
+    exit;
   if not FLinked then
     exit;
-  if vActiveShader <> Self then
+  if TGLSLShaderProgram.ActiveShader <> Self then
   begin
     glUseProgram(FShaderId);
-    vActiveShader := self;
+    TGLSLShaderProgram.ActiveShader := self;
   end;
 end;
 
-procedure TGLSLShaderProgram.UnApply;
+procedure TGLSLShaderProgram.UnBind;
 begin
   glUseProgram(0);
-  vActiveShader := nil;
+  TGLSLShaderProgram.ActiveShader := nil;
 end;
 
 procedure TGLSLShaderProgram.AttachShader(ShaderType: TShaderType;
@@ -1159,6 +1245,7 @@ var
   p: PGLChar;
 begin
   Shader := glCreateShader(CShaderTypes[ShaderType]);
+  Include(FStages, ShaderType);
   p := PGLChar(Source);
   if (Shader > 0) then
   begin
@@ -1186,6 +1273,7 @@ begin
     FreeMem(pLog, val);
     setlength(FDetachList, Length(FDetachList) + 1);
     FDetachList[high(FDetachList)] := Shader;
+    FStructureChanged := true;
   end;
 end;
 
@@ -1203,6 +1291,7 @@ end;
 constructor TGLSLShaderProgram.CreateFrom(const aShaderProgram: TShaderProgram);
 var
   st: TShaderType;
+  txt: ansistring;
   i: integer;
 begin
   Create;
@@ -1212,8 +1301,11 @@ begin
       ProgramBinary(Data, Size, Format)
   else
   begin
-    for st := stVertex to stCompute do
-      AttachShader(st, aShaderProgram[st]);
+    for st := stVertex to stCompute do begin
+      txt := aShaderProgram[st];
+      if Length(txt) > 0 then
+        AttachShader(st, txt);
+    end;
     if aShaderProgram.FragDataBindPos.Location >= 0 then
       with aShaderProgram.FragDataBindPos do
         SetFragDataLocation(Location, Name);
@@ -1232,6 +1324,7 @@ begin
   FError := false;
   FUniforms := TUniformList.Create;
   FUBOList := TUBOList.Create;
+  FUSUBList := TUSUBList.Create;
 end;
 
 destructor TGLSLShaderProgram.Destroy;
@@ -1247,6 +1340,7 @@ begin
   glDeleteProgram(FShaderId);
   FUniforms.Free;
   FUBOList.Free;
+  FUSUBList.Free;
   inherited;
 end;
 
@@ -1298,6 +1392,9 @@ var
   pLog: PAnsiChar;
   LinkError: boolean;
 begin
+  // Turnoff changes in any case (even if linking will failed)
+  FStructureChanged := False;
+
   if (FShaderId > 0) and FLinked then
   begin
     result := FShaderId;
@@ -1343,6 +1440,7 @@ var
   LoadingError: boolean;
   pLog: PAnsiChar;
 begin
+  FStructureChanged := false;
   LoadingError := false;
   if not GL_ARB_get_program_binary then begin
     FLinked := false;
@@ -1385,6 +1483,8 @@ procedure TGLSLShaderProgram.QueryProgramInfo;
 var i,n,l,loc: integer;
     pName: PAnsiChar;
     ui: PUniformInfo;
+    st: TShaderType;
+    sub: TUniformSubroutine;
 begin
   glGetProgramiv(FShaderId, GL_ACTIVE_ATTRIBUTES, @FActiveAttribs);
   glGetProgramiv(FShaderId, GL_ACTIVE_UNIFORMS, @FActiveUniforms);
@@ -1399,43 +1499,83 @@ begin
     ui.Shader:=FShaderId; ui.Name:=ansistring(pName);
     glGetActiveUniform(FShaderId,i,0,l,ui.Size,ui.ValueType,nil);
   end;
+  FreeMem(pName);
+
+  if GL_ARB_shader_subroutine then
+  begin
+    for st := Low(TShaderType) to High(TShaderType) do
+    if st in FStages then begin
+      glGetProgramStageiv(FShaderId, CShaderTypes[st],
+        GL_ACTIVE_SUBROUTINE_UNIFORMS, @n);
+      Inc(FActiveUniformSubroutines, n);
+    end;
+    if FActiveUniformSubroutines > 0 then
+    begin
+      for i := 0 to FActiveUniformSubroutines - 1 do
+      begin
+        sub := TUniformSubroutine.Create(FShaderId, FStages, i);
+        if Length(sub.UniformName) > 0 then
+          FUSUBList.AddSUB(sub)
+        else
+          sub.Destroy;
+      end;
+    end;
+  end;
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: vec4; Count: GLsizei);
 begin
-  glUniform4fv(GetUniformLocation(FShaderId, name), Count, @Value);
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniform4fv(GetUniformLocation(FShaderId, name), Count, @Value)
+  else
+    glProgramUniform4fv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: integer; Count: GLsizei);
 begin
-  glUniform1iv(GetUniformLocation(FShaderId, name), Count, @Value);
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniform1iv(GetUniformLocation(FShaderId, name), Count, @Value)
+  else
+    glProgramUniform1iv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: vec3; Count: GLsizei);
 begin
-  glUniform3fv(GetUniformLocation(FShaderId, name), Count, @Value);
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniform3fv(GetUniformLocation(FShaderId, name), Count, @Value)
+  else
+    glProgramUniform3fv(FShaderId,GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: single; Count: GLsizei);
 begin
-  glUniform1fv(GetUniformLocation(FShaderId, name), Count, @Value);
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniform1fv(GetUniformLocation(FShaderId, name), Count, @Value)
+  else
+    glProgramUniform1fv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: vec2; Count: GLsizei);
 begin
-  glUniform2fv(GetUniformLocation(FShaderId, name), Count, @Value);
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniform2fv(GetUniformLocation(FShaderId, name), Count, @Value)
+  else
+    glProgramUniform2fv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat3; Count: GLsizei; transpose: boolean);
 begin
-  glUniformMatrix3fv(GetUniformLocation(FShaderId, name), Count,
-    transpose, @Value);
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniformMatrix3fv(GetUniformLocation(FShaderId, name), Count, transpose, @Value)
+  else
+    glProgramUniformMatrix3fv(FShaderId, GetUniformLocation(FShaderId, name), Count,
+      transpose, @Value);
 end;
 
 procedure TGLSLShaderProgram.SetAttribLocation(Index: cardinal;
@@ -1456,25 +1596,68 @@ begin
   glBindFragDataLocation(FShaderId, Index, PAnsiChar(Name));
 end;
 
+procedure TGLSLShaderProgram.SetSubroutine(const Name, Value: ansistring);
+var
+  i: integer;
+begin
+  for i := 0 to FUSUBList.Count - 1 do
+  begin
+    if Name = FUSUBList.getSUB(i).UniformName then
+    begin
+      FUSUBList.getSUB(i).SetSubroutine(Value);
+      exit;
+    end;
+  end;
+  Assert(False, 'There no such uniform subroutine');
+end;
+
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat4; Count: GLsizei; transpose: boolean);
 begin
-  glUniformMatrix4fv(GetUniformLocation(FShaderId, name), Count,
-    transpose, @Value);
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniformMatrix4fv(GetUniformLocation(FShaderId, name), Count, transpose, @Value)
+  else
+    glProgramUniformMatrix4fv(FShaderId,GetUniformLocation(FShaderId, name), Count, transpose, @Value);
+end;
+
+procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
+  const Value: PSingle; Count: GLsizei);
+begin
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniform1fv(GetUniformLocation(FShaderId, name), Count, PGLfloat(Value))
+  else
+    glProgramUniform1fv(FShaderId,GetUniformLocation(FShaderId, name), Count, PGLfloat(Value));
+end;
+
+procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
+  const Value: vec2i; Count: GLsizei);
+begin
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniform2iv(GetUniformLocation(FShaderId, name), Count, @Value)
+  else
+    glProgramUniform2iv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: array of TVector);
 begin
-  glUniform4fv(GetUniformLocation(FShaderId, name), Length(Value),
-    PGLFloat(Value[0].GetAddr));
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniform4fv(GetUniformLocation(FShaderId, name), Length(Value),
+      PGLFloat(Value[0].GetAddr))
+  else
+    glProgramUniform4fv(FShaderId, GetUniformLocation(FShaderId, name), Length(Value),
+      PGLFloat(Value[0].GetAddr));
 end;
 
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat2; Count: GLsizei; transpose: boolean);
 begin
-  glUniformMatrix2fv(glGetUniformLocation(FShaderId, PGLChar(name)), Count,
-    transpose, @Value);
+  if TGLSLShaderProgram.ActiveShader = Self then
+    glUniformMatrix2fv(GetUniformLocation(FShaderId, PGLChar(name)), Count,
+      transpose, @Value)
+  else
+    glProgramUniformMatrix2fv(FShaderId, GetUniformLocation(FShaderId, PGLChar(name)),
+      Count, transpose, @Value)
 end;
 
 { TVertexObject }
@@ -1674,7 +1857,7 @@ begin
     for i := 0 to FAttribs.Count - 1 do
     begin
       if Attribs[i].ElementSize > 0 then
-        ec := min(ec, Attribs[i].Buffer.Size div Attribs[i].ElementSize);
+        ec := uMiscUtils.min(ec, Attribs[i].Buffer.Size div Attribs[i].ElementSize);
     end;
     result := ec; FElementsCount := ec;
   end;
@@ -1730,8 +1913,8 @@ var
   end;
 
 begin
-  if Assigned(vActiveShader) then
-    ActiveShader := vActiveShader.FShaderId
+  if Assigned(TGLSLShaderProgram.ActiveShader) then
+    ActiveShader := TGLSLShaderProgram.ActiveShader.FShaderId
   else
     ActiveShader := 0;
 
@@ -1745,14 +1928,10 @@ begin
   end
   else if (aShader = -1) and (assigned(FShader)) then
   begin
-    FShader.Apply;
+    FShader.Bind;
     ActiveShader := Shader.Id;
-  end
-  else
-  begin
-    glUseProgram(0);
-    ActiveShader := 0;
   end;
+
   if FStructureChanged and (ActiveShader = 0) then
     exit;
   if FStructureChanged then
@@ -1801,18 +1980,50 @@ end;
 
 { TGLTextureObject }
 
+procedure TGLTextureObject.AllocateStorage;
+var
+  glTarget: cardinal;
+  desc: PImageLevelDesc;
+begin
+  glTarget := CTexTargets[FTarget];
+  glBindTexture(glTarget, FTexId);
+  desc := FImageHolder.LODS[0];
+  case FTarget of
+    ttTexture1D:
+      glTexStorage1D(glTarget, FImageHolder.LevelsCount, InternalFormat, desc.Width);
+    ttTexture2D, ttTextureRectangle, ttCubemap .. ttCubemapNZ, tt1DArray:
+      glTexStorage2D(glTarget, FImageHolder.LevelsCount, InternalFormat, desc.Width, desc.Height);
+    ttTexture3D, tt2DArray:
+      glTexStorage3D(glTarget, FImageHolder.LevelsCount, InternalFormat, desc.Width, desc.Height, desc.Depth);
+  end;
+  glBindTexture(glTarget, 0);
+end;
+
+procedure TGLTextureObject.Bind(aUnit: cardinal);
+begin
+  glActiveTexture(GL_TEXTURE0+aUnit);
+  glBindTexture(CTexTargets[FTarget], FTexId);
+end;
+
+procedure TGLTextureObject.Clear(const aColor: vec4);
+begin
+  if GL_ARB_clear_texture then begin
+    glClearTexImage(FTexId, 0, GL_RGBA, GL_FLOAT, @aColor);
+  end;
+end;
+
 constructor TGLTextureObject.Create;
 begin
   inherited Create;
   glGenTextures(1, @FTexId);
   glGenBuffers(1, @FpboId);
-  FPBOInit := false;
   FTarget := ttTexture2D;
   FTextureSampler := nil;
   FTextureObject := nil;
   FImageHolder:=nil;
   FTexDesc:=nil;
   FGenerateMipMaps := false;
+  FPBOInit := false;
   FHandle := 0;
 end;
 
@@ -1822,6 +2033,7 @@ begin
   Create;
   FTexDesc := aTexDesc;
   FImageHolder:= aImageHolder;
+  AttachResource(aImageHolder);
   if assigned(FImageHolder) then
     FFormatDescr := TGLTextureFormatSelector.GetTextureFormat(FImageHolder.ImageFormat);
   FTarget := aTarget;
@@ -1873,6 +2085,35 @@ begin
   result := FFormatDescr.InternalFormat;
 end;
 
+class procedure TGLTextureObject.MultiBind(
+  const aTextures: array of TGLTextureObject; aUnit: cardinal);
+var
+  ids: array of GLuint;
+  i: integer;
+begin
+  SetLength(ids, Length(aTextures));
+  for I := 0 to High(aTextures) do
+    ids[I] := aTextures[I].Id;
+  glBindTextures(aUnit, Length(ids), @ids[0]);
+end;
+
+procedure TGLTextureObject.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  if Msg = NM_ObjectDestroyed then begin
+    if Sender = FImageHolder then FImageHolder := nil;
+  end;
+
+  inherited;
+
+end;
+
+procedure TGLTextureObject.UnBind(aUnit: cardinal);
+begin
+  glActiveTexture(GL_TEXTURE0+aUnit);
+  glBindTexture(CTexTargets[FTarget], 0);
+end;
+
 procedure TGLTextureObject.UploadTexture(aData: pointer; aLevel: integer; aLevelsCount: integer);
 var i,sl,el,ds: integer;
     dataptr: pointer;
@@ -1892,10 +2133,10 @@ begin
       glPixelStorei ( GL_PACK_SKIP_ROWS,   0 );
       glPixelStorei ( GL_PACK_SKIP_PIXELS, 0 );
 
-    if not FPBOInit then begin
-       glBufferData(GL_PIXEL_UNPACK_BUFFER, DataSize, nil, GL_STREAM_DRAW);
-       FPBOInit := true;
-    end;
+      if not FPBOInit then begin
+         glBufferData(GL_PIXEL_UNPACK_BUFFER, DataSize, nil, GL_STREAM_DRAW);
+         FPBOInit := true;
+      end;
       //t := glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
       //Move(Data^,t^,DataSize);
       //glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
@@ -1966,38 +2207,29 @@ procedure TGLFrameBufferObject.AttachTexture(tex: TGLTextureObject;
 var
   i, n, m: integer;
 begin
+  AttachResource(tex);
   glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
   n := -1;
-  if aTarget = tgTexture then
-  begin
-    AttachTextureTarget(tex, GL_COLOR_ATTACHMENT0 +
-      FAttachments.Textures.Count);
+  if aTarget = tgTexture then begin
+    AttachTextureTarget(tex, GL_COLOR_ATTACHMENT0 + FAttachments.Textures.Count);
     FAttachments.Textures.Add(tex);
-  end
-  else
-  begin
+  end else begin
     case aTarget of
-      tgDepth:
-        AttachDepthTexture(tex);
-      tgDepthStencil:
-        AttachDepthStencilTexture(tex);
-      tgMRT0:
-        begin
+      tgDepth: AttachDepthTexture(tex);
+      tgDepthStencil: AttachDepthStencilTexture(tex);
+      tgMRT0: begin
           AttachTextureTarget(tex, GL_COLOR_ATTACHMENT0);
           n := 0;
         end;
-      tgMRT1:
-        begin
+      tgMRT1: begin
           AttachTextureTarget(tex, GL_COLOR_ATTACHMENT1);
           n := 1;
         end;
-      tgMRT2:
-        begin
+      tgMRT2: begin
           AttachTextureTarget(tex, GL_COLOR_ATTACHMENT2);
           n := 2;
         end;
-      tgMRT3:
-        begin
+      tgMRT3: begin
           AttachTextureTarget(tex, GL_COLOR_ATTACHMENT3);
           n := 3;
         end;
@@ -2019,14 +2251,14 @@ end;
 
 procedure TGLFrameBufferObject.DetachTexture(Index: integer);
 var
-  tex: TGLTextureObject;
+  texture: TGLTextureObject;
 begin
-  if (index < FAttachments.Textures.Count) and (index >= 0) then
-  begin
-    tex := FAttachments.Textures[index];
+  if (index < FAttachments.Textures.Count) and (index >= 0) then begin
+    texture := FAttachments.Textures[index];
+    DetachResource(Texture);
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index,
-      CTexTargets[tex.Target], 0, 0);
+      CTexTargets[texture.Target], 0, 0);
     FAttachments.Textures.Delete(index);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   end;
@@ -2040,9 +2272,8 @@ end;
 constructor TGLFrameBufferObject.Create;
 begin
   inherited;
-  with FAttachments do
-  begin
-    Textures := TList.Create;
+  with FAttachments do begin
+    Textures := TGLTextureList.Create;
     DepthBuffer.Mode := bmNone;
     StencilBuffer.Mode := bmNone;
     DepthStencilBuffer.Mode := bmNone;
@@ -2074,12 +2305,12 @@ begin
   glDeleteFramebuffers(1, @FBOId);
   glDeleteFramebuffers(1, @FMSFBOId);
   FReadBackBuffers.Free;
-  with FAttachments do
-  begin
+  with FAttachments do begin
     glDeleteRenderbuffers(1, @DepthBuffer.BuffId);
     glDeleteRenderbuffers(1, @StencilBuffer.BuffId);
     glDeleteRenderbuffers(1, @DepthStencilBuffer.BuffId);
   end;
+
   inherited;
 end;
 
@@ -2147,16 +2378,23 @@ begin
   FAttachments.DepthStencilBuffer.Precision := 0;
 end;
 
-procedure TGLFrameBufferObject.InitFBO(Width, Height: integer);
+procedure TGLFrameBufferObject.InitFBO(const aSize: vec2i);
 var
+  maxW, maxH: integer;
   FBTarget: GLEnum;
+  i: integer;
+  texture: TGLTextureObject;
 begin
-  if (Width = FWidth) and (Height = FHeight) and FInit then
-    exit
-  else if FInit then
-    ResetFBO(false);
-  FWidth := Width;
-  FHeight := Height;
+  if (aSize[0] = FWidth) and (aSize[1] = FHeight) and FInit then exit;
+  FWidth := aSize[0];
+  FHeight := aSize[1];
+  glGetIntegerv(GL_MAX_FRAMEBUFFER_WIDTH, @maxW);
+  glGetIntegerv(GL_MAX_FRAMEBUFFER_HEIGHT, @maxH);
+  Assert( (FWidth > 0) and (FHeight > 0) and (FWidth <= maxW) and (FHeight <= maxH),
+    'Invalid frame buffer sizes!');
+  FWidth := TMath.Clamp(FWidth, 1, maxW);
+  FHeight := TMath.Clamp(FHeight, 1, maxH);
+
   FBTarget := GL_FRAMEBUFFER;
 
   with FAttachments do
@@ -2219,8 +2457,36 @@ begin
       glBindFramebuffer(FBTarget, 0);
     end;
   end;
+
+  for i := 0 to FAttachments.Textures.Count - 1 do
+  begin
+    texture := TGLTextureObject(FAttachments.Textures[i]);
+    texture.FImageHolder.Width := FWidth;
+    texture.FImageHolder.Height := FHeight;
+    texture.AllocateStorage();
+  end;
+
   FInit := true;
   // CheckCompleteness;
+end;
+
+procedure TGLFrameBufferObject.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+var idx: integer;
+begin
+  if Sender is TGLTextureObject then begin
+    if Msg = NM_ObjectDestroyed then begin
+      idx := FAttachments.Textures.IndexOf(TGLTextureObject(Sender));
+      if idx >= 0 then DetachTexture(idx);
+      if FAttachments.DepthBuffer.Texture = Sender
+      then DetachDepthTexture;
+      if FAttachments.StencilBuffer.Texture = Sender
+      then DetachStencilTexture;
+      if FAttachments.DepthStencilBuffer.Texture = Sender
+      then DetachDepthStencilTexture;
+    end;
+  end;
+  inherited;
 end;
 
 procedure TGLFrameBufferObject.AttachDepthTexture(tex: TGLTextureObject);
@@ -2284,11 +2550,11 @@ var
   i: integer;
 begin
   glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
-  for i := 0 to FAttachments.Textures.Count - 1 do
-  begin
+  for i := 0 to FAttachments.Textures.Count - 1 do begin
     tex := FAttachments.Textures[i];
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
       CTexTargets[tex.Target], 0, 0);
+    DetachResource(Tex);
   end;
   FAttachments.Textures.Clear;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2296,12 +2562,13 @@ end;
 
 procedure TGLFrameBufferObject.DetachDepthStencilTexture;
 begin
-  if FAttachments.DepthStencilBuffer.Mode = bmTexture then
-  begin
+  if FAttachments.DepthStencilBuffer.Mode = bmTexture then begin
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     AttachTextureTarget(nil, GL_DEPTH_ATTACHMENT);
     AttachTextureTarget(nil, GL_STENCIL_ATTACHMENT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if assigned(FAttachments.DepthStencilBuffer.Texture)
+    then DetachResource(FAttachments.DepthStencilBuffer.Texture);
     FAttachments.DepthStencilBuffer.Texture := nil;
     FAttachments.DepthStencilBuffer.Mode := bmNone;
   end;
@@ -2309,11 +2576,12 @@ end;
 
 procedure TGLFrameBufferObject.DetachDepthTexture;
 begin
-  if FAttachments.DepthBuffer.Mode = bmTexture then
-  begin
+  if FAttachments.DepthBuffer.Mode = bmTexture then begin
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     AttachTextureTarget(nil, GL_DEPTH_ATTACHMENT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if assigned(FAttachments.DepthBuffer.Texture)
+    then DetachResource(FAttachments.DepthBuffer.Texture);
     FAttachments.DepthBuffer.Texture := nil;
     FAttachments.DepthBuffer.Mode := bmNone;
   end;
@@ -2321,11 +2589,12 @@ end;
 
 procedure TGLFrameBufferObject.DetachStencilTexture;
 begin
-  if FAttachments.StencilBuffer.Mode = bmTexture then
-  begin
+  if FAttachments.StencilBuffer.Mode = bmTexture then begin
     glBindFramebuffer(GL_FRAMEBUFFER, FBOId);
     AttachTextureTarget(nil, GL_STENCIL_ATTACHMENT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if assigned(FAttachments.StencilBuffer.Texture)
+    then DetachResource(FAttachments.StencilBuffer.Texture);
     FAttachments.StencilBuffer.Texture := nil;
     FAttachments.StencilBuffer.Mode := bmNone;
   end;
@@ -2374,10 +2643,9 @@ var
   th: integer;
 begin
   FBTarget := GL_FRAMEBUFFER;
-  if assigned(tex) then
-    th := tex.Id
-  else
-  begin
+  if assigned(tex) then begin
+    th := tex.Id;
+  end else begin
     glFramebufferTexture2D(FBTarget, attachement, GL_TEXTURE_2D, 0, 0);
     exit;
   end;
@@ -2392,7 +2660,7 @@ begin
   end;
 end;
 
-procedure TGLFrameBufferObject.Apply(ClearBuffers: boolean);
+procedure TGLFrameBufferObject.Bind(ClearBuffers: boolean);
 var
   buffers: array of GLEnum;
   i, n: integer;
@@ -2402,9 +2670,6 @@ begin
   FBTarget := GL_FRAMEBUFFER;
 
   glBindFramebuffer(FBTarget, FBOId);
-  glGetIntegerv(GL_VIEWPORT, @FViewport);
-  if (FViewport[2] <> FWidth) or (FViewport[3] <> FHeight) then
-    glViewport(0, 0, FWidth, FHeight);
 
   with FAttachments do
   begin
@@ -2449,7 +2714,7 @@ begin
   end;
 end;
 
-procedure TGLFrameBufferObject.UnApply;
+procedure TGLFrameBufferObject.UnBind;
 var
   tex: TGLTextureObject;
   i, n: integer;
@@ -2468,8 +2733,6 @@ begin
       end;
     end;
   end;
-  if (FViewport[2] <> FWidth) or (FViewport[2] <> FHeight) then
-    glViewport(FViewport[0], FViewport[1], FViewport[2], FViewport[3]);
 
   glBindFramebuffer(FBTarget, 0);
   glReadBuffer(GL_BACK);
@@ -2644,6 +2907,76 @@ begin
   glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, @FMaxUBOSize);
 end;
 
+{ TUniformSubroutine }
+
+
+constructor TUniformSubroutine.Create(const aProgram: cardinal;
+  const aStages: TShaderTypeSet;
+  aIndex: integer);
+begin
+  Assert(aProgram > 0, 'Shader program is not assigned');
+  QuerySubroutineInfo(aProgram, aStages, aIndex);
+end;
+
+procedure TUniformSubroutine.QuerySubroutineInfo(aProgram: cardinal;
+  const aStages: TShaderTypeSet; anIndex: integer);
+var
+  st: TShaderType;
+  len: integer;
+  cbuff: PAnsiChar;
+  i: Integer;
+  indices: array of GLuint;
+begin
+  getmem(cbuff, 256);
+  len := 0;
+  for st := Low(TShaderType) to High(TShaderType) do
+  if st in aStages then
+  begin
+    glGetActiveSubroutineUniformName(aProgram, CShaderTypes[st], anIndex,
+      256, @len, cbuff);
+    if len > 0 then
+      break;
+  end;
+  if len = 0 then
+    Exit;
+  FName := Copy(cbuff, 0, len);
+  FIndex := anIndex;
+  FShaderType := st;
+
+  glGetActiveSubroutineUniformiv(aProgram, CShaderTypes[FShaderType], anIndex,
+    GL_NUM_COMPATIBLE_SUBROUTINES, @len);
+
+  if len > 0 then
+  begin
+    SetLength(FSubs, len);
+    SetLength(indices, len);
+    glGetActiveSubroutineUniformiv(aProgram, CShaderTypes[FShaderType], anIndex,
+      GL_COMPATIBLE_SUBROUTINES, @indices[0]);
+    for I := 0 to High(FSubs) do
+    begin
+      FSubs[I].FSubIndex := indices[i];
+      glGetActiveSubroutineName(aProgram, CShaderTypes[st], indices[i],
+      256, @len, cbuff);
+      FSubs[I].FSubName := Copy(cbuff, 0, len);
+    end;
+  end;
+
+  FreeMem(cbuff, 256);
+end;
+
+procedure TUniformSubroutine.SetSubroutine(const Name: ansistring);
+var
+  i: integer;
+begin
+  for I := 0 to High(FSubs) do
+    if Name = FSubs[i].FSubName then
+    begin
+      glUniformSubroutinesuiv(CShaderTypes[FShaderType], 1, @FSubs[i].FSubIndex);
+      Exit;
+    end;
+  Assert(False, 'Wrong subroutine name');
+end;
+
 { TUBOList }
 
 function TUBOList.AddUBO(const aBlock: TGLUniformBlock): integer;
@@ -2698,16 +3031,24 @@ begin
   result := CUBOSemantics[aUBO.BlockType].Location;
 end;
 
-constructor TGLBufferObjectsPool.Create(aObjectSize, aObjectsCount: integer);
+constructor TGLBufferObjectsPool.Create(aObjectSize, aObjectsCount: integer; aBufferType: TBufferType);
 var
   i: integer;
+  uniformBufferAlignSize: GLint;
 begin
   inherited Create;
   FUsedCount := 0;
-  FBuffSize := aObjectsCount;
-  FUBOSize := aObjectSize;
-  FBuffer := TGLBufferObject.Create(btUniform);
-  FBuffer.Allocate(aObjectSize * aObjectsCount, nil);
+  if aBufferType = btUniform then
+  begin
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, @uniformBufferAlignSize);
+    FUBOSize := Ceil(aObjectSize / uniformBufferAlignSize)*uniformBufferAlignSize;
+  end
+  else
+    FUBOSize := aObjectSize;
+  FObjectsCount := aObjectsCount;
+  FObjectSize := aObjectSize;
+  FBuffer := TGLBufferObject.Create(aBufferType);
+  FBuffer.Allocate(FUBOSize * FObjectsCount, nil);
   FFreeRooms := TIntegerList.Create;
   FFreeRooms.Count := aObjectsCount;
   for i := 0 to aObjectsCount - 1 do
@@ -2757,7 +3098,7 @@ begin
     result := -1
   else
   begin
-    result := FFreeRooms[FStackTop] * FUBOSize;
+    result := FFreeRooms[FStackTop];
     dec(FStackTop);
     inc(FUsedCount);
   end;
@@ -2768,11 +3109,11 @@ var
   i, offs: integer;
   p: pointer;
 begin
-  for i := FStackTop + 1 to FBuffSize - 1 do
+  for i := FStackTop + 1 to FObjectsCount - 1 do
   begin
     offs := OffsetByIndex(FFreeRooms[i]);
     p := pointer(integer(FBuffer.Data) + offs);
-    if CompareMem(p, aData, FUBOSize) then
+    if CompareMem(p, aData, FObjectSize) then
     begin
       result := FFreeRooms[i];
       exit;
@@ -2786,7 +3127,7 @@ var
   p: pointer;
 begin
   p := FBuffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
-    OffsetByIndex(Index), FUBOSize);
+    OffsetByIndex(Index), FObjectSize);
   Move(Data^, p^, FUBOSize);
   FBuffer.UnMap;
 end;
@@ -3159,12 +3500,83 @@ begin
         end else assert(false, 'Unsupported format!');
 end;
 
-initialization
+{ TGLBaseResource }
 
-vActiveShader := nil;
+procedure TGLBaseResource.Apply(aRender: TBaseRender);
+begin
+  // Do nothing
+end;
 
-finalization
+constructor TGLBaseResource.Create;
+begin
+  inherited Create;
+  Owner := nil;
+  BaseResource := nil;
+end;
 
-vActiveShader := nil;
+procedure TGLBaseResource.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  case msg of
+    NM_ResourceApply: Apply(TBaseRender(Params));
+    NM_ResourceUnApply: UnApply(TBaseRender(Params));
+    NM_ResourceUpdate: Update(TBaseRender(Params));
+  end;
+
+  inherited;
+end;
+
+procedure TGLBaseResource.UnApply(aRender: TBaseRender);
+begin
+  // Do nothing
+end;
+
+procedure TGLBaseResource.Update(aRender: TBaseRender);
+begin
+  // Do nothing
+end;
+
+{ TUSUBList }
+
+function TUSUBList.AddSUB(const aSubroutine: TUniformSubroutine): integer;
+begin
+  result := FItems.Add(aSubroutine);
+end;
+
+constructor TUSUBList.Create;
+begin
+  inherited;
+  FItems := TList.Create;
+end;
+
+destructor TUSUBList.Destroy;
+begin
+  FreeObjectList(FItems);
+  inherited;
+end;
+
+function TUSUBList.getCount: integer;
+begin
+  result := FItems.Count;
+end;
+
+function TUSUBList.getSUB(Index: integer): TUniformSubroutine;
+begin
+  result := FItems[Index];
+end;
+
+function TUSUBList.GetSUBByName(const aName: ansistring): TUniformSubroutine;
+var
+  i: integer;
+  sub: TUniformSubroutine;
+begin
+  for i := 0 to FItems.Count - 1 do
+  begin
+    sub := FItems[i];
+    if sub.UniformName = aName then
+      exit(sub);
+  end;
+  result := nil;
+end;
 
 end.

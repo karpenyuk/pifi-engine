@@ -12,6 +12,9 @@ object Form2: TForm2
   Font.Style = []
   OldCreateOrder = True
   OnClose = FormClose
+  OnCreate = FormCreate
+  OnMouseWheelDown = FormMouseWheelDown
+  OnMouseWheelUp = FormMouseWheelUp
   PixelsPerInch = 96
   TextHeight = 13
   object GLViewer1: TGLViewer
@@ -20,8 +23,9 @@ object Form2: TForm2
     Width = 733
     Height = 425
     OnRender = GLViewer1Render
-    onContextReady = GLViewer1ContextReady
+    OnContextReady = GLViewer1ContextReady
     Align = alClient
+    OnCanResize = GLViewer1CanResize
     OnMouseDown = GLViewer1MouseDown
     OnMouseMove = GLViewer1MouseMove
   end

@@ -25,10 +25,10 @@ type
 
   TCadencer = class(TThread)
   private
+    FDeltaTime: double;
     FLastTime: double;
     FUpdateTime: double;
     FGLWindow: TGLWindow;
-    procedure update;
   protected
     procedure Execute; override;
   end;
@@ -37,6 +37,7 @@ type
 
   TGLWindow = class
   private
+    FCadencer: TCadencer;
     FKeys: array [0..255] of boolean;
     FButtons: TCMouseButtons;
     FMouseX,FMouseY: integer;
@@ -60,7 +61,9 @@ type
     FOnMouseUp: TMouseEvent;
     FOnKeyDown: TKeyEvent;
     FOnKeyUp: TKeyEvent;
+    FOnMouseWheel: TMouseWheelEvent;
     FOnDebugMessage: TOnDebugMessage;
+    FOnProgress: TGLProgressEvent;
     procedure setActive(const Value: boolean);
     procedure KillGLWindow;
     procedure GetOGLVersion;
@@ -78,6 +81,8 @@ type
     procedure SetonResize(const Value: TResizeEvent);
     function getButton(index: TCMouseButton): boolean;
     procedure SetOnDebugMessage(const Value: TOnDebugMessage);
+    function GetDeltaTime: double;
+    procedure Update;
   public
     constructor Create;
     destructor Destroy; override;
@@ -98,7 +103,9 @@ type
     property DebugContext: boolean read FDebugContext;
     property Caption: string read FCaption write setCaption;
     property FrameTime: double read getFrameTime;
+    property DeltaTime: double read GetDeltaTime;
 
+    property OnProgress: TGLProgressEvent read FOnProgress write FOnProgress;
     property onRender: TRenderEvent read FonRender write SetonRender;
     property onInitialize: TNotifyEvent read FonInitialize write SetonInitialize;
     property OnDebugMessage: TOnDebugMessage read FOnDebugMessage write SetOnDebugMessage;
@@ -108,7 +115,7 @@ type
     property onMouseDown: TMouseEvent read FOnMouseDown write FOnMouseDown;
     property onMouseUp: TMouseEvent read FOnMouseUp write FOnMouseUp;
     property onMouseMove: TMouseEvent read FOnMouseMove write FOnMouseMove;
-
+    property onMouseWheel: TMouseWheelEvent read FOnMouseWheel write FOnMouseWheel;
 
   end;
 
@@ -231,10 +238,29 @@ begin
     window.FOnDebugMessage(string(ParseDebug(Source, type_, id, severity, message_)));
 end;
 
+function KeysToShiftState(Keys: Word): TCShiftState;
+begin
+  Result := [];
+  if Keys and MK_SHIFT <> 0 then
+    Include(Result, ssShift);
+  if Keys and MK_CONTROL <> 0 then
+    Include(Result, ssCtrl);
+  if Keys and MK_LBUTTON <> 0 then
+    Include(Result, ssLeft);
+  if Keys and MK_RBUTTON <> 0 then
+    Include(Result, ssRight);
+  if Keys and MK_MBUTTON <> 0 then
+    Include(Result, ssMiddle);
+  if GetKeyState(VK_MENU) < 0 then
+    Include(Result, ssAlt);
+end;
+
 { TGLWindow }
 
 destructor TGLWindow.Destroy;
 begin
+  FCadencer.Terminate;
+  FCadencer.Free;
   killGLwindow;
   inherited;
 end;
@@ -268,6 +294,11 @@ end;
 function TGLWindow.getButton(index: TCMouseButton): boolean;
 begin
   result := index in FButtons;
+end;
+
+function TGLWindow.GetDeltaTime: double;
+begin
+  Result := FCadencer.FDeltaTime;
 end;
 
 function TGLWindow.getFrameTime: double;
@@ -417,6 +448,9 @@ begin
   FForwardContext := False;
   FDebugContext := False;
   FFrameTime:=-1;
+  FCadencer := TCadencer.Create(true);
+  FCadencer.FUpdateTime := 0.2;
+  FCadencer.FGLWindow := Self;
 end;
 
 procedure TGLWindow.CreateWindow(Title: Pchar; width,height: integer;
@@ -426,6 +460,7 @@ var
   pfd: pixelformatdescriptor;
   dmScreenSettings: Devmode;
 begin
+  FActive := false;
   FillChar(FKeys,Sizeof(FKeys),0);
   FButtons := [];
   FMouseX := -1; FMouseY := -1;
@@ -508,6 +543,7 @@ begin
       assert(false,'initialization failed.');
   end;
   FActive:=true;
+  FCadencer.Start;
 end;
 
 
@@ -594,8 +630,14 @@ begin
   SwapBuffers(FDC);
 end;
 
+procedure TGLWindow.Update;
+begin
+  if Assigned(FOnProgress) then
+    FOnProgress(Self, FCadencer.FDeltaTime, FCadencer.FLastTime);
+end;
+
 procedure TGLWindow.WindProc(var Message: TMessage);
-var res: integer;
+var res: integer; H: Boolean;
 begin
   if message.Msg=WM_SYSCOMMAND then begin
     case Message.wParam of
@@ -648,6 +690,11 @@ begin
       FMouseY := SMALLINT( (Message.lParam shr 16) and $FFFF);
       if assigned(FOnMouseMove) then FOnMouseMove(self, FMouseX, FMouseY, FButtons);
     end;
+    WM_MOUSEWHEEL: begin
+      H := False;
+      if Assigned(FOnMouseWheel) then FOnMouseWheel(Self, KeysToShiftState(Message.wParam), TSmallPoint(cardinal(Message.wParam)).Y, H);
+      res := Integer(H = True);
+    end;
 
     WM_SIZE: begin
     	DoResize(LOWORD(Message.lParam),HIWORD(Message.lParam));
@@ -663,22 +710,30 @@ end;
 
 procedure TCadencer.Execute;
 var t: double;
+
+  function GetTime: double;
+  var SystemTime: TSystemTime;
+  begin
+    GetLocalTime(SystemTime);
+    with SystemTime do
+      Result := (wHour * (MinsPerHour * SecsPerMin * MSecsPerSec) +
+               wMinute * (SecsPerMin * MSecsPerSec) +
+               wSecond * MSecsPerSec +
+               wMilliSeconds);
+  end;
+
 begin
+  FLastTime := GetTime;
   while not Terminated do begin
-    if  false {not isRendering} then begin
-      t := GetTime;
-      if t - FLastTime > FUpdateTime then
-      begin
-        synchronize(update);
-        FLastTime := t;
-      end;
+    t := GetTime;
+    if t - FLastTime > FUpdateTime then
+    begin
+      FDeltaTime := t - FLastTime;
+      FLastTime := t;
+      if Assigned(FGLWindow) and FGLWindow.Active then
+        Synchronize(FGLWindow.Update);
     end;
   end;
-end;
-
-procedure TCadencer.update;
-begin
-//  if assigned(FGLViewer) then FGLViewer.Paint;
 end;
 
 end.

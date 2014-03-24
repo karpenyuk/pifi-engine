@@ -17,33 +17,42 @@ Type
     rpParticlesRender);
   TRenderPurposes = set of TRenderPurpose;
 
+  TBaseRender = class;
+
   TBaseSubRender = class (TNotifiableObject)
   protected
+    FOwner: TBaseRender;
     FSupportedResources: TList; //List of Render Resource Class types
     FRequiredAPIVersion: TApiVersion;
     FRenderPurpose: TRenderPurposes;
   public
-    constructor Create;
+    constructor Create; override;
+    constructor CreateOwned(aRender: TBaseRender); virtual;
     destructor Destroy; override;
 
     function isSupported(const aClassType: TClass): boolean; virtual;
     procedure ProcessResource(const Resource: TBaseRenderResource); virtual; abstract;
+
+    property Owner: TBaseRender read FOwner;
   end;
 
   TBaseRender = class  (TNotifiableObject)
   private
   protected
+    FCurrentLightNumber: integer;
+    FCurrentGraph: TSceneGraph;
+    FCurrentCamera: TSceneCamera;
+    FCurrentSceneObject: TSceneObject;
     FRegisteredSubRenders: TList;  //List of TBaseSubRender
-    FMaterials: TMaterialList;
-    FLights: TLightsList;
-    FCameras: TCamerasList;
     procedure UploadResource(const Res: TBaseRenderResource); virtual; abstract;
     procedure ProcessResource(const Res: TBaseRenderResource); virtual; abstract;
 //    procedure ProcessMeshObjects(const aMeshObjects: TMeshObjectsList); virtual; abstract;
 
   public
-    function UpdateWorldMatrix(const MovableObject: TMovableObject;
-      UseMatrix: TTransforms=[ttAll]): TMatrix; virtual;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
+    procedure UpdateTransform(const MovableObject: TMovableObject;
+      UseMatrix: TTransforms = ALL_TRANSFORM); virtual;
     function CheckVisibility(const aFrustum: TFrustum;
       const aExtents: TExtents): boolean; virtual;
     function isSupported(const aClassType: TClass): boolean; overload; virtual;
@@ -51,17 +60,26 @@ Type
 
     procedure ProcessScene(const aScene: TSceneGraph); virtual; abstract;
 
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
 
     procedure RegisterSubRender(const SubRender: TBaseSubRender); virtual;
+    procedure UnRegisterSubRender(const SubRender: TBaseSubRender); virtual;
+
+    // Rendering states
+    property CurrentGraph: TSceneGraph read FCurrentGraph;
+    property CurrentCamera: TSceneCamera read FCurrentCamera;
+    property CurrentSceneObject: TSceneObject read FCurrentSceneObject;
+    property CurrentLightNumber: integer read FCurrentLightNumber;
   end;
 
   TRegisteredRenders = class (TNotifiableObject)
   private
     FRenders: TList;
   public
-    constructor Create;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
+    constructor Create; override;
     destructor Destroy; override;
 
     procedure RegisterRender(const aRender: TBaseRender);
@@ -87,24 +105,27 @@ constructor TBaseRender.Create;
 begin
   inherited Create;
   FRegisteredSubRenders:=TList.Create;
-  FMaterials := TMaterialList.Create;
-  FLights := TLightsList.Create;
-  FCameras := TCamerasList.Create;
-
 end;
 
 destructor TBaseRender.Destroy;
 begin
   FreeObjectList(FRegisteredSubRenders);
-  FMaterials.Free;
-  FLights.Free;
-  FCameras.Free;
   inherited;
 end;
 
 function TBaseRender.isSupported(const aAPI: TApiVersion): boolean;
 begin
   result:=false;
+end;
+
+procedure TBaseRender.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
+begin
+  inherited;
+  if Sender is TBaseSubRender then begin
+    case Msg of
+      NM_ResourceChanged: UnRegisterSubRender(TBaseSubRender(Sender));
+    end;
+  end;
 end;
 
 function TBaseRender.isSupported(const aClassType: TClass): boolean;
@@ -120,40 +141,77 @@ end;
 procedure TBaseRender.RegisterSubRender(const SubRender: TBaseSubRender);
 begin
   FRegisteredSubRenders.Add(SubRender);
+  SubRender.Subscribe(Self);
 end;
 
-function TBaseRender.UpdateWorldMatrix(const MovableObject: TMovableObject; UseMatrix: TTransforms): TMatrix;
-var wm, pm: TMatrix;
+procedure TBaseRender.UnRegisterSubRender(const SubRender: TBaseSubRender);
+var i: integer;
 begin
+  i := FRegisteredSubRenders.IndexOf(SubRender);
+  if i>=0 then FRegisteredSubRenders.Delete(i);
+end;
 
-  if (MovableObject.Parent<>nil) and ((ttParent in UseMatrix) or (ttAll in UseMatrix)) then begin
-   if not MovableObject.Parent.WorldMatrixUpdated then
-     MovableObject.parent.UpdateWorldMatrix;
-   pm:=MovableObject.parent.WorldMatrix;
+procedure TBaseRender.UpdateTransform(const MovableObject: TMovableObject; UseMatrix: TTransforms);
+//var wm, pm, srp: TMatrix;
+begin
+{  wm.SetIdentity;
+  if (MovableObject.Pivot<>nil) and (ttPivot in UseMatrix) then begin
+     if not MovableObject.Pivot.WorldMatrixUpdated then
+       MovableObject.Pivot.UpdateWorldMatrix;
+     pm := MovableObject.Pivot.PivotMatrix;
+  end else pm.SetIdentity;
+
+  if ttModel in UseMatrix then wm := MovableObject.ModelMatrix else wm.SetIdentity;
+
+  srp.SetIdentity;
+  if ttScale in UseMatrix then srp := srp * MovableObject.ScaleMatrix;
+  if ttRotation in UseMatrix then srp := srp * MovableObject.RotationMatrix;
+  if ttPosition in UseMatrix then srp := srp * MovableObject.TranslationMatrix;
+
+  wm := wm * srp * pm;
+  pm := srp * pm;
+
+  case MovableObject.DirectionBehavior of
+    dbSphericalSprite:
+      begin
+        wm := wm * CurrentCamera.ViewMatrix;
+        wm[0, 0] := MovableObject.Scale.X;
+        wm[0, 1] := 0;
+        wm[0, 2] := 0;
+        wm[1, 0] := 0;
+        wm[1, 1] := MovableObject.Scale.Y;
+        wm[1, 2] := 0;
+        wm[2, 0] := 0;
+        wm[2, 1] := 0;
+        wm[2, 2] := 1;
+      end;
+    dbCylindricalSprite:
+      begin
+        wm := wm * CurrentCamera.ViewMatrix;
+        wm[0, 0] := 1;
+        wm[0, 1] := 0;
+        wm[0, 2] := 0;
+        wm[2, 0] := 0;
+        wm[2, 1] := 0;
+        wm[2, 2] := 1;
+      end;
   end;
 
-  wm.SetIdentity;
-  if (MovableObject.Parent<>nil) and ((ttParent in UseMatrix) or (ttAll in UseMatrix)) then begin
-     if not MovableObject.Parent.WorldMatrixUpdated then
-       MovableObject.parent.UpdateWorldMatrix;
-     wm:=MovableObject.parent.WorldMatrix; wm:=wm * MovableObject.ModelMatrix;
-  end else wm := MovableObject.ModelMatrix;
-
-  if (not (ttModel in UseMatrix)) and (not(ttAll in UseMatrix)) then wm.SetIdentity;
-
-  if (ttScale in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.ScaleMatrix;
-  if (ttRotation in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.RotationMatrix;
-  if (ttPosition in UseMatrix) or (ttAll in UseMatrix) then wm := wm * MovableObject.TranslationMatrix;
-
-  wm:=wm * pm;
-  result:= wm;
+  MovableObject.WorldMatrix := wm;
+  MovableObject.PivotMatrix := pm; }
 end;
 
 { TBaseSubRender }
 
 constructor TBaseSubRender.Create;
 begin
+  Assert(False, 'Must be used CreateOwned instead Create!');
+end;
+
+constructor TBaseSubRender.CreateOwned(aRender: TBaseRender);
+begin
   inherited Create;
+  FOwner := aRender;
   FSupportedResources:=TList.Create;
   FRenderPurpose:=[rpUnknown];
 end;
@@ -180,8 +238,7 @@ end;
 
 destructor TRegisteredRenders.Destroy;
 begin
-  //FreeObjectList(FRenders);
-  FRenders.Free;
+  FreeObjectList(FRenders);
   inherited;
 end;
 
@@ -197,9 +254,24 @@ begin
   end; result:=nil;
 end;
 
+procedure TRegisteredRenders.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  inherited;
+  if Sender is TBaseRender then begin
+    case Msg of
+      NM_ResourceChanged: UnRegisterRender(TBaseRender(Sender));
+    end;
+  end;
+
+end;
+
 procedure TRegisteredRenders.RegisterRender(const aRender: TBaseRender);
 begin
-  if FRenders.indexof(aRender)<0 then FRenders.Add(aRender);
+  if FRenders.indexof(aRender)<0 then begin
+    FRenders.Add(aRender);
+    aRender.Subscribe(Self);
+  end;
 end;
 
 

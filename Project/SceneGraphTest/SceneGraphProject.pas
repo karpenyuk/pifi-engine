@@ -8,7 +8,8 @@ uses
 {$ENDIF} Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, uGLViewer, uBaseGL, uBaseTypes, uVMath, dglOpenGL, ExtCtrls,
   uPrimitives, uMiscUtils, uRenderResource, uBaseRenders, uGLRenders,
-  uLists, uImageFormats, uImageLoader, SceneConstructor, uWorldSpace;
+  uLists, uImageFormats, uImageLoader, SceneConstructor, uWorldSpace,
+  uStorage;
 
 type
   TForm2 = class(TForm)
@@ -24,133 +25,79 @@ type
     procedure GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormCreate(Sender: TObject);
+    procedure FormMouseWheelDown(Sender: TObject; Shift: TShiftState;
+      MousePos: TPoint; var Handled: Boolean);
+    procedure FormMouseWheelUp(Sender: TObject; Shift: TShiftState;
+      MousePos: TPoint; var Handled: Boolean);
   private
     { Private declarations }
     MX, MY: Integer;
     FDemoScene: TDemoScene;
-    FState: boolean;
-    procedure GL1xDebugRender(const Mesh: TGLVertexObject; const Model: TMatrix);
-    procedure setmaterial(state: boolean);
   public
     { Public declarations }
   end;
 
 var
   Form2: TForm2;
-  Shader1: TGLSLShaderProgram;
-  cameraPos: TVector;
-  Model, View, Proj: TMatrix;
-  mvp: TMatrix;
-
-  Quad, Sphere, Box, Teapod: TGLVertexObject;
-
-  GL1xRender: Boolean = false;
 
   Render: TBaseRender;
-  SceneGraph: TSceneGraph;
-  counter: integer = 0;
-  dummy: integer = 0;
-  cv: integer = 0;
-  log: tstringlist;
+
+  counter: Integer = 0;
+  dummy: Integer = 0;
+  cv: Integer = 0;
   dt: double = 0;
 
 implementation
 
 {$R *.dfm}
 
-function MakeQuad: TGLVertexObject;
+
+procedure TForm2.FormCreate(Sender: TObject);
 begin
-  result := TGLVertexObject.CreateFrom(CreatePlane(0.6, 0.6));
+  GLViewer1.Context.DebugContext := true;
 end;
 
-function MakeSphere: TGLVertexObject;
+procedure TForm2.FormMouseWheelDown(Sender: TObject; Shift: TShiftState;
+  MousePos: TPoint; var Handled: Boolean);
 begin
-  result := TGLVertexObject.CreateFrom(CreateSphere(1, 16, 32));
+  FDemoScene.SceneGraph.Camera.AdjustDistanceToTarget(1.1);
 end;
 
-function MakeBox: TGLVertexObject;
+procedure TForm2.FormMouseWheelUp(Sender: TObject; Shift: TShiftState;
+  MousePos: TPoint; var Handled: Boolean);
 begin
-  result := TGLVertexObject.CreateFrom(uPrimitives.CreateBox(2, 1.5, 3.5));
-end;
-
-function MakeTeapod: TGLVertexObject;
-begin
-  result := TGLVertexObject.CreateFrom(uPrimitives.CreateTeapod(4));
+  FDemoScene.SceneGraph.Camera.AdjustDistanceToTarget(1/1.1);
 end;
 
 procedure TForm2.GLViewer1CanResize(Sender: TObject; var NewWidth,
   NewHeight: Integer; var Resize: Boolean);
 begin
-  Proj := TMatrix.PerspectiveMatrix(60, NewWidth / NewHeight, 0.1, 100);
   FDemoScene.SetSize(NewWidth, NewHeight);
 end;
 
 procedure TForm2.GLViewer1ContextReady(Sender: TObject);
 var
   ver: TApiVersion;
-  path: string;
 begin
+
+
   // Checking OpenGL Version
   with GLViewer1.Context do
     if (MaxMajorVersion < 4) or (MaxMinorVersion < 2) then begin
-      GL1xRender := true;
-      ver.GAPI := avGL;
-      ver.Version := 130;
+      showmessage('Can''t run demo. Required at least OpenGL 4.2!');
+      Halt(0);
     end else begin
       ver.GAPI := avGL;
       ver.Version := 420;
     end;
   Render := nil;
-  (* //Если OpenGL 4.2 не поддерживается, значит используем отладочный OpenGL 1.x
-    begin
-    ShowMessage('Can''t run demo. Required at least OpenGL 4.2!');
-    halt(0);
-    end;
-  *)
+
   // Среди зарегистрированных рендеров выбираем подходящий
   Render := vRegisteredRenders.GetCompatibleRender(ver);
 
-  // assert(Test,'Vector Math Test Failed');
-  // Create default Shader with gradient FragColor output
-  if not GL1xRender then begin
-    Shader1 := TGLSLShaderProgram.Create;
-{$IFDEF MSWindows}
-    path := 'Media\';
-{$ENDIF}
-{$IFDEF Linux}
-    path := 'Media/';
-{$ENDIF}
-    Shader1.AttachShaderFromFile(stVertex, path + 'Shader.Vert');
-    Shader1.AttachShaderFromFile(stFragment, path + 'Shader.Frag');
-    Shader1.LinkShader;
-    if Shader1.Error then begin
-      showmessage(Shader1.Log);
-      Halt(0);
-    end;
-  end
-  else Shader1 := nil;
-
-  // Making MVP Matrix
-  Proj := TMatrix.PerspectiveMatrix(60, GLViewer1.Width / GLViewer1.Height,
-    0.1, 100);
-  cameraPos := TVector.Make(0, 0, -5);
-  View := TMatrix.LookAtMatrix(cameraPos, VecNull, vecY);
-  Model.SetIdentity;
-
-  Quad := MakeQuad;
-  Quad.Shader := Shader1;
-  Sphere := MakeSphere;
-  Sphere.Shader := Shader1;
-  Box := MakeBox;
-  Box.Shader := Shader1;
-  Teapod := MakeTeapod;
-  Teapod.Shader := Shader1;
-
-  SceneGraph := TSceneGraph.Create;
-
-  FDemoScene:=TDemoScene.Create;
-
-  log:=tstringlist.Create;
+  FDemoScene := TDemoScene.Create;
+  FDemoScene.SetSize(GLViewer1.ClientWidth, GLViewer1.ClientHeight);
 end;
 
 procedure TForm2.GLViewer1MouseDown(Sender: TObject; Button: TMouseButton;
@@ -163,10 +110,9 @@ end;
 procedure TForm2.GLViewer1MouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
-  if Shift = [ssLeft] then
+  if Shift = [Classes.ssLeft] then
   begin
-    cameraPos.RotateAround(VecNull, vecY, MY - Y, MX - X);
-    View := TMatrix.LookAtMatrix(cameraPos, VecNull, vecY);
+    FDemoScene.SceneGraph.Camera.RotateAround(VecNull, vecY, MY - Y, MX - X);
   end;
   MX := X;
   MY := Y;
@@ -175,142 +121,15 @@ end;
 procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   GLViewer1.OnRender := nil;
-  log.Add(inttostr(Dummy));
-  log.SaveToFile('e:\fps.txt');
-end;
-
-procedure TForm2.GL1xDebugRender(const Mesh: TGLVertexObject;
-  const Model: TMatrix);
-var
-  i: Integer;
-  p, n, t: pointer;
-  attr: TGLAttribObject;
-const
-  CGLFaceType: array [ftPoints .. ftQuads] of cardinal =
-    (
-    GL_Points, GL_LINE_STRIP, GL_LINE_LOOP, GL_Lines, GL_LINE_STRIP_ADJACENCY,
-    GL_LINES_ADJACENCY,
-    GL_Triangle_Strip, GL_Triangle_Fan, GL_Triangles,
-    GL_Triangle_Strip_Adjacency,
-    GL_Triangles_Adjacency, GL_Patches, GL_Quads
-    );
-begin
-  p := nil;
-  n := nil;
-  t := nil;
-  glMatrixMode(GL_PROJECTION);
-  glLoadMatrixf(PGLFloat(Proj.GetAddr));
-  glMatrixMode(GL_MODELVIEW);
-  glLoadMatrixf(PGLFloat(View.GetAddr));
-  glMultMatrixf(PGLFloat(Model.GetAddr));
-
-  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  glLineWidth(2);
-  glBegin(CGLFaceType[Mesh.FaceType]);
-  glColor3f(0, 0, 1);
-  for i := 0 to Mesh.IndiceCount - 1 do begin
-    attr := Mesh.GetAttribBySemantic(atVertex);
-    if assigned(attr) then p := attr[Mesh.Indices[i]];
-    attr := Mesh.GetAttribBySemantic(atNormal);
-    if assigned(attr) then n := attr[Mesh.Indices[i]];
-    attr := Mesh.GetAttribBySemantic(atTexCoord0);
-    if assigned(attr) then t := attr[Mesh.Indices[i]];
-
-    if assigned(n) then glNormal3fv(n);
-
-    if assigned(t) then begin
-      case Mesh.GetAttribBySemantic(atTexCoord0).AttrSize of
-        2: glTexCoord2fv(t);
-        3: glTexCoord3fv(t);
-        4: glTexCoord4fv(t);
-      end;
-    end;
-
-    if assigned(p) then begin
-      case Mesh.GetAttribBySemantic(atVertex).AttrSize of
-        2: glVertex2fv(p);
-        3: glVertex3fv(p);
-      end;
-    end;
-  end;
-  glEnd;
+  FDemoScene.Free;
 end;
 
 procedure TForm2.GLViewer1Render(Sender: TObject);
-var i: integer;
-    state: boolean;
-    t: double;
 begin
-  dt:=dt + glviewer1.DeltaTime;
-  glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
-
-  { //Со временем здесь будет полноценный ренедер сцены
-    if assigned(Render) then begin
-    Render.ProcessScene(SceneGraph); exit;
-    end;
-  }
-  mvp := Model * View;
-  if not GL1xRender then begin
-    Shader1.Apply;
-    Shader1.SetUniform('ProjMatrix', Proj.Matrix4);
-    Shader1.SetUniform('ModelView', mvp.Matrix4);
-    Shader1.SetUniform('tex', 0);
-    Shader1.UnApply;
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    // TGLStaticRender.RenderVertexObject(box,slUseActiveShader, spUseActiveShaderFirst);
-    glActiveTexture(GL_TEXTURE0);
-
-//    Box.RenderVO;
-
-  t:=GetTime;
-  state:=true;
-
-  for i:=0 to 5000 do begin
-    //setmaterial(true);
-    glEnable(GL_COLOR_MATERIAL);
-    inc(Dummy); state := false;
-//    glDisable(GL_DEPTH_TEST);
+  //Со временем здесь будет полноценный ренедер сцены
+  if assigned(Render) then begin
+    Render.ProcessScene(FDemoScene.SceneGraph);
   end;
-
-    Quad.RenderVO;
-//    glFlush;
-
-  t:=GetTime-t;
-if state then log.Add(floattostr(t)+inttostr(Dummy));
-
-  inc(cv);
-  if cv = 10 then begin
-    inc(Counter); cv := 0;
-    log.Add(floattostr(1.0/(dt/20)));
-    dt:=0;
-//    glviewer1.ResetFPSCounter;
-  end;
-
-//    Sphere.RenderVO;
-//    Teapod.RenderVO();
-  end else begin
-    GL1xDebugRender(Quad, Model);
-    GL1xDebugRender(Sphere, Model);
-    GL1xDebugRender(Box, Model);
-    GL1xDebugRender(Teapod, Model);
-  end;
-  if counter >=1000 then close;
-end;
-
-procedure TForm2.setmaterial(state: boolean);
-begin
-  if (state) then begin
-    if (not FState) then begin
-      glEnable(GL_COLOR_MATERIAL);
-      FState := true;
-    end
-  end else begin
-    if (FState) then begin
-      glDisable(GL_COLOR_MATERIAL);
-      FState := false;
-    end;
-  end;
-
 end;
 
 procedure TForm2.Timer1Timer(Sender: TObject);

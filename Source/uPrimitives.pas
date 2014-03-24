@@ -1,4 +1,4 @@
-unit uPrimitives;
+﻿unit uPrimitives;
 
 {$IFDEF FPC}
   {$MODE Delphi}
@@ -6,7 +6,7 @@ unit uPrimitives;
 
 interface
 
-uses uMath, uVMath, uBaseClasses, uLists, uBaseTypes, uRenderResource;
+uses uMath, uVMath, uBaseClasses, uLists, uBaseTypes, uRenderResource, uStorage;
 
 //Реализовать основные примитивы - цилиндр, труба, конус, сетка и т.д.
 
@@ -15,7 +15,9 @@ function CreateSphere(Radius: Float; VSegments, HSegments: integer;
                   TileS: Float=1; TileT: Float=1; InvertNormal: boolean = false): TVertexObject;
 function CreateBox(aWidth, aHeight, aDepth: Float): TVertexObject;
 function CreateCube(aSize: Float): TVertexObject;
+function CreateCylinder(aTopRadius, aBottomRadius, aHeight: Float; VSegments, HSegments: Integer): TVertexObject;
 function CreateTeapod(aDivision: Integer = 9): TVertexObject;
+function CreateSprite(aWidth, aHeight: Float): TVertexObject;
 
 implementation
 
@@ -25,7 +27,7 @@ var attr: TAttribBuffer;
     TexCoords: TVec2List;
     w2,h2: Float;
 begin
-  result:=TVertexObject.Create;
+  result:=Storage.CreateVertexObject;
   Vertices:=TVec3List.Create;
   TexCoords:=TVec2List.Create;
   w2:=aWidth/2; h2:=aHeight/2;
@@ -34,15 +36,15 @@ begin
   Vertices.Add( Vec3Make( w2, h2 ));   TexCoords.Add( Vec2Make( 1, 1 ));
   Vertices.Add( Vec3Make( -w2, h2 ));  TexCoords.Add( Vec2Make( 0, 1 ));
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name,3,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   //attr.SetAttribLocation(CAttribSematics[atVertex].Location);
   result.AddAttrib(attr,true);
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   //attr.SetAttribLocation(CAttribSematics[atTexCoord0].Location);
   result.AddAttrib(attr);
@@ -67,7 +69,7 @@ var attr: TAttribBuffer;
 begin
   Assert(Vsegments*HSegments<>0,'Segments count must be more than "0".');
 
-  result:=TVertexObject.Create;
+  result:=Storage.CreateVertexObject;
   Vertices:=TVec3List.Create;
   Normals:=TVec3List.Create;
   TexCoords:=TVec2List.Create;
@@ -91,24 +93,23 @@ begin
   end;
   Result.IndiceCount:=Result.IndiceCount-2;
 
-
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name,3,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   //attr.SetAttribLocation(CAttribSematics[atVertex].Location);
   result.AddAttrib(attr,true);
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atNormal].Name,3,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atNormal].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Normals.Size,Normals.Data);
-  attr.Buffer.SetDataHandler(Normals);
+  attr.Buffer.SetDataHandler(Normals,true);
   attr.SetAttribSemantic(atNormal);
   //attr.SetAttribLocation(CAttribSematics[atNormal].Location);
   result.AddAttrib(attr);
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   //attr.SetAttribLocation(CAttribSematics[atTexCoord0].Location);
   result.AddAttrib(attr);
@@ -124,7 +125,7 @@ var attr: TAttribBuffer;
     x, y, z: Float;
     n: TVector;
 begin
-  result:=TVertexObject.Create;
+  result:=Storage.CreateVertexObject;
   Vertices:=TVec3List.Create;
   Normals:=TVec3List.Create;
   TexCoords:=TVec2List.Create;
@@ -166,23 +167,23 @@ begin
   Vertices.Add( Vec3Make( -x, -y, -z ));   TexCoords.Add( Vec2Make( 1, 1 )); Normals.Add(n.Vec3);
   Vertices.Add( Vec3Make( -x, -y, z ));  TexCoords.Add( Vec2Make( 1, 0 )); Normals.Add(n.Vec3);
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name,3,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   //attr.SetAttribLocation(CAttribSematics[atVertex].Location);
   result.AddAttrib(attr,true);
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atNormal].Name,3,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atNormal].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Normals.Size,Normals.Data);
-  attr.Buffer.SetDataHandler(Normals);
+  attr.Buffer.SetDataHandler(Normals,true);
   attr.SetAttribSemantic(atNormal);
   //attr.SetAttribLocation(CAttribSematics[atNormal].Location);
   result.AddAttrib(attr);
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   //attr.SetAttribLocation(CAttribSematics[atTexCoord0].Location);
   result.AddAttrib(attr);
@@ -567,7 +568,7 @@ var
     Result := x + y*(aDivision+1) + p *(aDivision+1)*(aDivision+1);
   end;
 begin
-  result:=TVertexObject.Create;
+  result:=Storage.CreateVertexObject;
   Vertices:=TVec3List.Create;
   Normals:=TVec3List.Create;
   Tangents:=TVec3List.Create;
@@ -679,37 +680,37 @@ begin
     end;
   end;
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atVertex].Name,3,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
-  attr.Buffer.SetDataHandler(Vertices);
+  attr.Buffer.SetDataHandler(Vertices,true);
   attr.SetAttribSemantic(atVertex);
   //attr.SetAttribLocation(CAttribSematics[atVertex].Location);
   result.AddAttrib(attr,true);
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atNormal].Name,3,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atNormal].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Normals.Size,Normals.Data);
-  attr.Buffer.SetDataHandler(Normals);
+  attr.Buffer.SetDataHandler(Normals,true);
   attr.SetAttribSemantic(atNormal);
   //attr.SetAttribLocation(CAttribSematics[atNormal].Location);
   result.AddAttrib(attr);
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atTangent].Name,3,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atTangent].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Tangents.Size,Tangents.Data);
-  attr.Buffer.SetDataHandler(Tangents);
+  attr.Buffer.SetDataHandler(Tangents,true);
   attr.SetAttribSemantic(atTangent);
   //attr.SetAttribLocation(CAttribSematics[atTangent].Location);
   result.AddAttrib(attr);
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atBinormal].Name,3,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atBinormal].Name,3,vtFloat,0);
   attr.Buffer.Allocate(Binormals.Size,Binormals.Data);
-  attr.Buffer.SetDataHandler(Binormals);
+  attr.Buffer.SetDataHandler(Binormals,true);
   attr.SetAttribSemantic(atBinormal);
   //attr.SetAttribLocation(CAttribSematics[atBinormal].Location);
   result.AddAttrib(attr);
 
-  attr:=TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
   attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
-  attr.Buffer.SetDataHandler(TexCoords);
+  attr.Buffer.SetDataHandler(TexCoords,true);
   attr.SetAttribSemantic(atTexCoord0);
   //attr.SetAttribLocation(CAttribSematics[atTexCoord0].Location);
   result.AddAttrib(attr);
@@ -723,6 +724,144 @@ begin
         result.AddTriangle(GetIndex(J, I+1), GetIndex(J+1, I+1), GetIndex(J+1, I));
       end;
     end;
+end;
+
+function CreateSprite(aWidth, aHeight: Float): TVertexObject;
+var attr: TAttribBuffer;
+    Vertices: TVec2List;
+    TexCoords: TVec2List;
+begin
+  result:=Storage.CreateVertexObject;
+  Vertices:=TVec2List.Create;
+  TexCoords:=TVec2List.Create;
+  aWidth := aWidth / 2;
+  aHeight := aHeight / 2;
+
+  Vertices.Add( Vec2Make( -aWidth, -aHeight));  TexCoords.Add( Vec2Make( 0, 0 ));
+  Vertices.Add( Vec2Make( -aWidth, aHeight ));  TexCoords.Add( Vec2Make( 0, 1 ));
+  Vertices.Add( Vec2Make( aWidth, aHeight ));   TexCoords.Add( Vec2Make( 1, 1 ));
+  Vertices.Add( Vec2Make( aWidth, -aHeight ));  TexCoords.Add( Vec2Make( 1, 0 ));
+
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,2,vtFloat,0);
+  attr.Buffer.Allocate(Vertices.Size, Vertices.Data);
+  attr.Buffer.SetDataHandler(Vertices,true);
+  attr.SetAttribSemantic(atVertex);
+  result.AddAttrib(attr,true);
+
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
+  attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
+  attr.Buffer.SetDataHandler(TexCoords,true);
+  attr.SetAttribSemantic(atTexCoord0);
+  result.AddAttrib(attr);
+  with result do begin
+    AddTriangle(0,1,3);
+    AddTriangle(3,1,2);
+  end;
+  result.FaceType:=ftTriangles;
+end;
+
+function CreateCylinder(aTopRadius, aBottomRadius, aHeight: Float; VSegments, HSegments: Integer): TVertexObject;
+var attr: TAttribBuffer;
+    Vertices: TVec3List;
+    TexCoords: TVec2List;
+    Normals: TVec3List;
+    i, j, c: integer;
+    xt, y, zt, xb, zb, tx, ty, a, step: Float;
+    pt, pb, p: TVector;
+    nt, nb, nm, n: TVector;
+begin
+  result:=Storage.CreateVertexObject;
+  Vertices:=TVec3List.Create;
+  Normals:=TVec3List.Create;
+  TexCoords:=TVec2List.Create;
+  y := aHeight / 2;
+
+
+  step := 2*pi/VSegments; a := 0;
+  c := 0;
+  nt := Vec3Make( 0, 1, 0 );
+  nb := Vec3Make( 0, -1, 0 );
+
+  tx := cos(a);
+  ty := sin(a);
+  xt := tx * aTopRadius;
+  zt := ty * aTopRadius;
+  for i:= 1 to VSegments do begin
+    Vertices.Add( Vec3Make( 0, y, 0 )); TexCoords.Add( Vec2Make( 0.5, 0.5 )); Normals.Add(nt.Vec3);
+    Vertices.Add( Vec3Make( xt, y, zt )); TexCoords.Add( Vec2Make( tx*0.5+0.5, ty*0.5+0.5 )); Normals.Add(nt.Vec3);
+    a := a + step;
+    tx := cos(a);
+    ty := sin(a);
+    xt := tx * aTopRadius;
+    zt := ty * aTopRadius;
+    Vertices.Add( Vec3Make( xt, y, zt )); TexCoords.Add( Vec2Make( tx*0.5+0.5, ty*0.5+0.5 )); Normals.Add(nt.Vec3);
+    Result.AddTriangle(c,c+1,c+2); Inc(c, 3);
+  end;
+
+  a := 0;
+  tx := cos(a);
+  ty := sin(a);
+  xb := tx * aBottomRadius;
+  zb := ty * aBottomRadius;
+  for i:= 1 to VSegments do begin
+    Vertices.Add( Vec3Make( 0, -y, 0 )); TexCoords.Add( Vec2Make( 0.5, 0.5 )); Normals.Add(nb.Vec3);
+    Vertices.Add( Vec3Make( xb, -y, zb )); TexCoords.Add( Vec2Make( -tx*0.5+0.5, ty*0.5+0.5 )); Normals.Add(nb.Vec3);
+    a := a + step;
+    tx := cos(a);
+    ty := sin(a);
+    xb := tx * aBottomRadius;
+    zb := ty * aBottomRadius;
+    Vertices.Add( Vec3Make( xb, -y, zb )); TexCoords.Add( Vec2Make( -tx*0.5+0.5, ty*0.5+0.5 )); Normals.Add(nb.Vec3);
+    Result.AddTriangle(c,c+1,c+2); Inc(c, 3);
+  end;
+
+  a := 0;
+  for i:= 0 to VSegments do begin
+    tx := cos(a);
+    ty := sin(a);
+    xt := tx * aTopRadius;
+    zt := ty * aTopRadius;
+    xb := tx * aBottomRadius;
+    zb := ty * aBottomRadius;
+    pt := Vector(xt, y, zt);
+    pb := Vector(xb, -y, zb);
+    nm := Vector(tx, 0, ty);
+    for j := 0 to HSegments do begin
+      p := pb.Lerp(pt, j / HSegments);
+      n := nt.Cross(nm);
+      n := n.Cross((pt - pb).Normalize);
+      Vertices.Add( p.Vec3); TexCoords.Add( Vec2Make( i / VSegments, j / HSegments )); Normals.Add(n.Vec3);
+    end;
+    a := a + step;
+  end;
+
+  for i:= 1 to VSegments do begin
+    for j := 1 to HSegments do begin
+      Result.AddTriangle(c,c+1,c+HSegments+1);
+      Result.AddTriangle(c+HSegments+1,c+1,c+HSegments+2); Inc(c);
+    end;
+    Inc(c);
+  end;
+
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atVertex].Name,3,vtFloat,0);
+  attr.Buffer.Allocate(Vertices.Size,Vertices.Data);
+  attr.Buffer.SetDataHandler(Vertices,true);
+  attr.SetAttribSemantic(atVertex);
+  result.AddAttrib(attr,true);
+
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atNormal].Name,3,vtFloat,0);
+  attr.Buffer.Allocate(Normals.Size,Normals.Data);
+  attr.Buffer.SetDataHandler(Normals,true);
+  attr.SetAttribSemantic(atNormal);
+  result.AddAttrib(attr);
+
+  attr:=Storage.CreateAttribBuffer(CAttribSematics[atTexCoord0].Name,2,vtFloat,0);
+  attr.Buffer.Allocate(TexCoords.Size,TexCoords.Data);
+  attr.Buffer.SetDataHandler(TexCoords,true);
+  attr.SetAttribSemantic(atTexCoord0);
+  result.AddAttrib(attr);
+
+  Result.FaceType:=ftTriangles;
 end;
 
 end.
