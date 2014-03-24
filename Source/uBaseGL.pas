@@ -334,6 +334,8 @@ Type
     function GetUniformLocation(ShaderId: cardinal; const Name: ansistring): integer;
     procedure QueryProgramInfo;
   public
+    class var ActiveShader: TGLSLShaderProgram;
+
     property Id: cardinal read getShaderId;
     property Log: string read FLog;
     property Error: boolean read FError;
@@ -589,9 +591,6 @@ implementation
 
 uses
   uMath;
-
-var
-  vActiveShader: TGLSLShaderProgram = nil;
 
 const
   CFaceTypeConst: array [TFaceType] of cardinal = (GL_POINTS, GL_LINE_STRIP,
@@ -1223,17 +1222,17 @@ begin
     exit;
   if not FLinked then
     exit;
-  if vActiveShader <> Self then
+  if TGLSLShaderProgram.ActiveShader <> Self then
   begin
     glUseProgram(FShaderId);
-    vActiveShader := self;
+    TGLSLShaderProgram.ActiveShader := self;
   end;
 end;
 
 procedure TGLSLShaderProgram.UnBind;
 begin
   glUseProgram(0);
-  vActiveShader := nil;
+  TGLSLShaderProgram.ActiveShader := nil;
 end;
 
 procedure TGLSLShaderProgram.AttachShader(ShaderType: TShaderType;
@@ -1527,7 +1526,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: vec4; Count: GLsizei);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniform4fv(GetUniformLocation(FShaderId, name), Count, @Value)
   else
     glProgramUniform4fv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
@@ -1536,7 +1535,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: integer; Count: GLsizei);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniform1iv(GetUniformLocation(FShaderId, name), Count, @Value)
   else
     glProgramUniform1iv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
@@ -1545,7 +1544,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: vec3; Count: GLsizei);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniform3fv(GetUniformLocation(FShaderId, name), Count, @Value)
   else
     glProgramUniform3fv(FShaderId,GetUniformLocation(FShaderId, name), Count, @Value);
@@ -1554,7 +1553,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: single; Count: GLsizei);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniform1fv(GetUniformLocation(FShaderId, name), Count, @Value)
   else
     glProgramUniform1fv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
@@ -1563,7 +1562,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: vec2; Count: GLsizei);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniform2fv(GetUniformLocation(FShaderId, name), Count, @Value)
   else
     glProgramUniform2fv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
@@ -1572,7 +1571,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat3; Count: GLsizei; transpose: boolean);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniformMatrix3fv(GetUniformLocation(FShaderId, name), Count, transpose, @Value)
   else
     glProgramUniformMatrix3fv(FShaderId, GetUniformLocation(FShaderId, name), Count,
@@ -1615,7 +1614,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat4; Count: GLsizei; transpose: boolean);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniformMatrix4fv(GetUniformLocation(FShaderId, name), Count, transpose, @Value)
   else
     glProgramUniformMatrix4fv(FShaderId,GetUniformLocation(FShaderId, name), Count, transpose, @Value);
@@ -1624,7 +1623,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: PSingle; Count: GLsizei);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniform1fv(GetUniformLocation(FShaderId, name), Count, PGLfloat(Value))
   else
     glProgramUniform1fv(FShaderId,GetUniformLocation(FShaderId, name), Count, PGLfloat(Value));
@@ -1633,7 +1632,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: vec2i; Count: GLsizei);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniform2iv(GetUniformLocation(FShaderId, name), Count, @Value)
   else
     glProgramUniform2iv(FShaderId, GetUniformLocation(FShaderId, name), Count, @Value);
@@ -1642,7 +1641,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: array of TVector);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniform4fv(GetUniformLocation(FShaderId, name), Length(Value),
       PGLFloat(Value[0].GetAddr))
   else
@@ -1653,7 +1652,7 @@ end;
 procedure TGLSLShaderProgram.SetUniform(const Name: ansistring;
   const Value: mat2; Count: GLsizei; transpose: boolean);
 begin
-  if vActiveShader = Self then
+  if TGLSLShaderProgram.ActiveShader = Self then
     glUniformMatrix2fv(GetUniformLocation(FShaderId, PGLChar(name)), Count,
       transpose, @Value)
   else
@@ -1914,8 +1913,8 @@ var
   end;
 
 begin
-  if Assigned(vActiveShader) then
-    ActiveShader := vActiveShader.FShaderId
+  if Assigned(TGLSLShaderProgram.ActiveShader) then
+    ActiveShader := TGLSLShaderProgram.ActiveShader.FShaderId
   else
     ActiveShader := 0;
 
@@ -3579,13 +3578,5 @@ begin
   end;
   result := nil;
 end;
-
-initialization
-
-vActiveShader := nil;
-
-finalization
-
-vActiveShader := nil;
 
 end.
