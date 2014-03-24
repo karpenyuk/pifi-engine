@@ -144,7 +144,6 @@ Type
     Mesh: TGLMesh;
     IsIdentity: boolean;
     MatrixChanged: boolean;
-    IdexInPool: integer;
   end;
 
   TGLMeshObject = class (TGLBaseResource)
@@ -210,6 +209,15 @@ Type
     destructor Destroy; override;
   end;
 
+  TDrawCommand = record
+    mesh: TGLMesh;
+    worldTransfMethod: (wtmDefault, wtmInstance, wtmSphere, wtmCylindr);
+    objectIndex: Integer;
+    instanceMatrix: PMat4;
+  end;
+
+  TDrawCommandList = TDataList<TDrawCommand>;
+
   TGLRender = class (TBaseRender)
   private
     FCameraPool: TGLBufferObjectsPool;
@@ -218,6 +226,7 @@ Type
     FLightIndices: TGLBufferObject;
     FMaterialPool: TGLBufferObjectsPool;
     FCurrentParent: TSceneObject;
+    FDrawCommands: TDrawCommandList;
   protected
     FResourceManager: TGLResources;
 
@@ -282,9 +291,6 @@ implementation
 uses
   uEffectsPipeline, uStorage, uShaderGen;
 
-var
-  vActiveShader: TGLSLShaderProgram = nil;
-
 { TGLRender }
 
 procedure TGLRender.ApplyLights(aLights: TObjectList);
@@ -336,6 +342,7 @@ begin
   FLightPool := nil;
   FLightIndices := nil;
   FMaterialPool := nil;
+  FDrawCommands := TDrawCommandList.Create;
 end;
 
 destructor TGLRender.Destroy;
@@ -346,6 +353,7 @@ begin
   if assigned(FLightIndices) then FLightIndices.Free;
   if assigned(FMaterialPool) then FMaterialPool.Free;
   if assigned(FResourceManager) then FResourceManager.Free;
+  FDrawCommands.Free;
   inherited;
 end;
 
@@ -448,7 +456,6 @@ begin
   if not assigned(Res) then exit;
 
 
-
   for i:=0 to FRegisteredSubRenders.Count-1 do begin
     render:=TBaseSubRender(FRegisteredSubRenders[i]);
     { TODO : Реализовать выбор "наилучшего" из зарегистрированных рендеров }
@@ -459,8 +466,11 @@ begin
 end;
 
 procedure TGLRender.ProcessScene(const aScene: TSceneGraph);
+const
+  WORLD_MATRIX_SUB = 'WorldMatrixGetter';
 var i, j: integer;
     SceneItem: TBaseSceneItem;
+    DrawCommand: TDrawCommand;
     camera: TGLCamera;
     glRes: TGLBaseResource;
     effects: TEffectPipeline;
@@ -485,6 +495,11 @@ begin
   //Подготавливаем ресурсы сцены
   PrepareResources(aScene);
 
+  // Сливаем вектор комманд
+  FDrawCommands.Flush;
+  // Заполняем вектор комманд
+  DownToTree(aScene.Root.Childs);
+
   for i := 0 to aScene.CamerasCount - 1 do begin
     FCurrentCamera := aScene.Cameras[i];
     camera := TGLCamera(FResourceManager.GetOrCreateResource(aScene.Cameras[i]));
@@ -497,8 +512,27 @@ begin
 
     camera.Apply(Self);
 
-    //Обрабатываем объекты сцены (подготовка + рендеринг)
-    DownToTree(aScene.Root.Childs);
+    for j := 0 to FDrawCommands.Count - 1 do begin
+      DrawCommand := FDrawCommands[j];
+      DrawCommand.mesh.FMaterialObject.Apply(Self);
+
+      BindObjectBuffer(DrawCommand.objectIndex);
+
+      case DrawCommand.worldTransfMethod of
+        wtmDefault: TGLSLShaderProgram.ActiveShader.SetSubroutine(WORLD_MATRIX_SUB, 'defaultWorldMatrix');
+        wtmInstance: begin
+          TGLSLShaderProgram.ActiveShader.SetSubroutine(WORLD_MATRIX_SUB, 'instanceWorldMatrix');
+          TGLSLShaderProgram.ActiveShader.SetUniform('InstanceMatrix', DrawCommand.instanceMatrix^);
+        end;
+        wtmSphere: TGLSLShaderProgram.ActiveShader.SetSubroutine(WORLD_MATRIX_SUB, 'sphereSpriteMatrix');
+        wtmCylindr: TGLSLShaderProgram.ActiveShader.SetSubroutine(WORLD_MATRIX_SUB, 'cylindrSpriteMatrix');
+      end;
+
+      DrawCommand.mesh.FVertexObject.RenderVO();
+      DrawCommand.mesh.FMaterialObject.UnApply(Self);
+    end;
+
+
     camera.UnApply(Self);
     effects := FCurrentCamera.EffectPipeline;
     if Assigned(effects) then begin
@@ -545,6 +579,7 @@ var i,j: integer;
     MeshObject: TGLMeshObject;
     Mesh: TGLMesh;
     SceneObject: TGLSceneObject absolute Resource;
+    DrawCommand: TDrawCommand;
 begin
   if Resource.ClassType = TGLSceneObject then
   begin
@@ -553,15 +588,22 @@ begin
     for i:=0 to length(SceneObject.FMeshObjects)-1 do begin
       MeshObject:=SceneObject.FMeshObjects[i];
       for j:=0 to length(MeshObject.FLods[0])-1 do begin
-        Mesh:=MeshObject.FLods[0,j].Mesh;
-        if MeshObject.FLods[0,j].IsIdentity
-        then Render.BindObjectBuffer(SceneObject.FIdexInPool)
-        else Render.BindObjectBuffer(MeshObject.FLods[0,j].IdexInPool);
-        if assigned(Mesh.FMaterialObject) then begin
-          Mesh.FMaterialObject.Apply(Render);
-          Mesh.FVertexObject.RenderVO();
-          Mesh.FMaterialObject.UnApply(nil);
+        Mesh := MeshObject.FLods[0,j].Mesh;
+        DrawCommand.mesh := Mesh;
+        case SceneObject.FSceneObject.DirectionBehavior of
+          dbNone: begin
+            if MeshObject.FLods[0,j].IsIdentity
+              then DrawCommand.worldTransfMethod := wtmDefault
+              else begin
+                DrawCommand.worldTransfMethod := wtmInstance;
+                DrawCommand.instanceMatrix := MeshObject.FMeshObject.Mesh.GetMatrixAddr(j);
+              end;
+          end;
+          dbSphericalSprite: DrawCommand.worldTransfMethod := wtmSphere;
+          dbCylindricalSprite: DrawCommand.worldTransfMethod := wtmCylindr;
         end;
+        DrawCommand.objectIndex := SceneObject.FIdexInPool;
+        Render.FDrawCommands.Add(DrawCommand);
       end;
     end;
   end;
@@ -580,14 +622,14 @@ const
 begin
   if not assigned(aVertexObject) then exit;
   //stash old shader
-  ActiveShader := vActiveShader;
+  ActiveShader := TGLSLShaderProgram.ActiveShader;
 
   if aShaderUsageLogic in [slDisableShader, slStashActiveAndDisableShader]
   then glUseProgram(0)
   else begin
     if ((aShaderUsageLogic in [slUseActiveShader, slUseActiveAndDisable])
     or (aShaderUsagePriority = spUseActiveShaderFirst))
-    and assigned(vActiveShader)
+    and assigned(TGLSLShaderProgram.ActiveShader)
     then begin
       //Do nothing, all shaders ready
     end else begin
@@ -621,7 +663,7 @@ begin
   end else begin
     if aShaderUsageLogic in [slDisableShader, slUseActiveAndDisable, slUseOwnAndDisable]
     then begin
-      glUseProgram(0); vActiveShader := nil;
+      glUseProgram(0); TGLSLShaderProgram.ActiveShader := nil;
     end;
   end;
 end;
@@ -873,23 +915,14 @@ end;
 { TGLMaterial }
 
 procedure TGLMaterial.Apply(aRender: TBaseRender);
-const
-  WORLD_MATRIX_SUB = 'WorldMatrixGetter';
 var
   glRender: TGLRender absolute aRender;
   tb: TGLUniformBlock;
   i: integer;
 begin
-  if assigned(FShader) then begin
-    vActiveShader:=FShader;
-    FShader.Apply(aRender);  end else exit;
-
-  if Assigned(glRender.CurrentSceneObject) then
-    case glRender.CurrentSceneObject.DirectionBehavior of
-      dbNone: FShader.SetSubroutine(WORLD_MATRIX_SUB, 'defaultWorldMatrix');
-      dbSphericalSprite: FShader.SetSubroutine(WORLD_MATRIX_SUB, 'sphereSpriteMatrix');
-      dbCylindricalSprite: FShader.SetSubroutine(WORLD_MATRIX_SUB, 'cylindrSpriteMatrix');
-    end;
+  if assigned(FShader)
+    then FShader.Apply(aRender)
+    else exit;
 
   tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubCamera].Name);
   if Assigned(tb) then begin
@@ -969,7 +1002,7 @@ end;
 
 procedure TGLMaterial.UnApply;
 begin
-  if assigned(FShader) then begin FShader.UnBind; vActiveShader:=nil; end else exit;
+  //if assigned(FShader) then FShader.UnBind;
 end;
 
 procedure TGLMaterial.Update(aRender: TBaseRender);
@@ -1022,8 +1055,7 @@ begin
     setlength(FLods[i], aMeshObject.Lods[i].Assembly.Count);
     for j:=0 to aMeshObject.Lods[i].Assembly.Count-1 do begin
       FLods[i,j].Mesh:=TGLMesh(aOwner.GetOrCreateResource(aMeshObject.Lods[i].Assembly[j]));
-      FLods[i,j].IdexInPool := -1;
-      FLods[i,j].MatrixChanged := false;
+      FLods[i,j].MatrixChanged := true;
     end;
   end;
   setlength(FOccluder, aMeshObject.Occluder.Count);
@@ -1174,6 +1206,7 @@ begin
       move(WorldMatrix.GetAddr^,p.world,SizeOf(mat4));
       move(InvWorldMatrix.GetAddr^,p.invWorld,SizeOf(mat4));
       move(NormalMatrix.GetAddr^, p.worldNormal,SizeOf(mat4));
+      move(PivotMatrix.GetAddr^, p.pivot,SizeOf(mat4));
     end;
     glRender.FObjectPool.Buffer.UnMap;
   end;
@@ -1182,28 +1215,12 @@ begin
   glRender.FCurrentParent := FSceneObject;
 
   // Update meshes local matrices
+  // TODO: заменить постоянную проверку на нотификацию
   for i:=0 to length(FMeshObjects)-1 do begin
     MeshObject:=FMeshObjects[i];
     for j:=0 to length(MeshObject.FLods[0])-1 do begin
       mat := MeshObject.FMeshObject.LODS.LODS[0].Assembly.LocalMatrices[j];
       MeshObject.FLods[0,j].IsIdentity := mat.IsIdentity;
-      if not MeshObject.FLods[0,j].IsIdentity then
-      begin
-        if MeshObject.FLods[0,j].IdexInPool < 0 then
-          MeshObject.FLods[0,j].IdexInPool := glRender.FObjectPool.GetFreeSlotIndex();
-        p := glRender.FObjectPool.Buffer.MapRange(
-          GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
-          glRender.FObjectPool.OffsetByIndex(MeshObject.FLods[0,j].IdexInPool),
-          glRender.FObjectPool.ObjectSize);
-
-        // Calculate final world matrix
-        mat := mat * FSceneObject.PivotMatrix;
-        // Fill Uniform Buffer Object Data
-        move(mat.GetAddr^, p.world, SizeOf(mat4));
-        move(mat.Invert.GetAddr^, p.invWorld, SizeOf(mat4));
-        move(mat.Normalize.GetAddr^, p.worldNormal, SizeOf(mat4));
-        glRender.FObjectPool.Buffer.UnMap;
-      end;
     end;
   end;
 
@@ -1310,8 +1327,8 @@ end;
 
 procedure TGLUniformLightNumber.Apply(aRender: TBaseRender);
 begin
-  Assert(vActiveShader <> nil);
-  vActiveShader.SetUniform(FUniform.Name, aRender.CurrentLightNumber);
+  Assert(TGLSLShaderProgram.ActiveShader <> nil);
+  TGLSLShaderProgram.ActiveShader.SetUniform(FUniform.Name, aRender.CurrentLightNumber);
 end;
 
 { TGLSLShaderProgramExt }

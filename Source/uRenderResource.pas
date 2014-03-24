@@ -837,6 +837,7 @@ Type
     function AddNewMesh(aVertexObject: TVertexObject; const aLocalMatrix: TMatrix): TMesh; overload;
     procedure Delete(Index: Integer);
     procedure DeleteMesh(aMesh: TMesh);
+    function GetMatrixAddr(const anIndex: Integer): PMat4;
 
     property Items[Index: integer]: TMesh read getMesh; default;
     property LocalMatrices[Index: integer]: TMatrix read getMatrix write setMatrix;
@@ -2444,6 +2445,11 @@ end;
 function TMeshAssembly.getMatrix(Index: integer): TMatrix;
 begin
   Result := FLocalMatrices[Index];
+end;
+
+function TMeshAssembly.GetMatrixAddr(const anIndex: Integer): PMat4;
+begin
+  Result := PMat4(FLocalMatrices.GetItemAddr(anIndex));
 end;
 
 function TMeshAssembly.getMesh(Index: integer): TMesh;
