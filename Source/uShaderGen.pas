@@ -139,20 +139,27 @@ const
   '    vec3    spot_direction;'+#10#13 +
   '};'+#10#13;
 
-  SG_BLOCK_OBJECT: ansistring =
+  SG_OBJECT_BLOCK: ansistring =
   'layout(std140, binding = 2) uniform Objects'+#10#13 +
   '{'+#10#13 +
   '    World object;'+#10#13 +
   '} objects;'+#10#13+
   'uniform mat4 InstanceMatrix;'+#10#13;
 
-  SG_BLOCK_CAMERA: ansistring =
+  SG_OBJECT_BUFFER: ansistring =
+  'layout(binding = 0) buffer SSBO1 {'#10#13+
+  '	 World objectWorld[];'#10#13+
+  '} IN;'#10#13+
+  'uniform int ObjectId;'+#10#13+
+  'uniform mat4 InstanceMatrix;'+#10#13;
+
+  SG_CAMERA_BLOCK: ansistring =
   'layout(std140, binding = 1) uniform Cameras'+#10#13 +
   '{'+#10#13 +
   '    Camera camera;'+#10#13 +
   '} cameras;'+#10#13;
 
-  SG_BLOCK_MATERIAL: ansistring =
+  SG_MATERIAL_BLOCK: ansistring =
   'layout(std140, binding = 3) uniform Material'+#10#13 +
   '{'+#10#13 +
   '    vec4    ambient;'+#10#13 +
@@ -166,17 +173,17 @@ const
   SG_GET_WORLD_MATRIX_SUB: ansistring =
     'subroutine mat4 TGetWorldMatrix();'#10#13 +
     'subroutine(TGetWorldMatrix) mat4 defaultWorldMatrix() {'#10#13 +
-    '  return objects.object.world; }'#10#13 +
+    '  return IN.objectWorld[ObjectId].world; }'#10#13 +
     'subroutine(TGetWorldMatrix) mat4 instanceWorldMatrix() {'#10#13 +
-    '  return InstanceMatrix * objects.object.pivot; }'#10#13 +
+    '  return InstanceMatrix * IN.objectWorld[ObjectId].pivot; }'#10#13 +
     'subroutine(TGetWorldMatrix) mat4 sphereSpriteMatrix() {'#10#13 +
-    '  mat4 m = cameras.camera.View * objects.object.world;'#10#13 +
+    '  mat4 m = cameras.camera.View * IN.objectWorld[ObjectId].world;'#10#13 +
     '  m[0].xyz = vec3(1.0, 0.0, 0.0);'#10#13 +
     '  m[1].xyz = vec3(0.0, 1.0, 0.0);'#10#13 +
     '  m[2].xyz = vec3(0.0, 0.0, 1.0);'#10#13 +
     '  return m; }'#10#13 +
     'subroutine(TGetWorldMatrix) mat4 cylindrSpriteMatrix() {'#10#13 +
-    '  mat4 m = objects.object.world * cameras.camera.View;'#10#13 +
+    '  mat4 m = cameras.camera.View * IN.objectWorld[ObjectId].world;'#10#13 +
     '  m[0].xyz = vec3(1.0, 0.0, 0.0);'#10#13 +
     '  m[2].xyz = vec3(0.0, 0.0, 1.0);'#10#13 +
     '  return m; }'#10#13 +
@@ -289,8 +296,8 @@ begin
 'layout(location = 2) in vec2 in_TexCoord;'+#10#13 +
 SG_STRUCT_WORLD_TRANSFORM +
 SG_STRUCT_CAMERA +
-SG_BLOCK_OBJECT +
-SG_BLOCK_CAMERA +
+SG_OBJECT_BUFFER +
+SG_CAMERA_BLOCK +
 SG_GET_WORLD_MATRIX_SUB +
 
 'out vec3 WorldPosition;'+#10#13 +
@@ -305,7 +312,7 @@ SG_GET_WORLD_MATRIX_SUB +
 ' ViewDir = cameras.camera.View[2].xyz;'+#10#13 +
 '	gl_Position = cameras.camera.ViewProjection * pos;'+#10#13 +
 '	TexCoord = in_TexCoord;'+#10#13 +
-'	WorldNormal = mat3(objects.object.worldNormal) * in_Normal;'+#10#13 +
+'	WorldNormal = mat3(IN.objectWorld[ObjectId].worldNormal) * in_Normal;'+#10#13 +
 '}';
 
   ft :=
@@ -318,7 +325,7 @@ SG_STRUCT_LIGHT +
 '    ivec4 indices[8];'+#10#13 +
 '} lightIndices;'+#10#13 +
 
-SG_BLOCK_MATERIAL +
+SG_MATERIAL_BLOCK +
 
 'in vec3 WorldPosition;'+#10#13 +
 'in vec2 TexCoord;'+#10#13 +
@@ -480,8 +487,8 @@ begin
 'layout(location = 2) in vec2 in_TexCoord;'#10#13 +
 SG_STRUCT_CAMERA +
 SG_STRUCT_WORLD_TRANSFORM +
-SG_BLOCK_OBJECT +
-SG_BLOCK_CAMERA +
+SG_OBJECT_BUFFER +
+SG_CAMERA_BLOCK +
 SG_GET_WORLD_MATRIX_SUB +
 'out vec2 v2f_TexCoord0;'#10#13 +
 'void main() {'#10#13 +
@@ -495,7 +502,7 @@ SG_GET_WORLD_MATRIX_SUB +
 'layout(location = 0) out vec4 FragColor;'#10#13 +
 'layout(binding = 0) uniform sampler2D DiffuseTexture;'#10#13 +
 SG_STRUCT_WORLD_TRANSFORM +
-SG_BLOCK_MATERIAL +
+SG_MATERIAL_BLOCK +
 'void main() {'#10#13 +
 ' vec4 Color = texture(DiffuseTexture, v2f_TexCoord0);'#10#13 +
 ' if (Color.a < 0.5) discard;'#10#13 +
@@ -526,28 +533,31 @@ SG_STRUCT_WORLD_TRANSFORM +
 '	 World objectWorld[];'#10#13+
 '} OUT;'#10#13+
 'layout(binding = 3) buffer SSBO3 {'#10#13+
-'	 uvec2 Idx[];'#10#13+
+'	 ivec4 Idx[];'#10#13+
 '} Indices;'#10#13+
+'uniform int InvocationNum;'#10#13+
 
 'void main(void) {'#10#13+
-'	 uint thread = gl_WorkGroupID.x * 32 + gl_LocalInvocationID.x;'#10#13+
-'  uint Id = Indices.Idx[thread];'#10#13+
-'	 mat4 srp = IN.objectBase[Id].scale * IN.objectBase[Id].rotation;'#10#13+
-'	 srp *= IN.objectBase[Id].translation;'#10#13+
-'  mat4 pm = Parent.parentWorld[Id].pivot;'#10#13+
-'  pm *= srp;'#10#13+
-'  mat4 wm = IN.objectBase[Id].model * pm;'#10#13+
-'  mat4 nwm;'#10#13+
-'  nwm[1] = normalize(vec4(wm[1].xyz, 1.0));'#10#13+
-'  nwm[2] = cross(normalize(vec4(wm[1].xyz, 1.0)), nwm[1]);'#10#13+
-'  nwm[0] = cross(nwm[1], nwm[2]);'#10#13+
-'  nwm[3] = vec4(0.0, 0.0, 0.0, 1.0);'#10#13+
-'  OUT.objectWorld[Id].world = wm;'#10#13+
-'  OUT.objectWorld[Id].worldNormal = nwm;'#10#13+
-'  OUT.objectWorld[Id].invWorld = inverse(wm);'#10#13+
-'  OUT.objectWorld[Id].worldT = transpose(wm);'#10#13+
-'  OUT.objectWorld[Id].pivot = pm;'#10#13+
-'  OUT.objectWorld[Id].invPivot = inverse(pm);'#10#13+
+'  for(int i = 0; i < InvocationNum; i++) {'#10#13+
+'	   uint thread = i * 32 + gl_LocalInvocationID.x;'#10#13+
+'    ivec4 Id = Indices.Idx[thread];'#10#13+
+'	   mat4 srp = IN.objectBase[Id.x].translation * IN.objectBase[Id.x].rotation * IN.objectBase[Id.x].scale;'#10#13+
+'    mat4 pm = Parent.parentWorld[Id.y].pivot;'#10#13+
+'    pm = pm * srp;'#10#13+
+'    mat4 wm = pm * IN.objectBase[Id.x].model;'#10#13+
+'    mat4 nwm;'#10#13+
+'    nwm[1] = vec4(normalize(wm[1].xyz), 1.0);'#10#13+
+'    nwm[2] = vec4(cross(normalize(wm[0].xyz), nwm[1].xyz), 1.0);'#10#13+
+'    nwm[0] = vec4(cross(nwm[1].xyz, nwm[2].xyz), 1.0);'#10#13+
+'    nwm[3] = vec4(0.0, 0.0, 0.0, 1.0);'#10#13+
+'    OUT.objectWorld[Id.z].world = wm;'#10#13+
+'    OUT.objectWorld[Id.z].worldNormal = nwm;'#10#13+
+'    OUT.objectWorld[Id.z].invWorld = inverse(wm);'#10#13+
+'    OUT.objectWorld[Id.z].worldT = transpose(wm);'#10#13+
+'    OUT.objectWorld[Id.z].pivot = pm;'#10#13+
+'    OUT.objectWorld[Id.z].invPivot = inverse(pm);'#10#13+
+'    memoryBarrier();'#10#13+
+'  };'#10#13+
 '};'#10#13;
   Result.ShaderText[stCompute] := ct;
 end;
@@ -621,14 +631,14 @@ begin
 'layout(location = 2) in vec2 in_TexCoord;'+#10#13 +
 SG_STRUCT_WORLD_TRANSFORM +
 SG_STRUCT_CAMERA +
-SG_BLOCK_OBJECT +
-SG_BLOCK_CAMERA +
+SG_OBJECT_BLOCK +
+SG_CAMERA_BLOCK +
 SG_STRUCT_LIGHT +
 'layout(std140, binding = 4) uniform Lights'+#10#13 +
 '{'+#10#13 +
 '    Light light;'+#10#13 +
 '} lights;'+#10#13 +
-SG_BLOCK_MATERIAL +
+SG_MATERIAL_BLOCK +
 'out vec2 TexCoord;'+#10#13 +
 'out vec3 Normal;'+#10#13 +
 'out vec4 Color;'+#10#13 +

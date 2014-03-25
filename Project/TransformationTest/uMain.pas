@@ -76,7 +76,7 @@ procedure TDemo.OnProgress(Sender: TObject; const deltaTime, newTime: Double);
 var
   i: integer;
 begin
-  for i := Low(FAIs) to High(FAIs) do FAIs[i].Progress(deltaTime);
+  for i := Low(FAIs) to High(FAIs) do if Assigned(FAIs[i]) then FAIs[i].Progress(deltaTime);
 end;
 
 procedure TDemo.onResize(Sender: TObject; NewWidth, NewHeight: Integer);
@@ -229,6 +229,7 @@ begin
   Light.LightStyle := lsParallel;
   Light.MoveObject(2, 10, -3);
   Light.Specular.SetColor(250, 250, 250, 255);
+  Light.FriendlyName := 'light source';
   FSceneGraph.AddItem(light);
 
   FAIs[0]:= TRobotController.Create(Etalon);

@@ -65,6 +65,8 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
+    procedure RecalcNestingDepth;
+
     property Parent: TBaseSceneItem read FParent write SetParent;
     property Childs: TSceneItemList read FChilds;
     property NestingDepth: integer read FNestingDepth;
@@ -326,6 +328,7 @@ begin
   clone.FRotationMatrix := FRotationMatrix;
   clone.FTranslationMatrix := FTranslationMatrix;
   clone.Parent := Parent;
+  clone.FriendlyName := FriendlyName + '@';
   Result := clone;
   if aWithChildren then
     for I := 0 to Childs.Count - 1 do if Assigned(Childs[i]) then begin
@@ -1011,7 +1014,7 @@ begin
   inherited;
   FChilds:=TSceneItemList.Create;
   FChilds.OnChange := OnItemsChanged;
-  FNestingDepth := 0;
+  FNestingDepth := -1;
 end;
 
 destructor TBaseSceneItem.Destroy;
@@ -1028,7 +1031,6 @@ begin
   if assigned(FParent) then FParent.Childs.RemoveSceneItem(Self);
   if assigned(Value) then begin
     Value.Childs.AddSceneItem(Self);
-    FNestingDepth := FParent.NestingDepth+1;
   end else FNestingDepth := 0;
 end;
 
@@ -1049,6 +1051,22 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TBaseSceneItem.RecalcNestingDepth;
+
+  procedure GoDeep(aChilds: TSceneItemList; aDeep: integer);
+  var i: integer;
+  begin
+    for I := 0 to aChilds.Count - 1 do if Assigned(aChilds[i]) then begin
+      aChilds[i].FNestingDepth := aDeep;
+      GoDeep(aChilds[i].FChilds, aDeep + 1);
+    end;
+  end;
+
+begin
+  Assert(FParent = nil);
+  GoDeep(FChilds, 0);
 end;
 
 { TSceneItemList }

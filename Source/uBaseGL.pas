@@ -92,6 +92,7 @@ Type
       Offset, Size: integer);
 
     procedure UnBindBuffer;
+    procedure Clear(anInternalFormat: cardinal; aFormat: cardinal; aType: cardinal; aData: pointer);
 
     function Map(AccessType: cardinal = GL_READ_WRITE): pointer;
     function MapRange(AccessType, Offset, Length: cardinal): pointer;
@@ -384,6 +385,7 @@ Type
     procedure SetSubroutine(const Name: ansistring; const Value: ansistring);
 
     property Stages: TShaderTypeSet read FStages;
+    property IsLinked: Boolean read FLinked;
   end;
 
   TGLVertexObject = class(TGLBaseResource)
@@ -848,6 +850,14 @@ begin
   glBindBuffer(CBufferTypes[FBuffType], 0);
   FLocked := false;
   FMappedPointer := nil;
+end;
+
+procedure TGLBufferObject.Clear(anInternalFormat, aFormat, aType: cardinal;
+  aData: pointer);
+begin
+  glBindBuffer(CBufferTypes[FBuffType], FBuffId);
+  glClearBufferData(CBufferTypes[FBuffType], anInternalFormat, aFormat, aType, aData);
+  glBindBuffer(CBufferTypes[FBuffType], 0);
 end;
 
 constructor TGLBufferObject.Create(BuffType: TBufferType);
