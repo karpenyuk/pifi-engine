@@ -8,7 +8,7 @@ uses
 type
 
   FileFormatDAE = class
-    class function LoadAndCreateVertexObject(const aFileName: string): TVertexObject;
+//    class function LoadAndCreateVertexObject(const aFileName: string): TVertexObject;
   end;
 
 implementation
@@ -54,26 +54,6 @@ type
     isUV              //Generic parameter vector
   );
 
-  TDAEVertexSource = record
-    Id: String;
-    Data: TSingleDynArray;
-    List: TAbstractDataList;
-    Type_: TValueType;
-    Components: TValueComponent;
-    Stride: Integer;
-    procedure Init(aComponents: integer; aList: TAbstractDataList);
-  end;
-
-  TDAEVertexSourceDynArray = array of TDAEVertexSource;
-
-  TSourceSemantic = record
-    AttribType: TAttribType;
-    Source: TDAEVertexSource;
-    Offset: Integer;
-  end;
-
-  TSourceSemanticDynArray = array of TSourceSemantic;
-
   TDAESubMesh = record
     PrimitiveType: TFaceType;
     Attribs: array of record
@@ -83,6 +63,8 @@ type
       SetIndex: integer;
     end;
     Indices: TIntegerDynArray;
+
+    function BuildVertexObject: TVertexObject;
     procedure Init(aTriangles: IXMLTriangles_type); overload;
     procedure Init(aLines: IXMLLines_type); overload;
     procedure Init(aLineStrips: IXMLLineStrips_type); overload;
@@ -110,7 +92,7 @@ type
     FSources: IXMLSource_typeList;
     function getSourceById(Id: string): PDAESourceRecord;
   public
-    constructor Create(aSources: IXMLSource_typeList);
+    procedure Initialize(aSources: IXMLSource_typeList);
     function SourceValue(ID: string): TSingleDynArray;
     property Source[Id: string]: PDAESourceRecord read getSourceById; default;
   end;
@@ -125,6 +107,17 @@ type
     constructor Create(aMesh: IXMLMesh_type);
   end;
 
+  procedure TDAESources.Initialize(aSources: IXMLSource_typeList);
+  var i: integer;
+    SourceRec: TDAESourceRecord;
+  begin
+    FSources := aSources;
+    for i:=0 to FSources.Count - 1 do begin
+      SourceRec.Init(FSources[i]);
+      Add(SourceRec);
+    end;
+  end;
+
   procedure TDAEMesh.AddSubMesh(const sm: TDAESubMesh);
   var i,n,mi: integer;
       SourceRec: PDAESourceRecord;
@@ -135,7 +128,7 @@ type
       if assigned(SourceRec) then begin
         n:=length(SourceRec.References);
         setlength(SourceRec.References,n+1);
-        SourceRec.References[n]:=@FSubMeshes[mi];
+        SourceRec.References[n]:=FSubMeshes.GetItemAddr(mi);
       end;
     end;
   end;
@@ -145,7 +138,8 @@ type
       sm: TDAESubMesh;
   begin
     FMesh := aMesh;
-    FSources:=TDAESources.Create(FMesh.Source);
+    FSources:=TDAESources.Create;
+    FSources.Initialize(FMesh.Source);
     FSubMeshes:=TDataList<TDAESubMesh>.Create;
     for i:=0 to aMesh.Triangles.Count-1 do begin
       sm.Init(aMesh.Triangles[i]); AddSubMesh(sm);
@@ -199,19 +193,16 @@ type
   begin
     result := nil;
     for i:=0 to Count-1 do
-      if Items[i].ID = Id then exit(@Items[i]);
+      if Items[i].ID = Id then exit(GetItemAddr(i));
   end;
 
-  constructor TDAESources.Create(aSources: IXMLSource_typeList);
-  var i: integer;
-      SourceRec: TDAESourceRecord;
-  begin
-    FSources := aSources;
-    for i:=0 to FSources.Count - 1 do begin
-      SourceRec.Init(FSources[i]);
-      Add(SourceRec);
-    end;
-  end;
+
+  function BuildVertexObject: TVertexObject;
+  begin {
+    1. Create TAttribObject for each of Attrib
+    2.
+  }end;
+
 
   procedure TDAESubMesh.Init(aTriangles: IXMLTriangles_type);
   var i: integer;
