@@ -58,6 +58,7 @@ type
     FNestingDepth: integer;
     procedure OnItemsChanged(anItem: TBaseSceneItem; aChnages: TSceneItemListChanges);
     procedure SetParent(const Value: TBaseSceneItem); virtual;
+    procedure SetNestingDepth(const Value: integer); virtual;
   public
     Active: boolean;
     FriendlyName: string;
@@ -65,11 +66,9 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
-    procedure RecalcNestingDepth;
-
     property Parent: TBaseSceneItem read FParent write SetParent;
     property Childs: TSceneItemList read FChilds;
-    property NestingDepth: integer read FNestingDepth;
+    property NestingDepth: integer read FNestingDepth write SetNestingDepth;
   end;
 
   TDirectionBehavior = (dbNone, dbSphericalSprite, dbCylindricalSprite);
@@ -79,7 +78,6 @@ type
   TMovableObject = class (TBaseSceneItem)
   private
     FDirBehavior: TDirectionBehavior;
-    FWorldMatrixUpdated: Boolean;
     procedure SetModelMatrix(const Value: TMatrix);
     procedure SetRotMatrix(const Value: TMatrix);
     procedure SetScaleMatrix(const Value: TMatrix);
@@ -134,6 +132,7 @@ type
     FNormalMatrix: TMatrix;
     FPivotMatrix: TMatrix; //мировая матрица для дочерних объектов (без учета модельной)
     FInvPivotMatrix: TMatrix;
+    FWorldMatrixUpdated: Boolean;
     FWorldMatrixUpdateCounter: Integer;
 
     procedure SetPosition(const Value: TVector);
@@ -1023,6 +1022,13 @@ begin
   inherited;
 end;
 
+procedure TBaseSceneItem.SetNestingDepth(const Value: integer);
+var i: integer;
+begin
+  FNestingDepth := Value;
+  for i := 0 to FChilds.Count - 1 do
+    if Assigned(FChilds[i]) then FChilds[i].SetNestingDepth(Value + 1);
+end;
 
 procedure TBaseSceneItem.SetParent(const Value: TBaseSceneItem);
 begin
@@ -1051,22 +1057,6 @@ begin
       end;
     end;
   end;
-end;
-
-procedure TBaseSceneItem.RecalcNestingDepth;
-
-  procedure GoDeep(aChilds: TSceneItemList; aDeep: integer);
-  var i: integer;
-  begin
-    for I := 0 to aChilds.Count - 1 do if Assigned(aChilds[i]) then begin
-      aChilds[i].FNestingDepth := aDeep;
-      GoDeep(aChilds[i].FChilds, aDeep + 1);
-    end;
-  end;
-
-begin
-  Assert(FParent = nil);
-  GoDeep(FChilds, 0);
 end;
 
 { TSceneItemList }

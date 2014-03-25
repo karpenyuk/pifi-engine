@@ -147,7 +147,7 @@ const
   'uniform mat4 InstanceMatrix;'+#10#13;
 
   SG_OBJECT_BUFFER: ansistring =
-  'layout(binding = 0) buffer SSBO1 {'#10#13+
+  'layout(std430, binding = 0) buffer SSBO1 {'#10#13+
   '	 World objectWorld[];'#10#13+
   '} IN;'#10#13+
   'uniform int ObjectId;'+#10#13+
@@ -535,29 +535,27 @@ SG_STRUCT_WORLD_TRANSFORM +
 'layout(binding = 3) buffer SSBO3 {'#10#13+
 '	 ivec4 Idx[];'#10#13+
 '} Indices;'#10#13+
-'uniform int InvocationNum;'#10#13+
+'uniform int Invocation;'#10#13+
 
 'void main(void) {'#10#13+
-'  for(int i = 0; i < InvocationNum; i++) {'#10#13+
-'	   uint thread = i * 32 + gl_LocalInvocationID.x;'#10#13+
-'    ivec4 Id = Indices.Idx[thread];'#10#13+
-'	   mat4 srp = IN.objectBase[Id.x].translation * IN.objectBase[Id.x].rotation * IN.objectBase[Id.x].scale;'#10#13+
-'    mat4 pm = Parent.parentWorld[Id.y].pivot;'#10#13+
-'    pm = pm * srp;'#10#13+
-'    mat4 wm = pm * IN.objectBase[Id.x].model;'#10#13+
-'    mat4 nwm;'#10#13+
-'    nwm[1] = vec4(normalize(wm[1].xyz), 1.0);'#10#13+
-'    nwm[2] = vec4(cross(normalize(wm[0].xyz), nwm[1].xyz), 1.0);'#10#13+
-'    nwm[0] = vec4(cross(nwm[1].xyz, nwm[2].xyz), 1.0);'#10#13+
-'    nwm[3] = vec4(0.0, 0.0, 0.0, 1.0);'#10#13+
-'    OUT.objectWorld[Id.z].world = wm;'#10#13+
-'    OUT.objectWorld[Id.z].worldNormal = nwm;'#10#13+
-'    OUT.objectWorld[Id.z].invWorld = inverse(wm);'#10#13+
-'    OUT.objectWorld[Id.z].worldT = transpose(wm);'#10#13+
-'    OUT.objectWorld[Id.z].pivot = pm;'#10#13+
-'    OUT.objectWorld[Id.z].invPivot = inverse(pm);'#10#13+
-'    memoryBarrier();'#10#13+
-'  };'#10#13+
+'	 uint thread = (Invocation + gl_WorkGroupID.x) * 32 + gl_LocalInvocationID.x;'#10#13+
+'  ivec4 Id = Indices.Idx[thread];'#10#13+
+'	 mat4 srp = IN.objectBase[Id.x].translation * IN.objectBase[Id.x].rotation * IN.objectBase[Id.x].scale;'#10#13+
+'  mat4 pm = Parent.parentWorld[Id.y].pivot;'#10#13+
+'  pm = pm * srp;'#10#13+
+'  mat4 wm = pm * IN.objectBase[Id.x].model;'#10#13+
+'  mat4 nwm;'#10#13+
+'  nwm[1] = vec4(normalize(wm[1].xyz), 1.0);'#10#13+
+'  nwm[2] = vec4(cross(normalize(wm[0].xyz), nwm[1].xyz), 1.0);'#10#13+
+'  nwm[0] = vec4(cross(nwm[1].xyz, nwm[2].xyz), 1.0);'#10#13+
+'  nwm[3] = vec4(0.0, 0.0, 0.0, 1.0);'#10#13+
+'  OUT.objectWorld[Id.z].world = wm;'#10#13+
+'  OUT.objectWorld[Id.z].worldNormal = nwm;'#10#13+
+'  OUT.objectWorld[Id.z].invWorld = inverse(wm);'#10#13+
+'  OUT.objectWorld[Id.z].worldT = transpose(wm);'#10#13+
+'  OUT.objectWorld[Id.z].pivot = pm;'#10#13+
+'  OUT.objectWorld[Id.z].invPivot = inverse(pm);'#10#13+
+'  memoryBarrier();'#10#13+
 '};'#10#13;
   Result.ShaderText[stCompute] := ct;
 end;

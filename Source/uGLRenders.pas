@@ -414,7 +414,7 @@ var i, j, noLoadCount, sum: integer;
     effects: TEffectPipeline;
     p: ^Vec4i;
     glMovable: TGLMovableObject;
-    InvocatioinNum: integer;
+    Invocation, WorkGroupNum: integer;
     pwtBase, pwt: PWorldTransform;
 
     procedure DownToTree(anItems: TSceneItemList);
@@ -444,8 +444,7 @@ begin
 
   if not Assigned(FObjectPool) then begin
     FObjectPool := TGLBufferObjectsPool.Create(SizeOf(TWorldTransform), 2000);
-    i := 0;
-    // Делаем резер в пуле на случай когда количество изменений меньше количества нитей
+    // Делаем резерв в пуле на случай когда количество изменений меньше количества нитей
     // Количество нитей 32, в случае одного объекта нужно 31 слот для холостых записей
     for i := 1 to 31 do FObjectPool.GetFreeSlotIndex;
     pwtBase := FObjectPool.Buffer.Map(GL_WRITE_ONLY);
@@ -529,14 +528,12 @@ begin
   DownToTree(aScene.Root.Childs);
 
   if ComputeTransformByShader then begin
-    InvocatioinNum := 0;
     sum := 0;
     p := nil;
 
     for i := 0 to High(FHierarchyLevels) do begin
       if FHierarchyLevels[i].Count > 0 then begin
         if p = nil then p := FObjectIndices.Map(GL_WRITE_ONLY);
-        Inc(InvocatioinNum);
         for j := 0 to FHierarchyLevels[i].Count - 1 do begin
           glMovable := TGLMovableObject(FHierarchyLevels[i].Items[j]);
           p[0] := glMovable.FBaseTfPoolIndex;
@@ -563,15 +560,22 @@ begin
 
     if p <> nil then FObjectIndices.UnMap;
 
-    if InvocatioinNum > 0 then begin
+    if sum > 0 then begin
       FBaseTfPool.Buffer.BindBase(btShaderStorage, 0);
       FObjectPool.Buffer.BindBase(btShaderStorage, 1); // to read
       FObjectPool.Buffer.BindBase(btShaderStorage, 2); // to write
       FObjectIndices.BindBase(btShaderStorage, 3);
 
       FMatrixMultiplier.Bind;
-      FMatrixMultiplier.SetUniform('InvocationNum', InvocatioinNum);
-      glDispatchCompute(1, 1, 1);
+      Invocation := 0;
+      for i := 0 to High(FHierarchyLevels) do begin
+        if FHierarchyLevels[i].Count > 0 then begin
+          WorkGroupNum := FHierarchyLevels[i].Count div 32 + 1;
+          FMatrixMultiplier.SetUniform('Invocation', Invocation);
+          glDispatchCompute(WorkGroupNum, 1, 1);
+          Inc(Invocation, WorkGroupNum);
+        end;
+      end;
       glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT or GL_BUFFER_UPDATE_BARRIER_BIT);
 
       pwtBase := FObjectPool.Buffer.Map(GL_READ_ONLY);
@@ -641,7 +645,7 @@ var i, j: integer;
 
 begin
   FCurrentGraph := aScene;
-  aScene.Root.RecalcNestingDepth;
+  aScene.Root.NestingDepth := 0;
   //Подготавливаем ресурсы сцены
   PrepareResources(aScene);
 

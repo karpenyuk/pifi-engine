@@ -940,6 +940,9 @@ Type
   TSceneObject = class(TMovableObject)
   private
     FMeshObjects: TMeshObjectsList;
+  protected
+    // Пересчет NestingDepth на базе изменений транформаций
+    procedure SetNestingDepth(const Value: integer); override;
   public
     Visible: boolean;
     Culled: boolean;
@@ -3126,6 +3129,15 @@ function TSceneObject.MakeClone(aWithChildren: Boolean): TMovableObject;
 begin
   Result := inherited MakeClone(aWithChildren);
   TSceneObject(Result).FMeshObjects.Assign(FMeshObjects);
+end;
+
+procedure TSceneObject.SetNestingDepth(const Value: integer);
+var i, n: integer;
+begin
+  FNestingDepth := Value;
+  n := Value; if not FWorldMatrixUpdated then Inc(n);
+  for i := 0 to FChilds.Count - 1 do
+    if Assigned(FChilds[i]) then FChilds[i].NestingDepth := n;
 end;
 
 { TAttribList }
