@@ -74,26 +74,6 @@ type
 
   TSourceSemanticDynArray = array of TSourceSemantic;
 
-  TDAESourceRecord = record
-    ID: string;
-    Accessor: record
-      SourceId: string;
-      Count, Offset, Stride: integer;
-      ParamIndex: array of integer; //Skip unnamed index
-    end;
-    Value: TSingleDynArray;
-    procedure Init(aSource: IXMLSource_type);
-  end;
-  PDAESourceRecord = ^TDAESourceRecord;
-
-  TDAESources = class(TDataList<TDAESourceRecord>)
-  private
-    function getSourceById(Id: string): PDAESourceRecord;
-  public
-    function SourceValue(ID: string): TSingleDynArray;
-    property Source[Id: string]: PDAESourceRecord read getSourceById; default;
-  end;
-
   TDAESubMesh = record
     PrimitiveType: TFaceType;
     Attribs: array of record
@@ -112,12 +92,70 @@ type
     procedure Init(aTriStrips: IXMLTriStrips_type); overload;
   end;
 
+  TDAESourceRecord = record
+    ID: string;
+    Accessor: record
+      SourceId: string;
+      Count, Offset, Stride: integer;
+      ParamIndex: array of integer; //Skip unnamed index
+    end;
+    Value: TSingleDynArray;
+    References: array of ^TDAESubMesh;
+    procedure Init(aSource: IXMLSource_type);
+  end;
+  PDAESourceRecord = ^TDAESourceRecord;
+
+  TDAESources = class(TDataList<TDAESourceRecord>)
+  private
+    FSources: IXMLSource_typeList;
+    function getSourceById(Id: string): PDAESourceRecord;
+  public
+    constructor Create(aSources: IXMLSource_typeList);
+    function SourceValue(ID: string): TSingleDynArray;
+    property Source[Id: string]: PDAESourceRecord read getSourceById; default;
+  end;
+
   TDAEMesh = class
   private
     FSources: TDAESources;
     FMesh: IXMLMesh_type;
+    FSubMeshes: TDataList<TDAESubMesh>;
+    procedure AddSubMesh(const sm: TDAESubMesh);
   public
     constructor Create(aMesh: IXMLMesh_type);
+  end;
+
+  procedure TDAEMesh.AddSubMesh(const sm: TDAESubMesh);
+  var i,n,mi: integer;
+      SourceRec: PDAESourceRecord;
+  begin
+    mi := FSubMeshes.Add(sm);
+    for i:=0 to length(sm.Attribs)-1 do begin
+      SourceRec := FSources[sm.Attribs[i].SourceId];
+      if assigned(SourceRec) then begin
+        n:=length(SourceRec.References);
+        setlength(SourceRec.References,n+1);
+        SourceRec.References[n]:=@FSubMeshes[mi];
+      end;
+    end;
+  end;
+
+  constructor TDAEMesh.Create(aMesh: IXMLMesh_type);
+  var i: integer;
+      sm: TDAESubMesh;
+  begin
+    FMesh := aMesh;
+    FSources:=TDAESources.Create(FMesh.Source);
+    FSubMeshes:=TDataList<TDAESubMesh>.Create;
+    for i:=0 to aMesh.Triangles.Count-1 do begin
+      sm.Init(aMesh.Triangles[i]); AddSubMesh(sm);
+    end;
+
+    for i:=0 to aMesh.Lines.Count-1 do begin
+      sm.Init(aMesh.Lines[i]); AddSubMesh(sm);
+    end;
+
+    //Repeat for left primitive types
   end;
 
   procedure TDAESourceRecord.Init(aSource: IXMLSource_type);
@@ -140,6 +178,7 @@ type
     end;
     if length(aSource.Float_array.Content.Value) > 0
     then Value := FloatStringsToSingleDynArray(aSource.Float_array.Content.Value);
+    References := nil;
   end;
 
   function TDAESources.SourceValue(ID: string): TSingleDynArray;
@@ -163,9 +202,15 @@ type
       if Items[i].ID = Id then exit(@Items[i]);
   end;
 
-  constructor TDAEMesh.Create(aMesh: IXMLMesh_type);
+  constructor TDAESources.Create(aSources: IXMLSource_typeList);
+  var i: integer;
+      SourceRec: TDAESourceRecord;
   begin
-    FMesh := aMesh;
+    FSources := aSources;
+    for i:=0 to FSources.Count - 1 do begin
+      SourceRec.Init(FSources[i]);
+      Add(SourceRec);
+    end;
   end;
 
   procedure TDAESubMesh.Init(aTriangles: IXMLTriangles_type);
@@ -180,7 +225,8 @@ type
       Attribs[i].SetIndex:=aTriangles.Input[i].Set_;
     end;
     if length(aTriangles.P.Content.Value)>0 then
-      Indices:=IntStringsToIntegerDynArray(aTriangles.P.Content.Value);
+      Indices:=IntStringsToIntegerDynArray(aTriangles.P.Content.Value)
+    else Indices:=nil;
   end;
 
   procedure TDAESubMesh.Init(aLines: IXMLLines_type);
