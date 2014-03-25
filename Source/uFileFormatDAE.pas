@@ -86,6 +86,40 @@ type
   end;
   PDAESourceRecord = ^TDAESourceRecord;
 
+  TDAESources = class(TDataList<TDAESourceRecord>)
+  private
+    function getSourceById(Id: string): PDAESourceRecord;
+  public
+    function SourceValue(ID: string): TSingleDynArray;
+    property Source[Id: string]: PDAESourceRecord read getSourceById; default;
+  end;
+
+  TDAESubMesh = record
+    PrimitiveType: TFaceType;
+    Attribs: array of record
+      Semantic: string;
+      SourceId: string;
+      Offset: int64;
+      SetIndex: integer;
+    end;
+    Indices: TIntegerDynArray;
+    procedure Init(aTriangles: IXMLTriangles_type); overload;
+    procedure Init(aLines: IXMLLines_type); overload;
+    procedure Init(aLineStrips: IXMLLineStrips_type); overload;
+    procedure Init(aPolygons: IXMLPolygons_type); overload;
+    //procedure Init(aPolyList: IXMLPolyList_type); overload;
+    procedure Init(aTriFans: IXMLTriFans_type); overload;
+    procedure Init(aTriStrips: IXMLTriStrips_type); overload;
+  end;
+
+  TDAEMesh = class
+  private
+    FSources: TDAESources;
+    FMesh: IXMLMesh_type;
+  public
+    constructor Create(aMesh: IXMLMesh_type);
+  end;
+
   procedure TDAESourceRecord.Init(aSource: IXMLSource_type);
   var i,n: integer;
   begin
@@ -104,19 +138,11 @@ type
         Accessor.ParamIndex[n]:=i; inc(n);
       end;
     end;
-    if sizeof(aSource.Float_array.Content.Value) > 0
+    if length(aSource.Float_array.Content.Value) > 0
     then Value := FloatStringsToSingleDynArray(aSource.Float_array.Content.Value);
   end;
 
-  TDAESources = class(TDataList<TDAESource>)
-  private
-    function getSourceById(Id: string): PDAESourceRecord;
-  public
-    function SourceValue(ID: string): TFloatDynArray;
-    property Source[Id: string]: PDAESourceRecord read getSourceById; default;
-  end;
-
-  function TDAESources.SourceValue(ID: string): TFloatDynArray;
+  function TDAESources.SourceValue(ID: string): TSingleDynArray;
   var i: integer;
       sId: string;
       S: PDAESourceRecord;
@@ -127,6 +153,105 @@ type
     for i:=0 to Count-1 do
       if Items[i].Id = sId then
         if assigned(Items[i].Value) then exit(Items[i].Value);
+  end;
+
+  function TDAESources.getSourceById(Id: string): PDAESourceRecord;
+  var i: integer;
+  begin
+    result := nil;
+    for i:=0 to Count-1 do
+      if Items[i].ID = Id then exit(@Items[i]);
+  end;
+
+  constructor TDAEMesh.Create(aMesh: IXMLMesh_type);
+  begin
+    FMesh := aMesh;
+  end;
+
+  procedure TDAESubMesh.Init(aTriangles: IXMLTriangles_type);
+  var i: integer;
+  begin
+    PrimitiveType:=ftTriangles;
+    setlength(Attribs,aTriangles.Input.Count);
+    for i:=0 to aTriangles.Input.Count-1 do begin
+      Attribs[i].Semantic:=aTriangles.Input[i].Semantic;
+      Attribs[i].SourceId:=aTriangles.Input[i].Source;
+      Attribs[i].Offset:=aTriangles.Input[i].Offset;
+      Attribs[i].SetIndex:=aTriangles.Input[i].Set_;
+    end;
+    if length(aTriangles.P.Content.Value)>0 then
+      Indices:=IntStringsToIntegerDynArray(aTriangles.P.Content.Value);
+  end;
+
+  procedure TDAESubMesh.Init(aLines: IXMLLines_type);
+  var i: integer;
+  begin
+    PrimitiveType:=ftLines;
+    setlength(Attribs,aLines.Input.Count);
+    for i:=0 to aLines.Input.Count-1 do begin
+      Attribs[i].Semantic:=aLines.Input[i].Semantic;
+      Attribs[i].SourceId:=aLines.Input[i].Source;
+      Attribs[i].Offset:=aLines.Input[i].Offset;
+      Attribs[i].SetIndex:=aLines.Input[i].Set_;
+    end;
+    if length(aLines.P.Content.Value)>0 then
+      Indices:=IntStringsToIntegerDynArray(aLines.P.Content.Value);
+  end;
+  procedure TDAESubMesh.Init(aLineStrips: IXMLLineStrips_type);
+  var i: integer;
+  begin
+    PrimitiveType:=ftLineStrip;
+    setlength(Attribs,aLineStrips.Input.Count);
+    for i:=0 to aLineStrips.Input.Count-1 do begin
+      Attribs[i].Semantic:=aLineStrips.Input[i].Semantic;
+      Attribs[i].SourceId:=aLineStrips.Input[i].Source;
+      Attribs[i].Offset:=aLineStrips.Input[i].Offset;
+      Attribs[i].SetIndex:=aLineStrips.Input[i].Set_;
+    end;
+    if length(aLineStrips.P.Content.Value)>0 then
+      Indices:=IntStringsToIntegerDynArray(aLineStrips.P.Content.Value);
+  end;
+  procedure TDAESubMesh.Init(aPolygons: IXMLPolygons_type);
+  var i: integer;
+  begin
+    PrimitiveType:=ftTriangles; //pars polygons to triangles
+    setlength(Attribs,aPolygons.Input.Count);
+    for i:=0 to aPolygons.Input.Count-1 do begin
+      Attribs[i].Semantic:=aPolygons.Input[i].Semantic;
+      Attribs[i].SourceId:=aPolygons.Input[i].Source;
+      Attribs[i].Offset:=aPolygons.Input[i].Offset;
+      Attribs[i].SetIndex:=aPolygons.Input[i].Set_;
+    end;
+    //Not completed
+    assert(false, 'parser is not comleted');
+  end;
+  procedure TDAESubMesh.Init(aTriFans: IXMLTriFans_type);
+  var i: integer;
+  begin
+    PrimitiveType:=ftTriangleFan;
+    setlength(Attribs,aTriFans.Input.Count);
+    for i:=0 to aTriFans.Input.Count-1 do begin
+      Attribs[i].Semantic:=aTriFans.Input[i].Semantic;
+      Attribs[i].SourceId:=aTriFans.Input[i].Source;
+      Attribs[i].Offset:=aTriFans.Input[i].Offset;
+      Attribs[i].SetIndex:=aTriFans.Input[i].Set_;
+    end;
+    if length(aTriFans.P.Content.Value)>0 then
+      Indices:=IntStringsToIntegerDynArray(aTriFans.P.Content.Value);
+  end;
+  procedure TDAESubMesh.Init(aTriStrips: IXMLTriStrips_type);
+  var i: integer;
+  begin
+    PrimitiveType:=ftTriangleStrip;
+    setlength(Attribs,aTriStrips.Input.Count);
+    for i:=0 to aTriStrips.Input.Count-1 do begin
+      Attribs[i].Semantic:=aTriStrips.Input[i].Semantic;
+      Attribs[i].SourceId:=aTriStrips.Input[i].Source;
+      Attribs[i].Offset:=aTriStrips.Input[i].Offset;
+      Attribs[i].SetIndex:=aTriStrips.Input[i].Set_;
+    end;
+    if length(aTriStrips.P.Content.Value)>0 then
+      Indices:=IntStringsToIntegerDynArray(aTriStrips.P.Content.Value);
   end;
 
 (*
@@ -304,7 +429,7 @@ end;
 function CreateBufferFromSource(aSource: IXMLSource_type; aId: string): TBufferObject;
 var data: TSingleDynArray;
 begin
-  if sizeof(aSource.Float_array.Content.Value)=0 then exit(nil);
+  if length(aSource.Float_array.Content.Value)=0 then exit(nil);
   result:=TBufferObject.Create;
   result.Name:=aId;
   data:=FloatStringsToSingleDynArray(aSource.Float_array.Content.Value);
@@ -355,7 +480,7 @@ end;
 function TDAEMeshSources.LoadFloatSource(aSource: IXMLSource_type): TDAEVertexSource;
 var j: integer;
 begin
-  assert(sizeof(aSource.Float_array.Content.Value)>0,
+  assert(length(aSource.Float_array.Content.Value)>0,
     #13+#10+'Incorrect source type: '+aSource.Id+#13+#10);
   for j := 0 to aSource.Technique_common.Accessor.Count - 1 do
     Assert(LowerCase(string(aSource.Technique_common.Accessor.Param[j].Type_)) = 'float' );
