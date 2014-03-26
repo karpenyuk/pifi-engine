@@ -41,7 +41,7 @@ layout(std140) uniform Material
 //	mat4 MVP[];
 //} mvpMat;
 
-layout(std430, binding = 1) readonly buffer MVMatrix 
+layout(std140, binding = 1) readonly buffer MVMatrix 
 { 
 	mat4 ModelView[];
 } mvMat;

@@ -165,8 +165,8 @@ var
   V: TVector;
 begin
   pos := VectorFontLibrary.CreatePositionList(strGOST2D, Text, 500, 4);
-//  FontGLMesh.Attribs[1].Buffer.Upload(pos.Data, pos.Size, 0);
-  SymbolOffesetBuffer.Upload(pos.Data, pos.Size, 0);
+  FontGLMesh.Attribs[1].Buffer.Upload(pos.Data, pos.Size, 0);
+//  SymbolOffesetBuffer.Upload(pos.Data, pos.Size, 0);
 
 
   VDA := TVectorDataAccess.Create(FontMap.Data, vtUInt, 2, 2*SizeOf(Integer), 65535);
@@ -281,13 +281,13 @@ begin
 
   VectorFontLibrary.BuildFontFromFile(strGOST2D, path + 'GOST type A.ttf', cChars, 30, 0);
   FontMesh := VectorFontLibrary.CreateFont(strGOST2D, False, False);
-//  SymbolOffesetAttr := TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord1].Name, 2,
-//    vtFloat, 0, btArray);
-//  SymbolOffesetAttr.Buffer.Allocate(510*2*SizeOf(Single), nil);
-//  SymbolOffesetAttr.SetAttribSemantic(atTexCoord1);
-//  FontMesh.AddAttrib(SymbolOffesetAttr, False);
-  SymbolOffesetBuffer := TGLBufferObject.Create(btTexture);
-  SymbolOffesetBuffer.Allocate(510*2*SizeOf(Single), nil);
+  SymbolOffesetAttr := TAttribBuffer.CreateAndSetup(CAttribSematics[atTexCoord1].Name, 2,
+    vtFloat, 0, btArray);
+  SymbolOffesetAttr.Buffer.Allocate(510*2*SizeOf(Single), nil);
+  SymbolOffesetAttr.SetAttribSemantic(atTexCoord1);
+  FontMesh.AddAttrib(SymbolOffesetAttr, False);
+//  SymbolOffesetBuffer := TGLBufferObject.Create(btTexture);
+//  SymbolOffesetBuffer.Allocate(510*2*SizeOf(Single), nil);
 
   FontGLMesh := TGLVertexObject.CreateFrom(FontMesh);
   FontGLMesh.Build(Shader2.Id);
@@ -309,7 +309,7 @@ end;
 procedure TForm5.GLViewer1MouseMove(Sender: TObject; Shift: TShiftState;
   X, Y: Integer);
 begin
-  if Shift = [ssLeft] then
+  if Shift = [Classes.ssLeft] then
   begin
     cameraPos.RotateAround(VecNull, vecY, MY - Y, MX - X);
     View := TMatrix.LookAtMatrix(cameraPos, VecNull, vecY);
@@ -343,18 +343,18 @@ begin
     Shader2.SetUniform('Projection', OrthoProj.Matrix4);
     Shader2.SetUniform('Origin', TVector.Make(0, Height - 60).Vec2);
     glBindVertexArray(FontGLMesh.VAOid);
-//    glVertexAttribDivisor(4, 1);
+    glVertexAttribDivisor(4, 1);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, FontGLMesh.IndiceId);
-    glActiveTexture(GL_TEXTURE11);
-    SymbolOffesetBuffer.BindTexture(GL_RG32F);
+//    glActiveTexture(GL_TEXTURE11);
+//    SymbolOffesetBuffer.BindTexture(GL_RG32F);
     glVertexAttrib3f(3, 1, 1, 1);
-//    if GL_AMD_multi_draw_indirect then // workaround for AMD driver bug
-//    begin
-//      for i := 0 to High(Commands) do
-//        glDrawElementsInstancedBaseInstance(GL_TRIANGLES, Commands[i].count, GL_UNSIGNED_INT,
-//          pointer(Commands[i].firstIndex*SizeOf(GLint)), Commands[i].primCount, Commands[i].baseInstance);
-//    end
-//    else
+    if GL_AMD_multi_draw_indirect then // workaround for AMD driver bug
+    begin
+      for i := 0 to High(Commands) do
+        glDrawElementsInstancedBaseInstance(GL_TRIANGLES, Commands[i].count, GL_UNSIGNED_INT,
+          pointer(Commands[i].firstIndex*SizeOf(GLint)), Commands[i].primCount, Commands[i].baseInstance);
+    end
+    else
       glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, @Commands[0], Length(Commands), 0);
     glBindVertexArray(0);
     Shader2.UnBind;

@@ -278,7 +278,7 @@ end;
 procedure TForm3.GLViewer1MouseMove(Sender: TObject; Shift: TShiftState;
   X, Y: Integer);
 begin
-  if Shift = [ssLeft] then begin
+  if Shift = [Classes.ssLeft] then begin
     CX := X;
     CY := Y;
   end;
