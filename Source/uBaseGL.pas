@@ -281,6 +281,7 @@ Type
     procedure UnBindUBO(const Index: integer; const aUBO: TGLUniformBlock);
 
     property ObjectSize: integer read FObjectSize;
+    property ObjectCount: integer read FObjectsCount;
   end;
 
   TUBOList = class
@@ -3089,6 +3090,7 @@ end;
 
 function TGLBufferObjectsPool.OffsetByIndex(const Index: integer): integer;
 begin
+  Assert(Index < FUsedCount, 'Index value is out of pool');
   if Index < FUsedCount then
     result := Index * FUBOSize
   else
@@ -3104,6 +3106,7 @@ end;
 
 function TGLBufferObjectsPool.GetFreeSlotIndex: integer;
 begin
+//  Assert(FStackTop > -1, 'There no free slot');
   if FStackTop < 0 then
     result := -1
   else

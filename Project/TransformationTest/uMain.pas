@@ -25,7 +25,7 @@ type
     FSceneGraph: TSceneGraph;
     FRender: TBaseRender;
     MX, MY: Integer;
-    FAIs: array[0..11*11-1] of TRobotController;
+    FAIs: array[0..101*101-1] of TRobotController;
   public
     { Public declarations }
     constructor Create;
@@ -234,8 +234,8 @@ begin
 
   FAIs[0]:= TRobotController.Create(Etalon);
   k := 1;
-  for i := -5 to 5 do
-    for j := -5 to 5 do begin
+  for i := -50 to 50 do
+    for j := -50 to 50 do begin
       if (i = 0) and (j = 0) then continue;
       x := i * 15 + 5*(random-0.5);
       z := j * 15 + 5*(random-0.5);

@@ -14,6 +14,9 @@ uses Classes, uVMath, uBaseGL, uBaseClasses, uRenderResource, uBaseRenders,
      uBaseTypes, uLists, uMiscUtils, uGenericsRBTree, uWorldSpace, dglOpenGL,
      uPersistentClasses;
 
+const
+  MAX_OBJECTS_RESERVED = 100000;
+
 Type
 
   TGLResources = class;
@@ -398,6 +401,8 @@ begin
   result:= (aAPI.GAPI = avGL) and (aAPI.Version>=420);
 end;
 
+
+
 procedure TGLRender.PrepareResources(const aScene: TSceneGraph);
 const
   DEFAULT_BASE_TRANSFORM: TBaseTransform = (
@@ -417,20 +422,20 @@ var i, j, noLoadCount, sum: integer;
     Invocation, WorkGroupNum: integer;
     pwtBase, pwt: PWorldTransform;
 
-    procedure DownToTree(anItems: TSceneItemList);
-    var ii: integer;
-    begin
-      for ii:=0 to anItems.Count-1 do begin
-        SceneItem:=anItems[ii];
-        if Assigned(SceneItem) then
-        begin
-          glres := FResourceManager.GetOrCreateResource(SceneItem);
-          // обновляем даные в видеопамяти
-          glres.Update(Self);
-          DownToTree(SceneItem.Childs);
-        end;
+  procedure DownToTree(const anItems: TSceneItemList);
+  var ii: integer;
+  begin
+    for ii:=0 to anItems.Count-1 do begin
+      SceneItem:=anItems[ii];
+      if Assigned(SceneItem) then
+      begin
+        glres := FResourceManager.GetOrCreateResource(SceneItem);
+        // обновляем даные в видеопамяти
+        glres.Update(Self);
+        DownToTree(SceneItem.Childs);
       end;
     end;
+  end;
 
 begin
   inherited;
@@ -443,12 +448,12 @@ begin
     FCameraPool := TGLBufferObjectsPool.Create(SizeOf(TCameraTransform), 8);
 
   if not Assigned(FObjectPool) then begin
-    FObjectPool := TGLBufferObjectsPool.Create(SizeOf(TWorldTransform), 2000);
+    FObjectPool := TGLBufferObjectsPool.Create(SizeOf(TWorldTransform), MAX_OBJECTS_RESERVED);
     // Делаем резерв в пуле на случай когда количество изменений меньше количества нитей
     // Количество нитей 32, в случае одного объекта нужно 31 слот для холостых записей
     for i := 1 to 31 do FObjectPool.GetFreeSlotIndex;
     pwtBase := FObjectPool.Buffer.Map(GL_WRITE_ONLY);
-    for i := 0 to 1999 do begin
+    for i := 0 to FObjectPool.ObjectCount - 1 do begin
       pwtBase.world := MatIdentity;
       pwtBase.invWorld := MatIdentity;
       pwtBase.worldNormal := MatIdentity;
@@ -472,7 +477,7 @@ begin
     FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(TMaterialProp), 100);
 
   if not Assigned(FBaseTfPool) then begin
-    FBaseTfPool := TGLBufferObjectsPool.Create(SizeOf(TBaseTransform), 2000);
+    FBaseTfPool := TGLBufferObjectsPool.Create(SizeOf(TBaseTransform), MAX_OBJECTS_RESERVED);
     // Делаем резер в пуле на случай когда количество изменений меньше количества нитей
     i := FBaseTfPool.GetFreeSlotIndex;
     FBaseTfPool.WriteToPool(i, @DEFAULT_BASE_TRANSFORM);
@@ -487,7 +492,7 @@ begin
 
   if not Assigned(FObjectIndices) then begin
     FObjectIndices := TGLBufferObject.Create(btShaderStorage);
-    FObjectIndices.Allocate(2048*SizeOf(Vec4i), nil);
+    FObjectIndices.Allocate(MAX_OBJECTS_RESERVED*SizeOf(Vec4i), nil);
   end;
 
   //создаем ресурсы для всех камер сцены
@@ -556,7 +561,7 @@ begin
       end;
     end;
 
-    Assert(sum < 2048);
+    Assert(sum < MAX_OBJECTS_RESERVED);
 
     if p <> nil then FObjectIndices.UnMap;
 
