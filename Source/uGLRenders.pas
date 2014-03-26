@@ -233,8 +233,9 @@ Type
     FObjectIndices: TGLBufferObject;
 
     FMatrixMultiplier: TGLSLShaderProgram;
-    FHierarchyLevels: array of TObjectList;
+    FInvocationGroups: array of TObjectList;
     FComputeTfByShader: boolean;
+    FMaxWorkGroupSize: integer;
 
     FDrawCommands: TDrawCommandList;
   protected
@@ -361,9 +362,9 @@ begin
   FBaseTfPool := nil;
   FObjectIndices := nil;
   FDrawCommands := TDrawCommandList.Create;
-  SetLength(FHierarchyLevels, 3);
-  for i := 0 to High(FHierarchyLevels) do
-    FHierarchyLevels[i] := TObjectList.Create;
+  SetLength(FInvocationGroups, 3);
+  for i := 0 to High(FInvocationGroups) do
+    FInvocationGroups[i] := TObjectList.Create;
 end;
 
 destructor TGLRender.Destroy;
@@ -381,8 +382,8 @@ begin
 
   if assigned(FResourceManager) then FResourceManager.Free;
   FDrawCommands.Free;
-  for i := 0 to High(FHierarchyLevels) do
-    FHierarchyLevels[i].Free;
+  for i := 0 to High(FInvocationGroups) do
+    FInvocationGroups[i].Free;
   inherited;
 end;
 
@@ -390,10 +391,10 @@ procedure TGLRender.ExpandHierarchyLevels(const amount: integer);
 var
   i, j: integer;
 begin
-  i := Length(FHierarchyLevels);
-  SetLength(FHierarchyLevels, i + amount + 1);
-  for j := i to High(FHierarchyLevels) do
-    FHierarchyLevels[j] := TObjectList.Create;
+  i := Length(FInvocationGroups);
+  SetLength(FInvocationGroups, i + amount + 1);
+  for j := i to High(FInvocationGroups) do
+    FInvocationGroups[j] := TObjectList.Create;
 end;
 
 function TGLRender.isSupported(const aAPI: TApiVersion): boolean;
@@ -421,6 +422,8 @@ var i, j, noLoadCount, sum: integer;
     glMovable: TGLMovableObject;
     Invocation, WorkGroupNum: integer;
     pwtBase, pwt: PWorldTransform;
+    WorkGroupSizeX: Integer;
+    WorkGroupSizeY: Integer;
 
   procedure DownToTree(const anItems: TSceneItemList);
   var ii: integer;
@@ -488,6 +491,7 @@ begin
     FMatrixMultiplier := TGLSLShaderProgram(glres);
     FMatrixMultiplier.LinkShader;
     FComputeTfByShader := FMatrixMultiplier.IsLinked;
+    glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, @FMaxWorkGroupSize);
   end;
 
   if not Assigned(FObjectIndices) then begin
@@ -529,18 +533,18 @@ begin
 
   //создаем ресурсы для всех объектов сцены
   FCurrentCamera := aScene.Camera;
-  for i := 0 to High(FHierarchyLevels) do FHierarchyLevels[i].Flush;
+  for i := 0 to High(FInvocationGroups) do FInvocationGroups[i].Flush;
   DownToTree(aScene.Root.Childs);
 
   if ComputeTransformByShader then begin
     sum := 0;
     p := nil;
 
-    for i := 0 to High(FHierarchyLevels) do begin
-      if FHierarchyLevels[i].Count > 0 then begin
+    for i := 0 to High(FInvocationGroups) do begin
+      if FInvocationGroups[i].Count > 0 then begin
         if p = nil then p := FObjectIndices.Map(GL_WRITE_ONLY);
-        for j := 0 to FHierarchyLevels[i].Count - 1 do begin
-          glMovable := TGLMovableObject(FHierarchyLevels[i].Items[j]);
+        for j := 0 to FInvocationGroups[i].Count - 1 do begin
+          glMovable := TGLMovableObject(FInvocationGroups[i].Items[j]);
           p[0] := glMovable.FBaseTfPoolIndex;
           p[1] := glMovable.FParentObjectPoolIndex;
           p[2] := glMovable.FObjectPoolIndex;
@@ -548,7 +552,7 @@ begin
           Inc(sum);
         end;
         // Холостые вычисления чтобы дополнить группу нитями кратно 32
-        noLoadCount := FHierarchyLevels[i].Count mod 32;
+        noLoadCount := FInvocationGroups[i].Count mod 32;
         if noLoadCount > 0 then begin
           for j := 0 to 31 - noLoadCount do begin
             p[0] := 0;
@@ -573,20 +577,22 @@ begin
 
       FMatrixMultiplier.Bind;
       Invocation := 0;
-      for i := 0 to High(FHierarchyLevels) do begin
-        if FHierarchyLevels[i].Count > 0 then begin
-          WorkGroupNum := FHierarchyLevels[i].Count div 32 + 1;
+      for i := 0 to High(FInvocationGroups) do begin
+        if FInvocationGroups[i].Count > 0 then begin
+          WorkGroupNum := FInvocationGroups[i].Count div 32;
+          WorkGroupSizeX := WorkGroupNum mod FMaxWorkGroupSize;
+          WorkGroupSizeY := WorkGroupNum div FMaxWorkGroupSize;
           FMatrixMultiplier.SetUniform('Invocation', Invocation);
-          glDispatchCompute(WorkGroupNum, 1, 1);
-          Inc(Invocation, WorkGroupNum);
+          glDispatchCompute(WorkGroupSizeX+1, WorkGroupSizeY+1, 1);
+          Inc(Invocation, WorkGroupNum+1);
         end;
       end;
       glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT or GL_BUFFER_UPDATE_BARRIER_BIT);
 
       pwtBase := FObjectPool.Buffer.Map(GL_READ_ONLY);
-      for i := 0 to High(FHierarchyLevels) do begin
-        for j := 0 to FHierarchyLevels[i].Count - 1 do begin
-          glMovable := TGLMovableObject(FHierarchyLevels[i].Items[j]);
+      for i := 0 to High(FInvocationGroups) do begin
+        for j := 0 to FInvocationGroups[i].Count - 1 do begin
+          glMovable := TGLMovableObject(FInvocationGroups[i].Items[j]);
           pwt := pwtBase;
           Inc(pwt, glMovable.FObjectPoolIndex);
           glMovable.FMovableObject.UpdateWorldMatrix(
@@ -1815,9 +1821,9 @@ begin
       FObjectPoolIndex := glRender.FObjectPool.GetFreeSlotIndex();
 
     if glRender.ComputeTransformByShader then begin
-      i := High(glRender.FHierarchyLevels);
+      i := High(glRender.FInvocationGroups);
       if i < FMovableObject.NestingDepth then glRender.ExpandHierarchyLevels(FMovableObject.NestingDepth - i);
-      glRender.FHierarchyLevels[FMovableObject.NestingDepth].Add(Self);
+      glRender.FInvocationGroups[FMovableObject.NestingDepth].Add(Self);
 
       if FBaseTfPoolIndex < 0 then
         FBaseTfPoolIndex := glRender.FBaseTfPool.GetFreeSlotIndex();

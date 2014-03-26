@@ -274,7 +274,7 @@ function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
 implementation
 
 uses
-  Math, uMath;
+  Math, uMath, uStorage;
 
 function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
 begin
@@ -315,6 +315,7 @@ var
 begin
   ctype := TMovableObjectClass(ClassType);
   clone := TMovableObject(ctype.Create);
+  Storage.PutResource(clone);
   clone.FDirBehavior := FDirBehavior;
   clone.FRollAngle := FRollAngle;
   clone.FTurnAngle := FTurnAngle;

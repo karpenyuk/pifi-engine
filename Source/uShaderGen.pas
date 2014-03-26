@@ -538,7 +538,7 @@ SG_STRUCT_WORLD_TRANSFORM +
 'uniform int Invocation;'#10#13+
 
 'void main(void) {'#10#13+
-'	 uint thread = (Invocation + gl_WorkGroupID.x) * 32 + gl_LocalInvocationID.x;'#10#13+
+'	 uint thread = gl_WorkGroupID.y * gl_WorkGroupSize.x + (Invocation + gl_WorkGroupID.x) * 32 + gl_LocalInvocationID.x;'#10#13+
 '  ivec4 Id = Indices.Idx[thread];'#10#13+
 '	 mat4 srp = IN.objectBase[Id.x].translation * IN.objectBase[Id.x].rotation * IN.objectBase[Id.x].scale;'#10#13+
 '  mat4 pm = Parent.parentWorld[Id.y].pivot;'#10#13+

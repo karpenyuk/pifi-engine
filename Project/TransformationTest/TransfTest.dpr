@@ -75,10 +75,12 @@ begin
     end;
   end;
   glwnd.Free;
+  Demo.Free;
   result := msg.wParam;
 end;
 
 begin
+  ReportMemoryLeaksOnShutdown := true;
   try
     InitOpenGL;
     WinMain(hInstance);
