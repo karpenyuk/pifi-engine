@@ -21,7 +21,7 @@ type
     type
       TKeyCompareFunc = function(const Item1, Item2: TKey): Integer;
       TValueCompareFunc = function(const Item1, Item2: TValue): Boolean;
-      TForEachProc = procedure (AKey: TKey; AValue: TValue; out AContinue: Boolean);
+      TForEachProc = procedure (AKey: TKey; AValue: TValue; aData: Pointer; out AContinue: Boolean);
     { Private Declarations }
        TRBNode = class
        public
@@ -67,7 +67,7 @@ type
     function NextDublicate(out Value: TValue): Boolean;
     procedure Add(const key: TKey; const Value: TValue);
     procedure Delete(const key: TKey);
-    procedure ForEach(AProc: TForEachProc);
+    procedure ForEach(AProc: TForEachProc; aData: Pointer = nil);
     property Count: Integer read FCount;
     property First: TKey read GetFirst;
     property Last: TKey read GetLast;
@@ -541,7 +541,7 @@ begin
   else result := TKey(nil);
 end;
 
-procedure GRedBlackTree< TKey, TValue >.ForEach(AProc: TForEachProc);
+procedure GRedBlackTree< TKey, TValue >.ForEach(AProc: TForEachProc; aData: Pointer);
 var
   x, y, z: TRBNode;
   cont: Boolean;
@@ -551,7 +551,7 @@ begin
     repeat
       z := x;
       repeat
-        AProc(z.Key, z.Value, cont);
+        AProc(z.Key, z.Value, aData, cont);
         if not cont then exit;
         z := z.Twin;
       until z = nil;
@@ -573,7 +573,7 @@ begin
         x := FRoot;
     until x = FRightMost;
     if cont and (FLeftMost <> FRightMost) then
-      AProc(FRightMost.Key, FRightMost.Value, cont);
+      AProc(FRightMost.Key, FRightMost.Value, aData, cont);
   end;
 end;
 
