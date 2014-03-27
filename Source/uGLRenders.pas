@@ -45,7 +45,7 @@ Type
   protected
     FUniform: TBaseBuiltinUniform;
   public
-    constructor CreateFrom(aOwner: TGLResources; anUniform: TBaseBuiltinUniform); virtual;
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
   end;
 
   TGLUniformLightNumber = class(TGLBuiltinUniform)
@@ -57,7 +57,7 @@ Type
   private
     FBuiltinUniforms: TObjectList;
   public
-    constructor CreateFrom(aOwner: TGLResources; const aShaderProgram: TShaderProgram); overload;
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
 
     procedure Apply(aRender: TBaseRender); overload; override;
@@ -68,7 +68,7 @@ Type
     FFrameBuffer: TFrameBuffer;
     FStructureChanged: Boolean;
   public
-    constructor CreateFrom(aOwner: TGLResources; const aFrameBuffer: TFrameBuffer);
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
     procedure Update(aRender: TBaseRender); override;
@@ -86,7 +86,7 @@ Type
     procedure Apply(aRender: TBaseRender); override;
     procedure UnApply(aRender: TBaseRender); override;
 
-    constructor CreateFrom(aOwner: TGLResources; const aCamera: TSceneCamera);
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
   end;
 
@@ -105,7 +105,7 @@ Type
     procedure Apply(aRender: TBaseRender); override;
     procedure UnApply(aRender: TBaseRender); override;
 
-    constructor CreateFrom(aOwner: TGLResources; const aMat: TMaterialObject);
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
   end;
 
@@ -115,7 +115,7 @@ Type
     FVertexObject: TGLVertexObject;
     FMaterialObject: TGLMaterial;
   public
-    constructor CreateFrom(aOwner: TGLResources; aMesh: TMesh);
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
 
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
@@ -133,11 +133,11 @@ Type
     FLods: array of array of TMeshState;
     FOccluder: array of TGLMesh;
   public
-    constructor CreateFrom(aOwner: TGLResources; aMeshObject: TMeshObject);
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
   end;
 
   TGLMovableObject = class (TGLBaseResource)
-  private
+  protected
     FMovableObject: TMovableObject;
     FBaseTfPoolIndex: integer;
     FParentObjectPoolIndex: integer;
@@ -152,7 +152,7 @@ Type
     FSceneObject: TSceneObject;
     FMeshObjects: array of TGLMeshObject;
   public
-    constructor CreateFrom(aOwner: TGLResources; aSceneObject: TSceneObject);
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
@@ -168,19 +168,18 @@ Type
   public
     LightSphereRadius: single;
 
-    constructor CreateFrom(aOwner: TGLResources; const aLight: TLightSource);
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     procedure Update(aRender: TBaseRender); override;
   end;
 
-  TGLStaticRender = class (TBaseSubRender)
+  TGLSceneObjectRender = class (TBaseSubRender)
   private
     function getRender: TGLRender;
   public
-    function isSupported(const aClassType: TClass): boolean; override;
-    procedure ProcessResource(const Resource: TBaseRenderResource); override;
+    procedure ProcessResource(aResource: TBaseGraphicResource); override;
 
     class procedure RenderVertexObject(
       const aVertexObject: TGLVertexObject;
@@ -196,8 +195,7 @@ Type
 
   TGLResources = class (TBaseSubRender)
   private
-    FResList: array of TResourceTree;
-    FInnerResource: TResourceTree;
+    FResources: TResourceTree;
     function GetResource(const Resource: TBaseRenderResource): TGLBaseResource;
     function CreateResource(const Resource: TBaseRenderResource): TGLBaseResource;
 
@@ -207,9 +205,9 @@ Type
     function GetOrCreateResource(const Resource: TBaseRenderResource): TGLBaseResource;
     procedure FreeResource(const Resource: TBaseRenderResource);
     procedure RemoveGLResource(const Resource: TBaseRenderResource);
-    procedure ProcessResource(const Res: TBaseRenderResource); override;
+    procedure ProcessResource(aResource: TBaseGraphicResource); override;
 
-    constructor CreateOwned(aRender: TBaseRender); override;
+    constructor CreateOwned(aOwner: TObject = nil); override;
     destructor Destroy; override;
   end;
 
@@ -243,26 +241,24 @@ Type
 
     procedure PrepareResources(const aScene: TSceneGraph);
     procedure UploadResource(const Res: TBaseRenderResource); override;
-    procedure ProcessResource(const Res: TBaseRenderResource); override;
-    procedure ApplyLights(aLights: TObjectList);
+    procedure ProcessResource(const aResource: TBaseRenderResource); override;
     procedure ExpandHierarchyLevels(const amount: integer);
-//    procedure ProcessMeshObjects(const aMeshObjects: TMeshObjectsList); override;
   public
     constructor Create; override;
     destructor Destroy; override;
 
-    function isSupported(const aAPI: TApiVersion): boolean; override;
+    function IsSupported(const aAPI: TApiVersion): boolean; override;
 
-    procedure UpdateTransform(const MovableObject: TMovableObject;
-      UseMatrix: TTransforms = ALL_TRANSFORM); override;
     function CheckVisibility(const aFrustum: TFrustum;
       const aExtents: TExtents): boolean; override;
     procedure ProcessScene(const aScene: TSceneGraph); override;
 
     procedure BindCameraBuffer(aPoolIndex: integer);
     procedure BindObjectBuffer(aPoolIndex: integer);
+    procedure ApplyLights(aLights: TObjectList);
     property ComputeTransformByShader: boolean read FComputeTfByShader;
 
+    property ResourceManager: TGLResources read FResourceManager;
     property CameraPool: TGLBufferObjectsPool read FCameraPool;
     property ObjectPool: TGLBufferObjectsPool read FObjectPool;
     property LightPool: TGLBufferObjectsPool read FLightPool;
@@ -287,7 +283,7 @@ Type
     texv,texh: TTexture;
 
   public
-    constructor CreateFrom(aOwner: TGLResources; aEffect: TBaseRenderResource);
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
 
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
@@ -352,7 +348,7 @@ var
   i: integer;
 begin
   inherited;
-  RegisterSubRender(TGLStaticRender.CreateOwned(Self));
+  RegisterSubRender(TGLSceneObjectRender.CreateOwned(Self));
   FResourceManager:=TGLResources.CreateOwned(Self);
   FCameraPool := nil;
   FObjectPool := nil;
@@ -522,15 +518,6 @@ begin
     if assigned(glRes) then glres.Update(Self);
   end;
 
-  //создаем ресурсы для всех источников света сцены
-  // ПЕРЕНЕСЕНО В DownToTree
-//  for i:= 0 to aScene.LightsCount - 1 do begin
-//    res:=aScene.Lights[i];
-//    glres := FResourceManager.GetOrCreateResource(res);
-//    // обновляем даные в видеопамяти
-//    if assigned(glRes) then glres.Update(Self);
-//  end;
-
   //создаем ресурсы для всех объектов сцены
   FCurrentCamera := aScene.Camera;
   for i := 0 to High(FInvocationGroups) do FInvocationGroups[i].Flush;
@@ -613,18 +600,22 @@ begin
   FLightPool.Buffer.BindTexture;
 end;
 
-procedure TGLRender.ProcessResource(const Res: TBaseRenderResource);
+procedure TGLRender.ProcessResource(const aResource: TBaseRenderResource);
 var i: integer;
     Render: TBaseSubRender;
+    grRes: TBaseGraphicResource;
 begin
-  if not assigned(Res) then exit;
-
+  grRes := ResourceManager.GetResource(aResource);
+  if not Assigned(grRes) then exit;
 
   for i:=0 to FRegisteredSubRenders.Count-1 do begin
     render:=TBaseSubRender(FRegisteredSubRenders[i]);
     { TODO : Реализовать выбор "наилучшего" из зарегистрированных рендеров }
-    if render.isSupported(Res.ClassType) then begin
-       render.ProcessResource(res); exit;
+    if render.IsSupported(
+      TRenderResourceClass(aResource.ClassType),
+      TGraphicResourceClass(grRes.ClassType)) then begin
+       render.ProcessResource(grRes);
+       exit;
     end;
   end;
 end;
@@ -647,8 +638,7 @@ var i, j: integer;
         if Assigned(SceneItem) then
         begin
           if SceneItem is TSceneObject then FCurrentSceneObject := SceneItem as TSceneObject;
-          glRes := FResourceManager.GetResource(SceneItem);
-          ProcessResource(glRes);
+          ProcessResource(SceneItem);
           DownToTree(SceneItem.Childs);
         end;
       end;
@@ -710,12 +700,6 @@ begin
   end;
 end;
 
-procedure TGLRender.UpdateTransform(const MovableObject: TMovableObject;
-      UseMatrix: TTransforms = ALL_TRANSFORM);
-begin
-  inherited UpdateTransform(MovableObject, UseMatrix);
-end;
-
 procedure TGLRender.UploadResource(const Res: TBaseRenderResource);
 begin
   inherited;
@@ -723,59 +707,51 @@ end;
 
 { TGLStaticRender }
 
-constructor TGLStaticRender.Create;
+constructor TGLSceneObjectRender.Create;
 begin
   inherited Create;
+  FSupportedResources.Add(TSceneObject, TGLSceneObject);
 end;
 
 
-function TGLStaticRender.getRender: TGLRender;
+function TGLSceneObjectRender.getRender: TGLRender;
 begin
   Result := TGLRender(Owner);
 end;
 
-function TGLStaticRender.isSupported(const aClassType: TClass): boolean;
-begin
-  //можем рендерить только GL объекты сцены
-  result:=aClassType = TGLSceneObject;
-end;
-
-procedure TGLStaticRender.ProcessResource(const Resource: TBaseRenderResource);
+procedure TGLSceneObjectRender.ProcessResource(aResource: TBaseGraphicResource);
 var i,j: integer;
     MeshObject: TGLMeshObject;
     Mesh: TGLMesh;
-    SceneObject: TGLSceneObject absolute Resource;
+    SceneObject: TGLSceneObject absolute aResource;
     DrawCommand: TDrawCommand;
 begin
-  if Resource.ClassType = TGLSceneObject then
-  begin
-    SceneObject.Apply(Render);
-    //рендерим объект сцены с применением материалов
-    for i:=0 to length(SceneObject.FMeshObjects)-1 do begin
-      MeshObject:=SceneObject.FMeshObjects[i];
-      for j:=0 to length(MeshObject.FLods[0])-1 do begin
-        Mesh := MeshObject.FLods[0,j].Mesh;
-        DrawCommand.mesh := Mesh;
-        case SceneObject.FSceneObject.DirectionBehavior of
-          dbNone: begin
-            if MeshObject.FLods[0,j].IsIdentity
-              then DrawCommand.worldTransfMethod := wtmDefault
-              else begin
-                DrawCommand.worldTransfMethod := wtmInstance;
-                DrawCommand.instanceMatrix := MeshObject.FMeshObject.Mesh.GetMatrixAddr(j);
-              end;
-          end;
-          dbSphericalSprite: DrawCommand.worldTransfMethod := wtmSphere;
-          dbCylindricalSprite: DrawCommand.worldTransfMethod := wtmCylindr;
+  SceneObject.Apply(Render);
+  //рендерим объект сцены с применением материалов
+  for i:=0 to length(SceneObject.FMeshObjects)-1 do begin
+    MeshObject:=SceneObject.FMeshObjects[i];
+    for j:=0 to length(MeshObject.FLods[0])-1 do begin
+      Mesh := MeshObject.FLods[0,j].Mesh;
+      DrawCommand.mesh := Mesh;
+      case SceneObject.FSceneObject.DirectionBehavior of
+        dbNone: begin
+          if MeshObject.FLods[0,j].IsIdentity
+            then DrawCommand.worldTransfMethod := wtmDefault
+            else begin
+              DrawCommand.worldTransfMethod := wtmInstance;
+              DrawCommand.instanceMatrix := MeshObject.FMeshObject.Mesh.GetMatrixAddr(j);
+            end;
         end;
-        DrawCommand.objectIndex := SceneObject.FObjectPoolIndex;
-        Render.FDrawCommands.Add(DrawCommand);
+        dbSphericalSprite: DrawCommand.worldTransfMethod := wtmSphere;
+        dbCylindricalSprite: DrawCommand.worldTransfMethod := wtmCylindr;
       end;
+      DrawCommand.objectIndex := SceneObject.FObjectPoolIndex;
+      Render.FDrawCommands.Add(DrawCommand);
     end;
   end;
 end;
 
-class procedure TGLStaticRender.RenderVertexObject(
+class procedure TGLSceneObjectRender.RenderVertexObject(
   const aVertexObject: TGLVertexObject;
   aShaderUsageLogic: TShaderUsageLogic;
   aShaderUsagePriority: TShaderUsagePriority);
@@ -836,179 +812,100 @@ end;
 
 { TGLResources }
 
-constructor TGLResources.CreateOwned(aRender: TBaseRender);
-var i: integer;
+function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
 begin
-  inherited CreateOwned(aRender);
+  if Item1.Order < Item2.Order then
+    exit(-1)
+  else if (Item1.Order = Item2.Order) then
+    exit(0)
+  else
+    Result := 1;
+end;
+
+constructor TGLResources.CreateOwned(aOwner: TObject);
+begin
+  inherited CreateOwned(aOwner);
   FSupportedResources.Clear;
-  //Registering supported resources
+  // Registering supported resources
 
-  //Main resource
-  FSupportedResources.Add(TShaderProgram);
-  FSupportedResources.Add(TVertexObject);
+  FSupportedResources.Add(TShaderProgram, TGLSLShaderProgramExt);
+  FSupportedResources.Add(TVertexObject, TGLVertexObject);
 
-  FSupportedResources.Add(TMeshObject);
-  FSupportedResources.Add(TMaterialObject);
-  FSupportedResources.Add(TLightSource);
-  FSupportedResources.Add(TSceneObject);
+  FSupportedResources.Add(TMeshObject, TGLMeshObject);
+  FSupportedResources.Add(TMaterialObject, TGLMaterial);
+  FSupportedResources.Add(TLightSource, TGLLight);
+  FSupportedResources.Add(TSceneObject, TGLSceneObject);
 
-  //Inner resources
-{ TODO : Объекты TBufferObject и TAttibObject так же нужно выбирать из коллекций }
-  FSupportedResources.Add(TBufferObject);
-  FSupportedResources.Add(TAttribObject);
-  FSupportedResources.Add(TTexture);
-  FSupportedResources.Add(TMesh);
-  FSupportedResources.Add(TBuiltinUniformLightNumber);
-  FSupportedResources.Add(TTextureSampler);
-  FSupportedResources.Add(TFrameBuffer);
-  FSupportedResources.Add(TSceneCamera);
-  FSupportedResources.Add(TGlowPipelineEffect);
+  { TODO : Объекты TBufferObject и TAttibObject так же нужно выбирать из коллекций }
+  FSupportedResources.Add(TBufferObject, TGLBufferObject);
+  FSupportedResources.Add(TAttribObject, TGLAttribObject);
+  FSupportedResources.Add(TTexture, TGLTextureObject);
+  FSupportedResources.Add(TMesh, TGLMesh);
+  FSupportedResources.Add(TBuiltinUniformLightNumber, TGLBuiltinUniform);
+  FSupportedResources.Add(TTextureSampler, TGLTextureSampler);
+  FSupportedResources.Add(TFrameBuffer, TGLFrameBufferObjectExt);
+  FSupportedResources.Add(TSceneCamera, TGLCamera);
+  FSupportedResources.Add(TGlowPipelineEffect, TGLGlowEffect);
 
-  //Resource Tree for each of resource type, exclude inner resource
-  setlength(FResList,FSupportedResources.Count - 5);
-  for i := 0 to length(FResList)-1 do
-    FResList[i]:= TResourceTree.Create(ResourceComparer, nil);
-  //Inner resource list: TBufferObject, TAttribObject, TTexture, TMesh
-  FInnerResource:=TResourceTree.Create(ResourceComparer, nil);
-
+  FResources := TResourceTree.Create(ResourceComparer, nil);
 end;
 
 function TGLResources.CreateResource(const Resource: TBaseRenderResource): TGLBaseResource;
-var glres: TGLBaseResource;
+var
+  grClass: TGraphicResourceClass;
 begin
-  glres:=nil;
+  if FSupportedResources.Find(TRenderResourceClass(Resource.ClassType), grClass)
+    then Result := TGLBaseResourceClass(grClass).CreateFrom(Self, Resource)
+    else Result := nil;
+end;
 
-  //Create new GLResources
-
-  if Resource.ClassType = TShaderProgram then
-    glres:=TGLSLShaderProgramExt.CreateFrom(Self, Resource as TShaderProgram)
-  else if Resource.ClassType = TVertexObject then
-    glres:=TGLVertexObject.CreateFrom(Resource as TVertexObject)
-  else if Resource.ClassType = TMesh then
-    glres:=TGLMesh.CreateFrom(self, Resource as TMesh)
-  else if Resource.ClassType = TMeshObject then
-    glres:=TGLMeshObject.CreateFrom(self, Resource as TMeshObject)
-  else if Resource.ClassType = TSceneObject then
-    glres:=TGLSceneObject.CreateFrom(self, Resource as TSceneObject)
-  else if Resource.ClassType = TBuiltinUniformLightNumber then
-    glres:=TGLUniformLightNumber.CreateFrom(self, Resource as TBaseBuiltinUniform)
-  else if Resource.ClassType = TMaterialObject then
-    glres:=TGLMaterial.CreateFrom(self, Resource as TMaterialObject)
-  else if Resource.ClassType = TLightSource then
-    glres:=TGLLight.CreateFrom(self, Resource as TLightSource)
-  else if Resource.ClassType = TTexture then
-    glres:=TGLTextureObject.CreateFrom(Resource as TTexture)
-  else if Resource.ClassType = TTextureSampler then
-    glres:=TGLTextureSampler.CreateFrom(Resource as TTextureSampler)
-  else if Resource.ClassType = TFrameBuffer then
-    glres:=TGLFrameBufferObjectExt.CreateFrom(Self, Resource as TFrameBuffer)
-  else if Resource.ClassType = TSceneCamera then
-    glres:=TGLCamera.CreateFrom(Self, Resource as TSceneCamera)
-  else if Resource.ClassType = TGlowPipelineEffect then
-    glres:=TGLGlowEffect.CreateFrom(Self, Resource as TGlowPipelineEffect);
-
-  result := glres;
+procedure ResourceDestroyer(AKey: TBaseRenderResource; AValue: TGLBaseResource;
+  aData: Pointer; out AContinue: Boolean);
+begin
+  if AValue.Owner = aData then AValue.Free;
+  AContinue := true;
 end;
 
 destructor TGLResources.Destroy;
-var i, j: integer;
-    res: TBaseRenderResource;
-    glres: TGLBaseResource;
 begin
-  for i := 0 to length(FResList)-1 do begin
-    if FResList[i].Count > 0 then begin
-      res:=FResList[i].First;
-      if assigned(res) then begin
-        if FResList[i].Find(res, glres)then begin
-          if glres.Owner=self then glres.Free;
-        end;
-        for j := 1 to FResList[i].Count - 1 do
-          if FResList[i].NextKey(res, glres) and (glres.Owner=self) then glres.Free;
-      end;
-    end;
-    FResList[i].Free;
-  end;
-  res:=FInnerResource.First;
-  if assigned(res) then begin
-    FInnerResource.Find(res, glres);
-    if glres.Owner=self then glres.Free;
-    for j := 1 to FInnerResource.Count - 1 do
-      if FInnerResource.NextKey(res, glres) and (glres.Owner=self ) then glres.Free;
-  end;
-  FInnerResource.Free;
+  FResources.ForEach(ResourceDestroyer, Self);
+  FResources.Free;
   inherited;
 end;
 
 procedure TGLResources.FreeResource(const Resource: TBaseRenderResource);
-var idx: integer;
-    glres: TGLBaseResource;
+var glres: TGLBaseResource;
 begin
-  if not assigned(Resource) then exit;
-
-
-  idx:=FSupportedResources.IndexOf(Resource.ClassType);
-  if idx <0 then exit;
-
-  //Resource exists?
-  if Resource.IsInner then begin
-    if FInnerResource.Find(Resource, glres) then begin
-      glres.UnSubscribe(Self);
-      UnSubscribe(glres);
-      FInnerResource.Delete(Resource);
-      FreeAndNil(glRes);
-    end;
-  end else if FResList[idx].Find(Resource, glres) then begin
-      glres.UnSubscribe(Self);
-      UnSubscribe(glres);
-      FResList[idx].Delete(Resource);
-      FreeAndNil(glRes);
+  if Assigned(Resource) and FResources.Find(Resource, glres) then begin
+    glres.UnSubscribe(Self);
+    UnSubscribe(glres);
+    FResources.Delete(Resource);
+    FreeAndNil(glRes);
   end;
 end;
 
 function TGLResources.GetOrCreateResource(
   const Resource: TBaseRenderResource): TGLBaseResource;
-var idx: integer;
-    glres: TGLBaseResource;
 begin
-  inherited;
   if not assigned(Resource) then exit(nil);
 
-  idx:=FSupportedResources.IndexOf(Resource.ClassType);
-  if idx < 0 then begin result:=nil; exit; end;
-  //assert(idx>=0,'Unsupported resource: "'+Resource.ClassName+'"!');
-
-  result:=GetResource(Resource); if assigned(result) then exit;
-  AttachResource(Resource);
-  glres:=CreateResource(Resource);;
-
-  if assigned(glres) then begin
-    if Resource.IsInner then
-      FInnerResource.Add(Resource, glres)
-    else
-      FResList[idx].Add(Resource, glres);
-
-    glres.Owner:=self;
+  result := GetResource(Resource);
+  if Assigned(result) then exit;
+  Result := CreateResource(Resource);
+  if Assigned(Result) then begin
+    AttachResource(Resource);
+    FResources.Add(Resource, Result);
+    Result.Owner:=self;
     Resource.Subscribe(self);
-    glres.Subscribe(Self);
-    Subscribe(glres);
+    Result.Subscribe(Self);
+    Subscribe(Result);
   end;
-  result := glres;
 end;
 
 function TGLResources.GetResource(
   const Resource: TBaseRenderResource): TGLBaseResource;
-var idx: integer;
-    glres: TGLBaseResource;
 begin
-  inherited;
-  result:=nil; idx:=FSupportedResources.IndexOf(Resource.ClassType);
-  if idx < 0 then exit;
-
-  if Resource.IsInner then begin
-    if FInnerResource.Find(Resource, glres) then exit(glres);
-  end else begin
-    if FResList[idx].Find(Resource, glres) then exit(glres);
-  end;
+  if not FResources.Find(Resource, Result) then Result := nil;
 end;
 
 procedure TGLResources.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
@@ -1026,42 +923,35 @@ begin
   end;
 end;
 
-procedure TGLResources.ProcessResource(const Res: TBaseRenderResource);
+procedure TGLResources.ProcessResource(aResource: TBaseGraphicResource);
 begin
-  inherited;
-
+  // Do nothing
 end;
 
 procedure TGLResources.RemoveGLResource(const Resource: TBaseRenderResource);
-var idx: integer;
-    glres: TGLBaseResource;
+var glres: TGLBaseResource;
 begin
-  if not assigned(Resource) then exit;
-
-  idx:=FSupportedResources.IndexOf(Resource.ClassType);
-  if idx <0 then exit;
-
-  //Resource exists?
-  if Resource.IsInner then begin
-    if FInnerResource.Find(Resource, glres) then
-      FInnerResource.Delete(Resource);
-  end else
-    if FResList[idx].Find(Resource, glres) then
-      FResList[idx].Delete(Resource);
+  if Assigned(Resource) and FResources.Find(Resource, glres) then
+    FResources.Delete(Resource);
 end;
 
 { TGLMesh }
 
-constructor TGLMesh.CreateFrom(aOwner: TGLResources; aMesh: TMesh);
+constructor TGLMesh.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aManager: TGLResources absolute aOwner;
+  aMesh: TMesh absolute aResource;
 begin
   Create;
-  assert(assigned(aOwner) and (aOwner is TGLResources),
+  Assert(Assigned(aOwner) and (aOwner is TGLResources),
     'Resource manager invalide or not assigned');
-  Owner:=aOwner; FMesh:=aMesh;
-  BaseResource := aMesh;
+  Assert(Assigned(aResource) and (aResource is TMesh),
+    'Base resource invalide or not assigned');
+  Owner := aOwner;
+  FMesh := aMesh;
   FMesh.Subscribe(aOwner);
-  FVertexObject:=TGLVertexObject(aOwner.GetOrCreateResource(FMesh.VertexObject));
-  FMaterialObject:=TGLMaterial(aOwner.GetOrCreateResource(FMesh.MaterialObject));
+  FVertexObject := TGLVertexObject(aManager.GetOrCreateResource(FMesh.VertexObject));
+  FMaterialObject := TGLMaterial(aManager.GetOrCreateResource(FMesh.MaterialObject));
 end;
 
 destructor TGLMesh.Destroy;
@@ -1098,10 +988,11 @@ begin
 //  tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubObject].Name);
 //  if Assigned(tb) then begin
 //    glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubObject].Location);
-//  end;
+  // end;
 
   tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubLights].Name);
-  if Assigned(tb) then begin
+  if assigned(tb) then
+  begin
     glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubLights].Location);
   end;
 
@@ -1115,29 +1006,34 @@ begin
   for i := High(FSamplers) downto 0 do FSamplers[i].Bind(i);
 end;
 
-constructor TGLMaterial.CreateFrom(aOwner: TGLResources;
-  const aMat: TMaterialObject);
-var i, idx: integer;
+constructor TGLMaterial.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aManager: TGLResources absolute aOwner;
+  aMat: TMaterialObject absolute aResource;
+  i, idx: integer;
 begin
   Create;
-  assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
-  Owner:=aOwner; FMaterialObject:=aMat;
-  BaseResource := aMat;
+  Assert(Assigned(aOwner) and (aOwner is TGLResources),
+    'Resource manager invalide or not assigned');
+  Assert(Assigned(aResource) and (aResource is TMaterialObject),
+    'Base resource invalide or not assigned');
+  Owner := aOwner;
+  FMaterialObject := aMat;
   FMaterialObject.Subscribe(self);
   FIdexInPool:=-1;
 
-  FShader:=TGLSLShaderProgramExt(aOwner.GetOrCreateResource(FMaterialObject.Shader));
+  FShader:=TGLSLShaderProgramExt(aManager.GetOrCreateResource(FMaterialObject.Shader));
   FBlend:=FMaterialObject.Blending;
   setlength(FTextures,FMaterialObject.TexCount);
   idx := 0;
   if Assigned(FMaterialObject.Texture) then
   begin
-    FTextures[idx]:=TGLTextureObject(aOwner.GetOrCreateResource(FMaterialObject.Texture));
+    FTextures[idx]:=TGLTextureObject(aManager.GetOrCreateResource(FMaterialObject.Texture));
     FTextures[idx].UploadTexture();
     Inc(idx);
   end;
   for i:=idx to FMaterialObject.TexCount-1 do begin
-    FTextures[idx]:=TGLTextureObject(aOwner.GetOrCreateResource(FMaterialObject.TextureSlot[i]));
+    FTextures[idx]:=TGLTextureObject(aManager.GetOrCreateResource(FMaterialObject.TextureSlot[i]));
     FTextures[idx].UploadTexture();
     Inc(Idx);
   end;
@@ -1145,7 +1041,7 @@ begin
   if Assigned(FMaterialObject.TextureSampler) then
   begin
     SetLength(FSamplers, 1);
-    FSamplers[0] := TGLTextureSampler(aOwner.GetOrCreateResource(FMaterialObject.TextureSampler));
+    FSamplers[0] := TGLTextureSampler(aManager.GetOrCreateResource(FMaterialObject.TextureSampler));
   end;
 
   FStructureChanged := true;
@@ -1208,25 +1104,29 @@ end;
 
 { TGLMeshObject }
 
-constructor TGLMeshObject.CreateFrom(aOwner: TGLResources;
-  aMeshObject: TMeshObject);
-var i,j: integer;
+constructor TGLMeshObject.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aManager: TGLResources absolute aOwner;
+  aMeshObject: TMeshObject absolute aResource;
+  i, j: integer;
 begin
   Create;
-  assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
+  Assert(Assigned(aOwner) and (aOwner is TGLResources),
+    'Resource manager invalide or not assigned');
+  Assert(Assigned(aResource) and (aResource is TMeshObject),
+    'Base resource invalide or not assigned');
   FMeshObject:=aMeshObject;
-  BaseResource := aMeshObject;
   setlength(FLods, aMeshObject.Lods.Count);
   for i:=0 to aMeshObject.Lods.Count-1 do begin
     setlength(FLods[i], aMeshObject.Lods[i].Assembly.Count);
     for j:=0 to aMeshObject.Lods[i].Assembly.Count-1 do begin
-      FLods[i,j].Mesh:=TGLMesh(aOwner.GetOrCreateResource(aMeshObject.Lods[i].Assembly[j]));
+      FLods[i,j].Mesh:=TGLMesh(aManager.GetOrCreateResource(aMeshObject.Lods[i].Assembly[j]));
       FLods[i,j].MatrixChanged := true;
     end;
   end;
   setlength(FOccluder, aMeshObject.Occluder.Count);
   for i:=0 to aMeshObject.Occluder.Count-1 do begin
-    FOccluder[i]:=TGLMesh(aOwner.GetOrCreateResource(aMeshObject.Occluder[i]));
+    FOccluder[i]:=TGLMesh(aManager.GetOrCreateResource(aMeshObject.Occluder[i]));
   end;
 end;
 
@@ -1252,22 +1152,27 @@ begin
   end;
 end;
 
-constructor TGLSceneObject.CreateFrom(aOwner: TGLResources;
-  aSceneObject: TSceneObject);
-var i: integer;
+constructor TGLSceneObject.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aManager: TGLResources absolute aOwner;
+  aSceneObject: TSceneObject absolute aResource;
+  i: integer;
 begin
+  Assert(Assigned(aOwner) and (aOwner is TGLResources),
+    'Resource manager invalide or not assigned');
+  Assert(Assigned(aResource) and (aResource is TSceneObject),
+    'Base resource invalide or not assigned');
   Create;
-  assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
-  FSceneObject:=aSceneObject;
-  BaseResource := aSceneObject;
-  aSceneObject.Subscribe(self);
+  Owner := aOwner;
+  FSceneObject := aSceneObject;
+  FSceneObject.Subscribe(self);
   FMovableObject := aSceneObject;
   FObjectPoolIndex := -1;
   FBaseTfPoolIndex := -1;
   FTransformChanged := true;
   setlength(FMeshObjects, aSceneObject.MeshObjects.Count);
   for i:=0 to aSceneObject.MeshObjects.Count-1 do begin
-    FMeshObjects[i]:=TGLMeshObject(aOwner.GetOrCreateResource(aSceneObject.MeshObjects[i]));
+    FMeshObjects[i]:=TGLMeshObject(aManager.GetOrCreateResource(aSceneObject.MeshObjects[i]));
   end;
 end;
 
@@ -1368,12 +1273,18 @@ end;
 
 { TGLLight }
 
-constructor TGLLight.CreateFrom(aOwner: TGLResources; const aLight: TLightSource);
+constructor TGLLight.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aManager: TGLResources absolute aOwner;
+  aLight: TLightSource absolute aResource;
 begin
   Create;
-  assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
-  Owner:=aOwner; FLight:=aLight;
-  BaseResource := aLight;
+  Assert(Assigned(aOwner) and (aOwner is TGLResources),
+    'Resource manager invalide or not assigned');
+  Assert(Assigned(aResource) and (aResource is TLightSource),
+    'Base resource invalide or not assigned');
+  Owner:=aOwner;
+  FLight:=aLight;
   FMovableObject := aLight;
   FLight.Subscribe(self);
   FBaseTfPoolIndex := -1;
@@ -1448,9 +1359,15 @@ end;
 
 { TGLBuiltinUniform }
 
-constructor TGLBuiltinUniform.CreateFrom(aOwner: TGLResources;
-  anUniform: TBaseBuiltinUniform);
+constructor TGLBuiltinUniform.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aManager: TGLResources absolute aOwner;
+  anUniform: TBaseBuiltinUniform absolute aResource;
 begin
+  Assert(Assigned(aOwner) and (aOwner is TGLResources),
+    'Resource manager invalide or not assigned');
+  Assert(Assigned(aResource) and (aResource is TBaseBuiltinUniform),
+    'Base resource invalide or not assigned');
   Create;
   Owner := aOwner;
   FUniform := anUniform;
@@ -1476,20 +1393,24 @@ begin
       TGLBuiltinUniform(FBuiltinUniforms[i]).Apply(aRender);
 end;
 
-constructor TGLSLShaderProgramExt.CreateFrom(aOwner: TGLResources;
-  const aShaderProgram: TShaderProgram);
+constructor TGLSLShaderProgramExt.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
 var
+  aManager: TGLResources absolute aOwner;
+  aShaderProgram: TShaderProgram absolute aResource;
   i: integer;
   glres: TGLBaseResource;
 begin
-  CreateFrom(aShaderProgram);
-  Owner := aOwner;
+  Assert(Assigned(aOwner) and (aOwner is TGLResources),
+    'Resource manager invalide or not assigned');
+  Assert(Assigned(aResource) and (aResource is TShaderProgram),
+    'Base resource invalide or not assigned');
+  inherited CreateFrom(aOwner, aShaderProgram);
   if Assigned(aShaderProgram.BuildinUniforms) then
   begin
     FBuiltinUniforms := TObjectList.Create;
     for I := 0 to aShaderProgram.BuildinUniforms.Count - 1 do
     begin
-      glres := aOwner.GetOrCreateResource(aShaderProgram.BuildinUniforms[I] as TBaseRenderResource);
+      glres := aManager.GetOrCreateResource(aShaderProgram.BuildinUniforms[I] as TBaseRenderResource);
       FBuiltinUniforms.Add(glres);
     end;
   end;
@@ -1503,13 +1424,18 @@ end;
 
 { TGLFrameBufferObjectExt }
 
-constructor TGLFrameBufferObjectExt.CreateFrom(aOwner: TGLResources;
-  const aFrameBuffer: TFrameBuffer);
+constructor TGLFrameBufferObjectExt.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
 var
+  aManager: TGLResources absolute aOwner;
+  aFrameBuffer: TFrameBuffer absolute aResource;
   i: integer;
   texture: TTexture;
   gltexture: TGLTextureObject;
 begin
+  Assert(Assigned(aOwner) and (aOwner is TGLResources),
+    'Resource manager invalide or not assigned');
+  Assert(Assigned(aResource) and (aResource is TFrameBuffer),
+    'Base resource invalide or not assigned');
   Create;
   Owner := aOwner;
   FFrameBuffer := aFrameBuffer;
@@ -1521,7 +1447,7 @@ begin
   Multisample := FFrameBuffer.Multisample;
   for i := 0 to FFrameBuffer.ColorAttachmentCount - 1 do begin
     texture := FFrameBuffer.ColorAttachments[i];
-    gltexture := aOwner.GetOrCreateResource(texture) as TGLTextureObject;
+    gltexture := aManager.GetOrCreateResource(texture) as TGLTextureObject;
     AttachResource(gltexture);
     gltexture.AllocateStorage;
     AttachTexture(gltexture);
@@ -1574,18 +1500,23 @@ begin
   glViewport(0, 0, FCamera.ViewPortSize[0], FCamera.ViewPortSize[1]);
 end;
 
-constructor TGLCamera.CreateFrom(aOwner: TGLResources;
-  const aCamera: TSceneCamera);
+constructor TGLCamera.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aManager: TGLResources absolute aOwner;
+  aCamera: TSceneCamera absolute aResource;
 begin
+  Assert(Assigned(aOwner) and (aOwner is TGLResources),
+    'Resource manager invalide or not assigned');
+  Assert(Assigned(aResource) and (aResource is TSceneCamera),
+    'Base resource invalide or not assigned');
   Create;
-  assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
-  Owner:=aOwner;
+  Owner := aOwner;
   FCamera:=aCamera;
   FCamera.Subscribe(Self);
   FIdexInPool:=-1;
   if Assigned(FCamera.RenderTarget) then
   begin
-    FFrameBuffer := aOwner.GetOrCreateResource(FCamera.RenderTarget) as TGLFrameBufferObjectExt;
+    FFrameBuffer := aManager.GetOrCreateResource(FCamera.RenderTarget) as TGLFrameBufferObjectExt;
   end;
   FStructureChanged := true;
 end;
@@ -1671,12 +1602,12 @@ begin
       scale := Vec2Make(w / FImageHolder.Width, h / FImageHolder.Height);
       FBlurShader.SetUniform('TexCoordScale', scale);
       FBlurShader.SetUniform('Step', Vec2Make(scale[0]/FImageHolder.Width, 0));
-      TGLStaticRender.RenderVertexObject(FVertexObject);
+      TGLSceneObjectRender.RenderVertexObject(FVertexObject);
 
       FFrameV.Bind(false);
       FBluredH.Bind(0);
       FBlurShader.SetUniform('Step', Vec2Make(0, scale[1]/FImageHolder.Height));
-      TGLStaticRender.RenderVertexObject(FVertexObject);
+      TGLSceneObjectRender.RenderVertexObject(FVertexObject);
       FBlurShader.UnBind;
       FFrameV.UnBind;
 
@@ -1685,20 +1616,22 @@ begin
       FShader.SetUniform('TexCoordScale', scale);
       tex.Bind(0);
       FBluredV.Bind(1);
-      TGLStaticRender.RenderVertexObject(FVertexObject);
+      TGLSceneObjectRender.RenderVertexObject(FVertexObject);
       FShader.UnBind;
     end;
   end;
 end;
 
-constructor TGLGlowEffect.CreateFrom(aOwner: TGLResources;
-  aEffect: TBaseRenderResource);
+constructor TGLGlowEffect.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
 begin
-  Assert(assigned(aOwner) and (aOwner is TGLResources),'Resource manager invalide or not assigned');
-  Assert(assigned(aEffect) and (aEffect is TGlowPipelineEffect),'Effect invalide or not assigned');
+  Assert(assigned(aOwner) and (aOwner is TGLResources),
+    'Resource manager invalide or not assigned');
+  Assert(assigned(aResource) and (aResource is TGlowPipelineEffect),
+    'Effect invalide or not assigned');
   Create;
-  FEffect := aEffect;
-  AttachResource(aEffect);
+  Owner := aOwner;
+  FEffect := aResource;
+  AttachResource(aResource);
   FStructureChanged := true;
 end;
 

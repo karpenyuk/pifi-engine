@@ -14,17 +14,8 @@ uses Classes, uPersistentClasses, uVMath, uLists, uMiscUtils, Math,
 
 
 Type
-
-  // Base GL Resource
-  TGLBaseResource = class(TBaseRenderResource)
-  public
-    BaseResource: TBaseRenderResource;
-    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
-    constructor Create; override;
-    procedure Update(aRender: TBaseRender); virtual;
-    procedure Apply(aRender: TBaseRender); virtual;
-    procedure UnApply(aRender: TBaseRender); virtual;
-  end;
+  TGLBaseResource = TBaseGraphicResource;
+  TGLBaseResourceClass = class of TGLBaseResource;
 
   TGLTextureObject = class;
 
@@ -72,7 +63,7 @@ Type
   public
     Name: string;
     constructor Create(BuffType: TBufferType = btArray); reintroduce;
-    constructor CreateFrom(const aBuffer: TBufferObject); overload;
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
     procedure Notify(Sender: TObject; Msg: cardinal;
       Params: pointer = nil); override;
@@ -135,7 +126,7 @@ Type
   public
     constructor Create; override;
     destructor Destroy; override;
-    constructor CreateFrom(const aAttribObject: TAttribObject); virtual;
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     constructor CreateAndSetup(AttrName: ansistring; aSize: integer;
       AType: TValueType = vtFloat; AStride: integer = 0;
       aBuffType: TBufferType = btArray); virtual;
@@ -347,7 +338,7 @@ Type
     property UniformBlocks: TUBOList read FUBOList;
 
     constructor Create; override;
-    constructor CreateFrom(const aShaderProgram: TShaderProgram); overload;
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
 
     procedure AttachShader(ShaderType: TShaderType; Source: ansistring);
@@ -412,7 +403,7 @@ Type
     procedure SetShader(const Value: TGLSLShaderProgram);
   public
     constructor Create; override;
-    constructor CreateFrom(const aVertexObject: TVertexObject); overload;
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
     procedure Notify(Sender: TObject; Msg: Cardinal;
       Params: pointer = nil); override;
@@ -446,13 +437,14 @@ Type
     function getSamplerHash: integer;
   public
     constructor Create; override;
-    constructor CreateFrom(aSampler: TTextureSampler);
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
     destructor Destroy; override;
 
     procedure Bind(aUnit: cardinal); overload;
     procedure UnBind(aUnit: cardinal);
     procedure SetSamplerParams(aTarget: TTexTarget); overload;
 
+    property Sampler: TTextureSampler read FTextureSampler;
     property Hash: integer read getSamplerHash;
   end;
 
@@ -479,7 +471,7 @@ Type
     constructor Create; override;
     constructor CreateFrom(const aTarget: TTexTarget; const aImageHolder: TImageHolder;
       const aTexDesc: PTextureDesc = nil); overload;
-    constructor CreateFrom(const aTexture: TTexture); overload;
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
 
     destructor Destroy; override;
 
@@ -754,7 +746,7 @@ end;
 procedure TGLBufferObject.BindRange(AsTarget: TBufferType; Index: cardinal;
   Offset, Size: integer);
 begin
-  assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
+  Assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
   if AsTarget in [btAtomicCounter, btTransformFeedback, btUniform,
     btShaderStorage] then begin
     glBindBufferRange(CBufferTypes[AsTarget], Index, FBuffId, Offset, Size);
@@ -771,8 +763,12 @@ begin
   glTextureBufferEXT(FTexId, GL_TEXTURE_BUFFER, aFormat, FBuffId);
 end;
 
-constructor TGLBufferObject.CreateFrom(const aBuffer: TBufferObject);
+constructor TGLBufferObject.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aBuffer: TBufferObject absolute aResource;
 begin
+  Assert(Assigned(aResource) and (aResource is TBufferObject),
+    'Base resource invalide or not assigned');
   Create(aBuffer.BufferType);
   Allocate(aBuffer.Size, aBuffer.Data);
   Name := aBuffer.Name;
@@ -782,7 +778,7 @@ end;
 
 procedure TGLBufferObject.UnBindBuffer;
 begin
-  assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
+  Assert(not FLocked, 'Buffer locked for mapping, please unmap it first');
   glBindBuffer(CBufferTypes[FLastTarget], 0);
 end;
 
@@ -965,7 +961,7 @@ end;
 
 procedure TGLAttribObject.AssignBuffer(aBuffer: TBufferObject);
 begin
-  FGLBuffer := TGLBufferObject.CreateFrom(aBuffer);
+  FGLBuffer := TGLBufferObject.CreateFrom(nil, aBuffer);
   FGLBuffer.Subscribe(Self);
 end;
 
@@ -1022,9 +1018,14 @@ begin
   end;
 end;
 
-constructor TGLAttribObject.CreateFrom(const aAttribObject: TAttribObject);
+constructor TGLAttribObject.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aAttribObject: TAttribObject absolute aResource;
 begin
+  Assert(Assigned(aResource) and (aResource is TAttribObject),
+    'Base resource invalide or not assigned');
   Create;
+  Owner := aOwner;
   FSize := aAttribObject.AttrSize;
   FAttribName := aAttribObject.AttrName;
   FType := aAttribObject.AttrType;
@@ -1040,7 +1041,7 @@ begin
   aAttribObject.Subscribe(Self);
   if Assigned(aAttribObject.Buffer) then
   begin
-    FGLBuffer := TGLBufferObject.CreateFrom(aAttribObject.Buffer);
+    FGLBuffer := TGLBufferObject.CreateFrom(nil, aAttribObject.Buffer);
     FGLBuffer.Subscribe(Self);
   end;
 end;
@@ -1299,12 +1300,16 @@ begin
   s.Free;
 end;
 
-constructor TGLSLShaderProgram.CreateFrom(const aShaderProgram: TShaderProgram);
+constructor TGLSLShaderProgram.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
 var
+  aShaderProgram: TShaderProgram absolute aResource;
   st: TShaderType;
   txt: ansistring;
   i: integer;
 begin
+  Assert(Assigned(aResource) and (aResource is TShaderProgram),
+    'Base resource invalide or not assigned');
+  Owner := aOwner;
   Create;
   if (aShaderProgram.Binary.Size > 0) and assigned(aShaderProgram.Binary.Data)
   then
@@ -1781,18 +1786,22 @@ begin
   end;
 end;
 
-constructor TGLVertexObject.CreateFrom(const aVertexObject: TVertexObject);
+constructor TGLVertexObject.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
 var
+  aVertexObject: TVertexObject absolute aResource;
   i: integer;
   ab: TGLAttribBuffer;
 begin
+  Assert(Assigned(aResource) and (aResource is TVertexObject),
+    'Base resource invalide or not assigned');
+  Owner := aOwner;
   Create;
   FVertexObject := aVertexObject;
   aVertexObject.Subscribe(Self);
   FFaceType := aVertexObject.FaceType;
   for i := 0 to aVertexObject.AttribsCount - 1 do
   begin
-    ab := TGLAttribBuffer.CreateFrom(aVertexObject.Attribs[i]);
+    ab := TGLAttribBuffer.CreateFrom(aOwner, aVertexObject.Attribs[i]);
     FAttribs.Add(ab);
     ab.Subscribe(Self);
   end;
@@ -2050,9 +2059,14 @@ begin
   FTarget := aTarget;
 end;
 
-constructor TGLTextureObject.CreateFrom(const aTexture: TTexture);
+constructor TGLTextureObject.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aTexture: TTexture absolute aResource;
 begin
+  Assert(Assigned(aResource) and (aResource is TTexture),
+    'Base resource invalide or not assigned');
   Create;
+  Owner := aOwner;
   FImageHolder := aTexture.ImageHolder;
   if assigned(FImageHolder) then
     FFormatDescr := TGLTextureFormatSelector.GetTextureFormat(FImageHolder.ImageFormat);
@@ -3194,13 +3208,18 @@ end;
 
 constructor TGLTextureSampler.Create;
 begin
-  CreateFrom(TTextureSampler.Create);
+  CreateFrom(nil, TTextureSampler.Create);
   FTextureSampler.Owner:=self;
 end;
 
-constructor TGLTextureSampler.CreateFrom(aSampler: TTextureSampler);
+constructor TGLTextureSampler.CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource);
+var
+  aSampler: TTextureSampler absolute aResource;
 begin
+  Assert(Assigned(aResource) and (aResource is TTextureSampler),
+    'Base resource invalide or not assigned');
   inherited Create;
+  Owner := aOwner;
   FTextureSampler := aSampler;
   FSamplerId := 0;
   if GL_ARB_sampler_objects then begin
@@ -3511,42 +3530,6 @@ begin
           sFormat := TImageFormatBits.GetSpecialFormat(aFormat);
           result := CreateSpecial(sFormat);
         end else assert(false, 'Unsupported format!');
-end;
-
-{ TGLBaseResource }
-
-procedure TGLBaseResource.Apply(aRender: TBaseRender);
-begin
-  // Do nothing
-end;
-
-constructor TGLBaseResource.Create;
-begin
-  inherited Create;
-  Owner := nil;
-  BaseResource := nil;
-end;
-
-procedure TGLBaseResource.Notify(Sender: TObject; Msg: Cardinal;
-  Params: pointer);
-begin
-  case msg of
-    NM_ResourceApply: Apply(TBaseRender(Params));
-    NM_ResourceUnApply: UnApply(TBaseRender(Params));
-    NM_ResourceUpdate: Update(TBaseRender(Params));
-  end;
-
-  inherited;
-end;
-
-procedure TGLBaseResource.UnApply(aRender: TBaseRender);
-begin
-  // Do nothing
-end;
-
-procedure TGLBaseResource.Update(aRender: TBaseRender);
-begin
-  // Do nothing
 end;
 
 { TUSUBList }

@@ -4,11 +4,13 @@ unit uBaseRenders;
   {$MODE Delphi}
 {$ENDIF}
 
+{$POINTERMATH ON}
+
 interface
 
 uses
-  Classes, uBaseClasses, uBaseTypes, uRenderResource, uMiscUtils, uVMath,
-  uPersistentClasses, uWorldSpace;
+  Classes, uBaseClasses, uBaseTypes, uRenderResource, uGenericsRBTree,
+  uMiscUtils, uVMath, uPersistentClasses, uWorldSpace;
 
 Type
 
@@ -18,25 +20,37 @@ Type
   TRenderPurposes = set of TRenderPurpose;
 
   TBaseRender = class;
+  TBaseSubRender = class;
 
-  TBaseSubRender = class (TNotifiableObject)
+  TBaseGraphicResource = class(TPersistentResource)
+  public
+    constructor Create; override;
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); overload; virtual; abstract;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+    procedure Update(aRender: TBaseRender); virtual;
+    procedure Apply(aRender: TBaseRender); virtual;
+    procedure UnApply(aRender: TBaseRender); virtual;
+  end;
+  TGraphicResourceClass = class of TBaseGraphicResource;
+
+
+  TResourceClasses = GRedBlackTree<TRenderResourceClass, TGraphicResourceClass>;
+
+  TBaseSubRender = class (TPersistentResource)
   protected
-    FOwner: TBaseRender;
-    FSupportedResources: TList; //List of Render Resource Class types
+    FSupportedResources: TResourceClasses;
     FRequiredAPIVersion: TApiVersion;
     FRenderPurpose: TRenderPurposes;
   public
     constructor Create; override;
-    constructor CreateOwned(aRender: TBaseRender); virtual;
     destructor Destroy; override;
 
-    function isSupported(const aClassType: TClass): boolean; virtual;
-    procedure ProcessResource(const Resource: TBaseRenderResource); virtual; abstract;
-
-    property Owner: TBaseRender read FOwner;
+    procedure AddSupporting(aResource: TRenderResourceClass; aGraphic: TGraphicResourceClass);
+    function IsSupported(aResource: TRenderResourceClass; aGraphic: TGraphicResourceClass): boolean; virtual;
+    procedure ProcessResource(aResource: TBaseGraphicResource); virtual; abstract;
   end;
 
-  TBaseRender = class  (TNotifiableObject)
+  TBaseRender = class(TPersistentResource)
   private
   protected
     FCurrentLightNumber: integer;
@@ -46,17 +60,13 @@ Type
     FRegisteredSubRenders: TList;  //List of TBaseSubRender
     procedure UploadResource(const Res: TBaseRenderResource); virtual; abstract;
     procedure ProcessResource(const Res: TBaseRenderResource); virtual; abstract;
-//    procedure ProcessMeshObjects(const aMeshObjects: TMeshObjectsList); virtual; abstract;
-
   public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
-    procedure UpdateTransform(const MovableObject: TMovableObject;
-      UseMatrix: TTransforms = ALL_TRANSFORM); virtual;
     function CheckVisibility(const aFrustum: TFrustum;
       const aExtents: TExtents): boolean; virtual;
-    function isSupported(const aClassType: TClass): boolean; overload; virtual;
-    function isSupported(const aAPI: TApiVersion): boolean; overload; virtual;
+    function IsSupported(aResource: TRenderResourceClass; aGraphic: TGraphicResourceClass): boolean; overload; virtual;
+    function IsSupported(const aAPI: TApiVersion): boolean; overload; virtual;
 
     procedure ProcessScene(const aScene: TSceneGraph); virtual; abstract;
 
@@ -93,6 +103,41 @@ var
 
 implementation
 
+{ TGLBaseResource }
+
+procedure TBaseGraphicResource.Apply(aRender: TBaseRender);
+begin
+  // Do nothing
+end;
+
+constructor TBaseGraphicResource.Create;
+begin
+  inherited Create;
+  Owner := nil;
+end;
+
+procedure TBaseGraphicResource.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  case msg of
+    NM_ResourceApply: Apply(TBaseRender(Params));
+    NM_ResourceUnApply: UnApply(TBaseRender(Params));
+    NM_ResourceUpdate: Update(TBaseRender(Params));
+  end;
+
+  inherited;
+end;
+
+procedure TBaseGraphicResource.UnApply(aRender: TBaseRender);
+begin
+  // Do nothing
+end;
+
+procedure TBaseGraphicResource.Update(aRender: TBaseRender);
+begin
+  // Do nothing
+end;
+
 { TBaseRender }
 
 function TBaseRender.CheckVisibility(const aFrustum: TFrustum;
@@ -128,13 +173,13 @@ begin
   end;
 end;
 
-function TBaseRender.isSupported(const aClassType: TClass): boolean;
+function TBaseRender.IsSupported(aResource: TRenderResourceClass; aGraphic: TGraphicResourceClass): boolean;
 var i: integer;
 begin
   result:=false;
   for i:=0 to FRegisteredSubRenders.Count-1 do begin
-    if TBaseSubRender(FRegisteredSubRenders[i]).isSupported(aClassType)
-    then result:=true; exit;
+    if TBaseSubRender(FRegisteredSubRenders[i]).IsSupported(aResource, aGraphic)
+      then exit(true);
   end;
 end;
 
@@ -151,68 +196,28 @@ begin
   if i>=0 then FRegisteredSubRenders.Delete(i);
 end;
 
-procedure TBaseRender.UpdateTransform(const MovableObject: TMovableObject; UseMatrix: TTransforms);
-//var wm, pm, srp: TMatrix;
+{ TBaseSubRender }
+
+procedure TBaseSubRender.AddSupporting(aResource: TRenderResourceClass;
+  aGraphic: TGraphicResourceClass);
 begin
-{  wm.SetIdentity;
-  if (MovableObject.Pivot<>nil) and (ttPivot in UseMatrix) then begin
-     if not MovableObject.Pivot.WorldMatrixUpdated then
-       MovableObject.Pivot.UpdateWorldMatrix;
-     pm := MovableObject.Pivot.PivotMatrix;
-  end else pm.SetIdentity;
-
-  if ttModel in UseMatrix then wm := MovableObject.ModelMatrix else wm.SetIdentity;
-
-  srp.SetIdentity;
-  if ttScale in UseMatrix then srp := srp * MovableObject.ScaleMatrix;
-  if ttRotation in UseMatrix then srp := srp * MovableObject.RotationMatrix;
-  if ttPosition in UseMatrix then srp := srp * MovableObject.TranslationMatrix;
-
-  wm := wm * srp * pm;
-  pm := srp * pm;
-
-  case MovableObject.DirectionBehavior of
-    dbSphericalSprite:
-      begin
-        wm := wm * CurrentCamera.ViewMatrix;
-        wm[0, 0] := MovableObject.Scale.X;
-        wm[0, 1] := 0;
-        wm[0, 2] := 0;
-        wm[1, 0] := 0;
-        wm[1, 1] := MovableObject.Scale.Y;
-        wm[1, 2] := 0;
-        wm[2, 0] := 0;
-        wm[2, 1] := 0;
-        wm[2, 2] := 1;
-      end;
-    dbCylindricalSprite:
-      begin
-        wm := wm * CurrentCamera.ViewMatrix;
-        wm[0, 0] := 1;
-        wm[0, 1] := 0;
-        wm[0, 2] := 0;
-        wm[2, 0] := 0;
-        wm[2, 1] := 0;
-        wm[2, 2] := 1;
-      end;
-  end;
-
-  MovableObject.WorldMatrix := wm;
-  MovableObject.PivotMatrix := pm; }
+  FSupportedResources.Add(aResource, aGraphic);
 end;
 
-{ TBaseSubRender }
+function ClassComparer(const Item1, Item2: TRenderResourceClass): Integer;
+begin
+  if Item1.ClassInfo = Item2.ClassInfo then
+    exit(0)
+  else if UIntPtr(Item1.ClassInfo) > UIntPtr(Item2.ClassInfo) then
+    exit(1)
+  else
+    exit(-1);
+end;
 
 constructor TBaseSubRender.Create;
 begin
-  Assert(False, 'Must be used CreateOwned instead Create!');
-end;
-
-constructor TBaseSubRender.CreateOwned(aRender: TBaseRender);
-begin
   inherited Create;
-  FOwner := aRender;
-  FSupportedResources:=TList.Create;
+  FSupportedResources := TResourceClasses.Create(ClassComparer, nil);
   FRenderPurpose:=[rpUnknown];
 end;
 
@@ -222,10 +227,12 @@ begin
   inherited;
 end;
 
-function TBaseSubRender.isSupported(const aClassType: TClass): boolean;
+function TBaseSubRender.IsSupported(aResource: TRenderResourceClass; aGraphic: TGraphicResourceClass): boolean;
+var
+  grClass: TGraphicResourceClass;
 begin
-  if FSupportedResources.IndexOf(aClassType)>=0
-  then result:=true else result:=false;
+  grClass := nil;
+  Result := FSupportedResources.Find(aResource, grClass) and (grClass = aGraphic);
 end;
 
 { TRegisteredRenders }

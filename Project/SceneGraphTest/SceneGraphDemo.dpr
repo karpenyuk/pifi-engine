@@ -8,7 +8,8 @@ program SceneGraphDemo;
 
 uses
   Forms,
-  SceneGraphProject in 'SceneGraphProject.pas';
+  SceneGraphProject in 'SceneGraphProject.pas' {Form2},
+  SceneConstructor in 'SceneConstructor.pas';
 
 begin
   ReportMemoryLeaksOnShutdown := True;

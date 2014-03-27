@@ -269,22 +269,10 @@ type
 
   end;
 
-function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
-
 implementation
 
 uses
   Math, uMath, uStorage;
-
-function ResourceComparer(const Item1, Item2: TBaseRenderResource): Integer;
-begin
-  if Item1.Order < Item2.Order then
-    exit(-1)
-  else if (Item1.Order = Item2.Order) then
-    exit(0)
-  else
-    Result := 1;
-end;
 
 { TMovableObject }
 
@@ -294,7 +282,6 @@ begin
 end;
 
 function TMovableObject.VectorToLocal(aVector: TVector; Norm: boolean=true): TVector;
-var rv: TVector;
 begin
   aVector.MakeAffine;
   Result := InvPivotMatrix.Transform(aVector);
