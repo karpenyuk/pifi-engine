@@ -53,6 +53,7 @@ type
                      BuffType: TBufferType = btArray): TAttribBuffer;
     class function CreateVertexObject: TVertexObject;
     class function CreateMesh(vo: TVertexObject = nil): TMesh;
+    class function CreateMeshAssembly(): TMeshAssembly;
     class function CreateMeshObject: TMeshObject; overload;
     class function CreateMeshObject(aMesh: TMeshAssembly): TMeshObject; overload;
     class function CreateMeshObject(aMesh: TMesh): TMeshObject; overload;
@@ -195,6 +196,14 @@ begin
   result.Subscribe(FStorageHandle);
 end;
 
+class function Storage.CreateMeshAssembly: TMeshAssembly;
+begin
+  result := TMeshAssembly.Create;
+  result.Owner:=FStorageHandle;
+  FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
+end;
+
 class function Storage.CreateMeshObject(aMesh: TMeshAssembly): TMeshObject;
 begin
   result := TMeshObject.CreateFrom(aMesh);
@@ -300,7 +309,6 @@ end;
 procedure TResourceList.FreeResources(aOwner: TPersistentResource);
 var
   x, y, z: TRBNode;
-  cont: Boolean;
   temp: TPersistentResource;
 begin
   if Assigned(FLeftMost) then begin

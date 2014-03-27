@@ -430,7 +430,7 @@ Type
   TTexture = class(TBaseRenderResource)
   private
     FImageDescriptor: TImageHolder;
-    FReady: boolean;
+//    FReady: boolean;
     FName: string;
     FUpdates: TTextureUpdates;
     FDisabled: boolean;
@@ -900,7 +900,7 @@ Type
     FLods: TLODsController;
     FOccluder: TMeshAssembly;
     FCollider: TTriangleList;
-    FExtents: TExtents;
+//    FExtents: TExtents;
     FOwnedAssembly: TMeshAssembly;
     function GetAssembly: TMeshAssembly;
   public

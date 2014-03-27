@@ -126,7 +126,6 @@ begin
 end;
 
 destructor TSceneGraph.Destroy;
-var i: integer;
 begin
   FRoot.Free;
   FCameras.Free;
