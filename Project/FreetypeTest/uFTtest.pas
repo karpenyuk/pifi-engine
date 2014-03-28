@@ -93,7 +93,6 @@ var
 
   Mesh, Indi, FontMesh: TVertexObject;
   FontMap: TBufferObject;
-  IndiBuffer: TBufferObject;
   IndiGLBuffer: TGLBufferObject;
 
 
@@ -167,7 +166,6 @@ var
 begin
   pos := VectorFontLibrary.CreatePositionList(strGOST2D, Text, 500, 4);
   FontGLMesh.Attribs[1].Buffer.Upload(pos.Data, pos.Size, 0);
-//  SymbolOffesetBuffer.Upload(pos.Data, pos.Size, 0);
 
 
   VDA := TVectorDataAccess.Create(FontMap.Data, vtUInt, 2, 2*SizeOf(Integer), 65535);
@@ -196,6 +194,7 @@ begin
     IndiGLBuffer.Allocate(SizeOf(TDrawElementsIndirectCommand)*500, nil, GL_STREAM_DRAW);
   end;
 
+//  IndiGLBuffer.Upload(@Commands[0], Length(Commands)*SizeOf(TDrawElementsIndirectCommand), 0);
   addr := IndiGLBuffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
     0, Length(Commands)*SizeOf(TDrawElementsIndirectCommand));
   Move(Commands[0], addr^, Length(Commands)*SizeOf(TDrawElementsIndirectCommand));
@@ -297,8 +296,6 @@ begin
   SymbolOffesetAttr.Buffer.Allocate(510*2*SizeOf(Single), nil);
   SymbolOffesetAttr.SetAttribSemantic(atTexCoord1);
   FontMesh.AddAttrib(SymbolOffesetAttr, False);
-//  SymbolOffesetBuffer := TGLBufferObject.Create(btTexture);
-//  SymbolOffesetBuffer.Allocate(510*2*SizeOf(Single), nil);
 
   FontGLMesh := TGLVertexObject.CreateFrom(nil, FontMesh);
   FontGLMesh.Build(Shader2.Id);
@@ -332,7 +329,6 @@ end;
 procedure TForm5.GLViewer1Render(Sender: TObject);
 var
   MV, MVP: TMatrix;
-  i: integer;
 begin
   if Changed then
     GenIndirectBuffer;
@@ -356,19 +352,9 @@ begin
     glBindVertexArray(FontGLMesh.VAOid);
     glVertexAttribDivisor(4, 1);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, FontGLMesh.IndiceId);
-//    glActiveTexture(GL_TEXTURE11);
-//    SymbolOffesetBuffer.BindTexture(GL_RG32F);
     glVertexAttrib3f(3, 1, 1, 1);
-    if GL_AMD_multi_draw_indirect then // workaround for AMD driver bug
-    begin
-      for i := 0 to High(Commands) do
-        glDrawElementsInstancedBaseInstance(GL_TRIANGLES, Commands[i].count, GL_UNSIGNED_INT,
-          pointer(Commands[i].firstIndex*SizeOf(GLint)), Commands[i].primCount, Commands[i].baseInstance);
-    end
-    else begin
-      IndiGLBuffer.Bind;
-      glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, @Commands[0], Length(Commands), 0);
-    end;
+    IndiGLBuffer.Bind;
+    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nil, Length(Commands), 0);
     glBindVertexArray(0);
     Shader2.UnBind;
     glEnable(GL_DEPTH_TEST);
