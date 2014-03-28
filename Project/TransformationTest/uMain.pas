@@ -128,7 +128,7 @@ begin
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
-  SceneObject:= Storage.CreateSceneObject;
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
   SceneObject.FriendlyName := 'Base';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(SceneObject);
@@ -140,7 +140,7 @@ begin
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
-  SceneObject:= Storage.CreateSceneObject;
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
   SceneObject.FriendlyName := 'Hinge1';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   FSceneGraph.AddItem(SceneObject);
@@ -153,7 +153,7 @@ begin
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
-  SceneObject:= Storage.CreateSceneObject;
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
   SceneObject.FriendlyName := 'Forearm';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
@@ -164,7 +164,7 @@ begin
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
-  SceneObject:= Storage.CreateSceneObject;
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
   SceneObject.FriendlyName := 'Hinge2';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
@@ -176,7 +176,7 @@ begin
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
-  SceneObject:= Storage.CreateSceneObject;
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
   SceneObject.FriendlyName := 'Arm';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
@@ -187,7 +187,7 @@ begin
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
-  SceneObject:= Storage.CreateSceneObject;
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
   SceneObject.FriendlyName := 'Hinge3';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
@@ -199,7 +199,7 @@ begin
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
-  SceneObject:= Storage.CreateSceneObject;
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
   SceneObject.FriendlyName := 'Palm';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
@@ -210,7 +210,7 @@ begin
   Mesh := TMesh.CreateFrom(VO);
   Mesh.MaterialObject := Material;
   MeshObject := TMeshObject.CreateFrom(Mesh);
-  SceneObject:= Storage.CreateSceneObject;
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
   SceneObject.FriendlyName := 'Finger1';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
@@ -218,7 +218,7 @@ begin
   SceneObject.MoveLeft(1.65);
 
   MeshObject := TMeshObject.CreateFrom(Mesh);
-  SceneObject:= Storage.CreateSceneObject;
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
   SceneObject.FriendlyName := 'Finger2';
   SceneObject.MeshObjects.AddMeshObject(MeshObject);
   SceneObject.Parent := Last;
@@ -234,8 +234,8 @@ begin
 
   FAIs[0]:= TRobotController.Create(Etalon);
   k := 1;
-  for i := -50 to 50 do
-    for j := -50 to 50 do begin
+  for i := -10 to 10 do
+    for j := -10 to 10 do begin
       if (i = 0) and (j = 0) then continue;
       x := i * 15 + 5*(random-0.5);
       z := j * 15 + 5*(random-0.5);
