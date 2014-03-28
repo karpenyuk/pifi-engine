@@ -163,6 +163,7 @@ var
   I, C, P: Integer;
   Offset, Len: Integer;
   V: TVector;
+  addr: PByte;
 begin
   pos := VectorFontLibrary.CreatePositionList(strGOST2D, Text, 500, 4);
   FontGLMesh.Attribs[1].Buffer.Upload(pos.Data, pos.Size, 0);
@@ -189,6 +190,16 @@ begin
     end;
   end;
   SetLength(Commands, P);
+
+  if not Assigned(IndiGLBuffer) then begin
+    IndiGLBuffer := TGLBufferObject.Create(btDrawIndirect);
+    IndiGLBuffer.Allocate(SizeOf(TDrawElementsIndirectCommand)*500, nil, GL_STREAM_DRAW);
+  end;
+
+  addr := IndiGLBuffer.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+    0, Length(Commands)*SizeOf(TDrawElementsIndirectCommand));
+  Move(Commands[0], addr^, Length(Commands)*SizeOf(TDrawElementsIndirectCommand));
+  IndiGLBuffer.UnMap;
 
   Changed := False;
 end;
@@ -276,7 +287,7 @@ begin
   Mesh := VectorFontLibrary.CreateText(strGOST3D, strText);
   bb := VectorFontLibrary.GetExtents(strGOST3D, strText);
   Model := TMatrix.TranslationMatrix(bb.eMid.Negate);
-  TextObject := TGLVertexObject.CreateFrom(Mesh);
+  TextObject := TGLVertexObject.CreateFrom(nil, Mesh);
   TextObject.Shader := Shader1;
 
   VectorFontLibrary.BuildFontFromFile(strGOST2D, path + 'GOST type A.ttf', cChars, 30, 0);
@@ -289,7 +300,7 @@ begin
 //  SymbolOffesetBuffer := TGLBufferObject.Create(btTexture);
 //  SymbolOffesetBuffer.Allocate(510*2*SizeOf(Single), nil);
 
-  FontGLMesh := TGLVertexObject.CreateFrom(FontMesh);
+  FontGLMesh := TGLVertexObject.CreateFrom(nil, FontMesh);
   FontGLMesh.Build(Shader2.Id);
   FontMap := VectorFontLibrary.CreateFontMap(strGOST2D, False);
 
@@ -354,8 +365,10 @@ begin
         glDrawElementsInstancedBaseInstance(GL_TRIANGLES, Commands[i].count, GL_UNSIGNED_INT,
           pointer(Commands[i].firstIndex*SizeOf(GLint)), Commands[i].primCount, Commands[i].baseInstance);
     end
-    else
+    else begin
+      IndiGLBuffer.Bind;
       glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, @Commands[0], Length(Commands), 0);
+    end;
     glBindVertexArray(0);
     Shader2.UnBind;
     glEnable(GL_DEPTH_TEST);

@@ -2030,7 +2030,7 @@ begin
     FErr := $04;
 end;
 
-procedure DestroyFonts(AKey: string; AValue: TVF_Font; out AContinue: Boolean);
+procedure DestroyFonts(AKey: string; AValue: TVF_Font; aData: Pointer; out AContinue: Boolean);
 begin
   AValue.Destroy;
   AContinue := True;
