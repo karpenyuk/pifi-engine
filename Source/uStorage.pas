@@ -8,7 +8,7 @@ interface
 
 uses
   Classes, Types, uBaseTypes, uMiscUtils, uLists, uGenericsRBTree,
-  uPersistentClasses, uRenderResource;
+  uPersistentClasses, uRenderResource, uBaseClasses;
 
 type
 
@@ -57,7 +57,7 @@ type
     class function CreateMeshObject: TMeshObject; overload;
     class function CreateMeshObject(aMesh: TMeshAssembly): TMeshObject; overload;
     class function CreateMeshObject(aMesh: TMesh): TMeshObject; overload;
-    class function CreateSceneObject: TSceneObject;
+    class function CreateMovableObject(aClass: TMovableObjectClass): TMovableObject;
     class function CreateFrameBuffer: TFrameBuffer;
     class function CreateCamera: TSceneCamera;
     class function CreateLight: TLightSource;
@@ -220,6 +220,14 @@ begin
   result.Subscribe(FStorageHandle);
 end;
 
+class function Storage.CreateMovableObject(
+  aClass: TMovableObjectClass): TMovableObject;
+begin
+  result := aClass.CreateOwned(FStorageHandle);
+  FResources.Add(result.GUID, result);
+  result.Subscribe(FStorageHandle);
+end;
+
 class function Storage.CreateMeshObject: TMeshObject;
 begin
   result := TMeshObject.CreateOwned(FStorageHandle);
@@ -230,13 +238,6 @@ end;
 class function Storage.CreateProgram: TShaderProgram;
 begin
   result:=TShaderProgram.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
-end;
-
-class function Storage.CreateSceneObject: TSceneObject;
-begin
-  result := TSceneObject.CreateOwned(FStorageHandle);
   FResources.Add(result.GUID, result);
   result.Subscribe(FStorageHandle);
 end;

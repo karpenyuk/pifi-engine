@@ -54,6 +54,12 @@ type
     spot_direction: vec3;
   end;
 
+  PLightIndices = ^TLightIndices;
+  TLightIndices = record
+    count: vec4i;
+    indices: TLightIndexArray;
+  end;
+
   PMaterialProp = ^TMaterialProp;
   TMaterialProp = record
     ambient: vec4;
@@ -67,6 +73,7 @@ type
   ShaderGenerator = class
   private
     class var UniformLightNumber: TBuiltinUniformLightNumber;
+    class var ForwardLightShader: TShaderProgram;
     class constructor Create;
     class destructor Destroy;
   public
@@ -139,6 +146,14 @@ const
   '    vec3    spot_direction;'+#10#13 +
   '};'+#10#13;
 
+  SG_STRUCT_LIGHT_INDICES: ansistring =
+  'struct LightIndices'+#10#13 +
+  '{'+#10#13 +
+  '    ivec4 count;'+#10#13 +
+  '    ivec4 indices[8];'+#10#13 +
+  '};'+#10#13;
+
+
   SG_OBJECT_BLOCK: ansistring =
   'layout(std140, binding = 2) uniform Objects'+#10#13 +
   '{'+#10#13 +
@@ -147,11 +162,20 @@ const
   'uniform mat4 InstanceMatrix;'+#10#13;
 
   SG_OBJECT_BUFFER: ansistring =
-  'layout(std430, binding = 0) buffer SSBO1 {'#10#13+
+  'layout(std140, binding = 0) buffer SSBO1 {'#10#13+
   '	 World objectWorld[];'#10#13+
   '} IN;'#10#13+
   'uniform int ObjectId;'+#10#13+
   'uniform mat4 InstanceMatrix;'+#10#13;
+
+  SG_LIGHT_BUFFER: ansistring =
+  'layout(std140, binding = 1) buffer SSBO2 {'#10#13+
+  '	 Light lights[];'#10#13+
+  '} LIGHTS;'#10#13+
+  'layout(std140, binding = 2) buffer SSBO3 {'#10#13+
+  '	 LightIndices lightIndices[];'#10#13+
+  '} LIGHT_INDICES;'#10#13+
+  'uniform int LightId;'+#10#13;
 
   SG_CAMERA_BLOCK: ansistring =
   'layout(std140, binding = 1) uniform Cameras'+#10#13 +
@@ -175,7 +199,7 @@ const
     'subroutine(TGetWorldMatrix) mat4 defaultWorldMatrix() {'#10#13 +
     '  return IN.objectWorld[ObjectId].world; }'#10#13 +
     'subroutine(TGetWorldMatrix) mat4 instanceWorldMatrix() {'#10#13 +
-    '  return InstanceMatrix * IN.objectWorld[ObjectId].pivot; }'#10#13 +
+    '  return IN.objectWorld[ObjectId].pivot * InstanceMatrix; }'#10#13 +
     'subroutine(TGetWorldMatrix) mat4 sphereSpriteMatrix() {'#10#13 +
     '  mat4 m = cameras.camera.View * IN.objectWorld[ObjectId].world;'#10#13 +
     '  m[0].xyz = vec3(1.0, 0.0, 0.0);'#10#13 +
@@ -244,8 +268,8 @@ end;
 
 class destructor ShaderGenerator.Destroy;
 begin
-  if assigned(UniformLightNumber) then UniformLightNumber.Free;
-  UniformLightNumber := nil;
+  UniformLightNumber.Free; UniformLightNumber := nil;
+  ForwardLightShader.Free; ForwardLightShader := nil;
 end;
 
 class function ShaderGenerator.Gen1DConvolution: TShaderProgram;
@@ -288,6 +312,8 @@ end;
 class function ShaderGenerator.GenForwardLightShader: TShaderProgram;
 var vt,ft: ansistring;
 begin
+  if Assigned(ForwardLightShader) then exit(ForwardLightShader);
+
   result:= Storage.CreateProgram;
   vt:=
 '#version 430'+#10#13 +
@@ -320,20 +346,17 @@ SG_GET_WORLD_MATRIX_SUB +
 
 SG_STRUCT_LIGHT +
 
-'layout(std140, binding = 4) uniform LightIndices'+#10#13 +
-'{'+#10#13 +
-'    ivec4 indices[8];'+#10#13 +
-'} lightIndices;'+#10#13 +
-
 SG_MATERIAL_BLOCK +
+
+SG_STRUCT_LIGHT_INDICES +
+
+SG_LIGHT_BUFFER +
 
 'in vec3 WorldPosition;'+#10#13 +
 'in vec2 TexCoord;'+#10#13 +
 'in vec3 WorldNormal;'+#10#13 +
 'in vec3 ViewDir;'+#10#13 +
 'layout(location = 0) out vec4 FragColor;'+#10#13 +
-'layout(binding = 10) uniform samplerBuffer Lights;'+#10#13 +
-'uniform int LightNumber = 0;'#10#13+
 
 'vec3 Normal;'+#10#13 +
 'vec3 CameraVector;'+#10#13 +
@@ -429,18 +452,7 @@ SG_MATERIAL_BLOCK +
     'void processLight(int idx) {'#10#13+
     '    vec4 value;'#10#13+
     '    Light source;'#10#13+
-    '    source.position = texelFetch(Lights, idx).rgba; idx++;'#10#13+
-    '    source.ambient = texelFetch(Lights, idx).rgba; idx++;'+#10#13 +
-    '    source.diffuse = texelFetch(Lights, idx).rgba; idx++;'+#10#13 +
-    '    source.specular = texelFetch(Lights, idx).rgba; idx++;'+#10#13 +
-    '    value = texelFetch(Lights, idx).rgba; idx++;'+#10#13 +
-    '    source.constant_attenuation = value.r;'+#10#13 +
-    '    source.linear_attenuation = value.g;'+#10#13 +
-    '    source.quadratic_attenuation = value.b;'+#10#13 +
-    '    source.spot_cutoff = value.a;'+#10#13 +
-    '    value = texelFetch(Lights, idx).rgba; idx++;'+#10#13 +
-    '    source.spot_exponent = value.r;'+#10#13 +
-    '    source.spot_direction = value.gba;'+#10#13 +
+    '    source = LIGHTS.lights[idx];'#10#13+
     '    if (source.position.w == 1.0)'#10#13+
     '    {'#10#13+
     '        if (source.spot_cutoff == -1.0){ pointLight(source); }'#10#13+
@@ -460,8 +472,9 @@ SG_MATERIAL_BLOCK +
 '  LightAmbient = vec4(0.0);'+#10#13 +
 '  LightDiffuse = vec4(0.0);'+#10#13 +
 '  LightSpecular = vec4(0.0);'+#10#13 +
-'  for (int I = 0; I < 8 && I < LightNumber; I++) {'#10#13+
-'    processLight(lightIndices.indices[I].x);'#10#13+
+'  LightIndices A = LIGHT_INDICES.lightIndices[LightId];'#10#13+
+'  for (int I = 0; I < 8 && I < A.count.x; I++) {'#10#13+
+'    processLight(A.indices[I].x);'#10#13+
 '  }'#10#13+
 '  LightAmbient = clamp(LightAmbient, vec4(0.0), vec4(1.0));'#10#13+
 '  LightDiffuse = clamp(LightDiffuse, vec4(0.0), vec4(1.0));'#10#13+
@@ -474,7 +487,7 @@ SG_MATERIAL_BLOCK +
 '}';
   result.ShaderText[stVertex]:=vt;
   result.ShaderText[stFragment]:=ft;
-  result.AddBuildinUniform(GetUniformLightNumber);
+  ForwardLightShader := result;
 end;
 
 class function ShaderGenerator.GenLightGlyphShader: TShaderProgram;

@@ -206,6 +206,8 @@ Type
    }
   TLightStyle = (lsSpot, lsOmni, lsParallel, lsParallelSpot);
 
+  TLightIndexArray = packed array[0..7] of vec4i;
+
   //Логика использования шейдеров рендером вершинных объектов
   //slDisableShader - деактивировать активный шейдер и не использовать собственный
   //slUseActiveShader - использовать активный шейдер вместо собственного

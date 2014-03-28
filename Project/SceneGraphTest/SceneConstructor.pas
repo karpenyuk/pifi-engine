@@ -5,7 +5,7 @@ interface
 uses Classes,
      uBaseTypes, uVMath, uPrimitives, uMiscUtils, uRenderResource, uBaseRenders,
      uLists, uImageFormats, uImageLoader, uWorldSpace, uBaseClasses,
-     uEffectsPipeline;
+     uEffectsPipeline, uGizmo, uGizmoGL;
 
 type
 
@@ -60,46 +60,8 @@ var MeshObject: TMeshObject;
     Mesh: TMesh;
     Sprite_VO: TVertexObject;
     vo: TVertexObject;
-
+    Gizmo: TGizmoObject;
 begin
-  FMeshList:=TMeshAssembly.Create;
-
-  vo := CreateBox(2, 1.5, 3.5); Mesh := FMeshList.AddNewMesh(vo);
-  FMeshList.LocalMatrices[0] := TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
-
-  vo := CreateSphere(1, 16, 32); Mesh := FMeshList.AddNewMesh(vo);
-  FMeshList.LocalMatrices[1] := TMatrix.TranslationMatrix(Vector(3,-3,+0.1));
-
-  vo := CreateTeapod(4); FMeshList.AddNewMesh(vo);
-
-  vo := CreatePlane(3,3); Mesh := FMeshList.AddNewMesh(vo);
-  FMeshList.LocalMatrices[3] := TMatrix.RotationMatrix(Vector(1.0,0.0,0.0),Pi/180*90);
-
-  MeshObject:=Storage.CreateMeshObject(FMeshList);
-
-  SceneObject:= Storage.CreateSceneObject;
-  SceneObject.MeshObjects.AddMeshObject(MeshObject);
-  FSceneGraph.AddItem(SceneObject);
-
-  Sprite_VO := CreateSprite(1, 1);
-  Mesh := Storage.CreateMesh(Sprite_VO);
-
-  Sprite[0] := Storage.CreateSceneObject;
-  Sprite[0].DirectionBehavior := dbSphericalSprite;
-  MeshObject:=Storage.CreateMeshObject(Mesh);
-  Sprite[0].MeshObjects.AddMeshObject(MeshObject);
-  FSceneGraph.AddItem(Sprite[0]);
-
-  Sprite[1] := Storage.CreateSceneObject;
-  Sprite[1].DirectionBehavior := dbSphericalSprite;
-  MeshObject:=Storage.CreateMeshObject(Mesh); Sprite[1].MeshObjects.AddMeshObject(MeshObject);
-  FSceneGraph.AddItem(Sprite[1]);
-
-  Sprite[2] := Storage.CreateSceneObject;
-  Sprite[2].DirectionBehavior := dbSphericalSprite;
-  MeshObject:=Storage.CreateMeshObject(Mesh); Sprite[2].MeshObjects.AddMeshObject(MeshObject);
-  FSceneGraph.AddItem(Sprite[2]);
-
   // Create material which use shader
   shader := ShaderGenerator.GenForwardLightShader();
 
@@ -108,8 +70,6 @@ begin
   with Material[0].AddNewMaterial('RedMate') do begin
      Properties.DiffuseColor.SetColor(165, 41, 0, 255);
   end;
-  FMeshList[0].MaterialObject := Material[0];
-  FSceneGraph.AddMaterial(Material[0]);
 
   Material[1] := Storage.CreateMaterialObject;
   Material[1].AttachShader(shader);
@@ -117,8 +77,6 @@ begin
      Properties.DiffuseColor.SetColor(15, 15, 15, 255);
      Properties.SpecularColor.SetColor(127, 127, 127, 255);
   end;
-  FMeshList[1].MaterialObject := Material[1];
-  FSceneGraph.AddMaterial(Material[1]);
 
   Material[2] := Storage.CreateMaterialObject;
   Material[2].AttachShader(shader);
@@ -126,8 +84,6 @@ begin
      Properties.DiffuseColor.SetColor(221, 236, 192, 255);
      Properties.SpecularColor.SetColor(250, 250, 250, 255);
   end;
-  FMeshList[2].MaterialObject := Material[2];
-  FSceneGraph.AddMaterial(Material[2]);
 
   Material[3] := Storage.CreateMaterialObject;
   Material[3].AttachShader(shader);
@@ -135,12 +91,9 @@ begin
      Properties.DiffuseColor.SetColor(4, 17, 0, 255);
      Properties.EmissionColor.SetColor(2*41, 2*165, 0, 255);
   end;
-  FMeshList[3].MaterialObject := Material[3];
-  FSceneGraph.AddMaterial(Material[3]);
 
   shader := ShaderGenerator.GenLightGlyphShader();
   SpriteMaterial := Storage.CreateMaterialObject;
-  FSceneGraph.AddMaterial(SpriteMaterial);
   SpriteMaterial.AttachShader(shader);
 
   FImageLoader := TImageLoader.Create();
@@ -160,12 +113,59 @@ begin
      Properties.DiffuseColor.SetColor(255, 255, 255, 255);
   end;
 
+  FMeshList:=TMeshAssembly.Create;
+
+  vo := CreateBox(2, 1.5, 3.5); FMeshList.AddNewMesh(vo);
+  FMeshList.LocalMatrices[0] := TMatrix.TranslationMatrix(Vector(-3,3,-0.1));
+  FMeshList[0].MaterialObject := Material[0];
+
+  vo := CreateSphere(1, 16, 32); FMeshList.AddNewMesh(vo);
+  FMeshList.LocalMatrices[1] := TMatrix.TranslationMatrix(Vector(3,-3,+0.1));
+  FMeshList[1].MaterialObject := Material[1];
+
+  vo := CreateTeapod(4); FMeshList.AddNewMesh(vo);
+  FMeshList[2].MaterialObject := Material[2];
+
+  vo := CreatePlane(3,3); FMeshList.AddNewMesh(vo);
+  FMeshList.LocalMatrices[3] := TMatrix.RotationMatrix(Vector(1.0,0.0,0.0),Pi/180*90);
+  FMeshList[3].MaterialObject := Material[3];
+
+  MeshObject:=Storage.CreateMeshObject(FMeshList);
+
+  SceneObject:= Storage.CreateMovableObject(TSceneObject) as TSceneObject;
+  SceneObject.MeshObjects.AddMeshObject(MeshObject);
+  FSceneGraph.AddItem(SceneObject);
+
+  Sprite_VO := CreateSprite(1, 1);
+  Mesh := Storage.CreateMesh(Sprite_VO);
   Mesh.MaterialObject := SpriteMaterial;
-  FSceneGraph.AddMaterial(SpriteMaterial);
+
+  Sprite[0] := Storage.CreateMovableObject(TSceneObject) as TSceneObject;
+  Sprite[0].DirectionBehavior := dbSphericalSprite;
+  MeshObject:=Storage.CreateMeshObject(Mesh);
+  Sprite[0].MeshObjects.AddMeshObject(MeshObject);
+  FSceneGraph.AddItem(Sprite[0]);
+
+  Sprite[1] := Storage.CreateMovableObject(TSceneObject) as TSceneObject;
+  Sprite[1].DirectionBehavior := dbSphericalSprite;
+  MeshObject:=Storage.CreateMeshObject(Mesh); Sprite[1].MeshObjects.AddMeshObject(MeshObject);
+  FSceneGraph.AddItem(Sprite[1]);
+
+  Sprite[2] := Storage.CreateMovableObject(TSceneObject) as TSceneObject;
+  Sprite[2].DirectionBehavior := dbSphericalSprite;
+  MeshObject:=Storage.CreateMeshObject(Mesh); Sprite[2].MeshObjects.AddMeshObject(MeshObject);
+  FSceneGraph.AddItem(Sprite[2]);
+
+  Gizmo := Storage.CreateMovableObject(TGizmoObject) as TGizmoObject;
+  FSceneGraph.AddItem(Gizmo);
+  Gizmo.MoveForward(3);
+  Gizmo.MoveUp(1);
+  Gizmo.MoveLeft(1);
 
   light := Storage.CreateLight;  light.FriendlyName := 'light1';
   light.LightStyle := lsOmni;
   light.MoveObject(2, 0.5, -3);
+  light.Ambient.SetColor(255, 255, 255, 255);
   light.Specular.SetColor(250, 250, 250, 255);
   FSceneGraph.AddItem(light);
   Sprite[0].Parent := light;
@@ -174,28 +174,18 @@ begin
   light.LightStyle := lsOmni;
   light.MoveObject(-4, 5, 3);
   light.Diffuse.SetColor(250, 250, 15, 255);
+  light.Ambient.SetColor(255, 255, 255, 255);
   FSceneGraph.AddItem(light);
   Sprite[1].Parent := light;
 
   light := Storage.CreateLight;
   light.LightStyle := lsOmni;
   light.MoveObject(0, 7, 0);
+  light.Ambient.SetColor(255, 255, 255, 255);
   light.Specular.SetColor(5, 5, 120, 255);
   FSceneGraph.AddItem(light);
   Sprite[2].Parent := light;
 
-{
-  FScreenQuad  := TSceneObject.Create;
-  Mesh := TMesh.CreateFrom(Sprite_VO);
-  MeshObject:=TMeshObject.CreateFrom(Mesh);
-  FScreenQuad.MeshObjects.AddMeshObject(MeshObject,true);
-  FSceneGraph.AddItem(FScreenQuad);
-  FShader[2] := ShaderGenerator.GenScreenQuadShader();
-  FMaterial[4] := TMaterialObject.Create;
-  FSceneGraph.AddMaterial(FMaterial[4]);
-  FMaterial[4].AttachShader(FShader[2]);
-  Mesh.MaterialObject := FMaterial[4];
-}
   FSceneGraph.Camera.FoV:=60;
   FSceneGraph.Camera.MoveObject(0, 2, -10);
   FSceneGraph.Camera.ViewTarget := SceneObject;

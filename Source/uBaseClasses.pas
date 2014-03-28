@@ -66,6 +66,8 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
+    function GetMaterials: TObjectList; virtual;
+
     property Parent: TBaseSceneItem read FParent write SetParent;
     property Childs: TSceneItemList read FChilds;
     property NestingDepth: integer read FNestingDepth write SetNestingDepth;
@@ -1008,6 +1010,11 @@ destructor TBaseSceneItem.Destroy;
 begin
   FChilds.Free;
   inherited;
+end;
+
+function TBaseSceneItem.GetMaterials: TObjectList;
+begin
+  Result := TObjectList.Create;
 end;
 
 procedure TBaseSceneItem.SetNestingDepth(const Value: integer);

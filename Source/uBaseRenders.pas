@@ -41,6 +41,8 @@ Type
     FSupportedResources: TResourceClasses;
     FRequiredAPIVersion: TApiVersion;
     FRenderPurpose: TRenderPurposes;
+    // Registering supported resources
+    procedure ProclaimSupport; virtual;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -53,7 +55,6 @@ Type
   TBaseRender = class(TPersistentResource)
   private
   protected
-    FCurrentLightNumber: integer;
     FCurrentGraph: TSceneGraph;
     FCurrentCamera: TSceneCamera;
     FCurrentSceneObject: TSceneObject;
@@ -80,7 +81,6 @@ Type
     property CurrentGraph: TSceneGraph read FCurrentGraph;
     property CurrentCamera: TSceneCamera read FCurrentCamera;
     property CurrentSceneObject: TSceneObject read FCurrentSceneObject;
-    property CurrentLightNumber: integer read FCurrentLightNumber;
   end;
 
   TRegisteredRenders = class (TNotifiableObject)
@@ -219,6 +219,7 @@ begin
   inherited Create;
   FSupportedResources := TResourceClasses.Create(ClassComparer, nil);
   FRenderPurpose:=[rpUnknown];
+  ProclaimSupport;
 end;
 
 destructor TBaseSubRender.Destroy;
@@ -233,6 +234,11 @@ var
 begin
   grClass := nil;
   Result := FSupportedResources.Find(aResource, grClass) and (grClass = aGraphic);
+end;
+
+procedure TBaseSubRender.ProclaimSupport;
+begin
+  // Do nothing
 end;
 
 { TRegisteredRenders }

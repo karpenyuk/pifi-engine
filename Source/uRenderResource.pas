@@ -949,6 +949,7 @@ Type
 
     constructor Create; override;
     destructor Destroy; override;
+    function GetMaterials: TObjectList; override;
     function MakeClone(aWithChildren: Boolean): TMovableObject; override;
 
     property MeshObjects: TMeshObjectsList read FMeshObjects;
@@ -3123,6 +3124,25 @@ destructor TSceneObject.Destroy;
 begin
   FMeshObjects.Free;
   inherited;
+end;
+
+function TSceneObject.GetMaterials: TObjectList;
+var i, j, k: integer;
+  mo: TMeshObject;
+  ma: TMeshAssembly;
+  mat: TMaterialObject;
+begin
+  Result := inherited GetMaterials;
+  for i := 0 to FMeshObjects.Count - 1 do begin
+    mo := FMeshObjects[i];
+    for j := 0 to mo.FLods.Count - 1 do begin
+      ma := mo.FLods.getLod(j).Assembly;
+      for k := 0 to  ma.Count - 1 do begin
+        mat := ma.Items[k].MaterialObject;
+        if Result.IndexOf(mat) < 0 then Result.Add(mat);
+      end;
+    end;
+  end;
 end;
 
 function TSceneObject.MakeClone(aWithChildren: Boolean): TMovableObject;

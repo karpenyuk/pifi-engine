@@ -66,10 +66,16 @@ type
 
 implementation
 
+uses
+  uLists;
+
 
 { TSceneGraph }
 
 function TSceneGraph.AddItem(aItem: TBaseSceneItem): integer;
+var
+  list: TObjectList;
+  i: integer;
 begin
   result := FRoot.Childs.AddSceneItem(aItem);
   AttachResource(aItem);
@@ -80,6 +86,12 @@ begin
   if (aItem is TLightSource) and (not FLights.inList(aItem))
   then FLights.AddLight(aItem as TLightSource);
 
+  list := aItem.GetMaterials;
+  try
+    for i := 0 to list.Count - 1 do AddMaterial(list[i] as TMaterialObject);
+  finally
+    list.Free;
+  end;
 end;
 
 function TSceneGraph.AddLight(aLight: TLightSource): integer;

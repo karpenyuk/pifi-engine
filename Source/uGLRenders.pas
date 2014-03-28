@@ -10,7 +10,7 @@ unit uGLRenders;
 
 interface
 
-uses Classes, uVMath, uBaseGL, uBaseClasses, uRenderResource, uBaseRenders,
+uses Windows, Classes, uVMath, uBaseGL, uBaseClasses, uRenderResource, uBaseRenders,
      uBaseTypes, uLists, uMiscUtils, uGenericsRBTree, uWorldSpace, dglOpenGL,
      uPersistentClasses;
 
@@ -132,8 +132,15 @@ Type
     FMeshObject: TMeshObject;
     FLods: array of array of TMeshState;
     FOccluder: array of TGLMesh;
+    function GetMesh(const aLevel, anIndex: integer): TGLMesh;
+    function GetLodCount: integer;
+    function GetMeshCount(const aLevel: integer): integer;
   public
     constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
+    property MeshObject: TMeshObject read FMeshObject;
+    property Lods[const aLevel, anIndex: integer]: TGLMesh read GetMesh;
+    property LodCount: integer read GetLodCount;
+    property MeshCount[const aLevel: integer]: integer read GetMeshCount;
   end;
 
   TGLMovableObject = class (TGLBaseResource)
@@ -142,22 +149,10 @@ Type
     FBaseTfPoolIndex: integer;
     FParentObjectPoolIndex: integer;
     FObjectPoolIndex: integer;
+    FLightIdxPoolIndex: integer;
     FTransformChanged: boolean;
   public
     procedure Update(aRender: TBaseRender); override;
-  end;
-
-  TGLSceneObject = class (TGLMovableObject)
-  private
-    FSceneObject: TSceneObject;
-    FMeshObjects: array of TGLMeshObject;
-  public
-    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
-    destructor Destroy; override;
-    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
-
-    procedure Update(aRender: TBaseRender); override;
-    procedure Apply(aRender: TBaseRender); override;
   end;
 
   TGLLight = class (TGLMovableObject)
@@ -173,11 +168,31 @@ Type
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     procedure Update(aRender: TBaseRender); override;
+
+    property LightPoolIndex: Integer read FLightPoolIndex;
+  end;
+
+  TGLSceneObject = class (TGLMovableObject)
+  private
+    FSceneObject: TSceneObject;
+    FMeshObjects: array of TGLMeshObject;
+    // Индексы слотов источников света в пуле индексов освещения
+    FEffectedLights: TLightIndexArray;
+    FEffectedLightNum: Integer;
+  public
+    constructor CreateFrom(aOwner: TBaseSubRender; aResource: TBaseRenderResource); override;
+    destructor Destroy; override;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
+
+    procedure Update(aRender: TBaseRender); override;
+    procedure Apply(aRender: TBaseRender); override;
   end;
 
   TGLSceneObjectRender = class (TBaseSubRender)
   private
     function getRender: TGLRender;
+  protected
+    procedure ProclaimSupport; override;
   public
     procedure ProcessResource(aResource: TBaseGraphicResource); override;
 
@@ -185,8 +200,6 @@ Type
       const aVertexObject: TGLVertexObject;
       aShaderUsageLogic: TShaderUsageLogic = slUseOwnShader;
       aShaderUsagePriority: TShaderUsagePriority = spUseOwnShaderFirst);
-
-    constructor Create; override;
 
     property Render: TGLRender read getRender;
   end;
@@ -198,7 +211,8 @@ Type
     FResources: TResourceTree;
     function GetResource(const Resource: TBaseRenderResource): TGLBaseResource;
     function CreateResource(const Resource: TBaseRenderResource): TGLBaseResource;
-
+  protected
+    procedure ProclaimSupport; override;
   public
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
@@ -216,6 +230,7 @@ Type
     worldTransfMethod: (wtmDefault, wtmInstance, wtmSphere, wtmCylindr);
     objectIndex: Integer;
     instanceMatrix: PMat4;
+    lightIndex: Integer;
   end;
 
   TDrawCommandList = TDataList<TDrawCommand>;
@@ -225,7 +240,7 @@ Type
     FCameraPool: TGLBufferObjectsPool;
     FObjectPool: TGLBufferObjectsPool;
     FLightPool: TGLBufferObjectsPool;
-    FLightIndices: TGLBufferObject;
+    FLightIndicesPool: TGLBufferObjectsPool;
     FMaterialPool: TGLBufferObjectsPool;
     FBaseTfPool: TGLBufferObjectsPool;
     FObjectIndices: TGLBufferObject;
@@ -234,7 +249,7 @@ Type
     FInvocationGroups: array of TObjectList;
     FComputeTfByShader: boolean;
     FMaxWorkGroupSize: integer;
-
+    FTfChangesCounter: integer;
     FDrawCommands: TDrawCommandList;
   protected
     FResourceManager: TGLResources;
@@ -255,13 +270,14 @@ Type
 
     procedure BindCameraBuffer(aPoolIndex: integer);
     procedure BindObjectBuffer(aPoolIndex: integer);
-    procedure ApplyLights(aLights: TObjectList);
+    procedure AddDrawCommand(const aCommand: TDrawCommand);
     property ComputeTransformByShader: boolean read FComputeTfByShader;
 
     property ResourceManager: TGLResources read FResourceManager;
     property CameraPool: TGLBufferObjectsPool read FCameraPool;
     property ObjectPool: TGLBufferObjectsPool read FObjectPool;
     property LightPool: TGLBufferObjectsPool read FLightPool;
+    property LightIndicesPool: TGLBufferObjectsPool read FLightIndicesPool;
     property MaterialPool: TGLBufferObjectsPool read FMaterialPool;
   end;
 
@@ -302,23 +318,9 @@ uses
 
 { TGLRender }
 
-procedure TGLRender.ApplyLights(aLights: TObjectList);
-var
-  i: integer;
-  p: PGLuint;
+procedure TGLRender.AddDrawCommand(const aCommand: TDrawCommand);
 begin
-  FCurrentLightNumber := aLights.Count;
-  if FCurrentLightNumber = 0 then
-    exit;
-  p := FLightIndices.MapRange(GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
-    0, FLightIndices.Size);
-  FillChar(p^, FLightIndices.Size, 0);
-  for I := 0 to aLights.Count - 1 do
-  begin
-    p^ := TGLLight(aLights[I]).FLightPoolIndex * 6;
-    inc(p, 4);
-  end;
-  FLightIndices.UnMap;
+  FDrawCommands.Add(aCommand);
 end;
 
 procedure TGLRender.BindCameraBuffer(aPoolIndex: integer);
@@ -353,7 +355,7 @@ begin
   FCameraPool := nil;
   FObjectPool := nil;
   FLightPool := nil;
-  FLightIndices := nil;
+  FLightIndicesPool := nil;
   FMaterialPool := nil;
   FBaseTfPool := nil;
   FObjectIndices := nil;
@@ -370,7 +372,7 @@ begin
   if assigned(FCameraPool) then FCameraPool.Free;
   if assigned(FObjectPool) then FObjectPool.Free;
   if assigned(FLightPool) then FLightPool.Free;
-  if assigned(FLightIndices) then FLightIndices.Free;
+  if assigned(FLightIndicesPool) then FLightIndicesPool.Free;
   if assigned(FMaterialPool) then FMaterialPool.Free;
   if assigned(FBaseTfPool) then FBaseTfPool.Free;
   if assigned(FObjectIndices) then FObjectIndices.Free;
@@ -408,7 +410,7 @@ const
     translation: (( 1,0,0,0 ),( 0,1,0,0 ),( 0,0,1,0 ),( 0,0,0,1 ));
     model: (( 1,0,0,0 ),( 0,1,0,0 ),( 0,0,1,0 ),( 0,0,0,1 ));
     );
-var i, j, noLoadCount, sum: integer;
+var i, j, noLoadCount: integer;
     SceneItem: TBaseSceneItem;
     movable: TMovableObject absolute SceneItem;
     res: TBaseRenderResource;
@@ -417,7 +419,7 @@ var i, j, noLoadCount, sum: integer;
     p: ^Vec4i;
     glMovable: TGLMovableObject;
     Invocation, WorkGroupNum: integer;
-    pwtBase, pwt: PWorldTransform;
+    pwt: PWorldTransform;
     WorkGroupSizeX: Integer;
     WorkGroupSizeY: Integer;
 
@@ -430,7 +432,7 @@ var i, j, noLoadCount, sum: integer;
       begin
         glres := FResourceManager.GetOrCreateResource(SceneItem);
         // обновляем даные в видеопамяти
-        glres.Update(Self);
+        if Assigned(glres) then glres.Update(Self);
         DownToTree(SceneItem.Childs);
       end;
     end;
@@ -447,30 +449,28 @@ begin
     FCameraPool := TGLBufferObjectsPool.Create(SizeOf(TCameraTransform), 8);
 
   if not Assigned(FObjectPool) then begin
-    FObjectPool := TGLBufferObjectsPool.Create(SizeOf(TWorldTransform), MAX_OBJECTS_RESERVED);
+    FObjectPool := TGLBufferObjectsPool.Create(SizeOf(TWorldTransform), MAX_OBJECTS_RESERVED, btShaderStorage);
     // Делаем резерв в пуле на случай когда количество изменений меньше количества нитей
     // Количество нитей 32, в случае одного объекта нужно 31 слот для холостых записей
     for i := 1 to 31 do FObjectPool.GetFreeSlotIndex;
-    pwtBase := FObjectPool.Buffer.Map(GL_WRITE_ONLY);
+    pwt := FObjectPool.Buffer.Map(GL_WRITE_ONLY);
     for i := 0 to FObjectPool.ObjectCount - 1 do begin
-      pwtBase.world := MatIdentity;
-      pwtBase.invWorld := MatIdentity;
-      pwtBase.worldNormal := MatIdentity;
-      pwtBase.worldT := MatIdentity;
-      pwtBase.pivot := MatIdentity;
-      pwtBase.invPivot := MatIdentity;
-      Inc(pwtBase);
+      pwt.world := MatIdentity;
+      pwt.invWorld := MatIdentity;
+      pwt.worldNormal := MatIdentity;
+      pwt.worldT := MatIdentity;
+      pwt.pivot := MatIdentity;
+      pwt.invPivot := MatIdentity;
+      Inc(pwt);
     end;
     FObjectPool.Buffer.UnMap;
   end;
 
   if not Assigned(FLightPool) then
-    FLightPool := TGLBufferObjectsPool.Create(SizeOf(TLightProp), 1000, btTexture);
+    FLightPool := TGLBufferObjectsPool.Create(SizeOf(TLightProp), 1000, btShaderStorage);
 
-  if not Assigned(FLightIndices) then begin
-    FLightIndices := TGLBufferObject.Create(btUniform);
-    FLightIndices.Allocate(8*SizeOf(Vec4i), nil);
-  end;
+  if not Assigned(FLightIndicesPool) then
+    FLightIndicesPool := TGLBufferObjectsPool.Create(SizeOf(TLightIndices), MAX_OBJECTS_RESERVED, btShaderStorage);
 
   if not Assigned(FMaterialPool) then
     FMaterialPool := TGLBufferObjectsPool.Create(SizeOf(TMaterialProp), 100);
@@ -524,7 +524,7 @@ begin
   DownToTree(aScene.Root.Childs);
 
   if ComputeTransformByShader then begin
-    sum := 0;
+    FTfChangesCounter := 0;
     p := nil;
 
     for i := 0 to High(FInvocationGroups) do begin
@@ -536,7 +536,7 @@ begin
           p[1] := glMovable.FParentObjectPoolIndex;
           p[2] := glMovable.FObjectPoolIndex;
           Inc(p);
-          Inc(sum);
+          Inc(FTfChangesCounter);
         end;
         // Холостые вычисления чтобы дополнить группу нитями кратно 32
         noLoadCount := FInvocationGroups[i].Count mod 32;
@@ -546,17 +546,17 @@ begin
             p[1] := 0;
             p[2] := j;
             Inc(p);
-            Inc(sum);
+            Inc(FTfChangesCounter);
           end;
         end;
       end;
     end;
 
-    Assert(sum < MAX_OBJECTS_RESERVED);
+    Assert(FTfChangesCounter < MAX_OBJECTS_RESERVED);
 
     if p <> nil then FObjectIndices.UnMap;
 
-    if sum > 0 then begin
+    if FTfChangesCounter > 0 then begin
       FBaseTfPool.Buffer.BindBase(btShaderStorage, 0);
       FObjectPool.Buffer.BindBase(btShaderStorage, 1); // to read
       FObjectPool.Buffer.BindBase(btShaderStorage, 2); // to write
@@ -574,30 +574,8 @@ begin
           Inc(Invocation, WorkGroupNum+1);
         end;
       end;
-      glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT or GL_BUFFER_UPDATE_BARRIER_BIT);
-
-      pwtBase := FObjectPool.Buffer.Map(GL_READ_ONLY);
-      for i := 0 to High(FInvocationGroups) do begin
-        for j := 0 to FInvocationGroups[i].Count - 1 do begin
-          glMovable := TGLMovableObject(FInvocationGroups[i].Items[j]);
-          pwt := pwtBase;
-          Inc(pwt, glMovable.FObjectPoolIndex);
-          glMovable.FMovableObject.UpdateWorldMatrix(
-            pwt.world,
-            pwt.worldNormal,
-            pwt.invWorld,
-            pwt.worldT,
-            pwt.pivot,
-            pwt.invPivot);
-        end;
-      end;
-      FObjectPool.Buffer.UnMap;
     end;
   end;
-
-  FLightIndices.BindBase(CUBOSemantics[ubLights].Location);
-  glActiveTexture(GL_TEXTURE10);
-  FLightPool.Buffer.BindTexture;
 end;
 
 procedure TGLRender.ProcessResource(const aResource: TBaseRenderResource);
@@ -629,6 +607,8 @@ var i, j: integer;
     camera: TGLCamera;
     glRes: TGLBaseResource;
     effects: TEffectPipeline;
+    glMovable: TGLMovableObject;
+    pwtBase, pwt: PWorldTransform;
 
     procedure DownToTree(anItems: TSceneItemList);
     var ii: integer;
@@ -655,13 +635,18 @@ begin
   // Заполняем вектор комманд
   DownToTree(aScene.Root.Childs);
 
+  if not ComputeTransformByShader then
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT or GL_BUFFER_UPDATE_BARRIER_BIT);
+
   FObjectPool.Buffer.BindBase(btShaderStorage, 0);
+  FLightPool.Buffer.BindBase(btShaderStorage, 1);
+  FLightIndicesPool.Buffer.BindBase(btShaderStorage, 2);
 
   for i := 0 to aScene.CamerasCount - 1 do begin
     FCurrentCamera := aScene.Cameras[i];
     camera := TGLCamera(FResourceManager.GetOrCreateResource(aScene.Cameras[i]));
 
-    glClearColor(0.2, 0.2, 0.2, 1.0);
+    glClearColor(0.0, 0.1, 0.2, 1.0);
     glClearDepth(1.0);
     glEnable(GL_DEPTH_TEST);
     glDepthMask(true);
@@ -674,6 +659,8 @@ begin
 
       DrawCommand.mesh.FMaterialObject.Apply(Self);
       BindObjectBuffer(DrawCommand.objectIndex);
+      TGLSLShaderProgram.ActiveShader.SetUniform('ObjectId', DrawCommand.objectIndex);
+      TGLSLShaderProgram.ActiveShader.SetUniform('LightId', DrawCommand.lightIndex);
 
       case DrawCommand.worldTransfMethod of
         wtmDefault: TGLSLShaderProgram.ActiveShader.SetSubroutine(WORLD_MATRIX_SUB, 'defaultWorldMatrix');
@@ -698,6 +685,26 @@ begin
       end;
     end;
   end;
+
+  if ComputeTransformByShader and (FTfChangesCounter > 0) then begin
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT or GL_BUFFER_UPDATE_BARRIER_BIT);
+    pwtBase := FObjectPool.Buffer.Map(GL_READ_ONLY);
+    for i := 0 to High(FInvocationGroups) do begin
+      for j := 0 to FInvocationGroups[i].Count - 1 do begin
+        glMovable := TGLMovableObject(FInvocationGroups[i].Items[j]);
+        pwt := pwtBase;
+        Inc(pwt, glMovable.FObjectPoolIndex);
+        glMovable.FMovableObject.UpdateWorldMatrix(
+          pwt.world,
+          pwt.worldNormal,
+          pwt.invWorld,
+          pwt.worldT,
+          pwt.pivot,
+          pwt.invPivot);
+      end;
+    end;
+    FObjectPool.Buffer.UnMap;
+  end;
 end;
 
 procedure TGLRender.UploadResource(const Res: TBaseRenderResource);
@@ -706,13 +713,6 @@ begin
 end;
 
 { TGLStaticRender }
-
-constructor TGLSceneObjectRender.Create;
-begin
-  inherited Create;
-  FSupportedResources.Add(TSceneObject, TGLSceneObject);
-end;
-
 
 function TGLSceneObjectRender.getRender: TGLRender;
 begin
@@ -726,29 +726,39 @@ var i,j: integer;
     SceneObject: TGLSceneObject absolute aResource;
     DrawCommand: TDrawCommand;
 begin
-  SceneObject.Apply(Render);
-  //рендерим объект сцены с применением материалов
-  for i:=0 to length(SceneObject.FMeshObjects)-1 do begin
-    MeshObject:=SceneObject.FMeshObjects[i];
-    for j:=0 to length(MeshObject.FLods[0])-1 do begin
-      Mesh := MeshObject.FLods[0,j].Mesh;
-      DrawCommand.mesh := Mesh;
-      case SceneObject.FSceneObject.DirectionBehavior of
-        dbNone: begin
-          if MeshObject.FLods[0,j].IsIdentity
-            then DrawCommand.worldTransfMethod := wtmDefault
-            else begin
-              DrawCommand.worldTransfMethod := wtmInstance;
-              DrawCommand.instanceMatrix := MeshObject.FMeshObject.Mesh.GetMatrixAddr(j);
-            end;
+  if SceneObject.FObjectPoolIndex > -1 then begin
+
+    SceneObject.Apply(Render);
+    //рендерим объект сцены с применением материалов
+    for i:=0 to length(SceneObject.FMeshObjects)-1 do begin
+      MeshObject:=SceneObject.FMeshObjects[i];
+      for j:=0 to length(MeshObject.FLods[0])-1 do begin
+        Mesh := MeshObject.FLods[0,j].Mesh;
+        DrawCommand.mesh := Mesh;
+        case SceneObject.FSceneObject.DirectionBehavior of
+          dbNone: begin
+            if MeshObject.FLods[0,j].IsIdentity
+              then DrawCommand.worldTransfMethod := wtmDefault
+              else begin
+                DrawCommand.worldTransfMethod := wtmInstance;
+                DrawCommand.instanceMatrix := MeshObject.FMeshObject.Mesh.GetMatrixAddr(j);
+              end;
+          end;
+          dbSphericalSprite: DrawCommand.worldTransfMethod := wtmSphere;
+          dbCylindricalSprite: DrawCommand.worldTransfMethod := wtmCylindr;
         end;
-        dbSphericalSprite: DrawCommand.worldTransfMethod := wtmSphere;
-        dbCylindricalSprite: DrawCommand.worldTransfMethod := wtmCylindr;
+        DrawCommand.objectIndex := SceneObject.FObjectPoolIndex;
+        DrawCommand.lightIndex := SceneObject.FLightIdxPoolIndex;
+        Render.FDrawCommands.Add(DrawCommand);
       end;
-      DrawCommand.objectIndex := SceneObject.FObjectPoolIndex;
-      Render.FDrawCommands.Add(DrawCommand);
     end;
+
   end;
+end;
+
+procedure TGLSceneObjectRender.ProclaimSupport;
+begin
+  FSupportedResources.Add(TSceneObject, TGLSceneObject);
 end;
 
 class procedure TGLSceneObjectRender.RenderVertexObject(
@@ -825,28 +835,6 @@ end;
 constructor TGLResources.CreateOwned(aOwner: TObject);
 begin
   inherited CreateOwned(aOwner);
-  FSupportedResources.Clear;
-  // Registering supported resources
-
-  FSupportedResources.Add(TShaderProgram, TGLSLShaderProgramExt);
-  FSupportedResources.Add(TVertexObject, TGLVertexObject);
-
-  FSupportedResources.Add(TMeshObject, TGLMeshObject);
-  FSupportedResources.Add(TMaterialObject, TGLMaterial);
-  FSupportedResources.Add(TLightSource, TGLLight);
-  FSupportedResources.Add(TSceneObject, TGLSceneObject);
-
-  { TODO : Объекты TBufferObject и TAttibObject так же нужно выбирать из коллекций }
-  FSupportedResources.Add(TBufferObject, TGLBufferObject);
-  FSupportedResources.Add(TAttribObject, TGLAttribObject);
-  FSupportedResources.Add(TTexture, TGLTextureObject);
-  FSupportedResources.Add(TMesh, TGLMesh);
-  FSupportedResources.Add(TBuiltinUniformLightNumber, TGLBuiltinUniform);
-  FSupportedResources.Add(TTextureSampler, TGLTextureSampler);
-  FSupportedResources.Add(TFrameBuffer, TGLFrameBufferObjectExt);
-  FSupportedResources.Add(TSceneCamera, TGLCamera);
-  FSupportedResources.Add(TGlowPipelineEffect, TGLGlowEffect);
-
   FResources := TResourceTree.Create(ResourceComparer, nil);
 end;
 
@@ -928,6 +916,28 @@ begin
   // Do nothing
 end;
 
+procedure TGLResources.ProclaimSupport;
+begin
+  FSupportedResources.Add(TShaderProgram, TGLSLShaderProgramExt);
+  FSupportedResources.Add(TVertexObject, TGLVertexObject);
+
+  FSupportedResources.Add(TMeshObject, TGLMeshObject);
+  FSupportedResources.Add(TMaterialObject, TGLMaterial);
+  FSupportedResources.Add(TLightSource, TGLLight);
+  FSupportedResources.Add(TSceneObject, TGLSceneObject);
+
+  { TODO : Объекты TBufferObject и TAttibObject так же нужно выбирать из коллекций }
+  FSupportedResources.Add(TBufferObject, TGLBufferObject);
+  FSupportedResources.Add(TAttribObject, TGLAttribObject);
+  FSupportedResources.Add(TTexture, TGLTextureObject);
+  FSupportedResources.Add(TMesh, TGLMesh);
+  FSupportedResources.Add(TBuiltinUniformLightNumber, TGLUniformLightNumber);
+  FSupportedResources.Add(TTextureSampler, TGLTextureSampler);
+  FSupportedResources.Add(TFrameBuffer, TGLFrameBufferObjectExt);
+  FSupportedResources.Add(TSceneCamera, TGLCamera);
+  FSupportedResources.Add(TGlowPipelineEffect, TGLGlowEffect);
+end;
+
 procedure TGLResources.RemoveGLResource(const Resource: TBaseRenderResource);
 var glres: TGLBaseResource;
 begin
@@ -983,17 +993,6 @@ begin
   tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubCamera].Name);
   if Assigned(tb) then begin
     glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubCamera].Location);
-  end;
-
-//  tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubObject].Name);
-//  if Assigned(tb) then begin
-//    glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubObject].Location);
-  // end;
-
-  tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubLights].Name);
-  if assigned(tb) then
-  begin
-    glUniformBlockBinding(FShader.Id, tb.BlockIndex, CUBOSemantics[ubLights].Location);
   end;
 
   tb := FShader.UniformBlocks.GetUBOByName(CUBOSemantics[ubMaterial].Name);
@@ -1130,25 +1129,54 @@ begin
   end;
 end;
 
+function TGLMeshObject.GetLodCount: integer;
+begin
+  Result := Length(FLods);
+end;
+
+function TGLMeshObject.GetMesh(const aLevel, anIndex: integer): TGLMesh;
+begin
+  Result := FLods[aLevel, anIndex].Mesh;
+end;
+
+function TGLMeshObject.GetMeshCount(const aLevel: integer): integer;
+begin
+  Result := Length(FLods[aLevel]);
+end;
+
 { TGLSceneObject }
 
 procedure TGLSceneObject.Apply(aRender: TBaseRender);
 var
   glRender: TGLRender absolute aRender;
   glLight: TGLLight;
-  list: TObjectList;
-  i: Integer;
+  i, j: Integer;
+  changed: boolean;
+  pl: PLightIndices;
 begin
-  list := TObjectList.Create;
-  try
-    // Just add all lights
-    for i := 0 to aRender.CurrentGraph.LightsCount - 1 do begin
-      glLight := glRender.FResourceManager.GetResource(aRender.CurrentGraph.Lights[i]) as TGLLight;
-      if not glLight.FLightPropChanged then list.Add(glLight);
+  j := 0;
+  changed := false;
+  // Just add all lights
+  for i := 0 to aRender.CurrentGraph.LightsCount - 1 do begin
+    glLight := glRender.FResourceManager.GetResource(aRender.CurrentGraph.Lights[i]) as TGLLight;
+    if not glLight.FLightPropChanged then begin
+      if FEffectedLights[j][0] <> glLight.LightPoolIndex then begin
+        FEffectedLights[j][0] := glLight.LightPoolIndex;
+        changed := true;
+      end;
+      Inc(j);
     end;
-    glRender.ApplyLights(list);
-  finally
-    list.Free;
+  end;
+
+  if (FEffectedLightNum <> j) or changed then begin
+    FEffectedLightNum := j;
+    pl := glRender.FLightIndicesPool.Buffer.MapRange(
+      GL_MAP_WRITE_BIT or GL_MAP_INVALIDATE_RANGE_BIT,
+      glRender.FLightIndicesPool.OffsetByIndex(FLightIdxPoolIndex),
+      glRender.FLightIndicesPool.ObjectSize);
+    pl.count[0] := FEffectedLightNum;
+    pl.indices := FEffectedLights;
+    glRender.FLightIndicesPool.Buffer.UnMap;
   end;
 end;
 
@@ -1169,6 +1197,7 @@ begin
   FMovableObject := aSceneObject;
   FObjectPoolIndex := -1;
   FBaseTfPoolIndex := -1;
+  FLightIdxPoolIndex := -1;
   FTransformChanged := true;
   setlength(FMeshObjects, aSceneObject.MeshObjects.Count);
   for i:=0 to aSceneObject.MeshObjects.Count-1 do begin
@@ -1259,6 +1288,9 @@ var
   mat: TMatrix;
 begin
   inherited Update(aRender);
+
+  if FLightIdxPoolIndex < 0 then
+    FLightIdxPoolIndex := glRender.FLightIndicesPool.GetFreeSlotIndex;
 
   // Update meshes local matrices
   // TODO: заменить постоянную проверку на нотификацию
@@ -1378,7 +1410,7 @@ end;
 procedure TGLUniformLightNumber.Apply(aRender: TBaseRender);
 begin
   Assert(TGLSLShaderProgram.ActiveShader <> nil);
-  TGLSLShaderProgram.ActiveShader.SetUniform(FUniform.Name, aRender.CurrentLightNumber);
+//  TGLSLShaderProgram.ActiveShader.SetUniform(FUniform.Name, aRender.CurrentLightNumber);
 end;
 
 { TGLSLShaderProgramExt }
@@ -1748,6 +1780,8 @@ begin
     end;
   end;
 
+  if FMovableObject.NestingDepth < 0 then FTransformChanged := false;
+
   if FTransformChanged then
   begin
     if FObjectPoolIndex < 0 then
@@ -1786,7 +1820,9 @@ begin
         move(WorldMatrix.GetAddr^,pwt.world,SizeOf(mat4));
         move(InvWorldMatrix.GetAddr^,pwt.invWorld,SizeOf(mat4));
         move(NormalMatrix.GetAddr^, pwt.worldNormal,SizeOf(mat4));
+        move(WorldMatrixT.GetAddr^, pwt.worldT,SizeOf(mat4));
         move(PivotMatrix.GetAddr^, pwt.pivot,SizeOf(mat4));
+        move(InvPivotMatrix.GetAddr^, pwt.invPivot,SizeOf(mat4));
       end;
 
       glRender.FObjectPool.Buffer.UnMap;
