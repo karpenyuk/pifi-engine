@@ -82,6 +82,30 @@ Type
     class function FromString( const aStr: String ): TGUID; static;
   end;
 
+  TValueArray<T> = class(TInterfacedObject)
+  private
+    FValues: array of T;
+    FSource: TValueArray<T>;
+    FCount: integer;
+    function getValue(Index: integer): T;
+    procedure setValue(Index: integer; const Value: T);
+    function getCount: integer;
+  public
+    constructor Create;
+    procedure InitializeAsSource;
+    procedure InitializeFromSource(aSource: TValueArray<T>);
+    procedure Reset(aResetSource: boolean = false);
+    procedure Resize(aNewSize: integer; aResizeSource: boolean = false);
+    procedure Clamp;
+    function Add(const aValue: T; AddToSource: boolean = false): integer;
+
+    property Values[Index: integer]: T read getValue write setValue; default;
+    property Count: integer read getCount;
+  end;
+
+  TFloatValues = TValueArray<single>;
+  TIntegerValues = TValueArray<integer>;
+
 
 function StringHashKey(const name: string): Integer;
 function BufferHash(const Buffer; Count: integer): word;
@@ -122,6 +146,7 @@ function TrimLeft( const aStr: String ): String;
 function StrScan( const aStr: PWideChar; aChar: WideChar ): PWideChar;
 
 function CheckPath(Path: string): string;
+function UpperCase(const Str: string): string;
 function LowerCase(const Str: string): string;
 
 procedure CLog( const aMsg: String );
@@ -214,13 +239,21 @@ begin
 end;
 
 function LowerCase(const Str: string): string;
-var
-  i : LongInt;
+var i : LongInt;
 begin
   Result := Str;
   for i := 1 to Length(Str) do
     if AnsiChar(Result[i]) in ['A'..'Z'] then
       Result[i] := Chr(Ord(Result[i]) + 32);
+end;
+
+function UpperCase(const Str: string): string;
+var i : LongInt;
+begin
+  Result := Str;
+  for i := 1 to Length(Str) do
+    if AnsiChar(Result[i]) in ['a'..'z'] then
+      Result[i] := Chr(Ord(Result[i]) - 32);
 end;
 
 function StrToInt(const Str: string):integer;
@@ -1079,6 +1112,81 @@ begin
   Result := True;
 end;
 {$ENDIF}
+
+{ TValueArray<T> }
+
+function TValueArray<T>.Add(const aValue: T; AddToSource: boolean): integer;
+begin
+  if assigned(FSource) and AddToSource then result := FSource.Add(aValue)
+  else begin
+    if FCount=Length(FValues) then setlength(FValues,(FCount+1)*2);
+    FValues[FCount]:=aValue; result:=FCount;
+    inc(FCount);
+  end;
+end;
+
+procedure TValueArray<T>.Clamp;
+begin
+  if not assigned(FSource) then setlength(FValues,FCount);
+end;
+
+constructor TValueArray<T>.Create;
+begin
+  FSource:=nil; FCount:=0;
+  FValues :=nil;
+end;
+
+procedure TValueArray<T>.InitializeAsSource;
+begin
+  FSource:=nil; FCount:=0;
+  setlength(FValues,1);
+end;
+
+procedure TValueArray<T>.InitializeFromSource(aSource: TValueArray<T>);
+begin
+  FSource:=aSource;
+  FValues:=nil; FCount :=0;
+end;
+
+function TValueArray<T>.getCount: integer;
+begin
+  if assigned(FSource) then result := FSource.Count
+  else result := FCount;
+end;
+
+function TValueArray<T>.getValue(Index: integer): T;
+begin
+  if assigned(FSource) then result := FSource[index]
+  else begin
+    assert(Index<length(FValues), 'Index out of bounds');
+    result := FValues[Index];
+  end;
+end;
+
+procedure TValueArray<T>.Reset(aResetSource: boolean);
+begin
+  if assigned(FSource) and aResetSource then FSource.Reset;
+  FSource:=nil; FCount :=0;
+  setlength(FValues,0);
+end;
+
+procedure TValueArray<T>.Resize(aNewSize: integer; aResizeSource: boolean);
+begin
+  if Assigned(FSource) and aResizeSource then FSource.Resize(aNewSize)
+  else begin
+    assert(not assigned(FSource),'Values source are not owned.');
+    setlength(FValues,aNewSize);
+  end;
+end;
+
+procedure TValueArray<T>.setValue(Index: integer; const Value: T);
+begin
+  if assigned(FSource) then FSource[index] := Value
+  else begin
+    assert(Index<length(FValues), 'Index out of bounds');
+    FValues[Index] := Value;
+  end;
+end;
 
 initialization
 {$IFDEF FPC}

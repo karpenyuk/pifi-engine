@@ -24,7 +24,12 @@ const
 
 type
 
-  TBaseRenderResource = TPersistentResource;
+  TBaseRenderResource = class(TPersistentResource)
+  public
+    constructor CreateOwned(aOwner: TObject = nil); virtual;
+    class function IsInner: boolean; virtual;
+  end;
+
   TRenderResourceClass = class of TBaseRenderResource;
 
   TBaseSceneItem = class;
@@ -51,12 +56,12 @@ type
 
 
   { TODO : Решить что нужно вынести в базовый объект сцены }
-  TBaseSceneItem = class (TPersistentResource)
+  TBaseSceneItem = class (TBaseRenderResource)
   protected
     FParent: TBaseSceneItem;
     FChilds: TSceneItemList;
     FNestingDepth: integer;
-    procedure OnItemsChanged(anItem: TBaseSceneItem; aChnages: TSceneItemListChanges);
+    procedure OnItemsChanged(aItem: TBaseSceneItem; aChanges: TSceneItemListChanges);
     procedure SetParent(const Value: TBaseSceneItem); virtual;
   public
     Active: boolean;
@@ -64,6 +69,9 @@ type
 
     constructor Create; override;
     destructor Destroy; override;
+
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); virtual;
+    procedure DispatchMessage(Msg: Cardinal; Params: pointer = nil); virtual;
 
     property Parent: TBaseSceneItem read FParent write SetParent;
     property Childs: TSceneItemList read FChilds;
@@ -293,7 +301,6 @@ begin
 end;
 
 function TMovableObject.VectorToLocal(aVector: TVector; Norm: boolean=true): TVector;
-var rv: TVector;
 begin
   aVector.MakeAffine;
   Result := InvPivotMatrix.Transform(aVector);
@@ -358,7 +365,7 @@ end;
 
 destructor TMovableObject.Destroy;
 begin
-  if assigned(FParent) then FParent.UnSubscribe(self);
+  if assigned(FParent) then FParent.Notify(self, NM_ObjectDestroyed);
   inherited;
 end;
 
@@ -802,8 +809,7 @@ begin
   if Sender = FParent then
   case Msg of
     NM_WorldMatrixChanged: begin
-//      if Childs.inList(Sender) then
-        NotifyWorldMatrixChanged;
+      NotifyWorldMatrixChanged;
     end;
     NM_ObjectDestroyed: begin
       FParent := nil; NotifyWorldMatrixChanged;
@@ -1016,10 +1022,33 @@ end;
 
 destructor TBaseSceneItem.Destroy;
 begin
+  DispatchMessage(NM_ObjectDestroyed);
+  if assigned(FParent) then FParent.Notify(Self, NM_ObjectDestroyed);
   FChilds.Free;
   inherited;
 end;
 
+procedure TBaseSceneItem.DispatchMessage(Msg: Cardinal; Params: pointer);
+var i: integer;
+begin
+  for i:=0 to FChilds.Count-1 do
+    if assigned(FChilds[i]) then FChilds[i].Notify(Self,Msg,Params);
+end;
+
+procedure TBaseSceneItem.Notify(Sender: TObject; Msg: Cardinal;
+  Params: pointer);
+begin
+  if Sender = FParent then begin
+    case Msg of
+      NM_ObjectDestroyed: FParent := nil;
+    end;
+  end else begin
+    if Msg = NM_ObjectDestroyed then begin
+      if Sender is TBaseSceneItem then
+        FChilds.RemoveSceneItem(TBaseSceneItem(Sender));
+    end;
+  end;
+end;
 
 procedure TBaseSceneItem.SetParent(const Value: TBaseSceneItem);
 begin
@@ -1032,20 +1061,17 @@ begin
   end else FNestingDepth := 0;
 end;
 
-procedure TBaseSceneItem.OnItemsChanged(anItem: TBaseSceneItem; aChnages: TSceneItemListChanges);
+procedure TBaseSceneItem.OnItemsChanged(aItem: TBaseSceneItem; aChanges: TSceneItemListChanges);
 begin
-  case aChnages of
+  case aChanges of
     chAdd: begin
-      if Assigned(anItem.Parent) then
-        anItem.Parent.Childs.RemoveSceneItem(anItem);
-      anItem.FParent := Self;
-      Subscribe(anItem);
+      if Assigned(aItem.Parent) then
+        aItem.Parent.Childs.RemoveSceneItem(aItem);
+      aItem.FParent := Self;
     end;
     chRemove: begin
-      if anItem.Parent = Self then
-      begin
-        UnSubscribe(anItem);
-        anItem.FParent := nil;
+      if aItem.Parent = Self then  begin
+        aItem.FParent := nil;
       end;
     end;
   end;
@@ -1110,6 +1136,19 @@ begin
       exit;
     end;
   end;
+end;
+
+{ TBaseRenderResource }
+
+constructor TBaseRenderResource.CreateOwned(aOwner: TObject);
+begin
+  inherited Create;
+  Owner := aOwner;
+end;
+
+class function TBaseRenderResource.IsInner: boolean;
+begin
+  Result := False;
 end;
 
 end.

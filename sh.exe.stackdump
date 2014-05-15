@@ -1,0 +1,10 @@
+MSYS-1.0.12 Build:2012-07-05 14:56
+Exception: STATUS_ACCESS_VIOLATION at eip=6801364A
+eax=00005009 ebx=00005009 ecx=7C80EF07 edx=00000000 esi=0022FC84 edi=0022F884
+ebp=0022F6F4 esp=0022F6DC program=C:\Program Files\SmartGitHg\git\bin\sh.exe
+cs=001B ds=0023 es=0023 fs=003B gs=0000 ss=0023
+Stack trace:
+Frame     Function  Args
+0022F6F4  6801364A  (00005009, 00000000, 00110000, 00000000)
+ 231587 [main] sh.exe" 3116 handle_exceptions: Exception: STATUS_ACCESS_VIOLATION
+ 248279 [main] sh.exe" 3116 handle_exceptions: Error while dumping state (probably corrupted stack)

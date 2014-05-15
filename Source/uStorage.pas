@@ -11,8 +11,10 @@ uses
   uPersistentClasses, uRenderResource;
 
 type
+  TPersistentRef = TReference<TPersistentResource>;
+  TPersistentResourceRef = TResourceReference<TPersistentResource>;
 
-  TResourceList = class(GRedBlackTree < TGUID, TPersistentResource >)
+  TResourceList = class(GRedBlackTree < TGUID, TPersistentRef>)
   private
     procedure FreeResources(aOwner: TPersistentResource);
   public
@@ -30,9 +32,13 @@ type
     class var FResources: TResourceList;
     class constructor Create;
     class destructor Destroy;
+    class procedure AddResource(const aRes: TPersistentResource);
   public
     class procedure PutResource(Resource: TPersistentResource);
     class procedure Delete(Resource: TPersistentResource);
+    class procedure RemoveReference(aResource: TPersistentResource);
+    class function GetResource(const aGUID: TGUID): TPersistentResource;
+    class function GetReference<T: class>(const aGUID: TGUID): IReference<T>; overload;
 
     class function CreateProgram: TShaderProgram;
     class function CreateMaterial: TMaterial;
@@ -46,10 +52,10 @@ type
     class function CreateBufferObject: TBufferObject;
     class function CreateAttribObject: TAttribObject; overload;
     class function CreateAttribObject(AttrName: ansistring; aSize: TValueComponent;
-                     AType: TValueType = vtFloat; AStride: integer = 0;
+                     AType: TValueType = vtFloat; AOffset: integer = 0; AStride: integer = 0;
                      BuffType: TBufferType = btArray): TAttribObject; overload;
     class function CreateAttribBuffer(AttrName: ansistring; aSize: TValueComponent;
-                     AType: TValueType = vtFloat; AStride: integer = 0;
+                     AType: TValueType = vtFloat; AOffset: integer = 0; AStride: integer = 0;
                      BuffType: TBufferType = btArray): TAttribBuffer;
     class function CreateVertexObject: TVertexObject;
     class function CreateMesh(vo: TVertexObject = nil): TMesh;
@@ -79,6 +85,13 @@ end;
 
 { TStorage }
 
+//class procedure Storage.AddResource(const aRes: TPersistentResource);
+class procedure Storage.AddResource(const aRes: TPersistentResource);
+begin
+  FResources.Add(aRes.GUID, TReference<TPersistentResource>.Create(aRes));
+  aRes.Subscribe(FStorageHandle);
+end;
+
 class constructor Storage.Create;
 begin
   FStorageHandle:=TStorageHandler.Create;
@@ -86,65 +99,57 @@ begin
 end;
 
 class function Storage.CreateAttribBuffer(AttrName: ansistring;
-  aSize: TValueComponent; AType: TValueType; AStride: integer;
+  aSize: TValueComponent; AType: TValueType; AOffset,AStride: integer;
   BuffType: TBufferType): TAttribBuffer;
 begin
   result := TAttribBuffer.CreateAndSetup(AttrName, aSize, AType,
-    AStride, BuffType, FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+    AOffset, AStride, BuffType, FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateAttribObject(AttrName: ansistring;
-  aSize: TValueComponent; AType: TValueType; AStride: integer;
+  aSize: TValueComponent; AType: TValueType; AOffset,AStride: integer;
   BuffType: TBufferType): TAttribObject;
 begin
   result := TAttribBuffer.CreateAndSetup(AttrName, aSize, AType,
-    AStride, BuffType, FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+    AOffset, AStride, BuffType, FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateAttribObject: TAttribObject;
 begin
   result := TAttribObject.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateBlending: TCustomBlending;
 begin
   result := TCustomBlending.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateBufferObject: TBufferObject;
 begin
   result := TBufferObject.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateCamera: TSceneCamera;
 begin
   result := TSceneCamera.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateEffectPipeline: TEffectPipeline;
 begin
   result := TEffectPipeline.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateFrameBuffer: TFrameBuffer;
 begin
   result := TFrameBuffer.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateImageHolder(aFormatCode: cardinal;
@@ -152,36 +157,31 @@ class function Storage.CreateImageHolder(aFormatCode: cardinal;
 begin
   result := TImageHolder.Create(aFormatCode,aImageType);
   result.Owner := FStorageHandle;
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateImageHolder: TImageHolder;
 begin
   result := CreateImageHolder.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateLight: TLightSource;
 begin
   result := TLightSource.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateMaterial: TMaterial;
 begin
   result := TMaterial.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateMaterialObject: TMaterialObject;
 begin
   result := TMaterialObject.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateMesh(vo: TVertexObject): TMesh;
@@ -191,86 +191,92 @@ begin
     result.Owner := FStorageHandle;
   end else
     result := TMesh.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateMeshObject(aMesh: TMeshAssembly): TMeshObject;
 begin
   result := TMeshObject.CreateFrom(aMesh);
   result.Owner:=FStorageHandle;
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateMeshObject(aMesh: TMesh): TMeshObject;
 begin
   result := TMeshObject.CreateFrom(aMesh);
   result.Owner:=FStorageHandle;
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateMeshObject: TMeshObject;
 begin
   result := TMeshObject.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateProgram: TShaderProgram;
 begin
   result:=TShaderProgram.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateSceneObject: TSceneObject;
 begin
   result := TSceneObject.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateTexture(aImageHolder: TImageHolder): TTexture;
 begin
   result := TTexture.CreateFrom(aImageHolder, FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateTextureSample: TTextureSampler;
 begin
   result := TTextureSampler.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class function Storage.CreateVertexObject: TVertexObject;
 begin
   result := TVertexObject.CreateOwned(FStorageHandle);
-  FResources.Add(result.GUID, result);
-  result.Subscribe(FStorageHandle);
+  AddResource(result);
 end;
 
 class procedure Storage.Delete(Resource: TPersistentResource);
 begin
-  if Resource is TPersistentResource then
+  if Resource is TPersistentResource then begin
     FResources.Delete(Resource.GUID);
+  end;
 end;
 
 class destructor Storage.Destroy;
 begin
   FResources.FreeResources(FStorageHandle);
   FResources.Free;
+  FResources := nil;
   FStorageHandle.Free;
+end;
+
+class function Storage.GetReference<T>(const aGUID: TGUID): IReference<T>;
+begin
+  result := TReference<T>(FResources.FindNode(aGUID).Value);
+end;
+
+class function Storage.GetResource(const aGUID: TGUID): TPersistentResource;
+begin
+  result := FResources.FindNode(aGUID).Value.Reference;
 end;
 
 class procedure Storage.PutResource(Resource: TPersistentResource);
 begin
-  if Resource is TPersistentResource then
-    FResources.Add(Resource.GUID, Resource);
-    Resource.Subscribe(FStorageHandle);
+  if Resource is TPersistentResource then AddResource(Resource);
+end;
+
+class procedure Storage.RemoveReference(aResource: TPersistentResource);
+begin
+  GetReference<TPersistentResource>(aResource.GUID).Reference := nil;
 end;
 
 { Storage.TStorageHandler }
@@ -283,7 +289,6 @@ begin
     case Msg of
       NM_ObjectDestroyed:
         if Sender is TPersistentResource then begin
-          DetachResource(TPersistentResource(Sender));
           Storage.Delete(TPersistentResource(Sender));
         end;
     end;
@@ -301,17 +306,14 @@ procedure TResourceList.FreeResources(aOwner: TPersistentResource);
 var
   x, y, z: TRBNode;
   cont: Boolean;
-  temp: TPersistentResource;
+  temp: TReference<TPersistentResource>;
 begin
   if Assigned(FLeftMost) then begin
     x := FLeftMost;
     repeat
       z := x;
       repeat
-        temp:=z.Value;
         z.Value:=nil;
-        aOwner.DetachResource(temp);
-        FreeAndNil(temp);
         z := z.Twin;
       until z = nil;
       // Next node
@@ -331,10 +333,7 @@ begin
     until x = FRightMost;
     if (FLeftMost <> FRightMost) and assigned(x) then begin
       if assigned(x.Value) then begin
-        temp := x.Value;
         x.Value := nil;
-        aOwner.DetachResource(temp);
-        FreeAndNil(temp);
       end;
     end;
   end;

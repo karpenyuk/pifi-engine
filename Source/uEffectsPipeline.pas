@@ -59,9 +59,7 @@ constructor TGlowPipelineEffect.CreateFrom(aSceneTexture: TTexture);
 begin
   Create;
   FSceneTexture := aSceneTexture;
-  AttachResource(aSceneTexture);
   FShaderProgram := ShaderGenerator.GenCompositionShader;
-  AttachResource(FShaderProgram);
   SetBlurWidth(4.0);
   FBlurAmount := 0.005;
 end;
@@ -82,7 +80,6 @@ function TGlowPipelineEffect.GetConvolutionShader: TShaderProgram;
 begin
   if not Assigned(FConvolutionShader) then begin
     FConvolutionShader := ShaderGenerator.Gen1DConvolution;
-    AttachResource(FConvolutionShader);
   end;
 
   Result := FConvolutionShader;
@@ -92,7 +89,6 @@ function TGlowPipelineEffect.GetSceneSampler: TTextureSampler;
 begin
   if not Assigned(FSceneSampler) then begin
     FSceneSampler := Storage.CreateTextureSample;
-    AttachResource(FSceneSampler);
     FSceneSampler.WrapS := twClampToBorder;
     FSceneSampler.WrapT := twClampToBorder;
     FSceneSampler.BorderColor := Vector(0, 0, 0, 1);
@@ -106,7 +102,6 @@ function TGlowPipelineEffect.GetScreenQuad: TVertexObject;
 begin
   if not Assigned(FScreenQuad) then begin
     FScreenQuad := CreateSprite(2, 2);
-    AttachResource(FScreenQuad);
   end;
   Result := FScreenQuad;
 end;

@@ -11,10 +11,6 @@
 }
 unit uRenderResource;
 
-{$IFDEF FPC}
-  {$MODE Delphi}
-{$ENDIF}
-
 interface
 
 uses
@@ -42,6 +38,24 @@ Type
 
     procedure RegisterResource(const aResource: TBaseRenderResource);
     procedure UnRegisterResource(const aResource: TBaseRenderResource);
+  end;
+
+  TResourceReference<T: class> = record
+  private
+    FReference: IReference<T>;
+    function GetReference: T; Inline;
+    procedure SetReference(Value: T);
+  public
+    GUID: TGUID;
+    ResourceState: TResourceState;
+    procedure FreeRef;
+
+    property Reference: T read GetReference write SetReference;
+
+    class operator Implicit(Value: T): TResourceReference<T>; Inline;
+    class operator Implicit(Value: TResourceReference<T>): T; overload; Inline;
+    class operator Explicit(Value: T): TResourceReference<T>; Inline;
+    class operator Explicit(Value: TResourceReference<T>): T; overload; Inline;
   end;
 
   TShaderProgram = class;
@@ -95,6 +109,9 @@ Type
     destructor Destroy; override;
   end;
 
+  TShaderProgramRef = TResourceReference<TShaderProgram>;
+  PShaderProgramRef = ^TShaderProgramRef;
+
   // Base class of automatic uniform setup
   TBaseBuiltinUniform = class(TBaseRenderResource)
   public
@@ -102,11 +119,16 @@ Type
     class function IsInner: boolean; override;
   end;
 
+  TBaseBuiltinUniformRef = TResourceReference<TBaseBuiltinUniform>;
+  PBaseBuiltinUniformRef = ^TBaseBuiltinUniformRef;
+
   TBuiltinUniformLightNumber = class(TBaseBuiltinUniform)
   public
     class function Name: ansistring; override;
   end;
 
+  TBuiltinUniformLightNumberRef = TResourceReference<TBuiltinUniformLightNumber>;
+  PBuiltinUniformLightNumberRef = ^TBuiltinUniformLightNumberRef;
 
   TUniformObject<T> = class(TBaseRenderResource);
 
@@ -203,6 +225,9 @@ Type
     property Enabled: boolean read FEnabled write FEnabled;
   end;
 
+  TLightSourceRef = TResourceReference<TLightSource>;
+  PLightSourceRef = ^TLightSourceRef;
+
   TLightsList = class (TObjectsDictionary)
   private
     function getItemObj(index: integer): TLightSource;
@@ -265,6 +290,9 @@ Type
     property Name: string read FName write SetName;
     property UseMaterial: boolean read FUseMaterial write FUseMaterial;
   end;
+
+  TMaterialRef = TResourceReference<TMaterial>;
+  PMaterialRef = ^TMaterialRef;
 
   TTextureSampler = class(TBaseRenderResource)
   private
@@ -331,9 +359,13 @@ Type
     property SamplerHash: integer read getSamplerHash;
   end;
 
+  TTextureSamplerRef = TResourceReference<TTextureSampler>;
+  PTextureSamplerRef = ^TTextureSamplerRef;
+
   TTexture = class;
   { TODO : TImageHolder: Check logic for texture arrays }
   TImageLayers = TDataList<PImageLods>;
+
   TImageHolder = class(TBaseRenderResource)
   protected
     FImageFormat: cardinal;
@@ -409,7 +441,10 @@ Type
     property isVolume: boolean read getVolumeState;
   end;
 
-  TImageSampler = class(TBaseRenderResource)
+  TImageHolderRef = TResourceReference<TImageHolder>;
+  PImageHolderRef = ^TImageHolderRef;
+
+  TImageSampler = class
   public
     class function CreateBitmap(aFormatCode: cardinal; aWidth, aHeight: integer; aMipmapping: boolean = false): TImageHolder;
     class function CreateBitmapArray(aFormatCode: cardinal; aWidth, aHeight, aDepth: integer; aMipmapping: boolean = false): TImageHolder;
@@ -470,6 +505,9 @@ Type
     property GenerateMipMaps: boolean read FGenerateMipMaps write setGenMipMaps;
   end;
 
+  TTextureRef = TResourceReference<TTexture>;
+  PTextureRef = ^TTextureRef;
+
   TCustomBlending = class(TBaseRenderResource)
   private
     FBlendEnable: boolean;
@@ -500,14 +538,17 @@ Type
     property HashKey: integer read GetHash;
   end;
 
+  TCustomBlendingRef = TResourceReference<TCustomBlending>;
+  PCustomBlendingRef = ^TCustomBlendingRef;
+
   TMaterialObject = class(TBaseRenderResource)
   private
     FActive: boolean;
-    FBlending: TCustomBlending;
-    FTexture: TTexture;
-    FSampler: TTextureSampler;
-    FMaterial: TMaterial;
-    FShader: TShaderProgram;
+    FBlending: TCustomBlendingRef;
+    FTexture: TTextureRef;
+    FSampler: TTextureSamplerRef;
+    FMaterial: TMaterialRef;
+    FShader: TShaderProgramRef;
     FspId: cardinal;
     FHashKey: integer;
     FUseTexture: boolean;
@@ -517,7 +558,7 @@ Type
     FIgnoreLighting: boolean;
     FName: string;
     FNameChanged: boolean;
-    FAdditionalTextures: array of TTexture;
+    FAdditionalTextures: array of TTextureRef;
     FUseAddTex: boolean;
     FLastAddTex: integer;
     FNormalScale: single;
@@ -533,6 +574,11 @@ Type
     procedure setIgnoreLighting(const Value: boolean);
     procedure setTwoSideLighting(const Value: boolean);
     function getTexCount: integer;
+    function getShader: TShaderProgram;
+    function getMaterial: TMaterial;
+    function getTexture: TTexture;
+    function getSampler: TTextureSampler;
+    function getBlend: TCustomBlending;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -540,7 +586,7 @@ Type
     procedure AttachTexture(tex: TTexture);
     procedure AttachSampler(aSampler: TTextureSampler);
     procedure AttachMaterial(mat: TMaterial);
-    procedure AttachShader(Shader: TShaderProgram);
+    procedure AttachShader(aShader: TShaderProgram);
     procedure AddExTextures(tex: TTexture);
 
     function AddNewMaterial(aName: string = ''): TMaterial;
@@ -552,13 +598,12 @@ Type
     property Name: string read FName write SetName;
     property Active: boolean read FActive write FActive;
     property HashKey: integer read GetHash;
-    property Blending: TCustomBlending read FBlending;
-    property Texture: TTexture read FTexture;
-    property TextureSampler: TTextureSampler read FSampler;
-    property Material: TMaterial read FMaterial;
-    property Shader: TShaderProgram read FShader;
-    property TextureSlot[index: integer]: TTexture read getAddTex
-      write setAddTex;
+    property Blending: TCustomBlending read getBlend;
+    property Texture: TTexture read getTexture;
+    property TextureSampler: TTextureSampler read getSampler;
+    property Material: TMaterial read getMaterial;
+    property Shader: TShaderProgram read getShader;
+    property TextureSlot[index: integer]: TTexture read getAddTex write setAddTex;
     property TexCount: integer read getTexCount;
     property IsTransparency: boolean read CheckTransparency;
     property UseMaterial: boolean read FUseMaterial write setUseMaterial;
@@ -574,6 +619,9 @@ Type
     property NormalScale: single read FNormalScale write FNormalScale;
 
   end;
+
+  TMaterialObjectRef = TResourceReference<TMaterialObject>;
+  PMaterialObjectRef = ^TMaterialObjectRef;
 
   TMaterialList = class (TObjectsDictionary)
   private
@@ -621,10 +669,13 @@ Type
 
   end;
 
+  TBufferObjectRef = TResourceReference<TBufferObject>;
+  PBufferObjectRef = ^TBufferObjectRef;
+
   TAttribObject = class(TBaseRenderResource)
   private
     FValue: TVector;
-    FBuffer: TBufferObject;
+    FBuffer: TBufferObjectRef;
     FIteratorPtr: Pointer;
 
     procedure SetName(const Value: ansistring);
@@ -633,12 +684,15 @@ Type
     procedure setType(const Value: TValueType);
     function GetValue: TVector;
     procedure SetValue(const Value: TVector);
+    procedure setOffset(const Value: integer);
+    function getBuffer: TBufferObject;
   protected
-    FSettedParam: set of (apAttrName, apAttrSize, apAttrType, apAttrStride);
+    FSettedParam: set of (apAttrName, apAttrSize, apAttrType, apAttrStride, apAttrOffset);
     FAttribName: ansistring;
     FSize: TValueComponent;
     FType: TValueType;
     FStride: integer;
+    FOffset: integer;
     FNormalized: boolean;
     FElementSize: integer;
     FSemantic: TAttribType;
@@ -646,33 +700,36 @@ Type
   public
     constructor Create; override;
     constructor CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
-      AType: TValueType = vtFloat; AStride: integer = 0;
+      AType: TValueType = vtFloat; AOffset: integer = 0; AStride: integer = 0;
       BuffType: TBufferType = btArray; aOwner: TObject = nil); virtual;
-    constructor CreateClone(ASample: TAttribObject);
+    constructor CreateClone(aSample: TAttribObject);
     destructor Destroy; override;
 
     class function IsInner: boolean; override;
 
-    procedure Notify(Sender: TObject; Msg: Cardinal;
-      Params: pointer = nil); override;
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
-    procedure AssignBuffer(aBuffer: TBufferObject);
+    procedure AssignBuffer(const aBuffer: TBufferObjectRef);
     procedure SetAttribSemantic(aSemantic: TAttribType);
     function IsEqual(AnObject: TAttribObject): Boolean;
     function GetVectorDataAccess: TVectorDataAccess;
 
     property Value: TVector read GetValue write SetValue;
     property Normalized: boolean read FNormalized write FNormalized;
-    property Buffer: TBufferObject read FBuffer;
+    property Buffer: TBufferObject read getBuffer;
     property ElementSize: integer read FElementSize;
 
     property AttrSize: TValueComponent read FSize write setSize;
     property AttrType: TValueType read FType write setType;
     property AttrName: ansistring read FAttribName write SetName;
     property AttrStride: integer read FStride write setStride;
+    property AttrOffset: integer read FOffset write setOffset;
     property Semantic: TAttribType read FSemantic;
     property TagObject: TObject read FTagObject write FTagObject;
   end;
+
+  TAttribObjectRef = TResourceReference<TAttribObject>;
+  PAttribObjectRef = ^TAttribObjectRef;
 
   TAttribObjectClass = class of TAttribObject;
 
@@ -681,10 +738,13 @@ Type
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); override;
 
     constructor CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
-      AType: TValueType = vtFloat; AStride: integer = 0;
+      AType: TValueType = vtFloat; AOffset: integer = 0; AStride: integer = 0;
       BuffType: TBufferType = btArray; aOwner: TObject = nil); override;
     destructor Destroy; override;
   end;
+
+  TAttribBufferRef = TResourceReference<TAttribBuffer>;
+  PAttribBufferRef = ^TAttribBufferRef;
 
   TVertexObject = class;
 
@@ -764,11 +824,9 @@ Type
     procedure SetAdjacencyIndices(const AnIndices: TIntegerArray);
 
     function AddSubMeshArrays(APrimType: TFaceType; AVertexCount: integer;
-      AMaterialName: string; AStartingVertex: integer = 0; aName: string = '')
-      : PSubMesh;
+      AMaterialName: string; AStartingVertex: integer = 0; aName: string = ''): PSubMesh;
     function AddSubMeshElements(APrimType: TFaceType; APrimitiveCount: integer;
-      AMaterialName: string; AStartingIndex: integer = 0; aName: string = '')
-      : PSubMesh;
+      AMaterialName: string; AStartingIndex: integer = 0; aName: string = ''): PSubMesh;
 
     procedure Clear;
 
@@ -781,6 +839,9 @@ Type
     property Indices[Index: integer]: integer read getIndice write setIndice;
     property Extents: TExtents read getExtents;
   end;
+
+  TVertexObjectRef = TResourceReference<TVertexObject>;
+  PVertexObjectRef = ^TVertexObjectRef;
 
   { TODO : Реализовать вычисление AABB, Sr, Sp для TMesh по TVertexObject
     - Добавить управление Локальной матрицей меша через скелет
@@ -814,9 +875,12 @@ Type
     property bbRadius: single read FbbRadius;
   end;
 
+  TMeshRef = TResourceReference<TMesh>;
+  PMeshRef = ^TMeshRef;
+
   TMatrixList = TDataList<TMatrix>;
 
-  TMeshAssembly = class(TPersistentResource)
+  TMeshAssembly = class(TBaseRenderResource)
   private
     FMeshes: TList;
     FLocalMatrices: TMatrixList;
@@ -844,9 +908,12 @@ Type
     property Count: integer read getCount;
   end;
 
+  TMeshAssemblyRef = TResourceReference<TMeshAssembly>;
+  PMeshAssemblyRef = TMeshAssemblyRef;
+
   TLodFunction = function (aDistance: single): integer;
 
-  TMeshLOD = class(TPersistentResource)
+  TMeshLOD = class(TBaseRenderResource)
   private
     FAssembly: TMeshAssembly;
     FDistance: Single;
@@ -859,13 +926,16 @@ Type
     property Distance: Single read FDistance;
   end;
 
+  TMeshLODRef = TResourceReference<TMeshLOD>;
+  PMeshLODRef = ^TMeshLODRef;
+
   TLodsDataList = TDataList<TMeshLOD>;
 
   { TODO : Реализовать закон смены ЛОДов + функцию GetMeshLod с выборкой
            по расстоянию из библиотеки ЛОДов.
   }
 
-  TLODsController = class (TPersistentResource)
+  TLODsController = class (TBaseRenderResource)
   private
     FList: TLodsDataList;
     FLodFunction: TLodFunction;
@@ -893,6 +963,9 @@ Type
 
   end;
 
+  TLODsControllerRef = TResourceReference<TLODsController>;
+  PLODsControllerRef = ^TLODsControllerRef;
+
   TMeshObjectsList = class;
 
   TMeshObject = class(TBaseRenderResource)
@@ -917,6 +990,9 @@ Type
     property Occluder: TMeshAssembly read FOccluder;
     property Collider: TTriangleList read FCollider;
   end;
+
+  TMeshObjectRef = TResourceReference<TMeshObject>;
+  PMeshObjectRef = ^TMeshObjectRef;
 
   TMeshObjectsList = class(TObjectsDictionary)
   private
@@ -951,6 +1027,8 @@ Type
     property MeshObjects: TMeshObjectsList read FMeshObjects;
   end;
 
+  TSceneObjectRef = TResourceReference<TSceneObject>;
+  PSceneObjectRef = ^TSceneObjectRef;
 
   TTexturesList = TDataList<TTexture>;
   TImageHolders = TDataList<TImageHolder>;
@@ -961,7 +1039,7 @@ Type
     Mode: TBufferMode;
   end;
 
-  TFrameBuffer = class (TPersistentResource)
+  TFrameBuffer = class (TBaseRenderResource)
   private
     FReadBackBuffers: TImageHolders;
     FRenderBuffers: TRenderBuffers;
@@ -1005,6 +1083,9 @@ Type
     property Active: boolean read FActive write SetActive;
     property Multisample: TMultisampleFormat read FMultisample write SetMultisample;
   end;
+
+  TFrameBufferRef = TResourceReference<TFrameBuffer>;
+  PFrameBufferRef = ^TFrameBufferRef;
 
   { TODO : Update dictionary when object name changed }
   TSceneCamera = class(TMovableObject)
@@ -1063,6 +1144,9 @@ Type
     property EffectPipeline: TEffectPipeline read FEffectPipeline write SetEffectPipeline;
   end;
 
+  TSceneCameraRef = TResourceReference<TSceneCamera>;
+  PSceneCameraRef = ^TSceneCameraRef;
+
   TCamerasList = class (TObjectsDictionary)
   private
     function getItemObj(index: integer): TSceneCamera;
@@ -1080,7 +1164,7 @@ Type
 
   TEffectNotifyEvent = procedure(Sender: TPipelineAbstractEffect);
 
-  TPipelineAbstractEffect = class (TPersistentResource)
+  TPipelineAbstractEffect = class (TBaseRenderResource)
   protected
     FShaderProgram: TShaderProgram;
     FonApply: TEffectNotifyEvent;
@@ -1108,12 +1192,15 @@ Type
 
   end;
 
+  TPipelineAbstractEffectRef = TResourceReference<TPipelineAbstractEffect>;
+  PPipelineAbstractEffectRef = ^TPipelineAbstractEffectRef;
+
   TBaseEffectList = class (TDataList<TPipelineAbstractEffect>)
   public
     destructor Destroy; override;
   end;
 
-  TEffectPipeline = class (TPersistentResource)
+  TEffectPipeline = class (TBaseRenderResource)
   private
     FEffectsList: TBaseEffectList;
     function getEffect(anIndex: integer): TPipelineAbstractEffect;
@@ -1126,6 +1213,9 @@ Type
     property Effects[anIndex: integer]: TPipelineAbstractEffect read getEffect;
     property EffectCount: Integer read getEffectCount;
   end;
+
+  TEffectPipelineRef = TResourceReference<TEffectPipeline>;
+  PEffectPipelineRef = ^TEffectPipelineRef;
 
 var
   vRegisteredResource: TRegisteredResource;
@@ -1429,7 +1519,7 @@ begin
   CreateOwned(aOwner);
   FTexMatrixChanged := false;
   FImageDescriptor := aImageHolder;
-  aImageHolder.AttachResource(Self);
+  //aImageHolder.AttachResource(Self);
 
   case FImageDescriptor.ImageType of
     itBitmap: begin
@@ -1699,8 +1789,6 @@ end;
 
 destructor TBufferObject.Destroy;
 begin
-  if assigned(Owner) then
-    TPersistentResource(Owner).DetachResource(Self);
   if Assigned(FDataHandler) then
   begin
     if FHandlerOwned then
@@ -1761,11 +1849,9 @@ end;
 
 { TAttribObject }
 
-procedure TAttribObject.AssignBuffer(aBuffer: TBufferObject);
+procedure TAttribObject.AssignBuffer(const aBuffer: TBufferObjectRef);
 begin
-  if Assigned(FBuffer) then DetachResource(Self);
   FBuffer := aBuffer;
-  if Assigned(FBuffer) then AttachResource(FBuffer);
 end;
 
 constructor TAttribObject.Create;
@@ -1780,7 +1866,7 @@ begin
 end;
 
 constructor TAttribObject.CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
-      AType: TValueType; AStride: integer;
+      AType: TValueType; AOffset, AStride: integer;
       BuffType: TBufferType; aOwner: TObject);
 begin
   Create;
@@ -1788,6 +1874,7 @@ begin
   FAttribName := AttrName;
   FType := AType;
   FStride := AStride;
+  FOffset := AOffset;
   Owner := aOwner;
   if AStride = 0 then
     FElementSize := Ord(aSize) * CValueSizes[AType]
@@ -1797,27 +1884,32 @@ begin
   include(FSettedParam, apAttrSize);
   include(FSettedParam, apAttrType);
   include(FSettedParam, apAttrStride);
+  include(FSettedParam, apAttrOffset);
 end;
 
-constructor TAttribObject.CreateClone(ASample: TAttribObject);
+constructor TAttribObject.CreateClone(aSample: TAttribObject);
 begin
   CreateAndSetup(ASample.FAttribName, ASample.FSize, ASample.FType, ASample.FStride);
   FNormalized := ASample.FNormalized;
   FSemantic := ASample.FSemantic;
-  if Assigned(ASample.FBuffer) then begin
-    FBuffer := TBufferObject.Create(ASample.FBuffer.FBuffType);
-    FBuffer.SetDataHandler(TAbstractDataListClass(ASample.FBuffer.DataHandler.ClassType).Create);
-    FBuffer.DataHandler.Join(ASample.FBuffer.DataHandler, TMatrix.IdentityMatrix);
-    AttachResource(FBuffer);
+  if Assigned(ASample.Buffer) then begin
+    FBuffer := Storage.CreateBufferObject;
+    Buffer.BufferType := aSample.Buffer.BufferType;
+    Buffer.SetDataHandler(TAbstractDataListClass(ASample.Buffer.DataHandler.ClassType).Create);
+    Buffer.DataHandler.Join(ASample.Buffer.DataHandler, TMatrix.IdentityMatrix);
+    Buffer.Owner:=Self;
   end;
 end;
 
 destructor TAttribObject.Destroy;
 begin
-  if assigned(FBuffer) then begin DetachResource(FBuffer);
-    if FBuffer.Owner=self then FreeAndNil(FBuffer);
-  end;
+  if Buffer.Owner=self then FBuffer.FreeRef;
   inherited;
+end;
+
+function TAttribObject.getBuffer: TBufferObject;
+begin
+  result := FBuffer;
 end;
 
 function TAttribObject.GetValue: TVector;
@@ -1829,10 +1921,10 @@ function TAttribObject.GetVectorDataAccess: TVectorDataAccess;
 var
   aCount: Integer;
 begin
-  if Assigned(FBuffer) then
+  if Assigned(Buffer) then
   begin
-    aCount := FBuffer.Size div Ord(FSize) * CValueSizes[FType];
-    Result := TVectorDataAccess.Create(FBuffer.Data, FType, FSize, FElementSize, aCount);
+    aCount := Buffer.Size div Ord(FSize) * CValueSizes[FType];
+    Result := TVectorDataAccess.Create(Buffer.Data, FType, FSize, FElementSize, aCount);
   end
   else
     Result := TVectorDataAccess.Create(FValue.GetAddr, FType, FSize, FElementSize, 1);
@@ -1865,9 +1957,8 @@ begin
   case Msg of
     NM_ResourceChanged: DispatchMessage(NM_ResourceChanged);
     NM_ObjectDestroyed: begin
-      if Sender = FBuffer then begin
+      if Sender = Buffer then begin
         FBuffer := nil;
-        DispatchMessage(NM_ResourceChanged);
       end;
     end;
   end;
@@ -1882,6 +1973,12 @@ procedure TAttribObject.SetName(const Value: ansistring);
 begin
   FAttribName := Value;
   include(FSettedParam, apAttrName);
+end;
+
+procedure TAttribObject.setOffset(const Value: integer);
+begin
+  FOffset := Value;
+  include(FSettedParam, apAttrOffset);
 end;
 
 procedure TAttribObject.setSize(const Value: TValueComponent);
@@ -1914,21 +2011,19 @@ end;
 { TAttribBuffer }
 
 constructor TAttribBuffer.CreateAndSetup(AttrName: ansistring; aSize: TValueComponent;
-      AType: TValueType; AStride: integer;
+      AType: TValueType; AOffset,AStride: integer;
       BuffType: TBufferType; aOwner: TObject);
 begin
-  inherited CreateAndSetup(AttrName, aSize, AType, AStride, BuffType);
-  FBuffer := TBufferObject.Create(BuffType);
-  FBuffer.Owner:=self;
-  AttachResource(FBuffer);
+  inherited CreateAndSetup(AttrName, aSize, AType, AOffset, AStride, BuffType);
+  FBuffer := Storage.CreateBufferObject.Create(BuffType);
+  Buffer.Owner:=self;
   Owner := aOwner;
 end;
 
 destructor TAttribBuffer.Destroy;
 begin
-  if Assigned(FBuffer) then begin
-    DetachResource(FBuffer);
-    if FBuffer.Owner = Self then FreeAndNil(FBuffer);
+  if Assigned(Buffer) then begin
+    if Buffer.Owner = Self then FBuffer.FreeRef;
     FBuffer:=nil;
   end;
   inherited;
@@ -1938,7 +2033,7 @@ procedure TAttribBuffer.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   case Msg of
     NM_ObjectDestroyed: begin
-      if Sender = FBuffer then FBuffer := nil;
+      if Sender = Buffer then FBuffer := nil;
     end;
   end;
   inherited;
@@ -1954,12 +2049,10 @@ begin
   attr := FAttribs.GetAttribObject(Attrib.Semantic);
   if Assigned(attr) then begin
     // Заменяем атрибут с той же семантикой
-    DetachResource(attr);
     Result := FAttribs.IndexOf(attr);
     FAttribs[Result] := Attrib;
   end else
     Result := FAttribs.Add(Attrib);
-  AttachResource(Attrib);
   FStructureChanged := true;
   if aVertices then
     FVertexAttribIndex := Result;
@@ -2086,7 +2179,6 @@ begin
     AttribClass := TAttribObjectClass(ASource.Attribs[I].ClassType);
     attr := AttribClass.CreateClone(ASource.Attribs[I]);
     FAttribs.Add(attr);
-    AttachResource(attr);
   end;
   FSubMeshes.Assign(ASource.FSubMeshes);
   FVertexAttribIndex := ASource.FVertexAttribIndex;
@@ -2108,8 +2200,7 @@ var
   I: Integer;
 begin
   for i := 0 to FAttribs.Count-1 do begin
-    DetachResource(FAttribs[i]);
-    if FAttribs[i].Owner = Self then FAttribs[i].Free;
+    if FAttribs[i].Owner = Self then FAttribs := nil;
   end;
   FAttribs.Clear;
   FAdjacencyIndices := nil;
@@ -2216,7 +2307,6 @@ begin
   if Msg = NM_ObjectDestroyed then begin
     if assigned(Sender) and (Sender is TPersistentResource)
     then begin
-      DetachResource(TPersistentResource(Sender));
       if Sender is TAttribObject then
         if FAttribs.IndexOf(TAttribObject(Sender))<0 then exit;
       for I := 0 to FAttribs.Count - 1 do
@@ -2225,7 +2315,6 @@ begin
           break;
         end;
       FAttribs.Pack;
-      DispatchMessage(NM_ResourceChanged);
     end;
   end else begin
     if Msg = NM_ResourceChanged then begin
@@ -2238,7 +2327,6 @@ end;
 
 procedure TVertexObject.RemoveAttrib(Index: integer);
 begin
-  DetachResource(FAttribs[Index]);
   FAttribs.Delete(Index);
   FAttribs.Pack;
   FStructureChanged := true;
@@ -2365,21 +2453,18 @@ end;
 procedure TMeshAssembly.Add(aMesh: TMesh);
 begin
   Add(aMesh, TMatrix.IdentityMatrix);
-  AttachResource(aMesh);
 end;
 
 procedure TMeshAssembly.Add(aMesh: TMesh; const aLocalMatrix: TMatrix);
 begin
   FMeshes.Add(aMesh);
   FLocalMatrices.Add(aLocalMatrix);
-  AttachResource(aMesh);
 end;
 
 function TMeshAssembly.AddNewMesh(aVertexObject: TVertexObject;
   const aLocalMatrix: TMatrix): TMesh;
 begin
   Result := AddNewMesh(aVertexObject);
-  AttachResource(Result);
   Add(Result, aLocalMatrix);
 end;
 
@@ -2394,7 +2479,6 @@ constructor TMeshAssembly.CreateFrom(aMesh: TMesh);
 begin
   Create;
   Add(aMesh);
-  AttachResource(aMesh);
 end;
 
 constructor TMeshAssembly.CreateFrom(aVertexObject: TVertexObject);
@@ -2410,7 +2494,6 @@ var
   mesh: TMesh;
 begin
   mesh := Items[Index];
-  if assigned(Mesh) then DetachResource(Mesh);
   FMeshes.Delete(Index);
   FLocalMatrices.Delete(Index);
   DispatchMessage(NM_ResourceChanged, mesh);
@@ -2419,19 +2502,13 @@ end;
 procedure TMeshAssembly.DeleteMesh(aMesh: TMesh);
 var i: integer;
 begin
-  if assigned(aMesh) then DetachResource(aMesh);
   i := FMeshes.IndexOf(aMesh);
-  if i > -1 then begin
-    Delete(i);
-  end;
+  if i > -1 then Delete(i);
 end;
 
 destructor TMeshAssembly.Destroy;
-var
-  i: Integer;
+var i: Integer;
 begin
-  for i := 0 to FMeshes.Count - 1 do
-    DetachResource(Items[i]);
   FMeshes.Free;
   FLocalMatrices.Free;
   inherited;
@@ -2488,7 +2565,6 @@ constructor TMesh.CreateFrom(const aVertexObject: TVertexObject;
 begin
   Create;
   FVertexObject := aVertexObject;
-  AttachResource(FVertexObject);
   GUID := aGUID;
   FriendlyName := '';
 end;
@@ -2497,7 +2573,6 @@ constructor TMesh.CreateFrom(const aVertexObject: TVertexObject);
 begin
   Create;
   FVertexObject := aVertexObject;
-  AttachResource(FVertexObject);
   FriendlyName := '';
 end;
 
@@ -2505,17 +2580,13 @@ constructor TMesh.CreateFrom(const aVertexObject: TVertexObject; aName: string);
 begin
   Create;
   FVertexObject := aVertexObject;
-  AttachResource(FVertexObject);
   FriendlyName := aName;
 end;
 
 destructor TMesh.Destroy;
 begin
-  if assigned(FVertexObject) then begin
-    if FVertexObject.Owner = Self then begin
-      DetachResource(FVertexObject);
-      FreeAndNil(FVertexObject);
-    end;
+  if assigned(VertexObject) then begin
+    if VertexObject.Owner = Self then FVertexObject := nil;
   end;
   inherited;
 end;
@@ -2528,7 +2599,7 @@ end;
 procedure TMesh.Notify(Sender: TObject; Msg: Cardinal; Params: pointer);
 begin
   if Msg = NM_ObjectDestroyed then begin
-    if Sender = FVertexObject then FVertexObject := nil;
+    if Sender = VertexObject then FVertexObject := nil;
     if Sender = MaterialObject then FMaterialObject := nil;
   end;
   inherited;
@@ -2536,9 +2607,7 @@ end;
 
 procedure TMesh.setMatObj(const Value: TMaterialObject);
 begin
-  if assigned(FMaterialObject) then DetachResource(FMaterialObject);
   FMaterialObject := Value;
-  AttachResource(FMaterialObject);
 end;
 
 { TShaderProgram }
@@ -2733,52 +2802,43 @@ end;
 procedure TMaterialObject.AddExTextures(tex: TTexture);
 begin
   if assigned(TextureSlot[FLastAddTex + 1]) then begin
-    DetachResource(TextureSlot[FLastAddTex + 1]);
     if TextureSlot[FLastAddTex + 1].Owner = Self then
       TextureSlot[FLastAddTex + 1].Free
   end;
   TextureSlot[FLastAddTex + 1] := tex;
-  AttachResource(TextureSlot[FLastAddTex + 1]);
 end;
 
 function TMaterialObject.AddNewMaterial(aName: string): TMaterial;
 begin
-  if assigned(FMaterial) then begin
-    DetachResource(FMaterial);
-    if (FMaterial.Owner = Self) then FMaterial.Free;
+  if assigned(Material) then begin
+    if (Material.Owner = Self) then FMaterial := nil;
   end;
   FMaterial := Storage.CreateMaterial;
-  AttachResource(FMaterial);
-  FMaterial.Name := aName;
+  Material.Name := aName;
   FUseMaterial := true;
-  result := FMaterial;
+  result := Material;
   FActive := true;
 end;
 
 function TMaterialObject.AddNewShader(aName: string): TShaderProgram;
 begin
-  if assigned(FShader) then begin
-    DetachResource(FShader);
-    if (FShader.Owner = Self) then FShader.Free;
+  if assigned(Shader) then begin
+    if (Shader.Owner = Self) then FShader := nil;
   end;
   FShader := Storage.CreateProgram;
-  AttachResource(FShader);
-  FShader.Name := aName;
+  Shader.Name := aName;
   FUseShader := true;
-  result := FShader;
+  result := Shader;
   FActive := true;
 end;
 
 function TMaterialObject.AddNewTexture(aName: string): TTexture;
 begin
-  if assigned(FTexture) then begin
-    DetachResource(FTexture);
-    if (FTexture.Owner = Self) then FTexture.Free;
+  if assigned(Texture) then begin
+    if (Texture.Owner = Self) then FTexture := nil;
   end;
   FTexture := Storage.CreateTexture(nil);
-
-  AttachResource(FTexture);
-  FTexture.Name := aName;
+  Texture.Name := aName;
   FUseTexture := true;
   result := FTexture;
   FActive := true;
@@ -2790,21 +2850,16 @@ var
 begin
   assert(assigned(MaterialObject), 'Material object is not assigned');
 
-  FBlending.Assign(MaterialObject.FBlending);
-  if assigned(FTexture) then DetachResource(FTexture);
-  FTexture := MaterialObject.FTexture; AttachResource(FTexture);
-  if assigned(FMaterial) then DetachResource(FMaterial);
-  FMaterial := MaterialObject.FMaterial; AttachResource(FMaterial);
-  if assigned(FShader) then DetachResource(FShader);
-  FShader := MaterialObject.FShader; AttachResource(FShader);
+  Blending.Assign(MaterialObject.Blending);
+  FTexture := MaterialObject.FTexture;
+  FMaterial := MaterialObject.FMaterial;
+  FShader := MaterialObject.FShader;
   FUseTexture := MaterialObject.FUseTexture;
   FUseMaterial := MaterialObject.FUseMaterial;
-  FUseShader := assigned(FShader);
+  FUseShader := assigned(Shader);
   FActive := MaterialObject.Active;
-  for i := 0 to MaterialObject.FLastAddTex - 1 do begin
-    if assigned(FAdditionalTextures[i]) then DetachResource(FAdditionalTextures[i]);
-    FAdditionalTextures[i] := MaterialObject.FAdditionalTextures[i];
-    AttachResource(FAdditionalTextures[i]);
+  for i := 0 to MaterialObject.TexCount - 1 do begin
+    TextureSlot[i] := MaterialObject.TextureSlot[i];
   end;
   FLastAddTex := MaterialObject.FLastAddTex;
   UseAddinionalTextures := MaterialObject.UseAddinionalTextures;
@@ -2812,11 +2867,10 @@ end;
 
 procedure TMaterialObject.AttachMaterial(mat: TMaterial);
 begin
-  if assigned(FMaterial) then begin
-    DetachResource(FMaterial);
-    if (FMaterial.Owner = Self) then FMaterial.Free;
+  if assigned(Material) then begin
+    if (Material.Owner = Self) then FMaterial := nil;
   end;
-  FMaterial := mat; AttachResource(FMaterial);
+  FMaterial := mat;
   FHashKey := -1;
   if assigned(mat) and (mat.UseMaterial) then
     FUseMaterial := true
@@ -2827,33 +2881,29 @@ end;
 
 procedure TMaterialObject.AttachSampler(aSampler: TTextureSampler);
 begin
-  if assigned(FSampler) then begin
-    DetachResource(FSampler);
-    if (FSampler.Owner = Self) then  FSampler.Free;
+  if assigned(TextureSampler) then begin
+    if (TextureSampler.Owner = Self) then  FSampler := nil;
   end;
-  FSampler := aSampler; AttachResource(FSampler);
+  FSampler := aSampler;
   FHashKey := -1;
 end;
 
-procedure TMaterialObject.AttachShader(Shader: TShaderProgram);
+procedure TMaterialObject.AttachShader(aShader: TShaderProgram);
 begin
-  if assigned(FShader) then begin
-    DetachResource(FShader);
-    if (FShader.Owner = Self) then FShader.Free;
+  if assigned(Shader) then begin
+    if (Shader.Owner = Self) then FShader := nil;
   end;
-  FShader := Shader; AttachResource(FShader);
-  FHashKey := -1;
-  if assigned(FShader) then FUseShader := true;
+  FShader := aShader; FHashKey := -1;
+  if assigned(Shader) then FUseShader := true;
   FActive := true;
 end;
 
 procedure TMaterialObject.AttachTexture(tex: TTexture);
 begin
-  if assigned(FTexture) then begin
-    DetachResource(FTexture);
-    if FTexture.Owner = Self then FTexture.Free;
+  if assigned(Texture) then begin
+    if Texture.Owner = Self then FTexture := nil;
   end;
-  FTexture := tex; AttachResource(FTexture);
+  FTexture := tex;
   FHashKey := -1;
   if assigned(tex) and (not tex.Disabled) then
     FUseTexture := true
@@ -2866,11 +2916,11 @@ function TMaterialObject.CheckTransparency: boolean;
 var
   Alpha: single;
 begin
-  if assigned(FMaterial) then
+  if assigned(Material) then
     Alpha := Material.Properties.DiffuseColor.Alpha
   else
     Alpha := 1;
-  if FBlending.FBlendEnable or FBlending.FAlphaTestEnable or (Alpha < 1) then
+  if Blending.BlendEnable or Blending.AlphaTestEnable or (Alpha < 1) then
     result := true
   else
     result := false;
@@ -2905,17 +2955,10 @@ end;
 
 destructor TMaterialObject.Destroy;
 begin
-  FBlending.Free;
-  if assigned(FTexture) and (FTexture.Owner = Self) then begin
-    DetachResource(FTexture); FreeAndNil(FTexture);
-  end;
-  if assigned(FMaterial) and (FMaterial.Owner = Self) then begin
-    DetachResource(FMaterial); FreeAndNil(FMaterial);
-  end;
-  if assigned(FShader) and (FShader.Owner = Self) then begin
-    DetachResource(FShader); FreeAndNil(FShader);
-  end;
-
+  FBlending := nil;
+  FTexture := nil;
+  FMaterial := nil;
+  FShader := nil;
   inherited;
 end;
 
@@ -2924,6 +2967,11 @@ begin
   assert(index < Length(FAdditionalTextures), 'Not enough texture units');
   assert(index > 0, 'Use Main texture for slot 0');
   result := FAdditionalTextures[index - 1];
+end;
+
+function TMaterialObject.getBlend: TCustomBlending;
+begin
+  result := FBlending;
 end;
 
 function TMaterialObject.GetHash: integer;
@@ -2935,20 +2983,39 @@ begin
     result := FHashKey;
     exit;
   end;
-  hash[0] := integer(FTexture);
-  hash[1] := integer(FMaterial);
-  hash[2] := FBlending.HashKey;
+  hash[0] := integer(Texture);
+  hash[1] := integer(Material);
+  hash[2] := Blending.HashKey;
   hash[3] := FspId;
-  hash[4] := integer(FShader);
+  hash[4] := integer(Shader);
   FHashKey := GetHashFromBuff(hash, SizeOf(hash));
   result := FHashKey;
+end;
+
+function TMaterialObject.getMaterial: TMaterial;
+begin
+  result := FMaterial;
+end;
+
+function TMaterialObject.getSampler: TTextureSampler;
+begin
+  result := FSampler;
+end;
+
+function TMaterialObject.getShader: TShaderProgram;
+begin
+  result := FShader;
 end;
 
 function TMaterialObject.getTexCount: integer;
 begin
   result := FLastAddTex;
-  if assigned(FTexture) then
-    inc(result);
+  if assigned(Texture) then inc(result);
+end;
+
+function TMaterialObject.getTexture: TTexture;
+begin
+  result := FTexture;
 end;
 
 procedure TMaterialObject.setAddTex(Index: integer; const Value: TTexture);
@@ -2981,7 +3048,7 @@ end;
 
 procedure TMaterialObject.setUseMaterial(const Value: boolean);
 begin
-  if assigned(FMaterial) then
+  if assigned(Material) then
     FUseMaterial := Value
   else
     FUseMaterial := false;
@@ -2989,7 +3056,7 @@ end;
 
 procedure TMaterialObject.setUseShader(const Value: boolean);
 begin
-  if assigned(FShader) then
+  if assigned(Shader) then
     FUseShader := Value
   else
     FUseShader := false;
@@ -2997,7 +3064,7 @@ end;
 
 procedure TMaterialObject.setUseTexture(const Value: boolean);
 begin
-  if assigned(FTexture) then
+  if assigned(Texture) then
     FUseTexture := Value
   else
     FUseTexture := false;
@@ -3007,17 +3074,14 @@ function TMaterialObject.TextureByMapTarget(Map: TMapTarget): TTexture;
 var
   i: integer;
 begin
-  if Map = mtDiffuse then
-  begin
+  if Map = mtDiffuse then begin
     result := FTexture;
     exit;
   end;
-  for i := 0 to FLastAddTex - 1 do
-  begin
-    if assigned(FAdditionalTextures[i]) then
-      if Map in FAdditionalTextures[i].MapTargets then
-      begin
-        result := FAdditionalTextures[i];
+  for i := 0 to FLastAddTex - 1 do begin
+    if assigned(TextureSlot[i]) then
+      if Map in TextureSlot[i].MapTargets then begin
+        result := TextureSlot[i];
         exit;
       end;
   end;
@@ -3029,7 +3093,6 @@ end;
 function TMeshObjectsList.AddMeshObject(const aMeshObject: TMeshObject): integer;
 begin
   result := AddKey(aMeshObject.GUID, aMeshObject);
-  AttachResource(aMeshObject);
 end;
 
 destructor TMeshObjectsList.Destroy;
@@ -3040,7 +3103,6 @@ begin
   for i := 0 to FCount - 1 do begin
     if assigned(FItems[i].Value) then begin
       mo := TMeshObject(FItems[i].Value);
-      DetachResource(mo);
       if mo.Owner=self then FreeAndNil(mo);
     end;
   end;
@@ -3058,11 +3120,9 @@ var
   i: integer;
   mo: TMeshObject;
 begin
-  for i := 0 to FCount - 1 do
-  begin
+  for i := 0 to FCount - 1 do begin
     mo := TMeshObject(FItems[i].Value);
-    if mo.FriendlyName = aFriendlyName then
-    begin
+    if mo.FriendlyName = aFriendlyName then begin
       result := mo;
       exit;
     end;
@@ -3772,10 +3832,7 @@ end;
 
 procedure TSceneCamera.SetEffectPipeline(const Value: TEffectPipeline);
 begin
-  if assigned(FEffectPipeline) then
-    DetachResource(FEffectPipeline);
   FEffectPipeline := Value;
-  AttachResource(FEffectPipeline);
 end;
 
 procedure TSceneCamera.SetFoV(const Value: single);
@@ -3795,13 +3852,9 @@ end;
 procedure TSceneCamera.SetRenderTarget(const Value: TFrameBuffer);
 begin
   if assigned(FRenderTarget) and (FRenderTarget.Owner = self)
-  then begin
-    DetachResource(FRenderTarget);
-    FRenderTarget.Free;
-  end;
+  then FRenderTarget := nil;
 
   FRenderTarget := Value;
-  AttachResource(FRenderTarget);
   if assigned(FRenderTarget) then FRenderTarget.SetSize(FViewPortSize);
 end;
 
@@ -3823,11 +3876,8 @@ end;
 
 procedure TSceneCamera.SetViewTarget(const Value: TMovableObject);
 begin
-  if Value <> FViewTarget then
-  begin
-    if Assigned(FViewTarget) then DetachResource(FViewTarget);
+  if Value <> FViewTarget then begin
     FViewTarget := Value;
-    if assigned(FViewTarget) then AttachResource(FViewTarget);
     NotifyViewMatrixChanged;
   end;
 end;
@@ -3853,7 +3903,6 @@ end;
 procedure TFrameBuffer.AttachColor(aTexture: TTexture);
 begin
   FColorAttachments.Add(aTexture);
-  AttachResource(aTexture);
   DispatchMessage(NM_ResourceChanged);
 end;
 
@@ -3886,7 +3935,6 @@ begin
     buffptr.Mode := aMode;
     buffptr.Format := aFormat;
     if assigned(buffptr.Texture) then begin
-      DetachResource(buffptr.Texture);
       buffptr.Texture.Free;
       buffptr.Texture := nil;
     end;
@@ -3964,7 +4012,6 @@ begin
     if Sender is TTexture then begin
       n:=FColorAttachments.IndexOf(TTexture(Sender));
       if (n>=0) and (assigned(FColorAttachments[n])) then begin
-        DetachResource(FColorAttachments[n]);
         FColorAttachments[n]:=nil;
       end;
       if Sender = FDepthBuffer.Texture then FDepthBuffer.Texture := nil;
@@ -3978,11 +4025,7 @@ begin
 end;
 
 procedure TFrameBuffer.ResetColorAttachments;
-var i: integer;
 begin
-  for i:=0 to FColorAttachments.Count-1 do
-    if assigned(FColorAttachments[i]) then
-      DetachResource(FColorAttachments[i]);
   FColorAttachments.Clear;
   DispatchMessage(NM_ResourceChanged);
 end;
@@ -3998,19 +4041,16 @@ begin
   FRenderBuffers:=[];
   FDepthBuffer.Mode:=bmNone;
   if assigned(FDepthBuffer.Texture) then begin
-    DetachResource(FDepthBuffer.Texture);
     FDepthBuffer.Texture.Free;
     FDepthBuffer.Texture:=nil;
   end;
   FStencilBuffer.Mode:=bmNone;
   if assigned(FStencilBuffer.Texture) then begin
-    DetachResource(FStencilBuffer.Texture);
     FStencilBuffer.Texture.Free;
     FStencilBuffer.Texture:=nil;
   end;
   FDepthStencilBuffer.Mode:=bmNone;
   if assigned(FDepthStencilBuffer.Texture) then begin
-    DetachResource(FDepthStencilBuffer.Texture);
     FDepthStencilBuffer.Texture.Free;
     FDepthStencilBuffer.Texture:=nil;
   end;
@@ -4048,7 +4088,6 @@ end;
 function TLODsController.AddLod(aLoD: TMeshLOD): integer;
 begin
   Result := FList.Add(aLod);
-  AttachResource(aLod);
 end;
 
 constructor TLODsController.CreateFrom(aBaseLod: TMeshAssembly);
@@ -4063,7 +4102,6 @@ destructor TLODsController.Destroy;
 var i: integer;
 begin
   for i := 0 to FList.Count - 1 do begin
-    DetachResource(FList[i]);
     TMeshLOD(FList[i]).Free;
     FList[i]:=nil;
   end;
@@ -4141,7 +4179,6 @@ begin
   inherited Create;
   FAssembly := anAssembly;
   FDistance := aDistance;
-  AttachResource(FAssembly);
 end;
 
 destructor TMeshLOD.Destroy;
@@ -4309,6 +4346,51 @@ var i: integer;
 begin
   for i:=0 to Count-1 do if assigned(Items[i]) then Items[i].Free;
   inherited;
+end;
+
+{ TResourceReference }
+
+function TResourceReference<T>.GetReference: T;
+begin
+  Result := FReference.Reference;
+end;
+
+procedure TResourceReference<T>.SetReference(Value: T);
+begin
+  if not assigned(Value) then begin
+    FReference := nil; exit;
+  end;
+  if Value is TPersistentResource then begin
+    FReference := nil;
+    FReference := Storage.GetReference<T>(TPersistentResource(Value).GUID);
+  end else FReference := nil;
+  if not assigned(FReference) then FReference := TReference<T>.Create(Value);
+  GUID := TPersistentResource(Value).GUID;
+end;
+
+class operator TResourceReference<T>.Implicit(Value: T): TResourceReference<T>;
+begin
+  Result.Reference := Value;
+end;
+
+class operator TResourceReference<T>.Implicit(Value: TResourceReference<T>): T;
+begin
+  Result := Value.Reference;
+end;
+
+class operator TResourceReference<T>.Explicit(Value: T): TResourceReference<T>;
+begin
+  Result := Value;
+end;
+
+class operator TResourceReference<T>.Explicit(Value: TResourceReference<T>): T;
+begin
+  Result := Value;
+end;
+
+procedure TResourceReference<T>.FreeRef;
+begin
+  FReference:=nil;
 end;
 
 initialization

@@ -1,6 +1,6 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{191FA1E9-D9E4-4E21-8019-C9467E8A341B}</ProjectGuid>
+        <ProjectGuid>{0A42F4A3-B023-498A-8BE5-D3ED78E32095}</ProjectGuid>
         <MainSource>SceneGraphDemo.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>

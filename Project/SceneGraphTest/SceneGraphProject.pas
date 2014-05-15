@@ -9,7 +9,7 @@ uses
   Dialogs, uGLViewer, uBaseGL, uBaseTypes, uVMath, dglOpenGL, ExtCtrls,
   uPrimitives, uMiscUtils, uRenderResource, uBaseRenders, uGLRenders,
   uLists, uImageFormats, uImageLoader, SceneConstructor, uWorldSpace,
-  uStorage;
+  uStorage, uPersistentClasses;
 
 type
   TForm2 = class(TForm)

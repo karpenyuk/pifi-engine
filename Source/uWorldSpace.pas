@@ -72,7 +72,6 @@ implementation
 function TSceneGraph.AddItem(aItem: TBaseSceneItem): integer;
 begin
   result := FRoot.Childs.AddSceneItem(aItem);
-  AttachResource(aItem);
   //If aItem is Camera - add it to Camera List
   if (aItem is TSceneCamera) and (not FCameras.inList(aItem))
   then FCameras.AddCamera(aItem as TSceneCamera);
@@ -85,14 +84,12 @@ end;
 function TSceneGraph.AddLight(aLight: TLightSource): integer;
 begin
   result := FLights.AddLight(aLight);
-  AttachResource(aLight);
 end;
 
 function TSceneGraph.AddMaterial(aMat: TMaterialObject): integer;
 begin
   if not assigned(aMat) then exit(-1);
   result := FMaterials.AddMaterial(aMat);
-  AttachResource(aMat);
 end;
 
 function TSceneGraph.AddNewMaterial(aName: string): TMaterialObject;
@@ -105,7 +102,6 @@ begin
   aMat.Name := aName;
   aMat.Owner:=FMaterials;
   FMaterials.AddMaterial(aMat);
-  AttachResource(aMat);
   result := aMat;
 end;
 

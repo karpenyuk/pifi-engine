@@ -98,6 +98,9 @@ begin
   GL1xRender := false;
   Render := nil;
 
+  FileFormatDAE.LoadAndCreateVertexObject('i:\GLScene\pifi-engine\Source\Media\bunny.dae');
+  exit;
+
   // Среди зарегистрированных рендеров выбираем подходящий
   Render := vRegisteredRenders.GetCompatibleRender(ver);
 

@@ -812,7 +812,7 @@ begin
   //assert(idx>=0,'Unsupported resource: "'+Resource.ClassName+'"!');
 
   result:=GetResource(Resource); if assigned(result) then exit;
-  AttachResource(Resource);
+
   glres:=CreateResource(Resource);;
 
   if assigned(glres) then begin
@@ -1380,7 +1380,6 @@ begin
   Create;
   Owner := aOwner;
   FFrameBuffer := aFrameBuffer;
-  AttachResource(FFrameBuffer);
 
   ConfigFBO(FFrameBuffer.RenderBuffers);
   ConfigDepthBuffer(bmBuffer);
@@ -1389,7 +1388,6 @@ begin
   for i := 0 to FFrameBuffer.ColorAttachmentCount - 1 do begin
     texture := FFrameBuffer.ColorAttachments[i];
     gltexture := aOwner.GetOrCreateResource(texture) as TGLTextureObject;
-    AttachResource(gltexture);
     gltexture.AllocateStorage;
     AttachTexture(gltexture);
   end;
@@ -1565,18 +1563,12 @@ begin
   Assert(assigned(aEffect) and (aEffect is TGlowPipelineEffect),'Effect invalide or not assigned');
   Create;
   FEffect := aEffect;
-  AttachResource(aEffect);
   FStructureChanged := true;
 end;
 
 destructor TGLGlowEffect.Destroy;
 begin
-  if Assigned(FEffect) then begin
-    DetachResource(FEffect);
-    FEffect := nil;
-  end;
-  //FImageHolder.Free;
-
+  if Assigned(FEffect) then FEffect := nil;
 
   FreeAndNil(fbh);
   FreeAndNil(fbv);
@@ -1613,20 +1605,16 @@ begin
   eff := TGlowPipelineEffect(FEffect);
   if FStructureChanged then begin
     FShader := glRender.FResourceManager.GetOrCreateResource(eff.ShaderProgram) as TGLSLShaderProgramExt;
-    AttachResource(FShader);
 
     FShader.SetUniform('BlurAmount', eff.BlurAmount);
     FBlurShader := glRender.FResourceManager.GetOrCreateResource(eff.ConvolutionShader) as TGLSLShaderProgramExt;
-    AttachResource(FBlurShader);
 
     FBlurShader.SetUniform('Weights', eff.Weights, eff.WeightCount);
     FBlurShader.SetUniform('Width', eff.WeightCount div 2);
 
     FVertexObject := glRender.FResourceManager.GetOrCreateResource(eff.ScreenQuad) as TGLVertexObject;
-    AttachResource(FVertexObject);
 
     FSampler := glRender.FResourceManager.GetOrCreateResource(eff.SceneSampler) as TGLTextureSampler;
-    AttachResource(FSampler);
 
     FStructureChanged := false;
   end;
@@ -1641,10 +1629,8 @@ begin
     fbh := Storage.CreateFrameBuffer;
     fbh.Size:=Vec2iMake(FImageHolder.Width, FImageHolder.Height);
     FFrameH := glRender.FResourceManager.GetOrCreateResource(fbh) as TGLFrameBufferObject;
-    AttachResource(FFrameH);
     texh := Storage.CreateTexture(FImageHolder);
     FBluredH := glRender.FResourceManager.GetOrCreateResource(texh) as TGLTextureObject;
-    AttachResource(FBluredH);
     FBluredH.AllocateStorage;
     FFrameH.AttachTexture(FBluredH);
   end;
@@ -1653,10 +1639,8 @@ begin
     fbv := Storage.CreateFrameBuffer;
     fbv.Size:=Vec2iMake(FImageHolder.Width, FImageHolder.Height);
     FFrameV := glRender.FResourceManager.GetOrCreateResource(fbv) as TGLFrameBufferObject;
-    AttachResource(FFrameV);
     texv := Storage.CreateTexture(FImageHolder);
     FBluredV := glRender.FResourceManager.GetOrCreateResource(texv) as TGLTextureObject;
-    AttachResource(FBluredV);
     FBluredV.AllocateStorage;
     FFrameV.AttachTexture(FBluredV);
   end;

@@ -3,293 +3,150 @@ unit uFileFormatDAE;
 interface
 
 uses
-  uRenderResource, uStorage;
+  uRenderResource, uStorage, uDAEHelpers,
+  Types, uXmlParser, uDAESchema, uMiscUtils,
+  uBaseTypes, uLists;
 
 type
 
   FileFormatDAE = class
-//    class function LoadAndCreateVertexObject(const aFileName: string): TVertexObject;
+    class function LoadAndCreateVertexObject(const aFileName: string): TVertexObject;
   end;
 
 implementation
 
-uses
-  Types,
-  uXmlParser,
-  uDAESchema,
-  uMiscUtils,
-  uBaseTypes,
-  uLists;
-
 type
 
-  TInputSemantic = (
-    isPOSITION,   //Geometric coordinate vector.
-    isVERTEX,     //Mesh vertex
-    isTANGENT,    //Geometric tangent vector
-    isBINORMAL,   //Geometric binormal (bitangent) vector
-    isNORMAL,     //Normal vector
-    isCOLOR,      //Color coordinate vector. Color inputs are RGB (float3)
-    isTEXCOORD,   //Texture coordinate vector
+  TMeshBuffer = record
+    Values: TSingleList;
+    Attrib: TDAEAttrib;
+    Source: PDAESourceRecord;
+  end;
+  TMeshBuffers = array of TMeshBuffer;
 
-    isIMAGE,      // Raster or MIP-level input.
+procedure FillBuffer(var aBuffer: TMeshBuffer; const aSubMesh: TDAESubMesh;
+  const aSource: PDAESourceRecord);
+var i,j,n,offs,index,stride,count,pcount: integer;
+begin
+  offs := aBuffer.Attrib.Offset;
+  pcount := length(aBuffer.Source.Accessor.ParamIndex);
+  stride := aBuffer.Source.Accessor.Stride;
+  count := aBuffer.Source.Accessor.Count;
+  n := aSubMesh.AttribsCount;
+  aBuffer.Values.Capacity:=count*pcount;
+  for i:= 0 to count-1 do begin
+    index := stride * aSubMesh.Indices[offs+i*n];
+    for j:=0 to pcount-1 do
+      aBuffer.Values.Add(aBuffer.Source.Value[index+aBuffer.Source.Accessor.ParamIndex[j]]);
+  end;
+end;
 
-    //See “Curve Interpolation” in Chapter 4: Programming Guide.
-    isINPUT,        //Sampler input.
-    isIN_TANGENT,   //Tangent vector for preceding control point.
-    isCONTINUITY,   //Continuity constraint at the control vertex (CV)
-    isLINEAR_STEPS, //Number of steps to use for the spline segment that follows this CV.
-    isINTERPOLATION,//Sampler interpolation type.
-    isOUTPUT,       // Sampler output.
-    isOUT_TANGENT,  //Tangent vector for succeeding control point.
-
-    isINV_BIND_MATRIX,//Inverse of local-to-world matrix.
-    isJOINT,          // Skin influence identifier
-    isMORPH_TARGET,   //Morph targets for mesh morphing
-    isMORPH_WEIGHT,   //Weights for mesh morphing
-    isWEIGHT,         //Skin influence weighting value
-
-    isTEXBINORMAL,    //Texture binormal (bitangent) vector
-    isTEXTANGENT,     //Texture tangent vector
-    isUV              //Generic parameter vector
-  );
-
-  TDAESubMesh = record
-    PrimitiveType: TFaceType;
-    Attribs: array of record
-      Semantic: string;
-      SourceId: string;
-      Offset: int64;
-      SetIndex: integer;
+function LoadGeometry(aMesh: TDAEMesh): TObject;
+var sm: TDAESubMesh;
+    i,j: integer;
+    buffers: array of TMeshBuffers;
+begin
+  setlength(buffers, aMesh.SubMeshCount);
+  for i:=0 to aMesh.SubMeshCount-1 do begin
+    sm:=aMesh[i]; setlength(buffers[i], sm.AttribsCount);
+    for j:=0 to sm.AttribsCount-1 do begin
+      buffers[i][j].Values := TSingleList.Create;
+      buffers[i][j].Attrib := sm.Attribs[j];
+      buffers[i][j].Source := aMesh.Sources[sm.Attribs[j].SourceId];
     end;
-    Indices: TIntegerDynArray;
-
-    function BuildVertexObject: TVertexObject;
-    procedure Init(aTriangles: IXMLTriangles_type); overload;
-    procedure Init(aLines: IXMLLines_type); overload;
-    procedure Init(aLineStrips: IXMLLineStrips_type); overload;
-    procedure Init(aPolygons: IXMLPolygons_type); overload;
-    //procedure Init(aPolyList: IXMLPolyList_type); overload;
-    procedure Init(aTriFans: IXMLTriFans_type); overload;
-    procedure Init(aTriStrips: IXMLTriStrips_type); overload;
   end;
+end;
 
-  TDAESourceRecord = record
-    ID: string;
-    Accessor: record
-      SourceId: string;
-      Count, Offset, Stride: integer;
-      ParamIndex: array of integer; //Skip unnamed index
-    end;
-    Value: TSingleDynArray;
-    References: array of ^TDAESubMesh;
-    procedure Init(aSource: IXMLSource_type);
-  end;
-  PDAESourceRecord = ^TDAESourceRecord;
+class function FileFormatDAE.LoadAndCreateVertexObject(const aFileName: string): TVertexObject;
+var
+  LCOLLADA: IXMLCOLLADA;
+  LGeometries: IXMLLibrary_geometries_type;
+  LGeometry: IXMLGeometry_type;
+  LMeshType: IXMLMesh_type;
+  LAccessor: IXMLAccessor_type;
+  LSource: IXMLSource_type;
+  LIndices: TIntegerDynArray;
+  LSubMesh: IXMLTriangles_type;
+  Geometries: TObjectList;
+  sType: string;
+  attr: TAttribBuffer;
+  i, j, k, Offset: Integer;
 
-  TDAESources = class(TDataList<TDAESourceRecord>)
-  private
-    FSources: IXMLSource_typeList;
-    function getSourceById(Id: string): PDAESourceRecord;
-  public
-    procedure Initialize(aSources: IXMLSource_typeList);
-    function SourceValue(ID: string): TSingleDynArray;
-    property Source[Id: string]: PDAESourceRecord read getSourceById; default;
-  end;
-
-  TDAEMesh = class
-  private
-    FSources: TDAESources;
-    FMesh: IXMLMesh_type;
-    FSubMeshes: TDataList<TDAESubMesh>;
-    procedure AddSubMesh(const sm: TDAESubMesh);
-  public
-    constructor Create(aMesh: IXMLMesh_type);
-  end;
-
-  procedure TDAESources.Initialize(aSources: IXMLSource_typeList);
-  var i: integer;
-    SourceRec: TDAESourceRecord;
+  function GetId(const AName: String): String;
+  var n: Integer;
   begin
-    FSources := aSources;
-    for i:=0 to FSources.Count - 1 do begin
-      SourceRec.Init(FSources[i]);
-      Add(SourceRec);
-    end;
+    Result := AName;
+    for n := 0 to LMeshType.Vertices.Input.Count - 1 do
+      if LMeshType.Vertices.Input[n].Source = '#' + AName then
+        Result := LMeshType.Vertices.Id;
   end;
 
-  procedure TDAEMesh.AddSubMesh(const sm: TDAESubMesh);
-  var i,n,mi: integer;
-      SourceRec: PDAESourceRecord;
-  begin
-    mi := FSubMeshes.Add(sm);
-    for i:=0 to length(sm.Attribs)-1 do begin
-      SourceRec := FSources[sm.Attribs[i].SourceId];
-      if assigned(SourceRec) then begin
-        n:=length(SourceRec.References);
-        setlength(SourceRec.References,n+1);
-        SourceRec.References[n]:=FSubMeshes.GetItemAddr(mi);
+//  function LoadTriangles(aTriangles: IXMLTriangles_type): TIndices
+
+begin
+
+  try
+    LCOLLADA := TXMLCOLLADA.Load(aFileName) as IXMLCOLLADA;
+    //Parse geometry library
+    Geometries:=TObjectList.Create;
+    for i:=0 to LCOLLADA.Library_geometries.Count-1 do begin
+      LGeometries := LCOLLADA.Library_geometries[i];
+      for j:=0 to LGeometries.Count-1 do begin
+        //Geometries.Add(TDAEMesh.Create(LGeometries.Geometry[j].Mesh));
+        LoadGeometry(TDAEMesh.Create(LGeometries.Geometry[j].Mesh));
       end;
     end;
-  end;
 
-  constructor TDAEMesh.Create(aMesh: IXMLMesh_type);
-  var i: integer;
-      sm: TDAESubMesh;
-  begin
-    FMesh := aMesh;
-    FSources:=TDAESources.Create;
-    FSources.Initialize(FMesh.Source);
-    FSubMeshes:=TDataList<TDAESubMesh>.Create;
-    for i:=0 to aMesh.Triangles.Count-1 do begin
-      sm.Init(aMesh.Triangles[i]); AddSubMesh(sm);
-    end;
 
-    for i:=0 to aMesh.Lines.Count-1 do begin
-      sm.Init(aMesh.Lines[i]); AddSubMesh(sm);
-    end;
+{
+    if (LCOLLADA.Library_geometries.Count > 0) then begin
+      LGeometries := LCOLLADA.Library_geometries[0];
+      LGeometry :=  LGeometries.Geometry[0];
+      LMeshType := LGeometry.Mesh;
 
-    //Repeat for left primitive types
-  end;
 
-  procedure TDAESourceRecord.Init(aSource: IXMLSource_type);
-  var i,n: integer;
-  begin
-    ID := aSource.Id; Value := nil;
-    Accessor.SourceId := aSource.Technique_common.Accessor.Source;
-    Accessor.Offset := aSource.Technique_common.Accessor.Offset;
-    Accessor.Stride := aSource.Technique_common.Accessor.Stride;
-    n:=0; //counting all named params
-    for i:=0 to aSource.Technique_common.Accessor.Count-1 do
-      if aSource.Technique_common.Accessor.Param[i].name<>'' then inc(n);
-    //extract params index
-    Accessor.Count := n; n:=0;
-    setlength(Accessor.ParamIndex, Accessor.Count);
-    for i:=0 to aSource.Technique_common.Accessor.Count-1 do begin
-      if aSource.Technique_common.Accessor.Param[i].name<>'' then begin
-        Accessor.ParamIndex[n]:=i; inc(n);
+//PrimitiveTypes
+      if LMeshType.Triangles.Count > 0 then begin
+        LSubMesh := LMeshType.Triangles[0];
+        LIndices := IntStringsToIntegerDynArray(LSubMesh.P.Content.Value);
+
+//Add triangle vertices
+        Offset := 0;
+        NumSemantic := LSubMesh.Input.Count;
+        Index := 0;
+        while (Offset < Length(LIndices)) do begin
+          for k := 0 to High(LSemantics) do begin
+            for j := 0 to 2 do begin
+              i := LIndices[Offset + j * NumSemantic + LSemantics[k].Offset];
+              i := i * LSemantics[k].Source.Stride;
+              LSemantics[k].Source.List.AddRaw(@LSemantics[k].Source.Data[i]);
+            end;
+          end;
+          Inc(Offset, NumSemantic * 3);
+          LVO.AddTriangle(Index, Index + 1, Index + 2);
+          Inc(Index, 3);
+        end;
+//=========================
+        for k := 0 to High(LSemantics) do
+          with LSemantics[k].Source do begin
+            attr := TAttribBuffer.CreateAndSetup
+              (CAttribSematics[LSemantics[k].AttribType].Name, Ord(Components));
+            attr.SetAttribSemantic(LSemantics[k].AttribType);
+            attr.Buffer.Allocate(List.Count * List.ItemSize,
+              List.GetItemAddr(0));
+            attr.Buffer.SetDataHandler(List, True);
+            LVO.AddAttrib(attr);
+          end;
       end;
     end;
-    if length(aSource.Float_array.Content.Value) > 0
-    then Value := FloatStringsToSingleDynArray(aSource.Float_array.Content.Value);
-    References := nil;
+}
+  except
+    raise;
   end;
-
-  function TDAESources.SourceValue(ID: string): TSingleDynArray;
-  var i: integer;
-      sId: string;
-      S: PDAESourceRecord;
-  begin
-    S := Source[Id]; result := nil;
-    assert(assigned(S), 'Source with ID "'+ID+'" not found in mesh');
-    sId := S.Accessor.SourceId;
-    for i:=0 to Count-1 do
-      if Items[i].Id = sId then
-        if assigned(Items[i].Value) then exit(Items[i].Value);
-  end;
-
-  function TDAESources.getSourceById(Id: string): PDAESourceRecord;
-  var i: integer;
-  begin
-    result := nil;
-    for i:=0 to Count-1 do
-      if Items[i].ID = Id then exit(GetItemAddr(i));
-  end;
+end;
 
 
-  function BuildVertexObject: TVertexObject;
-  begin {
-    1. Create TAttribObject for each of Attrib
-    2.
-  }end;
 
-
-  procedure TDAESubMesh.Init(aTriangles: IXMLTriangles_type);
-  var i: integer;
-  begin
-    PrimitiveType:=ftTriangles;
-    setlength(Attribs,aTriangles.Input.Count);
-    for i:=0 to aTriangles.Input.Count-1 do begin
-      Attribs[i].Semantic:=aTriangles.Input[i].Semantic;
-      Attribs[i].SourceId:=aTriangles.Input[i].Source;
-      Attribs[i].Offset:=aTriangles.Input[i].Offset;
-      Attribs[i].SetIndex:=aTriangles.Input[i].Set_;
-    end;
-    if length(aTriangles.P.Content.Value)>0 then
-      Indices:=IntStringsToIntegerDynArray(aTriangles.P.Content.Value)
-    else Indices:=nil;
-  end;
-
-  procedure TDAESubMesh.Init(aLines: IXMLLines_type);
-  var i: integer;
-  begin
-    PrimitiveType:=ftLines;
-    setlength(Attribs,aLines.Input.Count);
-    for i:=0 to aLines.Input.Count-1 do begin
-      Attribs[i].Semantic:=aLines.Input[i].Semantic;
-      Attribs[i].SourceId:=aLines.Input[i].Source;
-      Attribs[i].Offset:=aLines.Input[i].Offset;
-      Attribs[i].SetIndex:=aLines.Input[i].Set_;
-    end;
-    if length(aLines.P.Content.Value)>0 then
-      Indices:=IntStringsToIntegerDynArray(aLines.P.Content.Value);
-  end;
-  procedure TDAESubMesh.Init(aLineStrips: IXMLLineStrips_type);
-  var i: integer;
-  begin
-    PrimitiveType:=ftLineStrip;
-    setlength(Attribs,aLineStrips.Input.Count);
-    for i:=0 to aLineStrips.Input.Count-1 do begin
-      Attribs[i].Semantic:=aLineStrips.Input[i].Semantic;
-      Attribs[i].SourceId:=aLineStrips.Input[i].Source;
-      Attribs[i].Offset:=aLineStrips.Input[i].Offset;
-      Attribs[i].SetIndex:=aLineStrips.Input[i].Set_;
-    end;
-    if length(aLineStrips.P.Content.Value)>0 then
-      Indices:=IntStringsToIntegerDynArray(aLineStrips.P.Content.Value);
-  end;
-  procedure TDAESubMesh.Init(aPolygons: IXMLPolygons_type);
-  var i: integer;
-  begin
-    PrimitiveType:=ftTriangles; //pars polygons to triangles
-    setlength(Attribs,aPolygons.Input.Count);
-    for i:=0 to aPolygons.Input.Count-1 do begin
-      Attribs[i].Semantic:=aPolygons.Input[i].Semantic;
-      Attribs[i].SourceId:=aPolygons.Input[i].Source;
-      Attribs[i].Offset:=aPolygons.Input[i].Offset;
-      Attribs[i].SetIndex:=aPolygons.Input[i].Set_;
-    end;
-    //Not completed
-    assert(false, 'parser is not comleted');
-  end;
-  procedure TDAESubMesh.Init(aTriFans: IXMLTriFans_type);
-  var i: integer;
-  begin
-    PrimitiveType:=ftTriangleFan;
-    setlength(Attribs,aTriFans.Input.Count);
-    for i:=0 to aTriFans.Input.Count-1 do begin
-      Attribs[i].Semantic:=aTriFans.Input[i].Semantic;
-      Attribs[i].SourceId:=aTriFans.Input[i].Source;
-      Attribs[i].Offset:=aTriFans.Input[i].Offset;
-      Attribs[i].SetIndex:=aTriFans.Input[i].Set_;
-    end;
-    if length(aTriFans.P.Content.Value)>0 then
-      Indices:=IntStringsToIntegerDynArray(aTriFans.P.Content.Value);
-  end;
-  procedure TDAESubMesh.Init(aTriStrips: IXMLTriStrips_type);
-  var i: integer;
-  begin
-    PrimitiveType:=ftTriangleStrip;
-    setlength(Attribs,aTriStrips.Input.Count);
-    for i:=0 to aTriStrips.Input.Count-1 do begin
-      Attribs[i].Semantic:=aTriStrips.Input[i].Semantic;
-      Attribs[i].SourceId:=aTriStrips.Input[i].Source;
-      Attribs[i].Offset:=aTriStrips.Input[i].Offset;
-      Attribs[i].SetIndex:=aTriStrips.Input[i].Set_;
-    end;
-    if length(aTriStrips.P.Content.Value)>0 then
-      Indices:=IntStringsToIntegerDynArray(aTriStrips.P.Content.Value);
-  end;
 
 (*
   TDAEMeshSources = class
@@ -308,46 +165,7 @@ type
     property Source[ID: string]: TSourceSemantic read getSourceById;
   end;
 
-  TSemanticsArray  = record
-    Name: string; Supported: boolean; AttrType: TAttribType;
-  end;
 
-const
-  cInputSemantic: array[isPOSITION..isUV] of TSemanticsArray = (
-    (Name:'POSITION'; Supported: true; AttrType: atVertex),
-    (Name:'VERTEX'; Supported: false; AttrType: atVertex),
-    (Name:'TANGENT'; Supported: true; AttrType: atTangent),
-    (Name:'BINORMAL'; Supported: true; AttrType: atBinormal),
-    (Name:'NORMAL'; Supported: true; AttrType: atNormal),
-    (Name:'COLOR'; Supported:  true; AttrType: atColor),
-    (Name:'TEXCOORD'; Supported: true; AttrType: atTexCoord0),
-    (Name:'IMAGE'; Supported: false; AttrType: atUserAttrib),
-    (Name:'INPUT'; Supported: false; AttrType: atUserAttrib),
-    (Name:'IN_TANGENT'; Supported: false; AttrType: atUserAttrib),
-    (Name:'CONTINUITY'; Supported: false; AttrType: atUserAttrib),
-    (Name:'LINEAR_STEPS'; Supported: false; AttrType: atUserAttrib),
-    (Name:'INTERPOLATION'; Supported: false; AttrType: atUserAttrib),
-    (Name:'OUTPUT'; Supported: false; AttrType: atUserAttrib),
-    (Name:'OUT_TANGENT'; Supported: false; AttrType: atUserAttrib),
-    (Name:'INV_BIND_MATRIX'; Supported: false; AttrType: atUserAttrib),
-    (Name:'JOINT'; Supported: false; AttrType: atUserAttrib),
-    (Name:'MORPH_TARGET'; Supported: false; AttrType: atUserAttrib),
-    (Name:'MORPH_WEIGHT'; Supported: false; AttrType: atUserAttrib),
-    (Name:'WEIGHT'; Supported: false; AttrType: atUserAttrib),
-    (Name:'TEXBINORMAL'; Supported: false; AttrType: atUserAttrib),
-    (Name:'TEXTANGENT'; Supported: false; AttrType: atUserAttrib),
-    (Name:'UV'; Supported: false; AttrType: atUserAttrib)
-  );
-
-function isSupportedSemantic(aSemantic: string): boolean;
-var i: TInputSemantic;
-    s: string;
-begin
-  s:=uppercase(aSemantic);
-  for i :=  low(TInputSemantic) to high(TInputSemantic) do
-    if cInputSemantic[i].Name=s then exit(cInputSemantic[i].Supported);
-  result := false;
-end;
 
 function GetSemantic(const Input: IXMLInput_local_offset_typeList;
   const ASources: TDAEVertexSourceDynArray): TSourceSemanticDynArray;

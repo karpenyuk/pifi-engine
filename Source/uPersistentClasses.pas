@@ -7,18 +7,29 @@
 interface
 
 uses
-  Classes;
+  Classes, uBaseTypes;
 
 type
 
   TFreeingBehavior = (fbManual, fbNoSubscibers, fbGarbageCollector);
 
   TPersistentResource = class;
+  TNotifiableObject = class;
 
-  TNotifiableObject = class(TObject)
+  INotifiable = interface
+  ['{78846929-0168-4CA5-8777-7B136920AB80}']
+    procedure Subscribe(Subscriber: TNotifiableObject);
+    procedure UnSubscribe(Subscriber: TNotifiableObject);
+    procedure DispatchMessage(Msg: Cardinal; Params: pointer = nil);
+    procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil);
+  end;
+
+  TNotifiableObject = class(TAggregatedObject, INotifiable)
   private
     FSubscribers: TList; // List of TNotifiableObject
     procedure FreeSubscriptions;
+    procedure AttachResource(Resource: TNotifiableObject); virtual;
+    procedure DetachResource(Resource: TNotifiableObject); virtual;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -26,9 +37,51 @@ type
     procedure UnSubscribe(Subscriber: TNotifiableObject); virtual;
     procedure DispatchMessage(Msg: Cardinal; Params: pointer = nil); virtual;
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); virtual;
-    procedure AttachResource(Resource: TPersistentResource); virtual;
-    procedure DetachResource(Resource: TPersistentResource); virtual;
   end;
+
+  IReference<T: class> = interface
+    ['{E94C647C-56BE-4813-8325-51E26FD5522A}']
+    function GetReference: T;
+    procedure SetReference(const Value: T);
+
+    property Reference: T read GetReference write SetReference;
+  end;
+
+  TReference<T: class> = class(TObject, IInterface, IReference<T>)
+  private
+    FReference: T;
+    function GetReference: T; Inline;
+    procedure SetReference(const Value: T);
+  protected
+    [Volatile] FRefCount: Integer;
+    function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
+    function _AddRef: Integer; stdcall;
+    function _Release: Integer; stdcall;
+  public
+    constructor Create(const AReference: T);
+    destructor Destroy; override;
+    property Reference: T read GetReference write SetReference;
+    property RefCount: integer read FRefCount;
+  end;
+
+  TTReference<T: class> = record
+  private
+    FReference: IReference<T>;
+    function GetReference: T; Inline;
+    procedure SetReference(Value: T);
+    function getIRef: IReference<T>;
+  public
+    procedure FreeRef;
+
+    property Reference: T read GetReference write SetReference;
+    property iRef: IReference<T> read getIRef;
+
+    class operator Implicit(Value: T): TTReference<T>; Inline;
+    class operator Implicit(Value: TTReference<T>): T; overload; Inline;
+    class operator Explicit(Value: T): TTReference<T>; Inline;
+    class operator Explicit(Value: TTReference<T>): T; overload; Inline;
+  end;
+
 
   { TODO : Äîðàáîòàòü êëàññ TPersistentResource, ðåàëèçîâàâ ðåãèñòðàöèþ çàãðóæåííûõ ðåñóðñîâ â êîëëåêöèè îáúåêòîâ.
          : Serialize Owner property, Implement FixUp by object GUID
@@ -55,23 +108,116 @@ type
     GUID: TGUID;
     Version: integer;
     TagStorage: TObject;
-    constructor Create; overload; override;
-    constructor CreateOwned(aOwner: TObject = nil); virtual;
+    constructor Create; virtual;
 
     procedure SaveToStream(s: TStream); virtual;
     procedure LoadFromStream(s: TStream); virtual;
     procedure SetGUID(GUIDString: string);
-    class function IsInner: boolean; virtual;
     property Owner: TObject read FOwner write setOwner;
     property Order: integer read FOrder;
   end;
 
   TPersistentResClass = class of TPersistentResource;
 
+
 implementation
 
 uses
-  SysUtils, uBaseTypes;
+  SysUtils;
+
+{ TReference }
+
+constructor TReference<T>.Create(const AReference: T);
+begin
+  FReference := AReference;
+end;
+
+destructor TReference<T>.Destroy;
+var temp: T;
+begin
+  temp := FReference;
+  FReference := nil;
+  temp.free;
+end;
+
+function TReference<T>.GetReference: T;
+begin
+  Result := FReference;
+end;
+
+function TReference<T>.QueryInterface(const IID: TGUID; out Obj): HResult;
+begin
+  if GetInterface(IID, Obj) then
+    Result := 0
+  else
+    Result := E_NOINTERFACE;
+end;
+
+procedure TReference<T>.SetReference(const Value: T);
+begin
+  if Assigned(FReference) and (FReference <> Value) then
+      FReference.Free;
+  FReference := Value;
+end;
+
+function TReference<T>._AddRef: Integer;
+begin
+  Result := AtomicIncrement(FRefCount);
+end;
+
+function TReference<T>._Release: Integer;
+begin
+  Result := AtomicDecrement(FRefCount);
+  if Result = 0 then
+    Destroy;
+end;
+
+{ TTReference }
+
+function TTReference<T>.GetReference: T;
+begin
+  Result := FReference.Reference;
+end;
+
+
+procedure TTReference<T>.SetReference(Value: T);
+begin
+  {if Assigned(FReference) then
+      FReference.Reference := Value
+  else}
+  FReference := nil;
+  FReference := TReference<T>.Create(Value);
+end;
+
+class operator TTReference<T>.Implicit(Value: T): TTReference<T>;
+begin
+  Result.Reference := Value;
+end;
+
+class operator TTReference<T>.Implicit(Value: TTReference<T>): T;
+begin
+  Result := Value.Reference;
+end;
+
+class operator TTReference<T>.Explicit(Value: T): TTReference<T>;
+begin
+  Result := Value;
+end;
+
+class operator TTReference<T>.Explicit(Value: TTReference<T>): T;
+begin
+  Result := Value;
+end;
+
+procedure TTReference<T>.FreeRef;
+begin
+  FReference:=nil;
+end;
+
+function TTReference<T>.getIRef: IReference<T>;
+begin
+  result := FReference;
+end;
 
 { TPersistentResource }
 
@@ -83,17 +229,6 @@ begin
   FOrder := Counter;
   Inc(Counter);
   inherited Create;
-end;
-
-constructor TPersistentResource.CreateOwned(aOwner: TObject);
-begin
-  Create;
-  FOwner := aOwner;
-end;
-
-class function TPersistentResource.IsInner: boolean;
-begin
-  Result := False;
 end;
 
 procedure TPersistentResource.LoadFromStream(s: TStream);
@@ -164,11 +299,7 @@ end;
 
 procedure TPersistentResource.setOwner(const Value: TObject);
 begin
-  if assigned(FOwner) and (FOwner is TPersistentResource)
-  then DetachResource(TPersistentResource(Owner));
   FOwner := Value;
-  if assigned(FOwner) and (FOwner is TPersistentResource)
-  then AttachResource(TPersistentResource(FOwner));
 end;
 
 procedure TPersistentResource.WriteBool(const Value: boolean;
@@ -210,7 +341,7 @@ end;
 
 { TNotifiableObject }
 
-procedure TNotifiableObject.AttachResource(Resource: TPersistentResource);
+procedure TNotifiableObject.AttachResource(Resource: TNotifiableObject);
 begin
   if not assigned(Resource) then exit;
   Resource.Subscribe(Self);
@@ -219,7 +350,6 @@ end;
 
 constructor TNotifiableObject.Create;
 begin
-  inherited;
   FSubscribers := TList.Create;
 end;
 
@@ -230,7 +360,7 @@ begin
   inherited;
 end;
 
-procedure TNotifiableObject.DetachResource(Resource: TPersistentResource);
+procedure TNotifiableObject.DetachResource(Resource: TNotifiableObject);
 begin
   if not assigned(Resource) then exit;
   Resource.UnSubscribe(Self);
@@ -255,7 +385,6 @@ begin
   while FSubscribers.Count>0 do begin
     if assigned(FSubscribers[0]) then begin
       TNotifiableObject(FSubscribers[0]).Notify(Self,NM_ObjectDestroyed);
-      DetachResource(FSubscribers[0]);
     end;
     FSubscribers.Delete(0);
   end;
@@ -293,3 +422,58 @@ begin
 end;
 
 end.
+{
+  TA = class
+  private
+    FStream: TTReference<TStream>;
+    FList: TTReference<TStrings>;
+    FClass: TTReference<TMyClass>;
+
+    function GetStream: TStream;
+    function GetList: TStrings;
+    function getMyClass: TMyClass;
+    function getNList: INotifiable;
+  public
+    constructor Create(const FileName: string);
+
+    property Stream: TStream read GetStream;
+    property List: TStrings read GetList;
+    property MyClass: TMyClass read getMyClass;
+    property NList: INotifiable read getNList;
+  end;
+
+implementation
+
+constructor TA.Create(const FileName: string);
+var
+  Value: Integer;
+begin
+  FStream := TFileStream.Create(FileName, fmOpenRead);
+  Stream.ReadBuffer(Value, SizeOf(Value));
+  // или TStream(FStream).ReadBuffer(Value,SizeOf(Value));
+  FClass := TMyClass.Create(TObject.Create);
+  FList := TStringList.Create;
+  List.LoadFromStream(Stream); // или TStrings(FList).LoadFromStream(Stream);
+end;
+
+function TA.GetStream: TStream;
+begin
+  Result := FStream;
+end;
+
+function TA.GetList: TStrings;
+begin
+  Result := FList;
+end;
+
+function TA.getMyClass: TMyClass;
+begin
+  Result := FClass;
+end;
+
+function TA.getNList: INotifiable;
+begin
+  Result := FList;
+end;
+
+}

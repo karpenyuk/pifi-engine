@@ -21,8 +21,7 @@ Type
   public
     constructor Create; virtual;
     function AddRaw(Item: Pointer): Integer; virtual; abstract;
-    procedure Join(AList: TAbstractDataList; const AMatrix: TMatrix);
-      virtual; abstract;
+    procedure Join(AList: TAbstractDataList; const AMatrix: TMatrix); virtual; abstract;
     procedure Flush; virtual; abstract;
     procedure Clear; virtual; abstract;
     function GetItemAddr(AnIndex: Integer): Pointer; virtual; abstract;
@@ -30,8 +29,7 @@ Type
     function ItemSize(): Integer; virtual; abstract;
     procedure Transform(const AMatrix: TMatrix); virtual;
     function GetItemAsVector(AnIndex: Integer): TVector; virtual;
-    procedure SetItemAsVector(AnIndex: Integer;
-      const aVector: TVector); virtual;
+    procedure SetItemAsVector(AnIndex: Integer; const aVector: TVector); virtual;
     property Count: Integer read getCount write setCount;
   end;
 
@@ -220,6 +218,8 @@ Type
     property Last: PRBNode read rightmost;
   end;
 
+
+
 function IntPtrComparer(i1, i2: Pointer): Integer;
 
 implementation
@@ -228,6 +228,23 @@ function IntPtrComparer(i1, i2: Pointer): Integer;
 begin
   result := Integer(i1) - Integer(i2);
 end;
+
+function Compare_Method(const Left, Right: TMethod): Integer;
+var
+  LCode, LData: PByte;
+  RCode, RData: PByte;
+begin
+  LCode := PByte(Left.Code);
+  LData := PByte(Left.Data);
+  RCode := PByte(Right.Code);
+  RData := PByte(Right.Data);
+  if LData<RData then Result := -1
+  else if LData>RData then Result := 1
+  else if LCode<RCode then  Result := -1
+  else if LCode>RCode then  Result := 1
+  else Result := 0;
+end;
+
 
 { TDataList<T> }
 

@@ -1,144 +1,132 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-		<PropertyGroup>
-			<ProjectGuid>{A26DFFFE-6187-459B-B4D7-8DD38BB36CD3}</ProjectGuid>
-		</PropertyGroup>
-		<ItemGroup>
-			<Projects Include="xProject.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="CumputeShaderTest\ComputeShaderProj.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="GeometryShaderTest\GeometryShaders.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="RBTreeTest\RBTreeTest.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="FreetypeTest\FreetypeTest.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="NotificationTest\NotifyTest.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="ColladaImportTest\ColladaImportTest.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="TessellationShaderTest\TesselationShaderTest.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="TexturingTest\TexturingDemo.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="SceneGraphTest\SceneGraphDemo.dproj">
-				<Dependencies/>
-			</Projects>
-		</ItemGroup>
-		<ProjectExtensions>
-			<Borland.Personality>Default.Personality.12</Borland.Personality>
-			<Borland.ProjectType/>
-			<BorlandProject>
-				<Default.Personality/>
-			</BorlandProject>
-		</ProjectExtensions>
-		<Target Name="xProject">
-			<MSBuild Projects="xProject.dproj"/>
-		</Target>
-		<Target Name="xProject:Clean">
-			<MSBuild Projects="xProject.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="xProject:Make">
-			<MSBuild Projects="xProject.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="ComputeShaderProj">
-			<MSBuild Projects="CumputeShaderTest\ComputeShaderProj.dproj"/>
-		</Target>
-		<Target Name="ComputeShaderProj:Clean">
-			<MSBuild Projects="CumputeShaderTest\ComputeShaderProj.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="ComputeShaderProj:Make">
-			<MSBuild Projects="CumputeShaderTest\ComputeShaderProj.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="GeometryShaders">
-			<MSBuild Projects="GeometryShaderTest\GeometryShaders.dproj"/>
-		</Target>
-		<Target Name="GeometryShaders:Clean">
-			<MSBuild Projects="GeometryShaderTest\GeometryShaders.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="GeometryShaders:Make">
-			<MSBuild Projects="GeometryShaderTest\GeometryShaders.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="RBTreeTest">
-			<MSBuild Projects="RBTreeTest\RBTreeTest.dproj"/>
-		</Target>
-		<Target Name="RBTreeTest:Clean">
-			<MSBuild Projects="RBTreeTest\RBTreeTest.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="RBTreeTest:Make">
-			<MSBuild Projects="RBTreeTest\RBTreeTest.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="FreetypeTest">
-			<MSBuild Projects="FreetypeTest\FreetypeTest.dproj"/>
-		</Target>
-		<Target Name="FreetypeTest:Clean">
-			<MSBuild Projects="FreetypeTest\FreetypeTest.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="FreetypeTest:Make">
-			<MSBuild Projects="FreetypeTest\FreetypeTest.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="NotifyTest">
-			<MSBuild Projects="NotificationTest\NotifyTest.dproj"/>
-		</Target>
-		<Target Name="NotifyTest:Clean">
-			<MSBuild Projects="NotificationTest\NotifyTest.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="NotifyTest:Make">
-			<MSBuild Projects="NotificationTest\NotifyTest.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="ColladaImportTest">
-			<MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj"/>
-		</Target>
-		<Target Name="ColladaImportTest:Clean">
-			<MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="ColladaImportTest:Make">
-			<MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="TesselationShaderTest">
-			<MSBuild Projects="TessellationShaderTest\TesselationShaderTest.dproj"/>
-		</Target>
-		<Target Name="TesselationShaderTest:Clean">
-			<MSBuild Projects="TessellationShaderTest\TesselationShaderTest.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="TesselationShaderTest:Make">
-			<MSBuild Projects="TessellationShaderTest\TesselationShaderTest.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="TexturingDemo">
-			<MSBuild Projects="TexturingTest\TexturingDemo.dproj"/>
-		</Target>
-		<Target Name="TexturingDemo:Clean">
-			<MSBuild Projects="TexturingTest\TexturingDemo.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="TexturingDemo:Make">
-			<MSBuild Projects="TexturingTest\TexturingDemo.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="SceneGraphDemo">
-			<MSBuild Projects="SceneGraphTest\SceneGraphDemo.dproj"/>
-		</Target>
-		<Target Name="SceneGraphDemo:Clean">
-			<MSBuild Projects="SceneGraphTest\SceneGraphDemo.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="SceneGraphDemo:Make">
-			<MSBuild Projects="SceneGraphTest\SceneGraphDemo.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="Build">
-			<CallTarget Targets="xProject;ComputeShaderProj;GeometryShaders;RBTreeTest;FreetypeTest;NotifyTest;ColladaImportTest;TesselationShaderTest;TexturingDemo;SceneGraphDemo"/>
-		</Target>
-		<Target Name="Clean">
-			<CallTarget Targets="xProject:Clean;ComputeShaderProj:Clean;GeometryShaders:Clean;RBTreeTest:Clean;FreetypeTest:Clean;NotifyTest:Clean;ColladaImportTest:Clean;TesselationShaderTest:Clean;TexturingDemo:Clean;SceneGraphDemo:Clean"/>
-		</Target>
-		<Target Name="Make">
-			<CallTarget Targets="xProject:Make;ComputeShaderProj:Make;GeometryShaders:Make;RBTreeTest:Make;FreetypeTest:Make;NotifyTest:Make;ColladaImportTest:Make;TesselationShaderTest:Make;TexturingDemo:Make;SceneGraphDemo:Make"/>
-		</Target>
-		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
-	</Project>
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{A26DFFFE-6187-459B-B4D7-8DD38BB36CD3}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="xProject.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="CumputeShaderTest\ComputeShaderProj.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="GeometryShaderTest\GeometryShaders.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="RBTreeTest\RBTreeTest.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="FreetypeTest\FreetypeTest.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ColladaImportTest\ColladaImportTest.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="TessellationShaderTest\TesselationShaderTest.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="TexturingTest\TexturingDemo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="SceneGraphTest\SceneGraphDemo.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="xProject">
+        <MSBuild Projects="xProject.dproj"/>
+    </Target>
+    <Target Name="xProject:Clean">
+        <MSBuild Projects="xProject.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="xProject:Make">
+        <MSBuild Projects="xProject.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ComputeShaderProj">
+        <MSBuild Projects="CumputeShaderTest\ComputeShaderProj.dproj"/>
+    </Target>
+    <Target Name="ComputeShaderProj:Clean">
+        <MSBuild Projects="CumputeShaderTest\ComputeShaderProj.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ComputeShaderProj:Make">
+        <MSBuild Projects="CumputeShaderTest\ComputeShaderProj.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="GeometryShaders">
+        <MSBuild Projects="GeometryShaderTest\GeometryShaders.dproj"/>
+    </Target>
+    <Target Name="GeometryShaders:Clean">
+        <MSBuild Projects="GeometryShaderTest\GeometryShaders.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="GeometryShaders:Make">
+        <MSBuild Projects="GeometryShaderTest\GeometryShaders.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="RBTreeTest">
+        <MSBuild Projects="RBTreeTest\RBTreeTest.dproj"/>
+    </Target>
+    <Target Name="RBTreeTest:Clean">
+        <MSBuild Projects="RBTreeTest\RBTreeTest.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="RBTreeTest:Make">
+        <MSBuild Projects="RBTreeTest\RBTreeTest.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="FreetypeTest">
+        <MSBuild Projects="FreetypeTest\FreetypeTest.dproj"/>
+    </Target>
+    <Target Name="FreetypeTest:Clean">
+        <MSBuild Projects="FreetypeTest\FreetypeTest.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FreetypeTest:Make">
+        <MSBuild Projects="FreetypeTest\FreetypeTest.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ColladaImportTest">
+        <MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj"/>
+    </Target>
+    <Target Name="ColladaImportTest:Clean">
+        <MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ColladaImportTest:Make">
+        <MSBuild Projects="ColladaImportTest\ColladaImportTest.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="TesselationShaderTest">
+        <MSBuild Projects="TessellationShaderTest\TesselationShaderTest.dproj"/>
+    </Target>
+    <Target Name="TesselationShaderTest:Clean">
+        <MSBuild Projects="TessellationShaderTest\TesselationShaderTest.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="TesselationShaderTest:Make">
+        <MSBuild Projects="TessellationShaderTest\TesselationShaderTest.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="TexturingDemo">
+        <MSBuild Projects="TexturingTest\TexturingDemo.dproj"/>
+    </Target>
+    <Target Name="TexturingDemo:Clean">
+        <MSBuild Projects="TexturingTest\TexturingDemo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="TexturingDemo:Make">
+        <MSBuild Projects="TexturingTest\TexturingDemo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="SceneGraphDemo">
+        <MSBuild Projects="SceneGraphTest\SceneGraphDemo.dproj"/>
+    </Target>
+    <Target Name="SceneGraphDemo:Clean">
+        <MSBuild Projects="SceneGraphTest\SceneGraphDemo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="SceneGraphDemo:Make">
+        <MSBuild Projects="SceneGraphTest\SceneGraphDemo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="xProject;ComputeShaderProj;GeometryShaders;RBTreeTest;FreetypeTest;ColladaImportTest;TesselationShaderTest;TexturingDemo;SceneGraphDemo"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="xProject:Clean;ComputeShaderProj:Clean;GeometryShaders:Clean;RBTreeTest:Clean;FreetypeTest:Clean;ColladaImportTest:Clean;TesselationShaderTest:Clean;TexturingDemo:Clean;SceneGraphDemo:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="xProject:Make;ComputeShaderProj:Make;GeometryShaders:Make;RBTreeTest:Make;FreetypeTest:Make;ColladaImportTest:Make;TesselationShaderTest:Make;TexturingDemo:Make;SceneGraphDemo:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

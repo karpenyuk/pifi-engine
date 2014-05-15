@@ -266,6 +266,8 @@ Type
   TMouseEvent = procedure (Sender: TObject; X,Y: integer; Buttons: TCMouseButtons) of object;
   TMouseWheelEvent = procedure(Sender: TObject; Shift: TCShiftState; WheelDelta: Integer; var Handled: Boolean) of object;
 
+  TResourceState = (rsDestroyed, rsUnloaded, rsReady, rsSuspended, rsBusy, rsLocked, rsChanged);
+
 const
   CValueSizes: array[TValueType] of byte = (1, 2, 4, 4, 4, 8);
 
