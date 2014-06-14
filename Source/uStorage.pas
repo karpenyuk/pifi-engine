@@ -14,7 +14,17 @@ type
   TPersistentRef = TReference<TPersistentResource>;
   TPersistentResourceRef = TResourceReference<TPersistentResource>;
 
-  TResourceList = class(GRedBlackTree < TGUID, TPersistentRef>)
+  TResourceNode = class
+  private
+    Fref: TPersistentRef;
+    function getRef: TPersistentRef;
+  public
+    property ref: TPersistentRef read getRef;
+    constructor Create(aRef: TPersistentRef);
+    destructor Destroy; override;
+  end;
+
+  TResourceList = class(GRedBlackTree<TGUID, TResourceNode>)
   private
     procedure FreeResources(aOwner: TPersistentResource);
   public
@@ -36,9 +46,8 @@ type
   public
     class procedure PutResource(Resource: TPersistentResource);
     class procedure Delete(Resource: TPersistentResource);
-    class procedure RemoveReference(aResource: TPersistentResource);
     class function GetResource(const aGUID: TGUID): TPersistentResource;
-    class function GetReference<T: class>(const aGUID: TGUID): IReference<T>; overload;
+    class function GetReference<T: class>(const aGUID: TGUID): TReference<T>; overload;
 
     class function CreateProgram: TShaderProgram;
     class function CreateMaterial: TMaterial;
@@ -87,8 +96,10 @@ end;
 
 //class procedure Storage.AddResource(const aRes: TPersistentResource);
 class procedure Storage.AddResource(const aRes: TPersistentResource);
+var res_node: TResourceNode;
 begin
-  FResources.Add(aRes.GUID, TReference<TPersistentResource>.Create(aRes));
+  res_node:=TResourceNode.Create(TReference<TPersistentResource>.Create(aRes));
+  FResources.Add(aRes.GUID, res_node);
   aRes.Subscribe(FStorageHandle);
 end;
 
@@ -247,7 +258,9 @@ end;
 class procedure Storage.Delete(Resource: TPersistentResource);
 begin
   if Resource is TPersistentResource then begin
+    Resource.UnSubscribe(FStorageHandle);
     FResources.Delete(Resource.GUID);
+    Resource.Free;
   end;
 end;
 
@@ -259,24 +272,19 @@ begin
   FStorageHandle.Free;
 end;
 
-class function Storage.GetReference<T>(const aGUID: TGUID): IReference<T>;
+class function Storage.GetReference<T>(const aGUID: TGUID): TReference<T>;
 begin
-  result := TReference<T>(FResources.FindNode(aGUID).Value);
+  result := TReference<T>(FResources.FindNode(aGUID).Value.ref);
 end;
 
 class function Storage.GetResource(const aGUID: TGUID): TPersistentResource;
 begin
-  result := FResources.FindNode(aGUID).Value.Reference;
+  result := FResources.FindNode(aGUID).Value.ref.Reference;
 end;
 
 class procedure Storage.PutResource(Resource: TPersistentResource);
 begin
   if Resource is TPersistentResource then AddResource(Resource);
-end;
-
-class procedure Storage.RemoveReference(aResource: TPersistentResource);
-begin
-  GetReference<TPersistentResource>(aResource.GUID).Reference := nil;
 end;
 
 { Storage.TStorageHandler }
@@ -306,15 +314,16 @@ procedure TResourceList.FreeResources(aOwner: TPersistentResource);
 var
   x, y, z: TRBNode;
   cont: Boolean;
-  temp: TReference<TPersistentResource>;
+  temp: TRBNode;
 begin
   if Assigned(FLeftMost) then begin
     x := FLeftMost;
     repeat
       z := x;
       repeat
-        z.Value:=nil;
+        temp := z;
         z := z.Twin;
+        FreeAndNil(temp.Value);
       until z = nil;
       // Next node
       if (x.right <> nil) then begin
@@ -332,11 +341,29 @@ begin
         x := FRoot;
     until x = FRightMost;
     if (FLeftMost <> FRightMost) and assigned(x) then begin
-      if assigned(x.Value) then begin
-        x.Value := nil;
-      end;
+      FreeAndNil(x.Value);
     end;
   end;
+end;
+
+{ TResourceNode }
+
+constructor TResourceNode.Create(aRef: TPersistentRef);
+begin
+  inherited Create;
+  Fref := aRef;
+end;
+
+destructor TResourceNode.Destroy;
+begin
+  FRef.Reference.UnSubscribe(Storage.FStorageHandle);
+  FRef.Free; FRef := nil;
+  inherited;
+end;
+
+function TResourceNode.getRef: TPersistentRef;
+begin
+  result := FRef;
 end;
 
 initialization

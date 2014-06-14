@@ -39,42 +39,26 @@ type
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); virtual;
   end;
 
-  IReference<T: class> = interface
-    ['{E94C647C-56BE-4813-8325-51E26FD5522A}']
-    function GetReference: T;
-    procedure SetReference(const Value: T);
-
-    property Reference: T read GetReference write SetReference;
-  end;
-
-  TReference<T: class> = class(TObject, IInterface, IReference<T>)
+  TReference<T: class> = class
   private
     FReference: T;
     function GetReference: T; Inline;
     procedure SetReference(const Value: T);
-  protected
-    [Volatile] FRefCount: Integer;
-    function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
-    function _AddRef: Integer; stdcall;
-    function _Release: Integer; stdcall;
   public
     constructor Create(const AReference: T);
     destructor Destroy; override;
     property Reference: T read GetReference write SetReference;
-    property RefCount: integer read FRefCount;
   end;
 
   TTReference<T: class> = record
   private
-    FReference: IReference<T>;
+    FReference: TReference<T>;
     function GetReference: T; Inline;
     procedure SetReference(Value: T);
-    function getIRef: IReference<T>;
   public
     procedure FreeRef;
 
     property Reference: T read GetReference write SetReference;
-    property iRef: IReference<T> read getIRef;
 
     class operator Implicit(Value: T): TTReference<T>; Inline;
     class operator Implicit(Value: TTReference<T>): T; overload; Inline;
@@ -133,11 +117,10 @@ begin
 end;
 
 destructor TReference<T>.Destroy;
-var temp: T;
 begin
-  temp := FReference;
+  FReference.Free;
   FReference := nil;
-  temp.free;
+  inherited;
 end;
 
 function TReference<T>.GetReference: T;
@@ -145,31 +128,11 @@ begin
   Result := FReference;
 end;
 
-function TReference<T>.QueryInterface(const IID: TGUID; out Obj): HResult;
-begin
-  if GetInterface(IID, Obj) then
-    Result := 0
-  else
-    Result := E_NOINTERFACE;
-end;
-
 procedure TReference<T>.SetReference(const Value: T);
 begin
   if Assigned(FReference) and (FReference <> Value) then
       FReference.Free;
   FReference := Value;
-end;
-
-function TReference<T>._AddRef: Integer;
-begin
-  Result := AtomicIncrement(FRefCount);
-end;
-
-function TReference<T>._Release: Integer;
-begin
-  Result := AtomicDecrement(FRefCount);
-  if Result = 0 then
-    Destroy;
 end;
 
 { TTReference }
@@ -212,11 +175,6 @@ end;
 procedure TTReference<T>.FreeRef;
 begin
   FReference:=nil;
-end;
-
-function TTReference<T>.getIRef: IReference<T>;
-begin
-  result := FReference;
 end;
 
 { TPersistentResource }

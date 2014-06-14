@@ -23,20 +23,10 @@ begin
   TestResRef := Storage.CreateMaterial;
   writeln('Res3: ', TestResRef.Reference.GUID.ToString);
   TestResRef := testRes2;
-  TMaterialRef(TestRes);
-//For release directly created resources you could use one of these statements:
-//TMaterialRef(TestRes); - wrap it to the reference type
-//tempResRef := TestRes; - directly assign it to the reference var
-//Storage.RemoveReference(TestRes); - manually remove it from collection with function
-//Storage.GetReference<TMaterial>(TestRes.GUID).Reference := nil; - or manually
 
   writeln(TestRes.GUID.ToString);
-//  writeln(Temp.Reference.GUID.ToString);
-//  writeln(Temp.GUID.ToString);
-
   writeln(TestRes2.GUID.ToString);
   writeln(TestResRef.Reference.GUID.ToString);
-
 
   readln;
 end.

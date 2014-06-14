@@ -42,7 +42,7 @@ Type
 
   TResourceReference<T: class> = record
   private
-    FReference: IReference<T>;
+    FReference: TReference<T>;
     function GetReference: T; Inline;
     procedure SetReference(Value: T);
   public
