@@ -7,7 +7,7 @@
 interface
 
 uses
-  Classes, uBaseTypes;
+  Classes, uBaseTypes, ulists;
 
 type
 
@@ -24,12 +24,19 @@ type
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil);
   end;
 
+  TNotifyDelegate = TDelegate<TNotifyEvent>;
+  INotifyDelegate = IDelegate<TNotifyEvent>;
+
   TNotifiableObject = class(TAggregatedObject, INotifiable)
   private
     FSubscribers: TList; // List of TNotifiableObject
+    FOnDestroy: TNotifyDelegate;
+    function GetOnDestroy: INotifyDelegate;
     procedure FreeSubscriptions;
     procedure AttachResource(Resource: TNotifiableObject); virtual;
     procedure DetachResource(Resource: TNotifiableObject); virtual;
+  protected
+    procedure DoDestroy; virtual;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -37,6 +44,8 @@ type
     procedure UnSubscribe(Subscriber: TNotifiableObject); virtual;
     procedure DispatchMessage(Msg: Cardinal; Params: pointer = nil); virtual;
     procedure Notify(Sender: TObject; Msg: Cardinal; Params: pointer = nil); virtual;
+
+    property OnDestroy: INotifyDelegate read GetOnDestroy;
   end;
 
   TReference<T: class> = class
@@ -93,6 +102,7 @@ type
     Version: integer;
     TagStorage: TObject;
     constructor Create; virtual;
+    destructor Destroy; override;
 
     procedure SaveToStream(s: TStream); virtual;
     procedure LoadFromStream(s: TStream); virtual;
@@ -187,6 +197,11 @@ begin
   FOrder := Counter;
   Inc(Counter);
   inherited Create;
+end;
+
+destructor TPersistentResource.Destroy;
+begin
+  inherited;
 end;
 
 procedure TPersistentResource.LoadFromStream(s: TStream);
@@ -313,6 +328,7 @@ end;
 
 destructor TNotifiableObject.Destroy;
 begin
+  DoDestroy;
   FreeSubscriptions;
   FreeAndNil(FSubscribers);
   inherited;
@@ -338,6 +354,13 @@ begin
   FSubscribers.Pack;
 end;
 
+procedure TNotifiableObject.DoDestroy;
+var Event: TNotifyEvent;
+    i: integer;
+begin
+  for i := 0 to FOnDestroy.List.Count-1 do FOnDestroy.List[i](Self);
+end;
+
 procedure TNotifiableObject.FreeSubscriptions;
 begin
   while FSubscribers.Count>0 do begin
@@ -346,6 +369,11 @@ begin
     end;
     FSubscribers.Delete(0);
   end;
+end;
+
+function TNotifiableObject.GetOnDestroy: INotifyDelegate;
+begin
+  Result := FOnDestroy;
 end;
 
 procedure TNotifiableObject.Notify(Sender: TObject; Msg: Cardinal;
@@ -380,58 +408,4 @@ begin
 end;
 
 end.
-{
-  TA = class
-  private
-    FStream: TTReference<TStream>;
-    FList: TTReference<TStrings>;
-    FClass: TTReference<TMyClass>;
 
-    function GetStream: TStream;
-    function GetList: TStrings;
-    function getMyClass: TMyClass;
-    function getNList: INotifiable;
-  public
-    constructor Create(const FileName: string);
-
-    property Stream: TStream read GetStream;
-    property List: TStrings read GetList;
-    property MyClass: TMyClass read getMyClass;
-    property NList: INotifiable read getNList;
-  end;
-
-implementation
-
-constructor TA.Create(const FileName: string);
-var
-  Value: Integer;
-begin
-  FStream := TFileStream.Create(FileName, fmOpenRead);
-  Stream.ReadBuffer(Value, SizeOf(Value));
-  // или TStream(FStream).ReadBuffer(Value,SizeOf(Value));
-  FClass := TMyClass.Create(TObject.Create);
-  FList := TStringList.Create;
-  List.LoadFromStream(Stream); // или TStrings(FList).LoadFromStream(Stream);
-end;
-
-function TA.GetStream: TStream;
-begin
-  Result := FStream;
-end;
-
-function TA.GetList: TStrings;
-begin
-  Result := FList;
-end;
-
-function TA.getMyClass: TMyClass;
-begin
-  Result := FClass;
-end;
-
-function TA.getNList: INotifiable;
-begin
-  Result := FList;
-end;
-
-}

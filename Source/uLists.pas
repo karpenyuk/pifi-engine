@@ -10,7 +10,7 @@
 
 interface
 
-uses Classes, uBaseTypes, uPersistentClasses, uMiscUtils, uVMath;
+uses Classes, uBaseTypes, uMiscUtils, uVMath;
 
 Type
 
@@ -67,7 +67,8 @@ Type
     procedure Assign(aSource: TDataList<T>); virtual;
     procedure ToArray(var aDestination); // Небезопасно
     procedure Clear; override;
-    procedure Delete(Index: Integer);
+    procedure Delete(Index: Integer); overload;
+    procedure Delete(const AnItem: T); overload;
     function IndexOf(const AnItem: T): Integer;
     function Exchange(const AnItemIn, AnItemOut: T): Boolean; overload;
     procedure Exchange(Index1, Index2: Integer); overload;
@@ -138,31 +139,14 @@ Type
     procedure Join(AList: TAbstractDataList; const AMatrix: TMatrix); override;
   end;
 
+  TMethodPointer = procedure of object;
+  TMethodList = class(TDataList<TMethodPointer>);
+
   THashDictionaryNode = record
     Key: Integer;
     KeyName: string;
     KeyGUID: TGUID;
     Value: TObject;
-  end;
-
-  // Key+Value pair list with linear searching
-  TObjectsDictionary = class(TNotifiableObject)
-  protected
-    FCount: Integer;
-    FItems: array of THashDictionaryNode;
-    function StringHashKey(const name: string): Integer;
-    function AddKey(const Key: string; Value: TObject): Integer;
-      overload; virtual;
-    function AddKey(const Key: TGUID; Value: TObject): Integer;
-      overload; virtual;
-    function GetValue(const Key: string): TObject; overload; virtual;
-    function GetValue(const Key: TGUID): TObject; overload; virtual;
-  public
-    constructor Create; override;
-    procedure Assign(aSource: TObjectsDictionary);
-    property Count: Integer read FCount;
-    function inList(const aItem: TObject): boolean;
-    function IndexOf(const aItem: TObject): integer;
   end;
 
   TLinkedObjectItem = record
@@ -218,7 +202,62 @@ Type
     property Last: PRBNode read rightmost;
   end;
 
+  IDelegate<T> = interface
+    ['{ADBC29C1-4F3D-4E4C-9A79-C805E8B9BD92}']
+    procedure Add(const Handler: T);
+    procedure Remove(const Handler: T);
+    function GetList: TDataList<T>;
+    property List: TDataList<T> read GetList;
+  end;
 
+{ IDelegateContainer<T> }
+
+  IDelegateContainer<T> = interface
+    ['{ED255F00-3112-4315-9E25-3C1B3064C932}']
+    function GetDelegate: IDelegate<T> ;
+    property Delegate: IDelegate<T> read GetDelegate;
+  end;
+
+{ TDelegateImpl<T> }
+
+  TDelegateImpl<T> = class(TInterfacedObject, IDelegate<T>)
+  private
+    FList: TDataList<T>;
+  protected
+    { IDelegate<T> }
+    procedure Add(const Event: T);
+    procedure Remove(const Event: T);
+    function GetList: TDataList<T>;
+  public
+    constructor Create(List: TDataList<T>);
+  end;
+
+{ TDelegateContainerImpl<T> }
+
+  TDelegateContainerImpl<T> = class(TInterfacedObject, IDelegateContainer<T>)
+  private
+    FDelegate: IDelegate<T>;
+    FList: TDataList<T>;
+  protected
+    { IDelegateContainer<T> }
+    function GetDelegate: IDelegate<T>;
+  public
+    destructor Destroy; override;
+  end;
+
+{ TDelegate<T> }
+
+  TDelegate<T> = record
+  private
+    FContainer: IDelegateContainer<T>;
+    function GetContainer: IDelegateContainer<T>;
+    function GetList: TDataList<T>;
+  public
+    class operator Implicit(var Delegate: TDelegate<T>): IDelegate<T>;
+    procedure Add(const Handler: T);
+    procedure Remove(const Handler: T);
+    property List: TDataList<T> read GetList;
+  end;
 
 function IntPtrComparer(i1, i2: Pointer): Integer;
 
@@ -290,6 +329,13 @@ begin
   inherited Create;
   Setlength(FItems, 12);
   FCount := 0;
+end;
+
+procedure TDataList<T>.Delete(const AnItem: T);
+var idx: integer;
+begin
+  idx := IndexOf(anItem);
+  if idx >=0 then Delete(idx);
 end;
 
 procedure TDataList<T>.Delete(Index: Integer);
@@ -440,114 +486,6 @@ var
 begin
   dest := @aDestination;
   dest^ := Copy(FItems, 0, Count);
-end;
-
-{ THashedObjectList }
-
-function TObjectsDictionary.StringHashKey(const name: string): Integer;
-var
-  i, n, res: Integer;
-begin
-  if name = '' then
-    result := -1
-  else
-  begin
-    n := Length(name);
-    res := n;
-    for i := 1 to n do
-      res := (res shl 1) + Byte(name[i]);
-    result := res;
-  end;
-end;
-
-function TObjectsDictionary.AddKey(const Key: string; Value: TObject): Integer;
-var
-  iKey, i: Integer;
-begin
-  iKey := StringHashKey(Key);
-  for i := 0 to FCount - 1 do
-    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then
-      exit(i);
-  if FCount >= Length(FItems) then
-    Setlength(FItems, FCount * 2);
-  FItems[FCount].Key := iKey;
-  FItems[FCount].KeyName := Key;
-  FItems[FCount].Value := Value;
-  result := FCount;
-  Inc(FCount);
-end;
-
-function TObjectsDictionary.AddKey(const Key: TGUID; Value: TObject): Integer;
-var
-  iKey, i: Integer;
-begin
-  iKey := GetHashFromBuff(Key, 16);
-  for i := 0 to FCount - 1 do
-    if (FItems[i].Key = iKey) and TGUIDEx.IsEqual(FItems[i].KeyGUID, Key) then
-      exit(i);
-  if FCount >= Length(FItems) then
-    Setlength(FItems, FCount * 2);
-  FItems[FCount].Key := iKey;
-  FItems[FCount].KeyGUID := Key;
-  FItems[FCount].Value := Value;
-  result := FCount;
-  Inc(FCount);
-end;
-
-procedure TObjectsDictionary.Assign(aSource: TObjectsDictionary);
-begin
-  FCount := aSource.FCount;
-  FItems := aSource.FItems;
-end;
-
-constructor TObjectsDictionary.Create;
-begin
-  inherited Create;
-  Setlength(FItems, 128);
-  FCount := 0;
-end;
-
-function TObjectsDictionary.GetValue(const Key: TGUID): TObject;
-var
-  iKey, i: Integer;
-begin
-  iKey := GetHashFromBuff(Key, 16);
-  for i := 0 to FCount - 1 do
-    if (FItems[i].Key = iKey) and TGUIDEx.IsEqual(FItems[i].KeyGUID, Key) then
-    begin
-      result := FItems[i].Value;
-      exit;
-    end;
-  result := nil;
-end;
-
-function TObjectsDictionary.IndexOf(const aItem: TObject): integer;
-var i: integer;
-begin
-  for i := 0 to FCount - 1 do if FItems[i].Value = aItem then exit(i);
-  result:=-1;
-end;
-
-function TObjectsDictionary.inList(const aItem: TObject): boolean;
-var i: integer;
-begin
-  result:=true;
-  for i := 0 to FCount - 1 do if FItems[i].Value = aItem then exit;
-  result:=false;
-end;
-
-function TObjectsDictionary.GetValue(const Key: string): TObject;
-var
-  iKey, i: Integer;
-begin
-  iKey := StringHashKey(Key);
-  for i := 0 to FCount - 1 do
-    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then
-    begin
-      result := FItems[i].Value;
-      exit;
-    end;
-  result := nil;
 end;
 
 { TLinkedList }
@@ -1285,6 +1223,81 @@ begin
   for i := Count - 1 downto 0 do
     if assigned(FItems[i]) then FItems[i].Free;
   Clear;
+end;
+
+
+{ TDelegateImpl<T> }
+
+constructor TDelegateImpl<T>.Create(List: TDataList<T>);
+begin
+  inherited Create;
+  FList := List;
+end;
+
+function TDelegateImpl<T>.GetList: TDataList<T>;
+begin
+  result := FList;
+end;
+
+{ TDelegateImpl<T>.IDelegate<T> }
+
+procedure TDelegateImpl<T>.Add(const Event: T);
+begin
+  if FList.IndexOf(Event) < 0 then
+    FList.Add(Event);
+end;
+
+procedure TDelegateImpl<T>.Remove(const Event: T);
+begin
+  FList.Delete(Event);
+end;
+
+{ TDelegateContainerImpl<T> }
+
+destructor TDelegateContainerImpl<T>.Destroy;
+begin
+  FList.Free;
+  inherited Destroy;
+end;
+
+{ TDelegateContainerImpl<T>.IDelegateContainer<T> }
+
+function TDelegateContainerImpl<T>.GetDelegate: IDelegate<T>;
+begin
+  if FList = nil then
+    FList := TDataList<T>.Create;
+  if FDelegate = nil then
+    FDelegate := TDelegateImpl<T>.Create(FList);
+  Result := FDelegate;
+end;
+
+{ TDelegate<T> }
+
+class operator TDelegate<T>.Implicit(var Delegate: TDelegate<T>): IDelegate<T>;
+begin
+  Result := Delegate.GetContainer.Delegate;
+end;
+
+function TDelegate<T>.GetContainer: IDelegateContainer<T>;
+begin
+  if FContainer = nil then
+    FContainer := TDelegateContainerImpl<T>.Create;
+  Result := FContainer;
+end;
+
+function TDelegate<T>.GetList: TDataList<T>;
+begin
+  result := GetContainer.Delegate.List;
+end;
+
+procedure TDelegate<T>.Add(const Handler: T);
+begin
+  GetContainer.Delegate.Add(Handler);
+end;
+
+procedure TDelegate<T>.Remove(const Handler: T);
+begin
+  GetContainer.Delegate.Remove(Handler);
 end;
 
 end.

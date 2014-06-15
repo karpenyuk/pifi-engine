@@ -29,8 +29,27 @@ type
     constructor CreateOwned(aOwner: TObject = nil); virtual;
     class function IsInner: boolean; virtual;
   end;
-
   TRenderResourceClass = class of TBaseRenderResource;
+
+  // Key+Value pair list with linear searching
+  TObjectsDictionary = class(TNotifiableObject)
+  protected
+    FCount: Integer;
+    FItems: array of THashDictionaryNode;
+    function StringHashKey(const name: string): Integer;
+    function AddKey(const Key: string; Value: TObject): Integer;
+      overload; virtual;
+    function AddKey(const Key: TGUID; Value: TObject): Integer;
+      overload; virtual;
+    function GetValue(const Key: string): TObject; overload; virtual;
+    function GetValue(const Key: TGUID): TObject; overload; virtual;
+  public
+    constructor Create;
+    procedure Assign(aSource: TObjectsDictionary);
+    property Count: Integer read FCount;
+    function inList(const aItem: TObject): boolean;
+    function IndexOf(const aItem: TObject): integer;
+  end;
 
   TBaseSceneItem = class;
 
@@ -1149,6 +1168,114 @@ end;
 class function TBaseRenderResource.IsInner: boolean;
 begin
   Result := False;
+end;
+
+{ TObjectsDictionary }
+
+function TObjectsDictionary.StringHashKey(const name: string): Integer;
+var
+  i, n, res: Integer;
+begin
+  if name = '' then
+    result := -1
+  else
+  begin
+    n := Length(name);
+    res := n;
+    for i := 1 to n do
+      res := (res shl 1) + Byte(name[i]);
+    result := res;
+  end;
+end;
+
+function TObjectsDictionary.AddKey(const Key: string; Value: TObject): Integer;
+var
+  iKey, i: Integer;
+begin
+  iKey := StringHashKey(Key);
+  for i := 0 to FCount - 1 do
+    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then
+      exit(i);
+  if FCount >= Length(FItems) then
+    Setlength(FItems, FCount * 2);
+  FItems[FCount].Key := iKey;
+  FItems[FCount].KeyName := Key;
+  FItems[FCount].Value := Value;
+  result := FCount;
+  Inc(FCount);
+end;
+
+function TObjectsDictionary.AddKey(const Key: TGUID; Value: TObject): Integer;
+var
+  iKey, i: Integer;
+begin
+  iKey := GetHashFromBuff(Key, 16);
+  for i := 0 to FCount - 1 do
+    if (FItems[i].Key = iKey) and TGUIDEx.IsEqual(FItems[i].KeyGUID, Key) then
+      exit(i);
+  if FCount >= Length(FItems) then
+    Setlength(FItems, FCount * 2);
+  FItems[FCount].Key := iKey;
+  FItems[FCount].KeyGUID := Key;
+  FItems[FCount].Value := Value;
+  result := FCount;
+  Inc(FCount);
+end;
+
+procedure TObjectsDictionary.Assign(aSource: TObjectsDictionary);
+begin
+  FCount := aSource.FCount;
+  FItems := aSource.FItems;
+end;
+
+constructor TObjectsDictionary.Create;
+begin
+  inherited Create;
+  Setlength(FItems, 128);
+  FCount := 0;
+end;
+
+function TObjectsDictionary.GetValue(const Key: TGUID): TObject;
+var
+  iKey, i: Integer;
+begin
+  iKey := GetHashFromBuff(Key, 16);
+  for i := 0 to FCount - 1 do
+    if (FItems[i].Key = iKey) and TGUIDEx.IsEqual(FItems[i].KeyGUID, Key) then
+    begin
+      result := FItems[i].Value;
+      exit;
+    end;
+  result := nil;
+end;
+
+function TObjectsDictionary.IndexOf(const aItem: TObject): integer;
+var i: integer;
+begin
+  for i := 0 to FCount - 1 do if FItems[i].Value = aItem then exit(i);
+  result:=-1;
+end;
+
+function TObjectsDictionary.inList(const aItem: TObject): boolean;
+var i: integer;
+begin
+  result:=true;
+  for i := 0 to FCount - 1 do if FItems[i].Value = aItem then exit;
+  result:=false;
+end;
+
+function TObjectsDictionary.GetValue(const Key: string): TObject;
+var
+  iKey, i: Integer;
+begin
+  iKey := StringHashKey(Key);
+  for i := 0 to FCount - 1 do
+    if (FItems[i].Key = iKey) and (FItems[i].KeyName = Key) then
+    begin
+      result := FItems[i].Value;
+      exit;
+    end;
+  result := nil;
 end;
 
 end.

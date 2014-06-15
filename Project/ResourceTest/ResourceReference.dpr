@@ -6,17 +6,31 @@ uses
   FastMM4, Windows, Classes, SysUtils, uLists, uMiscUtils,
   uPersistentClasses, uRenderResource, uStorage;
 
+type
+  TTestEvent = record
+    procedure onDestroyEvent(Sender: TObject);
+  end;
 
 var
   TestRes: TMaterial;
   TestRes2: TMaterial;
-  TestResRef, tempResRef: TMaterialRef;
-  p,p1,p2: pointer;
+  TestResRef: TMaterialRef;
+  TestEvent: TTestEvent;
+
+{ TTestEvent }
+
+procedure TTestEvent.onDestroyEvent(Sender: TObject);
+begin
+  if Sender is TPersistentResource then
+    writeln('OnDestroyEvent: ', TPersistentResource(Sender).GUID.ToString);
+end;
 
 begin
+
   ReportMemoryLeaksOnShutdown := true;
 
   TestRes := Storage.CreateMaterial;
+  TestRes.OnDestroy.Add(TestEvent.onDestroyEvent);
   writeln('Res1: ', TestRes.GUID.ToString);
   TestRes2 := Storage.CreateMaterial;
   writeln('Res2: ', TestRes2.GUID.ToString);
